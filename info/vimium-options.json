@@ -1,0 +1,30 @@
+{
+  "settingsVersion": "1.63.3",
+  "exclusionRules": [
+    {
+      "pattern": "https?://docs.google.com/*",
+      "passKeys": ""
+    },
+    {
+      "pattern": "https://vfsync.org/*",
+      "passKeys": ""
+    }
+  ],
+  "filterLinkHints": false,
+  "waitForEnterForFilteredHints": true,
+  "hideHud": false,
+  "keyMappings": "# Insert your preferred key mappings here.\nmap gf LinkHints.activateModeToOpenInNewForegroundTab\nmap af LinkHints.activateModeWithQueue\nmap gp togglePinTab\nmap gm toggleMuteTab\nmap J previousTab\nmap K nextTab\nmap w nextFrame\nmap R reload hard",
+  "linkHintCharacters": "qwertasdfgzxcv",
+  "linkHintNumbers": "0123456789",
+  "newTabUrl": "about:newtab",
+  "nextPatterns": "next,more,newer,>,>>,→,›,»,≫",
+  "previousPatterns": "prev,previous,back,older,<,<<,←,‹,«,≪",
+  "regexFindMode": false,
+  "ignoreKeyboardLayout": false,
+  "scrollStepSize": 60,
+  "smoothScroll": true,
+  "grabBackFocus": true,
+  "searchEngines": "bd: https://www.baidu.com/s?wd=%s Baidu\nbg: https://www.bing.com/search?q=%s&ensearch=1 Bing\nbl: https://search.bilibili.com/all?keyword=%s Bilibili\ncd: https://www.bing.com/dict/search?mkt=zh-CN&q=%s BingDict\nco: https://www.collinsdictionary.com/english/%s Collins\ndg: https://duckduckgo.com/?q=%s DuckDuckGo\ngg: https://www.google.com/search?q=%s Google\nsh: http://symbolhound.com/?q=%s SymbolHound\ntr: https://www.microsofttranslator.com/bv.aspx?from=&to=zh-CHS&a=%s Miscosoft Web Translator\nwk: https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s Wikipedia\nyh: https://search.yahoo.com/search?q=%s Yahoo",
+  "searchUrl": "https://www.bing.com/search?q=",
+  "userDefinedLinkHintCss": "div > .vimiumHintMarker {\n/* linkhint boxes */\nbackground: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#FFF785),\n  color-stop(100%,#FFC542));\nborder: 1px solid #E3BE23;\n}\n\ndiv > .vimiumHintMarker span {\n/* linkhint text */\ncolor: black;\nfont-weight: bold;\nfont-size: 14px;\n}\n\ndiv > .vimiumHintMarker > .matchingCharacter {\n}"
+}

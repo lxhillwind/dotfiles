@@ -1,0 +1,32 @@
+" showmode
+set smd
+
+" (relative)number
+set nu
+set rnu
+" incsearch
+set is
+
+let mapleader = 's'
+noremap s <Nop>
+noremap S <Nop>
+
+" bug in ideavim?
+noremap <C-w>c :close<CR>
+
+" https://github.com/lxhillwind/leader-clipboard
+" In Python
+" arr = ['vcy', 'vcx', 'vcd', 'vpp', 'vpP', 'ncY', 'ncyy', 'ncx', 'ncdd', 'npp', 'npP']
+" for i in arr:
+"     print('{}noremap <Leader>{} "+{}'.format(i[0], i[2:], i[2:]))
+vnoremap <Leader>y "+y
+vnoremap <Leader>x "+x
+vnoremap <Leader>d "+d
+vnoremap <Leader>p "+p
+vnoremap <Leader>P "+P
+nnoremap <Leader>Y "+Y
+nnoremap <Leader>yy "+yy
+nnoremap <Leader>x "+x
+nnoremap <Leader>dd "+dd
+nnoremap <Leader>p "+p
+nnoremap <Leader>P "+P

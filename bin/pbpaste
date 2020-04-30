@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# TODO handle tty mode
+
+if [ -e /usr/bin/pbpaste ]; then
+    exec /usr/bin/pbpaste "$@"
+else
+    if [ -n "$WAYLAND_DISPLAY" ]; then
+        exec wl-paste -n
+    elif [ -n "$DISPLAY" ]; then
+        exec xsel -ob
+    else
+        :
+    fi
+fi

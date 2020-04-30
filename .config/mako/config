@@ -1,0 +1,9 @@
+[urgency=high]
+background-color=#ff0000
+
+[urgency=normal]
+default-timeout=7000
+
+[urgency=low]
+background-color=#233333
+default-timeout=3000

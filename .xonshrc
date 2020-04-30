@@ -1,0 +1,70 @@
+#!/usr/bin/env xonsh
+# vim:ft=python
+
+import time
+import sys
+import shlex
+import subprocess
+
+from xonsh import dirstack
+
+source-bash ~/.zshenv
+
+def prompt(name):
+    def f():
+        last_ret = 0
+        history = __xonsh__.history
+        if len(history) > 0:
+            last_ret = int(history[-1].rtn)
+        current = time.strftime('%F %T')
+        return (
+                '{BOLD_RED}%s{NO_COLOR}'  # last ret code
+                '<%s>'
+                ' {BOLD_GREEN}[%s]{NO_COLOR}'  # time
+                ' {BOLD_YELLOW}{cwd}{NO_COLOR}\n'  # cwd
+                '{BOLD_GREEN}%%{NO_COLOR} '  # %
+               ) % (last_ret != 0 and ('[%s] ' % last_ret) or '', name, current)
+
+    return f
+
+
+# env
+$PROMPT = prompt('xonsh')
+$COMPLETIONS_CONFIRM = True
+$AUTO_PUSHD = True
+$EDITOR = 'vim'
+$PATH = [
+        '~/bin',
+        '/usr/local/bin',
+    ] + $PATH
+
+
+# alias
+# simulate cd -<Tab> (dirstack)
+def f(args):
+    if len(args) != 1:
+        print('usage: j <dir>', file=sys.stderr)
+        return 1
+    else:
+        return ![cd @(args[0])].returncode
+aliases['j'] = f
+def jump(prefix: str, line: str, start, end, ctx):
+    if line.startswith('j '):
+        return set(
+                filter(
+                    lambda s: s.find(prefix) != -1,
+                    dirstack.DIRSTACK
+                    )
+                )
+    else:
+        return set()
+completer add j jump
+
+aliases['exa'] = shlex.split('exa -F --color=always')
+aliases['less'] = shlex.split('less -R')
+aliases['diff'] = shlex.split('diff --color=auto')
+aliases['grep'] = shlex.split('grep --color=auto')
+aliases['ls'] = shlex.split('ls -F --color=auto')
+
+def shell_copy(s):
+    subprocess.run(['pbcopy'], input=s, text=True)
