@@ -187,6 +187,7 @@ function! s:run(...)
         setl nonu | setl nornu
         if has('nvim')
             call termopen(args)
+            startinsert
         else
             call term_start(args, {'curwin': v:true})
         endif
@@ -425,10 +426,9 @@ nnoremap <Leader>p :call VIMRC_clipboard_paste("")<CR>
 " }}}
 
 " plugin {{{
-let g:vim_root = expand('<sfile>:p:h')
-call plug#begin(g:vim_root . '/plugged')
-" colorscheme
-Plug g:vim_root . '/local/base16-dynamic'
+call plug#begin(expand('<sfile>:p:h') . '/plugged')
+" local
+Plug '~/lib/vim'
 " modeline
 Plug 'ciaranm/securemodelines'
 Plug 'cespare/vim-toml'

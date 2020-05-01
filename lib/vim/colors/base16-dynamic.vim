@@ -1,10 +1,27 @@
-" vi:syntax=vim sw=2 fdm=marker
-
 " base16-dynamic colorscheme
-
+"
 " Original:
 " base16-vim (https://github.com/chriskempson/base16-vim)
 " by Chris Kempson (http://chriskempson.com)
+"
+" Usage:
+" 1. if you want to disable italic font (enabled by default):
+"
+" `let g:base16#enable_italics = 0`
+"
+" 2. set base16 pallet (base00 to base0F):
+"
+" example from: https://github.com/ntpeters/base16-materialtheme-scheme/blob/master/material.yaml
+"
+" `let g:base16#pallet = {"base00": "263238", "base01": "2E3C43", "base02": "314549", "base03": "546E7A", "base04": "B2CCD6", "base05": "EEFFFF", "base06": "EEFFFF", "base07": "FFFFFF", "base08": "F07178", "base09": "F78C6C", "base0A": "FFCB6B", "base0B": "C3E88D", "base0C": "89DDFF", "base0D": "82AAFF", "base0E": "C792EA", "base0F": "FF5370"}`
+"
+" 3. after setting these variables:
+"
+" `colorscheme base16-dynamic`
+"
+" License:
+" original software ([chriskempson/base16-vim](https://github.com/chriskempson/base16-vim)):
+" [MIT](https://github.com/chriskempson/base16-vim/blob/master/LICENSE.md)
 
 " validate pallet {{{
 let s:valid = 0
@@ -428,3 +445,5 @@ delf <sid>hi
 " Remove color variables
 unlet s:gui00 s:gui01 s:gui02 s:gui03  s:gui04  s:gui05  s:gui06  s:gui07  s:gui08  s:gui09 s:gui0A  s:gui0B  s:gui0C  s:gui0D  s:gui0E  s:gui0F
 unlet s:cterm00 s:cterm01 s:cterm02 s:cterm03 s:cterm04 s:cterm05 s:cterm06 s:cterm07 s:cterm08 s:cterm09 s:cterm0A s:cterm0B s:cterm0C s:cterm0D s:cterm0E s:cterm0F
+
+" vim:syntax=vim sw=2 fdm=marker
