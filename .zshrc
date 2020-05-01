@@ -1,8 +1,3 @@
-# environment variable
-typeset -U path
-path=(~/bin $path[@])
-export EDITOR=vim
-
 # Command completion
 typeset -U fpath
 fpath=(~/.zsh_comp $fpath[@])
@@ -25,21 +20,10 @@ setopt interactivecomments
 # simple PS1
 PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
 
-# alias & functions
-alias exa='exa -F --color=always'
-alias less='less -R'
-alias diff='diff --color=auto'
-alias grep='grep --color=auto'
-alias ls='ls --color=auto -F'
-
 # window title
 precmd() { printf "\e]1;$USER@$HOST\a"; }
 
 compinit
-
-if [[ -n $VIMRUNTIME ]]; then
-    unset VIMRUNTIME
-fi
 
 man() {
     LESS_TERMCAP_md=$'\e[01;31m' \
@@ -50,3 +34,10 @@ man() {
     LESS_TERMCAP_us=$'\e[01;32m' \
     command man "$@"
 }
+
+# alias & functions
+alias exa='exa -F --color=always'
+alias less='less -R'
+alias diff='diff --color=auto'
+alias grep='grep --color=auto'
+alias ls='ls --color=auto -F'
