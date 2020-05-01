@@ -4,8 +4,8 @@ export EDITOR=vim
 if ! [[ $PATH =~ ~/bin: ]]; then
     export PATH=~/bin:$PATH
 fi
-if ! [[ $PYTHONPATH =~ ~/lib: ]]; then
-    export PYTHONPATH=~/lib:$PYTHONPATH
+if ! [[ $PYTHONPATH =~ ~/lib/python: ]]; then
+    export PYTHONPATH=~/lib/python:$PYTHONPATH
 fi
 
 if [[ $OSTYPE =~ linux ]]; then
