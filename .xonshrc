@@ -1,14 +1,14 @@
 #!/usr/bin/env xonsh
 # vim:ft=python
 
-import time
+import os
 import sys
+import time
 import shlex
 import subprocess
 
 from xonsh import dirstack
 
-source-bash ~/.zshenv
 
 def prompt(name):
     def f():
@@ -32,11 +32,6 @@ def prompt(name):
 $PROMPT = prompt('xonsh')
 $COMPLETIONS_CONFIRM = True
 $AUTO_PUSHD = True
-$EDITOR = 'vim'
-$PATH = [
-        '~/bin',
-        '/usr/local/bin',
-    ] + $PATH
 
 
 # alias
@@ -60,11 +55,15 @@ def jump(prefix: str, line: str, start, end, ctx):
         return set()
 completer add j jump
 
-aliases['exa'] = shlex.split('exa -F --color=always')
-aliases['less'] = shlex.split('less -R')
-aliases['diff'] = shlex.split('diff --color=auto')
-aliases['grep'] = shlex.split('grep --color=auto')
-aliases['ls'] = shlex.split('ls -F --color=auto')
+# platform
+if sys.platform.lower().startswith('nt'):
+    pass
+else:
+    aliases['exa'] = shlex.split('exa -F --color=always')
+    aliases['less'] = shlex.split('less -R')
+    aliases['diff'] = shlex.split('diff --color=auto')
+    aliases['grep'] = shlex.split('grep --color=auto')
+    aliases['ls'] = shlex.split('ls -F --color=auto')
 
-def shell_copy(s):
-    subprocess.run(['pbcopy'], input=s, text=True)
+    def shell_copy(s):
+        subprocess.run(['pbcopy'], input=s, text=True)
