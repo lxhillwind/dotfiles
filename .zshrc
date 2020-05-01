@@ -41,3 +41,7 @@ alias less='less -R'
 alias diff='diff --color=auto'
 alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
+
+if command -v lua &>/dev/null; then
+    eval "$(lua $HOME/lib/foreign/z.lua --init zsh)"
+fi
