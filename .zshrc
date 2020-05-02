@@ -42,6 +42,6 @@ alias diff='diff --color=auto'
 alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
 
-if command -v lua &>/dev/null; then
-    eval "$(lua $HOME/lib/foreign/z.lua --init zsh)"
+if command -v luajit &>/dev/null; then
+    eval "$(luajit $HOME/lib/foreign/z.lua --init zsh)"
 fi

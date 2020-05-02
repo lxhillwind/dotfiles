@@ -67,13 +67,10 @@ man-db
 man-pages
 mdadm
 meson
-mpc
-mpd
 mpv
 mtools
 mtr
 nasm
-ncmpcpp
 neofetch
 neovim
 netctl

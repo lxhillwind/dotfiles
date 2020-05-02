@@ -154,9 +154,6 @@ set $menu alacritty
 #
 # multipedia
 #
-    bindsym $mod+comma exec mpc prev
-    bindsym $mod+period exec mpc next
-    bindsym $mod+slash exec mpc toggle
     bindsym XF86AudioMute exec pamixer -t
     bindsym XF86AudioLowerVolume exec pamixer -d 5
     bindsym XF86AudioRaiseVolume exec pamixer -i 5
