@@ -430,7 +430,11 @@ call plug#begin(expand('<sfile>:p:h') . '/plugged')
 " local
 Plug '~/lib/vim'
 " modeline
-Plug 'ciaranm/securemodelines'
+" Since this plugin is not updated frequently, I move it to local dir
+" (~/lib/vim).
+" Also see https://github.com/ciaranm/securemodelines/pull/26 (which moves it
+" from dir plugin to to after/plugin).
+" Plug 'ciaranm/securemodelines'
 Plug 'cespare/vim-toml'
 Plug 'tpope/vim-markdown'
 let g:markdown_syntax_conceal = 0
