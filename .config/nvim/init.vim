@@ -427,6 +427,7 @@ nnoremap <Leader>p :call VIMRC_clipboard_paste("")<CR>
 
 " plugin {{{
 set rtp^=~/lib/vim
+set rtp+=~/lib/vim/after
 
 call plug#begin(expand('<sfile>:p:h') . '/plugged')
 " modeline
@@ -467,7 +468,8 @@ function! ReadColor(filename)
     return {"base00": "263238", "base01": "2E3C43", "base02": "314549", "base03": "546E7A", "base04": "B2CCD6", "base05": "EEFFFF", "base06": "EEFFFF", "base07": "FFFFFF", "base08": "F07178", "base09": "F78C6C", "base0A": "FFCB6B", "base0B": "C3E88D", "base0C": "89DDFF", "base0D": "82AAFF", "base0E": "C792EA", "base0F": "FF5370"}
 endfunction
 
-if $TERM !=? 'linux' && ( has('nvim') || empty($TMUX) )
+if $TERM !=? 'linux' &&
+            \ ( has('nvim') || has('gui_running') || $TERM =~# 'xterm' )
     set tgc
     "let g:base16#pallet = ReadColor('~/base16/one-light.yml')
     let g:base16#pallet = ReadColor('')
@@ -478,7 +480,7 @@ endif
 " }}}
 
 " misc {{{
-au BufNew,BufRead *.gv setl ft=dot
+au BufNewFile,BufRead *.gv setl ft=dot
 au FileType yaml setl sw=2 indentkeys-=0#
 au FileType zig setl fp=zig\ fmt\ --stdin
 au FileType markdown setl tw=120
