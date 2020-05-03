@@ -426,9 +426,9 @@ nnoremap <Leader>p :call VIMRC_clipboard_paste("")<CR>
 " }}}
 
 " plugin {{{
+set rtp^=~/lib/vim
+
 call plug#begin(expand('<sfile>:p:h') . '/plugged')
-" local
-Plug '~/lib/vim'
 " modeline
 " Since this plugin is not updated frequently, I move it to local dir
 " (~/lib/vim).
