@@ -1,3 +1,7 @@
+" set rtp early to allow access to custom lib code.
+set rtp^=~/lib/vim
+set rtp+=~/lib/vim/after
+
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " default {{{
 
@@ -175,20 +179,24 @@ endfunction
 " run command (via :terminal), and output to a separate window
 " Usage: :Krun ...your command goes here...
 " {{{
-command! -nargs=+ -complete=shellcmd Krun call <SID>run(<f-args>)
+command! -nargs=+ -complete=shellcmd Krun call <SID>run(<q-args>)
 
-function! s:run(...)
-    let args = []
-    for arg in a:000
-        call extend(args, expand(arg, 0, 1))
-    endfor
+function! s:run(args)
     if has('nvim') || has('terminal')
         Ksnippet!
         setl nonu | setl nornu
         if has('nvim')
-            call termopen(args)
+            call termopen(a:args)
             startinsert
         else
+            let args = []
+            for item in util#shell_split(&shell)
+                let args = add(args, item)
+            endfor
+            for item in util#shell_split(&shellcmdflag)
+                let args = add(args, item)
+            endfor
+            let args = add(args, a:args)
             call term_start(args, {'curwin': v:true})
         endif
     else
@@ -426,9 +434,6 @@ nnoremap <Leader>p :call VIMRC_clipboard_paste("")<CR>
 " }}}
 
 " plugin {{{
-set rtp^=~/lib/vim
-set rtp+=~/lib/vim/after
-
 call plug#begin(expand('<sfile>:p:h') . '/plugged')
 " modeline
 " Since this plugin is not updated frequently, I move it to local dir

@@ -37,10 +37,6 @@ set $menu alacritty
     # dim screen
     bindsym $mod+Ctrl+l exec sh -c 'sleep 1; pkill -USR1 swayidle'
 
-    # switch focus on float window
-    bindsym $mod+Tab focus next
-    bindsym $mod+Shift+Tab focus prev
-
     # start your launcher
     bindsym $mod+d exec $menu
 
