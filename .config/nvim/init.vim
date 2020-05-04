@@ -149,6 +149,7 @@ command! -bang -nargs=? -complete=filetype
             \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
 
 function! s:snippet_in_new_window(bang, ft)
+    " TODO bufname, bufnr & :bd is buggy on Windows
     let name = '[Snippet]'
     if empty(a:bang)
         let idx = 1
@@ -186,7 +187,12 @@ function! s:run(args)
         Ksnippet!
         setl nonu | setl nornu
         if has('nvim')
-            call termopen(a:args)
+            if &shellquote == '"'
+                " [b]ash on win32
+                call termopen(printf('"%s"', a:args))
+            else
+                call termopen(a:args)
+            endif
             startinsert
         else
             let args = []
