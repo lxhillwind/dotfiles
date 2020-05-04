@@ -178,6 +178,7 @@ function! s:snippet_in_new_window(bang, ft)
         if create_buffer
             setl buftype=nofile
             setl bufhidden=hide
+            setl noswapfile
             silent! exe 'f' fnameescape(name)
         else
             exe s:ksnippet_bufnr . 'b'
@@ -202,6 +203,7 @@ endfunction
 command! -nargs=+ -complete=shellcmd Krun call <SID>run(<q-args>)
 
 function! s:run(args)
+    " TODO remove trailing whitespace (nvim, [b]ash on Windows)
     if has('nvim') || has('terminal')
         Ksnippet
         setl nonu | setl nornu
