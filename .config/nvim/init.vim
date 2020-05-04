@@ -149,8 +149,10 @@ command! -bang -nargs=? -complete=filetype
             \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
 
 function! s:snippet_in_new_window(bang, ft)
-    " TODO bufname, bufnr & :bd is buggy on Windows
     let name = '[Snippet]'
+    " :Ksnippet! may use existing buffer.
+    let create_buffer = v:true
+    let create_window = v:true
     if empty(a:bang)
         let idx = 1
         let raw_name = name
@@ -160,14 +162,31 @@ function! s:snippet_in_new_window(bang, ft)
             let name = printf('%s (%d)', raw_name, idx)
         endwhile
     else
-        if bufexists(name)
-            exe 'bd' fnameescape(name)
+        let s:ksnippet_bufnr = get(s:, 'ksnippet_bufnr', -1)
+        if bufexists(s:ksnippet_bufnr) && bufname(s:ksnippet_bufnr) ==# name
+            let create_buffer = v:false
+            let buflist = tabpagebuflist()
+            let buf_idx = index(buflist, s:ksnippet_bufnr)
+            if buf_idx >= 0
+                exe buf_idx + 1 . 'wincmd w'
+                let create_window = v:false
+            endif
         endif
     endif
-    exe printf('bo %dnew', &cwh)
-    setl buftype=nofile
-    setl bufhidden=hide
-    silent exe 'f' fnameescape(name)
+    if create_window
+        exe printf('bo %dnew', &cwh)
+        if create_buffer
+            setl buftype=nofile
+            setl bufhidden=hide
+            silent! exe 'f' fnameescape(name)
+        else
+            exe s:ksnippet_bufnr . 'b'
+        endif
+    endif
+    if !empty(a:bang)
+        sil normal gg"_dG
+        let s:ksnippet_bufnr = winbufnr(0)
+    endif
     if !empty(a:ft)
         exe 'setl ft=' . a:ft
     endif
@@ -184,7 +203,7 @@ command! -nargs=+ -complete=shellcmd Krun call <SID>run(<q-args>)
 
 function! s:run(args)
     if has('nvim') || has('terminal')
-        Ksnippet!
+        Ksnippet
         setl nonu | setl nornu
         if has('nvim')
             if &shellquote == '"'
