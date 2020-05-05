@@ -465,7 +465,7 @@ nnoremap <Leader>E :e#<CR>
 " opinionated {{{
 let s:custom_rc = expand('<sfile>:p:h') . '/rc.vim'
 if filereadable(s:custom_rc)
-    source s:custom_rc
+    execute 'source' s:custom_rc
     finish
 endif
 
