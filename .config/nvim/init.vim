@@ -413,12 +413,6 @@ endfunction
 " }}}
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-" }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" opinionated {{{
-
 " keymap {{{
 let mapleader = 's'
 let maplocalleader = 'S'
@@ -446,6 +440,8 @@ au FileType qf nnoremap <buffer> <silent>
 " completion
 inoremap <Nul> <C-x><C-o>
 inoremap <C-Space> <C-x><C-o>
+au FileType vim inoremap <buffer> <C-space> <C-x><C-v>
+au FileType vim inoremap <buffer> <Nul> <C-x><C-v>
 
 " terminal escape
 tnoremap <Nul> <C-\><C-n>
@@ -458,7 +454,20 @@ vnoremap <Leader><Tab> :<C-u>KexpandWithCmd
 nnoremap <Leader>y :call VIMRC_clipboard_copy("")<CR>
 nnoremap <Leader>p :call VIMRC_clipboard_paste("")<CR>
 
+nnoremap <Leader>e :e <cfile><CR>
+nnoremap <Leader>E :e#<CR>
 " }}}
+
+" }}}
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" opinionated {{{
+let s:custom_rc = expand('<sfile>:p:h') . '/rc.vim'
+if filereadable(s:custom_rc)
+    source s:custom_rc
+    finish
+endif
 
 " plugin {{{
 call plug#begin(expand('<sfile>:p:h') . '/plugged')
@@ -489,22 +498,11 @@ call plug#end()
 " }}}
 
 " colorscheme {{{
-function! ReadColor(filename)
-    if !empty(a:filename)
-        let content = join(readfile(expand(a:filename)), "\n")
-        pyx import yaml
-        pyx import vim
-        return pyxeval('yaml.safe_load(vim.eval("content"))')
-    endif
-    " default: material
-    return {"base00": "263238", "base01": "2E3C43", "base02": "314549", "base03": "546E7A", "base04": "B2CCD6", "base05": "EEFFFF", "base06": "EEFFFF", "base07": "FFFFFF", "base08": "F07178", "base09": "F78C6C", "base0A": "FFCB6B", "base0B": "C3E88D", "base0C": "89DDFF", "base0D": "82AAFF", "base0E": "C792EA", "base0F": "FF5370"}
-endfunction
-
 if $TERM !=? 'linux' &&
             \ ( has('nvim') || has('gui_running') || $TERM =~# 'xterm' )
     set tgc
-    "let g:base16#pallet = ReadColor('~/base16/one-light.yml')
-    let g:base16#pallet = ReadColor('')
+    " material
+    let g:base16#pallet = {"base00": "263238", "base01": "2E3C43", "base02": "314549", "base03": "546E7A", "base04": "B2CCD6", "base05": "EEFFFF", "base06": "EEFFFF", "base07": "FFFFFF", "base08": "F07178", "base09": "F78C6C", "base0A": "FFCB6B", "base0B": "C3E88D", "base0C": "89DDFF", "base0D": "82AAFF", "base0E": "C792EA", "base0F": "FF5370"}
     color base16-dynamic
 else
     set bg=dark
@@ -517,13 +515,7 @@ au FileType yaml setl sw=2 indentkeys-=0#
 au FileType zig setl fp=zig\ fmt\ --stdin
 au FileType markdown setl tw=120
 
-nnoremap <Leader>e :e <cfile><CR>
-nnoremap <Leader>E :e#<CR>
-
 command! KdeopleteEnable call deoplete#enable()
-
-au FileType vim inoremap <buffer> <C-space> <C-x><C-v>
-au FileType vim inoremap <buffer> <Nul> <C-x><C-v>
 " }}}
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
