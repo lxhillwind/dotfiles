@@ -8,15 +8,25 @@ if ! [[ $PYTHONPATH =~ ~/lib/python: ]]; then
     export PYTHONPATH=~/lib/python:$PYTHONPATH
 fi
 
-if [[ $OSTYPE =~ linux ]]; then
-    # fix pycharm in wayland:
-    # https://github.com/swaywm/sway/wiki#issues-with-java-applications
-    # source: https://github.com/swaywm/sway/issues/595
-    export _JAVA_AWT_WM_NONREPARENTING=1
-    export XDG_SESSION_TYPE=wayland
-    # https://github.com/swaywm/sway/wiki#disabling-client-side-qt-decorations
-    export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-    export QT_STYLE_OVERRIDE=kvantum
-    # also from sway wiki
-    export SDL_VIDEODRIVER=wayland
+if [[ -r ~/.config/zsh/env.zsh ]]; then
+    # not in VCS
+    source ~/.config.zsh/env.zsh
+else
+    if [[ $OSTYPE =~ linux ]]; then
+        # fix pycharm in wayland:
+        # https://github.com/swaywm/sway/wiki#issues-with-java-applications
+        # source: https://github.com/swaywm/sway/issues/595
+        export _JAVA_AWT_WM_NONREPARENTING=1
+        export XDG_SESSION_TYPE=wayland
+        # https://github.com/swaywm/sway/wiki#disabling-client-side-qt-decorations
+        export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+        export QT_STYLE_OVERRIDE=kvantum
+        # also from sway wiki
+        export SDL_VIDEODRIVER=wayland
+    fi
+fi
+
+if [[ $- =~ i ]]; then
+    # in VCS
+    source ~/.config/zsh/rc.zsh
 fi
