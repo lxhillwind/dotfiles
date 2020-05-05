@@ -40,7 +40,6 @@ gst-libav
 gst-plugins-good
 gst-plugins-ugly
 gstreamer-vaapi
-gtk3
 htop
 imagemagick
 inetutils
@@ -99,7 +98,6 @@ pulseaudio-alsa
 pv
 python-docs
 python-flask
-python-gobject
 python-i3ipc
 python-markdown
 python-pip
