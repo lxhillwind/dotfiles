@@ -1,3 +1,26 @@
+export EDITOR=vim
+
+# this may not work as expected if rhs is a substring.
+if ! [[ $PATH =~ ~/bin: ]]; then
+    export PATH=~/bin:$PATH
+fi
+if ! [[ $PYTHONPATH =~ ~/lib/python: ]]; then
+    export PYTHONPATH=~/lib/python:$PYTHONPATH
+fi
+
+# customize env
+if [[ -r ~/.config/zsh/env.zsh ]]; then
+    source ~/.config/zsh/env.zsh
+fi
+
+if ! [[ $- =~ i ]]; then
+    return
+fi
+
+#
+# zshrc
+#
+
 # Command completion
 typeset -U fpath
 fpath=(~/.zsh_comp $fpath[@])
@@ -25,10 +48,11 @@ precmd() { printf "\e]1;$USER@$HOST\a"; }
 
 compinit
 
-# NOTE source end
-return
-
-# copy content below if you need it.
+# customize rc
+if [[ -r ~/.config/zsh/rc.zsh ]]; then
+    source ~/.config/zsh/rc.zsh
+    return
+fi
 
 man() {
     LESS_TERMCAP_md=$'\e[01;31m' \
