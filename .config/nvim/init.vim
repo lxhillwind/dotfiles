@@ -73,12 +73,11 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " misc {{{
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: keybinding
 " add checklist to markdown file;
 " lines beginning with '\v\s+- ' can be toggled to:
 " '- ', '- [ ] ', '- [X] ' with <LocalLeader><Space>
-" {{{
+" <LocalLeader><Space> {{{
 function! s:task_pre_func()
     hi CheckboxUnchecked ctermfg=yellow guifg=yellow
     hi CheckboxChecked ctermfg=grey guifg=grey cterm=italic gui=italic
@@ -98,19 +97,18 @@ function! s:toggle_task_status()
     endif
     call setline(lineno, line)
 endfunction
-" }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+au FileType markdown call s:task_pre_func() | nnoremap <buffer>
+            \ <LocalLeader><Space> :<C-u>call <SID>toggle_task_status()<CR>
+" }}}
+
 " Type: keybinding
 " Various expansion using external programs (visual mode).
 " Inspired by ultisnips.
 "
 " (similar to vim's *filter*,  but provide char level of selection
 " instead of line level)
-"
-" Usage: select code, and press <Leader><Tab> and input program to run with.
-" {{{
+" {VISUAL}<Leader><Tab> {{{
 command! -bang -nargs=+ -complete=shellcmd
             \ KexpandWithCmd call <SID>expand_with_cmd('<bang>', <q-args>)
 
@@ -125,7 +123,7 @@ function! s:expand_with_cmd(bang, cmd)
     else
         " fail
         let @" = previous
-        echoh ErrorMsg | echon 'command not found: ' . a:cmd | echoh None
+        call s:echoerr('command not found: ' . a:cmd)
         return
     endif
     let @" = substitute(output, '\n\+$', '', '')
@@ -137,14 +135,47 @@ function! s:expand_with_cmd(bang, cmd)
     let @" = previous
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Type: command
+" quick edit (with completion)
+" :Ke {shortcut} {{{
+function! s:echoerr(msg)
+    echohl ErrorMsg
+    echon a:msg
+    echohl None
+endfunction
+
+let g:vimrc#edit_map = {
+            \'zshenv': ['~/.config/zsh/env.zsh'],
+            \'zshrc': ['~/.config/zsh/init.zsh', '~/.config/zsh/rc.zsh'],
+            \'vim': [$MYVIMRC, '~/.config/nvim/rc.vim'],
+            \ }
+
+function! s:f_edit_map(arg)
+    let arr = get(g:vimrc#edit_map, a:arg)
+    if empty(arr)
+        call s:echoerr(printf('edit_map: "%s" not found', a:arg))
+        return
+    endif
+    if filereadable(arr[-1])
+        exe 'e' arr[-1]
+    else
+        exe 'e' arr[0]
+    endif
+endfunction
+
+function! s:complete_edit_map(A, L, P)
+    return join(keys(g:vimrc#edit_map), "\n")
+endfunction
+
+command! -nargs=1 -complete=custom,<SID>complete_edit_map
+            \ Ke call <SID>f_edit_map(<q-args>)
+" }}}
+
 " Type: command
 " create a small window to write some code without writing to file;
 " add "!" to reuse existing buffer named "[Snippet]".
-" Usage: :Ksnippet [filetype]  " <Tab> for completion
-" {{{
+" :Ksnippet [filetype] {{{
 command! -bang -nargs=? -complete=filetype
             \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
 
@@ -193,13 +224,10 @@ function! s:snippet_in_new_window(bang, ft)
     endif
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: command
 " run command (via :terminal), and output to a separate window
-" Usage: :Krun ...your command goes here...
-" {{{
+" :Krun {cmd}... {{{
 command! -nargs=+ -complete=shellcmd Krun call <SID>run(<q-args>)
 
 function! s:run(args)
@@ -227,17 +255,14 @@ function! s:run(args)
             call term_start(args, {'curwin': v:true})
         endif
     else
-        echoh ErrorMsg | echon 'terminal feature not enabled!' | echoh None
+        call s:echoerr('terminal feature not enabled!')
     endif
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: command
 " open a new tmux window and cd to current directory
-" Usage: :KtmuxOpen [shell]
-" {{{
+" :KtmuxOpen [shell] {{{
 command! -nargs=? -complete=shellcmd KtmuxOpen
             \ call <SID>open_tmux_window(<q-args>)
 
@@ -246,17 +271,14 @@ function! s:open_tmux_window(args)
         call system("tmux neww -c " . shellescape(expand(("%:p:h")))
                     \. " " . a:args)
     else
-        echoh ErrorMsg | echon 'not in tmux session!' | echoh None
+        call s:echoerr('not in tmux session!')
     endif
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: command
 " insert shebang based on filetype
-" Usage: :KshebangInsert [content after "#!/usr/bin/env "]
-" {{{
+" :KshebangInsert [content after "#!/usr/bin/env "] {{{
 command! -nargs=* -complete=shellcmd KshebangInsert
             \ call <SID>shebang_insert(<q-args>)
 
@@ -270,7 +292,7 @@ function! s:shebang_insert(args)
     let first_line = getline(1)
     if len(first_line) >= 2 && first_line[0:1] ==# '#!'
         " shebang exists
-        echoh ErrorMsg | echon 'shebang exists!' | echoh None
+        call s:echoerr('shebang exists!')
         return
     endif
     let shebang = '#!/usr/bin/env'
@@ -279,8 +301,7 @@ function! s:shebang_insert(args)
     elseif has_key(g:vimrc#shebang_lines, &ft)
         let shebang = shebang . ' ' . g:vimrc#shebang_lines[&ft]
     else
-        echoh ErrorMsg | echon 'shebang: which interpreter to run?'
-                    \| echoh None
+        call s:echoerr('shebang: which interpreter to run?')
         return
     endif
     " insert at first line and leave cursor here (for further modification)
@@ -289,27 +310,21 @@ function! s:shebang_insert(args)
     if ret == 0 " success
         normal $
     else
-        echoh ErrorMsg | echon 'setting shebang error!' | echoh None
+        call s:echoerr('setting shebang error!')
     endif
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: command
 " match long line
-" Usage: :KmatchLongLine ...a number...
 " Refer: https://stackoverflow.com/a/1117367
-" {{{
+" :KmatchLongLine {number} {{{
 command! -nargs=1 KmatchLongLine exe '/\%>' . <args> . 'v.\+'
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: command
 " run vim command, and write output to a separate buffer (using :Ksnippet)
-" Usage: :KvimRun vim_command ...
-" {{{
+" :KvimRun {vim_command}... {{{
 command! -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>)
 
 function! s:vim_run(args)
@@ -320,13 +335,10 @@ function! s:vim_run(args)
     let @" = buf
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: command
 " write vim expr result to a separate buffer (using :Ksnippet)
-" Usage: :KvimExpr vim_expr ...
-" {{{
+" :KvimExpr {vim_expr}... {{{
 command! -nargs=+ -complete=expression KvimExpr call <SID>vim_expr(<q-args>)
 
 function! s:vim_expr(args)
@@ -342,13 +354,10 @@ function! s:vim_expr(args)
     let @" = buf
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: command
 " rg with quickfix window
-" Usage: :Krg [...]  # arguments to rg
-" {{{
+" :Krg [arguments to rg]... {{{
 if executable('rg')
     command! -nargs=+ Krg call <SID>Rg(<q-args>)
 endif
@@ -358,9 +367,7 @@ function! s:Rg(args)
     lopen | setl ft=qf | let w:quickfix_title = 'rg ' . a:args
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Type: function
 " exchange data between system clipboard and vim @"
 " Usage:
@@ -411,7 +418,6 @@ function! VIMRC_clipboard_paste(cmd)
     endif
 endfunction
 " }}}
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " keymap {{{
 let mapleader = 's'
@@ -427,10 +433,6 @@ vnoremap al :<C-u>normal! 0v$h<CR>
 onoremap al :<C-u>normal! 0v$h<CR>
 vnoremap il :<C-u>normal! ^vg_<CR>
 onoremap il :<C-u>normal! ^vg_<CR>
-
-" markdown checkbox
-au FileType markdown call s:task_pre_func() | nnoremap <buffer>
-            \ <LocalLeader><Space> :<C-u>call <SID>toggle_task_status()<CR>
 
 " quickfix window
 au FileType qf nnoremap <buffer> <silent>
