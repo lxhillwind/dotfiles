@@ -233,7 +233,7 @@ command! -nargs=+ -complete=shellcmd Krun call <SID>run(<q-args>)
 function! s:krun_cb(...) dict
     if self.buffer_nr == winbufnr(0) && mode() == 't'
         " vim 8 behavior: exit to normal mode after TermClose.
-        call feedkeys("\<C-\>\<C-n>")
+        call feedkeys("\<C-\>\<C-n>", 'n')
     endif
 endfunction
 
