@@ -3,9 +3,15 @@
 " - remove cmd & powershell support. (use posix shell instead)
 " - remove :PlugUpgrade. (download, diff and merge manually)
 "
-" TODO:
-" - fix system(...) on Windows for vim. (multiline output is truncated when
-"   using posix shell as &shell)
+" Nothing changed to vim / nvim on UNIX;
+"
+" For Windows (not win32unix), configure as below before loading plug.vim:
+"
+"   let &shell = '"path-to-busybox.exe" ash'
+"   let &shellcmdflag = '-c'
+"   if has('nvim')
+"     let &shellquote = '"'
+"   endif
 "
 " Original:
 " vim-plug: Vim plugin manager
@@ -104,7 +110,7 @@ set cpo&vim
 
 let s:plug_tab = get(s:, 'plug_tab', -1)
 let s:plug_buf = get(s:, 'plug_buf', -1)
-let s:is_win = has('win32')
+let s:is_win = has('win32') && !has('win32unix')
 let s:nvim = has('nvim-0.2') || (has('nvim') && exists('*jobwait') && !s:is_win)
 let s:vim8 = has('patch-8.0.0039') && exists('*job_start')
 let s:base_spec = { 'branch': 'master', 'frozen': 0 }
@@ -1376,8 +1382,12 @@ function! s:system(cmd, ...)
   if a:0 > 0
     let cmd = s:with_cd(cmd, a:1)
   endif
-  if has('nvim') && s:is_win
-    return system('"'.cmd.'"')
+  if s:is_win
+    if has('nvim')
+      return system('"'.cmd.'"')
+    else
+      return system('{ '.cmd.'; }')
+    endif
   else
     return system(cmd)
   endif
