@@ -157,7 +157,7 @@ function! s:f_edit_map(arg)
         call s:echoerr(printf('edit_map: "%s" not found', a:arg))
         return
     endif
-    if filereadable(arr[-1])
+    if filereadable(expand(arr[-1]))
         exe 'e' arr[-1]
     else
         exe 'e' arr[0]
