@@ -230,17 +230,28 @@ endfunction
 " :Krun {cmd}... {{{
 command! -nargs=+ -complete=shellcmd Krun call <SID>run(<q-args>)
 
+function! s:krun_cb(...) dict
+    if self.buffer_nr == winbufnr(0) && mode() == 't'
+        " vim 8 behavior: exit to normal mode after TermClose.
+        call feedkeys("\<C-\>\<C-n>")
+    endif
+endfunction
+
 function! s:run(args)
     " TODO remove trailing whitespace (nvim, [b]ash on Windows)
     if has('nvim') || has('terminal')
         Ksnippet
         setl nonu | setl nornu
         if has('nvim')
+            let opt = {
+                        \'on_exit': function('s:krun_cb'),
+                        \'buffer_nr': winbufnr(0),
+                        \}
             if &shellquote == '"'
                 " [b]ash on win32
-                call termopen(printf('"%s"', a:args))
+                call termopen(printf('"%s"', a:args), opt)
             else
-                call termopen(a:args)
+                call termopen(a:args, opt)
             endif
             startinsert
         else
