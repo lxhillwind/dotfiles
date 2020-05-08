@@ -472,6 +472,12 @@ if filereadable(s:custom_rc)
 endif
 
 " plugin {{{
+" https://github.com/junegunn/vim-plug/wiki/tips
+function! Cond(expr, ...)
+    let opts = get(a:000, 0, {})
+    return a:expr ? opts : extend(opts, {'on': [], 'for': []})
+endfunction
+
 call plug#begin(expand('<sfile>:p:h') . '/plugged')
 " modeline
 " Since this plugin is not updated frequently, I move it to local dir
@@ -487,15 +493,17 @@ Plug 'vim-python/python-syntax'
 let g:python_highlight_all = 1
 Plug 'ziglang/zig.vim'
 let g:zig_fmt_autosave = 0
-if has('nvim')
-    Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-    Plug 'deoplete-plugins/deoplete-jedi'
+
+let s:nvim = has('nvim')
+Plug 'Shougo/deoplete.nvim', Cond(s:nvim, { 'do': ':UpdateRemotePlugins' })
+Plug 'deoplete-plugins/deoplete-jedi', Cond(s:nvim)
+if s:nvim
     let g:jedi#completions_enabled = 0
     let g:jedi#popup_on_dot = 0
     let g:jedi#show_call_signatures = 0
-    Plug 'Shougo/neco-vim'
-    Plug 'Shougo/neco-syntax'
 endif
+Plug 'Shougo/neco-vim', Cond(s:nvim)
+Plug 'Shougo/neco-syntax', Cond(s:nvim)
 call plug#end()
 " }}}
 
