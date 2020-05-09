@@ -488,12 +488,6 @@ if filereadable(s:custom_rc)
 endif
 
 " plugin {{{
-" https://github.com/junegunn/vim-plug/wiki/tips
-function! Cond(expr, ...)
-    let opts = get(a:000, 0, {})
-    return a:expr ? opts : extend(opts, {'on': [], 'for': []})
-endfunction
-
 call plug#begin(expand('<sfile>:p:h') . '/plugged')
 " modeline
 " Since this plugin is not updated frequently, I move it to local dir
@@ -511,15 +505,15 @@ Plug 'ziglang/zig.vim'
 let g:zig_fmt_autosave = 0
 
 let s:nvim = has('nvim')
-Plug 'Shougo/deoplete.nvim', Cond(s:nvim, { 'do': ':UpdateRemotePlugins' })
-Plug 'deoplete-plugins/deoplete-jedi', Cond(s:nvim)
+Plug 'Shougo/deoplete.nvim', { 'cond': s:nvim, 'do': ':UpdateRemotePlugins' }
+Plug 'deoplete-plugins/deoplete-jedi', { 'cond': s:nvim }
 if s:nvim
     let g:jedi#completions_enabled = 0
     let g:jedi#popup_on_dot = 0
     let g:jedi#show_call_signatures = 0
 endif
-Plug 'Shougo/neco-vim', Cond(s:nvim)
-Plug 'Shougo/neco-syntax', Cond(s:nvim)
+Plug 'Shougo/neco-vim', { 'cond': s:nvim }
+Plug 'Shougo/neco-syntax', { 'cond': s:nvim }
 call plug#end()
 " }}}
 

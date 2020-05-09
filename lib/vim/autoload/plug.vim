@@ -2,6 +2,7 @@
 " - remove ruby & python support. (I mainly use vim8 or neovim)
 " - remove cmd & powershell support. (use posix shell instead)
 " - remove :PlugUpgrade. (download, diff and merge manually)
+" - add `cond` option (evaluate as bool) for :Plug.
 "
 " Nothing changed to vim / nvim on UNIX;
 "
@@ -70,6 +71,7 @@
 "| `dir`                   | Custom directory for the plugin                  |
 "| `as`                    | Use different name for the plugin                |
 "| `do`                    | Post-update hook (string or funcref)             |
+"| `cond`                  | On-demand loading: default true                  |
 "| `on`                    | On-demand loading: Commands or `<Plug>`-mappings |
 "| `for`                   | On-demand loading: File types                    |
 "| `frozen`                | Do not update unless explicitly specified        |
@@ -572,6 +574,10 @@ function! plug#(repo, ...)
   try
     let repo = s:trim(a:repo)
     let opts = a:0 == 1 ? s:parse_options(a:1) : s:base_spec
+    if !get(opts, 'cond', 1)
+      let opts['on'] = []
+      let opts['for'] = []
+    endif
     let name = get(opts, 'as', fnamemodify(repo, ':t:s?\.git$??'))
     let spec = extend(s:infer_properties(name, repo), opts)
     if !has_key(g:plugs, name)
