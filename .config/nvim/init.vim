@@ -7,33 +7,38 @@ set rtp+=~/lib/vim/after
 
 set nomodeline
 
+" options which should not be reloaded
+if !get(g:, 'vimrc#loaded')
+    syntax on
+    " backspace
+    set bs=2
+    " expandtab
+    set et
+    " shiftwidth
+    set sw=4
+    " (relative)number
+    set nu
+    set rnu
+    if has('nvim')
+        au TermOpen * setl nonu | setl nornu
+    elseif has('terminal')
+        au TerminalOpen * setl nonu | setl nornu
+    endif
+    " hlsearch
+    set hls
+    let g:vimrc#loaded = 1
+endif
+
 " autochdir
 set acd
 " filetype / syntax
 filetype on
 filetype plugin on
 filetype indent on
-syntax on
-" backspace
-set bs=2
-" expandtab
-set et
-" shiftwidth
-set sw=4
-" (relative)number
-set nu
-set rnu
-if has('nvim')
-    au TermOpen * setl nonu | setl nornu
-elseif has('terminal')
-    au TerminalOpen * setl nonu | setl nornu
-endif
 " belloff
 set bo=all
 " incsearch
 set is
-" hlsearch
-set hls
 " ttimeoutlen
 set ttm=0
 " cursorcolumn & cursorline
