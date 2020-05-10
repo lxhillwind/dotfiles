@@ -423,6 +423,8 @@ endfunction
 function! s:rg_exit_cb(j, d, e) dict
     if self.counter == 0
         echo 'nothing matches.'
+    else
+        echo 'rg finished.'
     endif
 endfunction
 
