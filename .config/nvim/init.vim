@@ -371,16 +371,77 @@ function! s:vim_expr(args)
 endfunction
 " }}}
 
+" Type: function
+" accept bufnr (default 0), return project dir (or '' if .git not found).
+" {{{
+function! s:get_project_dir(...)
+    let bufnr = a:0 ? a:1 : 0
+    let path = getcwd(bufnr)
+    while 1
+        if isdirectory(path . '/.git')
+            return path
+        endif
+        let parent = fnamemodify(path, ':h')
+        if path == parent
+            return ''
+        endif
+        let path = parent
+    endwhile
+endfunction
+" }}}
+
 " Type: command
 " rg with quickfix window
 " :Krg [arguments to rg]... {{{
-if executable('rg')
-    command! -nargs=+ Krg call <SID>Rg(<q-args>)
+if executable('rg') && has('nvim')
+    command! -bang -nargs=+ Krg call <SID>Rg('<bang>', <q-args>)
 endif
 
-function! s:Rg(args)
-    lgetexpr system('rg --vimgrep ' . a:args)
-    lopen | setl ft=qf | let w:quickfix_title = 'rg ' . a:args
+function! s:jobstop(jid)
+    if jobwait([a:jid], 0)[0] == -1
+        call jobstop(a:jid)
+        echo 'job terminated.'
+    else
+        echo 'job already exit.'
+    endif
+endfunction
+
+function! s:rg_stdout_cb(j, d, e) dict
+    if a:d == ['']
+        return
+    endif
+    lad a:d
+    if self.counter == 0 && winbufnr(0) == self.bufnr
+        lop
+        let &l:stl = '[Location List] (' . self.title . ')%=' . '[%p%%~%lL,%cC]'
+        " press <C-c> to terminate job.
+        exe 'nnoremap <buffer> <C-c> :call <SID>jobstop(' . a:j . ')<CR>'
+    endif
+    let self.counter += 1
+endfunction
+
+function! s:rg_exit_cb(j, d, e) dict
+    if self.counter == 0
+        echo 'nothing matches.'
+    endif
+endfunction
+
+function! s:Rg(bang, args)
+    if empty(a:bang)
+        let path = s:get_project_dir()
+        if empty(path)
+            call s:echoerr('not in git repo!')
+            return
+        endif
+    else
+        let path = getcwd()
+    endif
+    let bufnr = winbufnr(0)
+    let jid = jobstart(printf('rg --vimgrep %s %s', a:args, shellescape(path)),
+                \{'bufnr': bufnr, 'counter': 0, 'title': 'rg ' . a:args,
+                \'on_stdout': function('s:rg_stdout_cb'),
+                \'on_exit': function('s:rg_exit_cb'),
+                \})
 endfunction
 " }}}
 

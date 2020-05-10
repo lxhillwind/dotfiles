@@ -4,8 +4,6 @@
 " - remove :PlugUpgrade. (download, diff and merge manually)
 " - add `cond` option (evaluate as bool) for :Plug.
 "
-" Nothing changed to vim / nvim on UNIX;
-"
 " For Windows (not win32unix), configure as below before loading plug.vim:
 "
 "   let &shell = '"path-to-busybox.exe" ash'
