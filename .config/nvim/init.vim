@@ -243,35 +243,37 @@ function! s:krun_cb(...) dict
 endfunction
 
 function! s:run(args)
-    " TODO remove trailing whitespace (nvim, [b]ash on Windows)
-    if has('nvim') || has('terminal')
-        Ksnippet
-        setl nonu | setl nornu
-        if has('nvim')
-            let opt = {
-                        \'on_exit': function('s:krun_cb'),
-                        \'buffer_nr': winbufnr(0),
-                        \}
-            if &shellquote == '"'
-                " [b]ash on win32
-                call termopen(printf('"%s"', a:args), opt)
-            else
-                call termopen(a:args, opt)
-            endif
-            startinsert
-        else
-            let args = []
-            for item in util#shell_split(&shell)
-                let args = add(args, item)
-            endfor
-            for item in util#shell_split(&shellcmdflag)
-                let args = add(args, item)
-            endfor
-            let args = add(args, a:args)
-            call term_start(args, {'curwin': v:true})
-        endif
-    else
+    if !(has('nvim') || has('terminal'))
         call s:echoerr('terminal feature not enabled!')
+        return
+    endif
+    " TODO remove trailing whitespace (nvim, [b]ash on Windows)
+    let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
+                \'\=shellescape(expand(submatch(2)))', 'g')
+    Ksnippet
+    setl nonu | setl nornu
+    if has('nvim')
+        let opt = {
+                    \'on_exit': function('s:krun_cb'),
+                    \'buffer_nr': winbufnr(0),
+                    \}
+        if &shellquote == '"'
+            " [b]ash on win32
+            call termopen(printf('"%s"', cmd), opt)
+        else
+            call termopen(cmd, opt)
+        endif
+        startinsert
+    else
+        let args = []
+        for item in util#shell_split(&shell)
+            let args = add(args, item)
+        endfor
+        for item in util#shell_split(&shellcmdflag)
+            let args = add(args, item)
+        endfor
+        let args = add(args, cmd)
+        call term_start(args, {'curwin': v:true})
     endif
 endfunction
 " }}}
@@ -599,6 +601,9 @@ au FileType zig setl fp=zig\ fmt\ --stdin
 au FileType markdown setl tw=120
 
 command! KdeopleteEnable call deoplete#enable()
+
+" :h ft-sh-syntax
+let g:is_posix = 1
 " }}}
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
