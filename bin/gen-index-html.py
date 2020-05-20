@@ -21,6 +21,11 @@ template = """
         <title>local index page</title>
     </head>
     <body>
+        <style>
+        a {
+            font-size: xx-large;
+        }
+        </style>
         {% for item in paths %}
         <a href='{{ item.path }}'>{{ item.name }}</a>
         <br>
