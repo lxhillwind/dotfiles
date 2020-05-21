@@ -2,7 +2,6 @@
 #   comm <(pacman -Qgq base-devel | sort | uniq) <(pacman -Qeq | sort) -13
 # install from list:
 #   pacman -S --needed $(grep -v ^# packages.txt)
-adobe-source-code-pro-fonts
 alacritty
 alsa-firmware
 amd-ucode
@@ -35,6 +34,7 @@ git
 glibc
 gnu-netcat
 graphviz
+grim
 grub
 gst-libav
 gst-plugins-good
@@ -98,7 +98,9 @@ pulseaudio-alsa
 pv
 python-docs
 python-flask
+python-gobject
 python-i3ipc
+python-jsonpointer
 python-markdown
 python-pip
 python-prompt_toolkit
@@ -147,7 +149,6 @@ wqy-zenhei
 xdg-user-dirs
 xf86-video-amdgpu
 xfsprogs
-xonsh
 xorg-xprop
 youtube-dl
 zig

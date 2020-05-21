@@ -56,7 +56,8 @@ for p in sorted(os.listdir(html_dir)):
             for i in [config.get(p, {}).get('index'), 'index.html', 'index.htm']:
                 if not i:
                     continue
-                index = os.path.join(abs_path, i)
+                # use normpath to allow ../ in index (config.yml)
+                index = os.path.normpath(os.path.join(abs_path, i))
                 if os.path.exists(index):
                     abs_path = index
                     break
