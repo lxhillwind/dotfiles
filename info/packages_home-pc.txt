@@ -33,6 +33,7 @@ gdb
 git
 glibc
 gnu-netcat
+gobject-introspection
 graphviz
 grim
 grub
@@ -40,6 +41,7 @@ gst-libav
 gst-plugins-good
 gst-plugins-ugly
 gstreamer-vaapi
+gvfs
 htop
 imagemagick
 inetutils
@@ -88,7 +90,6 @@ pcmanfm-qt
 perl
 perl-file-mimeinfo
 polipo
-postgresql-docs
 procps-ng
 progress
 proxychains-ng
@@ -112,7 +113,6 @@ qpdfview
 qt5-multimedia
 qt5-wayland
 qutebrowser
-racket-minimal
 ripgrep
 rlwrap
 rsync
