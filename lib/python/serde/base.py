@@ -105,7 +105,7 @@ def parse(cls: T, value: typing.Any, type_table: dict = None) -> T:
         for item in dataclasses.fields(cls):
             k = item.name
             spec = item.type
-            if k in value:
+            if k in value and value[k] is not None:
                 v = value[k]
             else:
                 if item.default_factory is not dataclasses.MISSING:

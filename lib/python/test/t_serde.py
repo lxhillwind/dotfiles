@@ -68,6 +68,7 @@ class TestParse(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = parse(Foo, {})
         self.assertEqual(parse(Foo, {'name': []}), Foo(name=[], region=None))
+        self.assertEqual(parse(Foo, {'name': [], 'region': None}), Foo(name=[], region=None))
         @dataclass
         class Foo:
             name: typing.List[str]
