@@ -36,8 +36,12 @@ class ParseError(ValueError):
         self.args = (error_info,)
 
 
-def parse(cls: T, value: typing.Any, type_table: dict = None) -> T:
+def parse(cls: T, value: typing.Any, missing_as_none=True, type_table: dict = None) -> T:
+    """
+    missing_as_none: whether to treat missing as none for Optional type.
+    """
     kwargs = dict(
+            missing_as_none=missing_as_none,
             type_table=type_table
             )
     mixed_type_table = copy.copy(default_type_table)
@@ -45,23 +49,35 @@ def parse(cls: T, value: typing.Any, type_table: dict = None) -> T:
 
     v = value
     generic = typing.get_origin(cls)
+    if generic is typing.Union:
+        args = typing.get_args(cls)
+        if args[1] == type(None):
+            if v is None:
+                return None
+            elif v is dataclasses.MISSING:
+                if missing_as_none:
+                    return None
+            else:
+                try:
+                    return parse(args[0], v, **kwargs)
+                except Exception as e:
+                    raise ParseError(type=cls, value=v, source=e) from None
+        else:
+            raise ParseError(
+                    type=cls, value=v,
+                    msg='typing.Union is not supported'
+                    )
+
+    # check missing after typing.Optional
+    if v is dataclasses.MISSING:
+        raise ParseError(
+                type=cls, value=v,
+                msg='value is missing'
+                )
+
     if generic:
         args = typing.get_args(cls)
-        if generic is typing.Union:
-            if args[1] == type(None):
-                if v is None:
-                    return None
-                else:
-                    try:
-                        return parse(args[0], v, **kwargs)
-                    except Exception as e:
-                        raise ParseError(type=cls, value=v, source=e) from None
-            else:
-                raise ParseError(
-                        type=cls, value=v,
-                        msg='typing.Union is not supported'
-                        )
-        elif generic is dict:
+        if generic is dict:
             if not isinstance(v, dict):
                 raise ParseError(
                         type=cls, value=v,
@@ -84,12 +100,6 @@ def parse(cls: T, value: typing.Any, type_table: dict = None) -> T:
                     msg='type is not supported'
                     )
 
-#    if v is None:
-#        raise ParseError(
-#                type=cls, value=v,
-#                msg='value is missing'
-#                )
-#
     if cls in mixed_type_table:
         if not isinstance(v, cls) and callable(mixed_type_table[cls]):
             v = mixed_type_table[cls](v)
@@ -105,19 +115,23 @@ def parse(cls: T, value: typing.Any, type_table: dict = None) -> T:
         for item in dataclasses.fields(cls):
             k = item.name
             spec = item.type
-            if k in value and value[k] is not None:
-                v = value[k]
-            else:
-                if item.default_factory is not dataclasses.MISSING:
+            if item.default_factory is not dataclasses.MISSING:
+                if k not in value or value[k] == item.default_factory():
                     result[k] = item.default_factory()
                     continue
-                elif item.default is not dataclasses.MISSING:
+                else:
+                    v = value[k]
+            elif item.default is not dataclasses.MISSING:
+                if k not in value or value[k] == item.default:
                     result[k] = item.default
                     continue
                 else:
-                    # TODO handle optional type
-                    #raise ParseError(field=k, type=spec, msg='field is missing')
-                    v = None
+                    v = value[k]
+            else:
+                if k in value:
+                    v = value[k]
+                else:
+                    v = dataclasses.MISSING
             try:
                 result[k] = parse(spec, v, **kwargs)
             except Exception as e:

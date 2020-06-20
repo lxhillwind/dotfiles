@@ -584,12 +584,34 @@ call plug#end()
 " }}}
 
 " colorscheme {{{
+nnoremap <Leader>t :call <SID>toggle_theme()<CR>
+
+function! s:toggle_theme(...)
+    if a:0 > 0
+        if a:1 =~? 'light'
+            let s:base16_theme = 'light'
+        else
+            let s:base16_theme = 'dark'
+        endif
+    else
+        if get(s:, 'base16_theme', 'light') == 'light'
+            let s:base16_theme = 'dark'
+        else
+            let s:base16_theme = 'light'
+        endif
+    endif
+    if s:base16_theme == 'light'
+        let g:base16#pallet = {"scheme": "One Light", "author": "Daniel Pfeifer (http://github.com/purpleKarrot)", "base00": "fafafa", "base01": "f0f0f1", "base02": "e5e5e6", "base03": "a0a1a7", "base04": "696c77", "base05": "383a42", "base06": "202227", "base07": "090a0b", "base08": "ca1243", "base09": "d75f00", "base0A": "c18401", "base0B": "50a14f", "base0C": "0184bc", "base0D": "4078f2", "base0E": "a626a4", "base0F": "986801"}
+    else
+        let g:base16#pallet = {"scheme": "Material", "author": "Nate Peterson", "base00": "263238", "base01": "2E3C43", "base02": "314549", "base03": "546E7A", "base04": "B2CCD6", "base05": "EEFFFF", "base06": "EEFFFF", "base07": "FFFFFF", "base08": "F07178", "base09": "F78C6C", "base0A": "FFCB6B", "base0B": "C3E88D", "base0C": "89DDFF", "base0D": "82AAFF", "base0E": "C792EA", "base0F": "FF5370"}
+    endif
+    color base16-dynamic
+endfunction
+
 if $TERM !=? 'linux' &&
             \ ( has('nvim') || has('gui_running') || $TERM =~# 'xterm' )
     set tgc
-    " material
-    let g:base16#pallet = {"base00": "263238", "base01": "2E3C43", "base02": "314549", "base03": "546E7A", "base04": "B2CCD6", "base05": "EEFFFF", "base06": "EEFFFF", "base07": "FFFFFF", "base08": "F07178", "base09": "F78C6C", "base0A": "FFCB6B", "base0B": "C3E88D", "base0C": "89DDFF", "base0D": "82AAFF", "base0E": "C792EA", "base0F": "FF5370"}
-    color base16-dynamic
+    call s:toggle_theme($BAT_THEME)
 else
     sil! color molokai
 endif

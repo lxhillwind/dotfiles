@@ -4,6 +4,7 @@ import typing
 import uuid
 import datetime
 from serde import parse, dumps
+from serde.base import ParseError
 
 
 class TestParse(unittest.TestCase):
@@ -28,6 +29,32 @@ class TestParse(unittest.TestCase):
             _ = parse(typing.Optional[str], 3)
         with self.assertRaises(ValueError):
             _ = parse(typing.Optional[typing.Optional[str]], 3)
+
+    def test_parse_missing(self):
+        @dataclass
+        class Point:
+            x: int
+            y: int
+        with self.assertRaisesRegex(ParseError, 'type not match'):
+            _ = parse(Point, {'x': 3, 'y': None})
+        with self.assertRaisesRegex(ParseError, 'value is missing'):
+            _ = parse(Point, {'x': 3})
+
+        @dataclass
+        class Points:
+            p: typing.List[Point]
+        with self.assertRaisesRegex(ParseError, 'is not list'):
+            _ = parse(Points, {'p': None})
+        with self.assertRaisesRegex(ParseError, 'value is missing'):
+            _ = parse(Points, {})
+
+    def test_parse_missing_and_none(self):
+        @dataclass
+        class P:
+            x: typing.Optional[int]
+        with self.assertRaisesRegex(ParseError, 'value is missing'):
+            _ = parse(P, {}, missing_as_none=False)
+        self.assertEqual(parse(P, {}), P(x=None))
 
     def test_parse_complex(self):
         @dataclass
