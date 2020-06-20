@@ -36,12 +36,18 @@ class ParseError(ValueError):
         self.args = (error_info,)
 
 
-def parse(cls: T, value: typing.Any, missing_as_none=True, type_table: dict = None) -> T:
+def parse(
+        cls: T, value: typing.Any,
+        missing_as_none=True, unknown_as_error=False,
+        type_table: dict = None) -> T:
     """
     missing_as_none: whether to treat missing as none for Optional type.
+
+    unknown_as_error: whether to treat unknown field as error (for dataclass).
     """
     kwargs = dict(
             missing_as_none=missing_as_none,
+            unknown_as_error=unknown_as_error,
             type_table=type_table
             )
     mixed_type_table = copy.copy(default_type_table)
@@ -111,6 +117,15 @@ def parse(cls: T, value: typing.Any, missing_as_none=True, type_table: dict = No
                     msg='type not match'
                     )
     elif dataclasses.is_dataclass(cls) and isinstance(cls, type):
+        if unknown_as_error:
+            if (s :=
+                    set(value.keys())
+                    - set(map(lambda i: i.name, dataclasses.fields(cls)))
+                ) != set():
+                raise ParseError(
+                        type=cls, value=value,
+                        msg=f'unknown field: {s}'
+                        )
         result = {}
         for item in dataclasses.fields(cls):
             k = item.name

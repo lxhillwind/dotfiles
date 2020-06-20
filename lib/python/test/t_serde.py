@@ -56,6 +56,15 @@ class TestParse(unittest.TestCase):
             _ = parse(P, {}, missing_as_none=False)
         self.assertEqual(parse(P, {}), P(x=None))
 
+    def test_unkown_field(self):
+        @dataclass
+        class Point:
+            x: int
+            y: int
+        with self.assertRaisesRegex(ParseError, 'unknown field'):
+            _ = parse(Point, {'z': 3}, unknown_as_error=True)
+        self.assertEqual(parse(Point, {'x': 2, 'y': 3}), Point(x=2, y=3))
+
     def test_parse_complex(self):
         @dataclass
         class School:
