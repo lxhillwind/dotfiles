@@ -35,7 +35,7 @@ set $menu alacritty
     bindsym --border button5 exec python3 ~/bin/set_opacity.py -0.1
 
     # dim screen
-    bindsym $mod+Ctrl+l exec sh -c 'sleep 1; pkill -USR1 swayidle'
+    bindsym $mod+Ctrl+l exec sh -c 'swaylock -f; sleep 1; pkill -USR1 swayidle'
 
     # start your launcher
     bindsym $mod+d exec $menu
