@@ -220,6 +220,10 @@ bar {
     }
 }
 
+input type:keyboard {
+    xkb_options ctrl:nocaps
+}
+
 include /etc/sway/config.d/*
 
 exec alacritty
