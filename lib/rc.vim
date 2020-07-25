@@ -76,7 +76,7 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" misc {{{
+" function & command {{{
 
 " Type: keybinding
 " add checklist to markdown file;
@@ -545,44 +545,6 @@ nnoremap <Leader>E :e#<CR>
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" opinionated {{{
-let s:custom_rc = expand('<sfile>:p:h') . '/rc.vim'
-if filereadable(s:custom_rc)
-    execute 'source' s:custom_rc
-    finish
-endif
-
-" plugin {{{
-call plug#begin(expand('<sfile>:p:h') . '/plugged')
-" modeline
-" Since this plugin is not updated frequently, I move it to local dir
-" (~/lib/vim).
-" Also see https://github.com/ciaranm/securemodelines/pull/26 (which moves it
-" from dir plugin to to after/plugin).
-" Plug 'ciaranm/securemodelines'
-Plug 'cespare/vim-toml'
-Plug 'tpope/vim-markdown'
-let g:markdown_syntax_conceal = 0
-let g:markdown_fenced_languages = ['python', 'vim', 'json', 'yaml', 'javascript', 'sh']
-Plug 'vim-python/python-syntax'
-let g:python_highlight_all = 1
-Plug 'ziglang/zig.vim'
-let g:zig_fmt_autosave = 0
-
-let s:nvim = has('nvim')
-Plug 'tomasr/molokai', { 'cond': !s:nvim }
-Plug 'Shougo/deoplete.nvim', { 'cond': s:nvim, 'do': ':UpdateRemotePlugins' }
-Plug 'deoplete-plugins/deoplete-jedi', { 'cond': s:nvim }
-if s:nvim
-    let g:jedi#completions_enabled = 0
-    let g:jedi#popup_on_dot = 0
-    let g:jedi#show_call_signatures = 0
-endif
-Plug 'Shougo/neco-vim', { 'cond': s:nvim }
-Plug 'Shougo/neco-syntax', { 'cond': s:nvim }
-call plug#end()
-" }}}
-
 " colorscheme {{{
 nnoremap <Leader>t :call <SID>toggle_theme()<CR>
 
@@ -612,18 +574,16 @@ if $TERM !=? 'linux' &&
             \ ( has('nvim') || has('gui_running') || $TERM =~# 'xterm' )
     set tgc
     call s:toggle_theme($BAT_THEME)
-else
-    sil! color molokai
 endif
 " }}}
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " misc {{{
 au BufNewFile,BufRead *.gv setl ft=dot
 au FileType yaml setl sw=2 indentkeys-=0#
 au FileType zig setl fp=zig\ fmt\ --stdin
 au FileType markdown setl tw=120
-
-command! KdeopleteEnable call deoplete#enable()
 
 " :h ft-sh-syntax
 let g:is_posix = 1
