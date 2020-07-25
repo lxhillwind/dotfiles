@@ -123,13 +123,11 @@ function! s:expand_with_cmd(bang, cmd)
     let code = @"
     if a:cmd ==# 'vim'
         let output = execute(code)
-    elseif executable(split(a:cmd, ' ')[0])
-        let output = system(a:cmd, code)
     else
-        " fail
-        let @" = previous
-        call s:echoerr('command not found: ' . a:cmd)
-        return
+        let output = system(a:cmd, code)
+        if v:shell_error
+            call s:echoerr('command failed: ' . a:cmd)
+        endif
     endif
     let @" = substitute(output, '\n\+$', '', '')
     if empty(a:bang)
