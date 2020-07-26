@@ -568,9 +568,8 @@ function! s:toggle_theme(...)
     color base16-dynamic
 endfunction
 
-if $TERM !=? 'linux' &&
-            \ ( has('nvim') || has('gui_running') || $TERM =~# 'xterm' )
-    set tgc
+if $TERM !=? 'linux'
+    silent! set termguicolors
     call s:toggle_theme($BAT_THEME)
 endif
 " }}}

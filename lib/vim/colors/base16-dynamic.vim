@@ -49,87 +49,78 @@ endif
 let g:base16#enable_italics = get(g:, 'base16#enable_italics', 1)
 
 " GUI color definitions
-let s:gui00        = g:base16#pallet['base00']
-let g:base16_gui00 = g:base16#pallet['base00']
-let s:gui01        = g:base16#pallet['base01']
-let g:base16_gui01 = g:base16#pallet['base01']
-let s:gui02        = g:base16#pallet['base02']
-let g:base16_gui02 = g:base16#pallet['base02']
-let s:gui03        = g:base16#pallet['base03']
-let g:base16_gui03 = g:base16#pallet['base03']
-let s:gui04        = g:base16#pallet['base04']
-let g:base16_gui04 = g:base16#pallet['base04']
-let s:gui05        = g:base16#pallet['base05']
-let g:base16_gui05 = g:base16#pallet['base05']
-let s:gui06        = g:base16#pallet['base06']
-let g:base16_gui06 = g:base16#pallet['base06']
-let s:gui07        = g:base16#pallet['base07']
-let g:base16_gui07 = g:base16#pallet['base07']
-let s:gui08        = g:base16#pallet['base08']
-let g:base16_gui08 = g:base16#pallet['base08']
-let s:gui09        = g:base16#pallet['base09']
-let g:base16_gui09 = g:base16#pallet['base09']
-let s:gui0A        = g:base16#pallet['base0A']
-let g:base16_gui0A = g:base16#pallet['base0A']
-let s:gui0B        = g:base16#pallet['base0B']
-let g:base16_gui0B = g:base16#pallet['base0B']
-let s:gui0C        = g:base16#pallet['base0C']
-let g:base16_gui0C = g:base16#pallet['base0C']
-let s:gui0D        = g:base16#pallet['base0D']
-let g:base16_gui0D = g:base16#pallet['base0D']
-let s:gui0E        = g:base16#pallet['base0E']
-let g:base16_gui0E = g:base16#pallet['base0E']
-let s:gui0F        = g:base16#pallet['base0F']
-let g:base16_gui0F = g:base16#pallet['base0F']
+let s:gui00 = g:base16#pallet['base00']
+let s:gui01 = g:base16#pallet['base01']
+let s:gui02 = g:base16#pallet['base02']
+let s:gui03 = g:base16#pallet['base03']
+let s:gui04 = g:base16#pallet['base04']
+let s:gui05 = g:base16#pallet['base05']
+let s:gui06 = g:base16#pallet['base06']
+let s:gui07 = g:base16#pallet['base07']
+let s:gui08 = g:base16#pallet['base08']
+let s:gui09 = g:base16#pallet['base09']
+let s:gui0A = g:base16#pallet['base0A']
+let s:gui0B = g:base16#pallet['base0B']
+let s:gui0C = g:base16#pallet['base0C']
+let s:gui0D = g:base16#pallet['base0D']
+let s:gui0E = g:base16#pallet['base0E']
+let s:gui0F = g:base16#pallet['base0F']
 
 " Terminal color definitions
-let s:cterm00        = "00"
-let g:base16_cterm00 = "00"
-let s:cterm03        = "08"
-let g:base16_cterm03 = "08"
-let s:cterm05        = "07"
-let g:base16_cterm05 = "07"
-let s:cterm07        = "15"
-let g:base16_cterm07 = "15"
-let s:cterm08        = "01"
-let g:base16_cterm08 = "01"
-let s:cterm0A        = "03"
-let g:base16_cterm0A = "03"
-let s:cterm0B        = "02"
-let g:base16_cterm0B = "02"
-let s:cterm0C        = "06"
-let g:base16_cterm0C = "06"
-let s:cterm0D        = "04"
-let g:base16_cterm0D = "04"
-let s:cterm0E        = "05"
-let g:base16_cterm0E = "05"
-if exists("base16colorspace") && base16colorspace == "256"
-  let s:cterm01        = "18"
-  let g:base16_cterm01 = "18"
-  let s:cterm02        = "19"
-  let g:base16_cterm02 = "19"
-  let s:cterm04        = "20"
-  let g:base16_cterm04 = "20"
-  let s:cterm06        = "21"
-  let g:base16_cterm06 = "21"
-  let s:cterm09        = "16"
-  let g:base16_cterm09 = "16"
-  let s:cterm0F        = "17"
-  let g:base16_cterm0F = "17"
-else
-  let s:cterm01        = "10"
-  let g:base16_cterm01 = "10"
-  let s:cterm02        = "11"
-  let g:base16_cterm02 = "11"
-  let s:cterm04        = "12"
-  let g:base16_cterm04 = "12"
-  let s:cterm06        = "13"
-  let g:base16_cterm06 = "13"
-  let s:cterm09        = "09"
-  let g:base16_cterm09 = "09"
-  let s:cterm0F        = "14"
-  let g:base16_cterm0F = "14"
-endif
+function! s:round(num)
+  let num = a:num
+  if num < (95 - 55) / 2 + 55
+    return 0
+  elseif num < (135 - 95) / 2 + 95
+    return 1
+  elseif num < (175 - 135) / 2 + 135
+    return 2
+  elseif num < (215 - 175) / 2 + 175
+    return 3
+  elseif num < (255 - 215) / 2 + 215
+    return 4
+  else
+    return 5
+  endif
+endfunction
+
+" color info is from https://jonasjacek.github.io/colors/
+function! s:cast_rgb(hex_code)
+  let l:r = str2nr(a:hex_code[0:1], 16)
+  let l:g = str2nr(a:hex_code[2:3], 16)
+  let l:b = str2nr(a:hex_code[4:5], 16)
+
+  " greyscale
+  let r1 = (l:r - 8) / 10
+  let r2 = (l:g - 8) / 10
+  let r3 = (l:b - 8) / 10
+  if abs(r1 - r2) <= 2 && abs(r1 - r3) <= 2 && abs(r2 - r3) <= 2 && r1 < 24
+    return 232 + r1
+  endif
+
+  " 16-231
+  let l:r = s:round(l:r)
+  let l:g = s:round(l:g)
+  let l:b = s:round(l:b)
+  return 36 * l:r + 6 * l:g + l:b + 16
+endfunction
+
+let s:cterm00 = s:cast_rgb(s:gui00)
+let s:cterm01 = s:cast_rgb(s:gui01)
+let s:cterm02 = s:cast_rgb(s:gui02)
+let s:cterm03 = s:cast_rgb(s:gui03)
+let s:cterm04 = s:cast_rgb(s:gui04)
+let s:cterm05 = s:cast_rgb(s:gui05)
+let s:cterm06 = s:cast_rgb(s:gui06)
+let s:cterm07 = s:cast_rgb(s:gui07)
+let s:cterm08 = s:cast_rgb(s:gui08)
+let s:cterm09 = s:cast_rgb(s:gui09)
+let s:cterm0A = s:cast_rgb(s:gui0A)
+let s:cterm0B = s:cast_rgb(s:gui0B)
+let s:cterm0C = s:cast_rgb(s:gui0C)
+let s:cterm0D = s:cast_rgb(s:gui0D)
+let s:cterm0E = s:cast_rgb(s:gui0E)
+let s:cterm0F = s:cast_rgb(s:gui0F)
 
 " Neovim terminal colours
 if has("nvim")
