@@ -172,6 +172,7 @@ function! Choices(text, data) abort
     endfor
 
     nnoremap <buffer> <silent> ;e :<C-u>call <SID>choices_do(';', 'e', b:text)<CR>
+    nnoremap <buffer> <silent> ;; <Nop>
     call setline(nr, '[;e] expand text')
     let nr += 1
     call setline(nr, '[q / <Esc>] quit')
