@@ -245,9 +245,11 @@ function! s:run(args)
         call s:echoerr('terminal feature not enabled!')
         return
     endif
-    " TODO remove trailing whitespace (nvim, [b]ash on Windows)
+    " expand %
     let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
                 \'\=shellescape(expand(submatch(2)))', 'g')
+    " remove trailing whitespace (nvim, [b]ash on Windows)
+    let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
     Ksnippet
     setl nonu | setl nornu
     if has('nvim')
@@ -260,7 +262,6 @@ function! s:run(args)
         endif
         if &shellquote == '"'
             " [b]ash on win32
-            " TODO: verify if `:Krun` (cmd is empty) works.
             call termopen(printf('"%s"', cmd), opt)
         else
             call termopen(cmd, opt)
