@@ -172,10 +172,9 @@ function! Choices(text, data) abort
     endfor
 
     nnoremap <buffer> <silent> ;e :<C-u>call <SID>choices_do(';', 'e', b:text)<CR>
-    nnoremap <buffer> <silent> ;; <Nop>
     call setline(nr, '[;e] expand text')
     let nr += 1
-    call setline(nr, '[q / <Esc>] quit')
+    call setline(nr, '[q] quit')
 
     syntax clear
     exe 'syn region delim start=/\%' . delim . 'l/ end=/\%' . (delim + 1) . 'l/'
@@ -184,7 +183,6 @@ function! Choices(text, data) abort
     hi def link shortCut Label
     setl ro
     nnoremap <buffer> <silent> q :<C-u>close<CR>
-    nnoremap <buffer> <silent> <Esc> :<C-u>close<CR>
 endfunction
 " }}}
 
