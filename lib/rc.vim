@@ -78,6 +78,91 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " function & command {{{
 
+" Type: function
+" action on choices (open a buffer, input a mapped letter to do something);
+" accept:
+" msg: string to display / operate on;
+" data: dict; key: letter to map; value: dict;
+"   data value:
+"     desc: ...;
+"     func: optional; 1 argument func;
+"     cmd: optional; msg is appended after cmd (no whitespace);
+""" call Choices('xxx', {...}) {{{{
+function! s:choices_do(flag, action, text) abort
+    close
+    if a:flag == 'e'
+        execute a:action . a:text
+    elseif a:flag == 'f'
+        call a:action(a:text)
+    else
+        call s:echoerr('unknown flag: ' . a:flag)
+    endif
+endfunction
+
+function! Choices(text, data) abort
+    if has('nvim')
+        let buf = nvim_create_buf(v:false, v:true)
+        let opts = {
+                    \'relative': 'editor', 'style': 'minimal',
+                    \'col': &columns / 4, 'row': &lines / 4,
+                    \'width': &columns / 2, 'height': &lines / 2,
+                    \}
+        call nvim_open_win(buf, 1, opts)
+    else
+        " TODO vim popup
+        Ksnippet
+        setl nonu
+        setl nornu
+    endif
+
+    mapclear <buffer>
+    mapclear! <buffer>
+    if !empty(a:text)
+        let width = 0
+        let nr = 1
+        for i in split(a:text, '\n')
+            call setline(nr, i)
+            let nr += 1
+            let width = max([width, len(i)])
+        endfor
+        call setline(nr, repeat('=', min([winwidth(0), width])))
+    endif
+    let delim = nr
+    let nr += 1
+
+    let b:text = a:text
+    let b:cmds = {}
+    let b:funcs = {}
+    for [k, v] in items(a:data)
+        if !empty(get(v, 'cmd'))
+            let b:cmds[k] = v.cmd
+            exe 'nnoremap <buffer> <silent>' k
+                        \ ':<C-u>call <SID>choices_do("e",
+                        \ b:cmds["' . escape(k, '"') . '"], b:text)<CR>'
+        elseif !empty(get(v, 'func'))
+            let b:funcs[k] = v.func
+            exe 'nnoremap <buffer> <silent>' k
+                        \ ':<C-u>call <SID>choices_do("f",
+                        \ b:funcs["' . escape(k, '"') . '"], b:text)<CR>'
+        else
+            continue
+        endif
+        call setline(nr, printf('[%s] %s', k, v.desc))
+        let nr += 1
+    endfor
+    call setline(nr, '[q / <Esc>] quit')
+
+    syntax clear
+    exe 'syn region delim start=/\%' . delim . 'l/ end=/\%' . (delim + 1) . 'l/'
+    syn match shortCut /\v^\[(.{-})\]/
+    hi def link delim Special
+    hi def link shortCut Label
+    setl ro
+    nnoremap <buffer> <silent> q :<C-u>close<CR>
+    nnoremap <buffer> <silent> <Esc> :<C-u>close<CR>
+endfunction
+" }}}
+
 " Type: keybinding
 " add checklist to markdown file;
 " lines beginning with '\v\s+- ' can be toggled to:
@@ -230,7 +315,7 @@ endfunction
 
 " Type: command
 " run command (via :terminal), and output to a separate window
-" :Krun {cmd}... {{{
+" :Krun [cmd]... {{{
 command! -nargs=* -complete=shellcmd Krun call <SID>run(<q-args>)
 
 function! s:krun_cb(...) dict
@@ -505,6 +590,10 @@ function! VIMRC_clipboard_paste(cmd)
 endfunction
 " }}}
 
+" }}}
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " keymap {{{
 let mapleader = 's'
 let maplocalleader = 'S'
@@ -544,8 +633,37 @@ nnoremap <Leader>p :call VIMRC_clipboard_paste("")<CR>
 
 nnoremap <Leader>e :e <cfile><CR>
 nnoremap <Leader>E :e#<CR>
-" }}}
 
+function! s:gx(mode)
+    if a:mode == 'v'
+        let t = @"
+        silent normal gvy
+        let text = @"
+        let @" = t
+    else
+        let text = expand(get(g:, 'netrw_gx', '<cfile>'))
+    endif
+    if executable('xdg-open')
+        let open_cmd = 'xdg-open'
+    elseif executable('open')
+        let open_cmd = 'open'
+    elseif has('win32')
+        let open_cmd = 'start'
+    else
+        call s:echoerr('do not know how to open')
+        return
+    endif
+    " TODO fix quote / escape
+    call Choices(text, {
+                \'e': {'desc': 'edit in current buffer', 'func': {s -> execute('e ' . fnameescape(s))}},
+                \'s': {'desc': 'split', 'func': {s -> execute('split ' . fnameescape(s))}},
+                \'v': {'desc': 'vsplit', 'func': {s -> execute('vsplit ' . fnameescape(s))}},
+                \'t': {'desc': 'edit in new tab', 'func': {s -> execute('tabe ' . fnameescape(s))}},
+                \'o': {'desc': 'open', 'func': {s -> execute('!' . open_cmd . ' ' . shellescape(s))}},
+                \})
+endfunction
+nnoremap <silent> gx :<C-u>call <SID>gx('n')<CR>
+vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
 " }}}
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
