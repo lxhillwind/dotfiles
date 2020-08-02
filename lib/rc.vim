@@ -634,6 +634,34 @@ nnoremap <Leader>p :call VIMRC_clipboard_paste("")<CR>
 nnoremap <Leader>e :e <cfile><CR>
 nnoremap <Leader>E :e#<CR>
 
+function! s:open_cmd(s)
+    if executable('xdg-open')
+        let open_cmd = 'xdg-open'
+    elseif executable('open')
+        let open_cmd = 'open'
+    elseif has('win32')
+        " TODO fix open for win32
+        let open_cmd = 'start'
+    else
+        call s:echoerr('do not know how to open')
+        return
+    endif
+    if has('nvim')
+        call jobstart([open_cmd, a:s], {'detach': 1})
+    else
+        call job_start([open_cmd, a:s], {'stoponexit': ''})
+    endif
+endfunction
+
+" TODO fix quote / escape
+let g:vimrc#gx = {
+            \'e': {'desc': 'edit in current buffer', 'func': {s -> execute('e ' . fnameescape(s))}},
+            \'s': {'desc': 'split', 'func': {s -> execute('split ' . fnameescape(s))}},
+            \'v': {'desc': 'vsplit', 'func': {s -> execute('vsplit ' . fnameescape(s))}},
+            \'t': {'desc': 'edit in new tab', 'func': {s -> execute('tabe ' . fnameescape(s))}},
+            \'o': {'desc': 'open', 'func': funcref('s:open_cmd')},
+            \}
+
 function! s:gx(mode)
     if a:mode == 'v'
         let t = @"
@@ -643,25 +671,9 @@ function! s:gx(mode)
     else
         let text = expand(get(g:, 'netrw_gx', '<cfile>'))
     endif
-    if executable('xdg-open')
-        let open_cmd = 'xdg-open'
-    elseif executable('open')
-        let open_cmd = 'open'
-    elseif has('win32')
-        let open_cmd = 'start'
-    else
-        call s:echoerr('do not know how to open')
-        return
-    endif
-    " TODO fix quote / escape
-    call Choices(text, {
-                \'e': {'desc': 'edit in current buffer', 'func': {s -> execute('e ' . fnameescape(s))}},
-                \'s': {'desc': 'split', 'func': {s -> execute('split ' . fnameescape(s))}},
-                \'v': {'desc': 'vsplit', 'func': {s -> execute('vsplit ' . fnameescape(s))}},
-                \'t': {'desc': 'edit in new tab', 'func': {s -> execute('tabe ' . fnameescape(s))}},
-                \'o': {'desc': 'open', 'func': {s -> execute('!' . open_cmd . ' ' . shellescape(s))}},
-                \})
+    call Choices(text, g:vimrc#gx)
 endfunction
+
 nnoremap <silent> gx :<C-u>call <SID>gx('n')<CR>
 vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
 " }}}
