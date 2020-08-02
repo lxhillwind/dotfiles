@@ -89,6 +89,24 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 "     cmd: optional; msg is appended after cmd (no whitespace);
 """ call Choices('xxx', {...}) {{{{
 function! s:choices_do(flag, action, text) abort
+    if a:flag == ';'
+        if a:action == 'e'
+            let b:text = expand(b:text)
+            let nr = 1
+            set noro
+            for i in split(b:text, '\n')
+                " TODO shift delim if b:text has newline added / deleted
+                if getline(nr) =~ '\v^\=+$'
+                    break
+                endif
+                call setline(nr, i)
+                let nr += 1
+            endfor
+            set ro
+        endif
+        return
+    endif
+
     close
     if a:flag == 'e'
         execute a:action . a:text
@@ -134,7 +152,9 @@ function! Choices(text, data) abort
     let b:cmds = {}
     let b:funcs = {}
     for [k, v] in items(a:data)
-        if !empty(get(v, 'cmd'))
+        if k !~# '\v^[[:alnum:]]$'
+            continue
+        elseif !empty(get(v, 'cmd'))
             let b:cmds[k] = v.cmd
             exe 'nnoremap <buffer> <silent>' k
                         \ ':<C-u>call <SID>choices_do("e",
@@ -150,6 +170,10 @@ function! Choices(text, data) abort
         call setline(nr, printf('[%s] %s', k, v.desc))
         let nr += 1
     endfor
+
+    nnoremap <buffer> <silent> ;e :<C-u>call <SID>choices_do(';', 'e', b:text)<CR>
+    call setline(nr, '[;e] expand text')
+    let nr += 1
     call setline(nr, '[q / <Esc>] quit')
 
     syntax clear
@@ -641,15 +665,23 @@ function! s:open_cmd(s)
         let open_cmd = 'open'
     elseif has('win32')
         " TODO fix open for win32
-        let open_cmd = 'start'
+        let open_cmd = ['cmd', '/c', 'start']
     else
         call s:echoerr('do not know how to open')
         return
     endif
     if has('nvim')
-        call jobstart([open_cmd, a:s], {'detach': 1})
+        if type(open_cmd) == type([])
+            call jobstart(open_cmd + [a:s], {'detach': 1})
+        else
+            call jobstart([open_cmd, a:s], {'detach': 1})
+        endif
     else
-        call job_start([open_cmd, a:s], {'stoponexit': ''})
+        if type(open_cmd) == type([])
+            call job_start(open_cmd + [a:s], {'stoponexit': ''})
+        else
+            call job_start([open_cmd, a:s], {'stoponexit': ''})
+        endif
     endif
 endfunction
 
