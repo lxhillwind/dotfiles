@@ -231,7 +231,7 @@ endfunction
 " Type: command
 " run command (via :terminal), and output to a separate window
 " :Krun {cmd}... {{{
-command! -nargs=+ -complete=shellcmd Krun call <SID>run(<q-args>)
+command! -nargs=* -complete=shellcmd Krun call <SID>run(<q-args>)
 
 function! s:krun_cb(...) dict
     if self.buffer_nr == winbufnr(0) && mode() == 't'
@@ -255,8 +255,12 @@ function! s:run(args)
                     \'on_exit': function('s:krun_cb'),
                     \'buffer_nr': winbufnr(0),
                     \}
+        if empty(cmd)
+            let cmd = &shell
+        endif
         if &shellquote == '"'
             " [b]ash on win32
+            " TODO: verify if `:Krun` (cmd is empty) works.
             call termopen(printf('"%s"', cmd), opt)
         else
             call termopen(cmd, opt)
@@ -267,10 +271,12 @@ function! s:run(args)
         for item in util#shell_split(&shell)
             let args = add(args, item)
         endfor
-        for item in util#shell_split(&shellcmdflag)
-            let args = add(args, item)
-        endfor
-        let args = add(args, cmd)
+        if !empty(cmd)
+            for item in util#shell_split(&shellcmdflag)
+                let args = add(args, item)
+            endfor
+            let args = add(args, cmd)
+        endif
         call term_start(args, {'curwin': v:true})
     endif
 endfunction
