@@ -36,6 +36,7 @@ c.input.forward_unbound_keys = 'none'
 c.tabs.background = True
 c.tabs.last_close = 'close'
 c.tabs.position = 'left'
+c.tabs.new_position.unrelated = 'next'
 c.url.default_page = pathlib.Path('~/html/index.html').expanduser().as_uri()
 c.url.searchengines = {
         'DEFAULT': 'https://bing.com/search?q={}&ensearch=1',
@@ -117,3 +118,7 @@ if sys.platform.startswith('darwin'):
 else:
     config.bind('<ctrl-/>', 'fake-key <ctrl-a>', mode='insert')
     config.bind('<ctrl-w>', 'fake-key <ctrl-backspace>', mode='insert')
+
+config.unbind(';d')
+config.bind(';dc', 'download-clear')
+config.bind(';dq', 'download-cancel')
