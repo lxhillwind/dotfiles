@@ -131,15 +131,13 @@ function! Choices(text, data) abort
             let width = max([width, len(i)])
         endfor
         unlet c
+        unlet lines
 
         let padding_len = min([winwidth(0), width])
         if omit_nr > 0
-            call setline(omit_nr, printf('... %s line(s) omitted %s',
-                        \ len(lines) - 3, repeat('.', padding_len / 2)))
+            call setline(omit_nr, repeat('.', padding_len / 2))
         endif
         call setline(nr, repeat('=', padding_len))
-
-        unlet lines
     endif
     let delim = nr
     let nr += 1
