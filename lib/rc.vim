@@ -114,8 +114,8 @@ function! Choices(text, data) abort
         let width = 0
         let nr = 1
 
-        let c = 0
         let lines = split(a:text, '\n')
+        let c = 0
         for i in lines
             let c += 1
             if c >= 3 && c < len(lines)
@@ -130,14 +130,16 @@ function! Choices(text, data) abort
             let nr += 1
             let width = max([width, len(i)])
         endfor
-        unlet lines
         unlet c
 
         let padding_len = min([winwidth(0), width])
         if omit_nr > 0
-            call setline(omit_nr, repeat('.', padding_len / 2))
+            call setline(omit_nr, printf('... %s line(s) omitted %s',
+                        \ len(lines) - 3, repeat('.', padding_len / 2)))
         endif
         call setline(nr, repeat('=', padding_len))
+
+        unlet lines
     endif
     let delim = nr
     let nr += 1
@@ -145,7 +147,7 @@ function! Choices(text, data) abort
     let b:text = a:text
     let b:funcs = {}
     for [k, v] in items(a:data)
-        if k !~# '\v^[[:alnum:]]+$'
+        if k !~# '\v^\S+$'
             continue
         elseif type(v) != type([])
             continue
@@ -679,10 +681,10 @@ endfunction
 
 " TODO fix quote / escape
 let g:vimrc#gx = {
-            \'e': ['edit in current buffer', {s -> execute('e ' . fnameescape(s))}],
-            \'s': ['split', {s -> execute('split ' . fnameescape(s))}],
-            \'v': ['vsplit', {s -> execute('vsplit ' . fnameescape(s))}],
-            \'t': ['edit in new tab', {s -> execute('tabe ' . fnameescape(s))}],
+            \'fe': ['edit in current buffer', {s -> execute('e ' . fnameescape(s))}],
+            \'fs': ['split', {s -> execute('split ' . fnameescape(s))}],
+            \'fv': ['vsplit', {s -> execute('vsplit ' . fnameescape(s))}],
+            \'ft': ['edit in new tab', {s -> execute('tabe ' . fnameescape(s))}],
             \'o': ['open', funcref('s:open_cmd')],
             \}
 
