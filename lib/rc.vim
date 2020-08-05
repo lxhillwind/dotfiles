@@ -79,42 +79,15 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 " function & command {{{
 
 " Type: function
-" action on choices (open a buffer, input a mapped letter to do something);
+" action on choices (open a buffer, input mapped letter to do something);
 " accept:
 " msg: string to display / operate on;
-" data: dict; key: letter to map; value: dict;
-"   data value:
-"     desc: ...;
-"     func: optional; 1 argument func;
-"     cmd: optional; msg is appended after cmd (no whitespace);
+" data: dict; key: letter(s) to map; value: list;
+"   list: [desc (string), funcref (msg as arg)];
 """ call Choices('xxx', {...}) {{{{
-function! s:choices_do(flag, action, text) abort
-    if a:flag == ';'
-        if a:action == 'e'
-            let b:text = expand(b:text)
-            let nr = 1
-            set noro
-            for i in split(b:text, '\n')
-                " TODO shift delim if b:text has newline added / deleted
-                if getline(nr) =~ '\v^\=+$'
-                    break
-                endif
-                call setline(nr, i)
-                let nr += 1
-            endfor
-            set ro
-        endif
-        return
-    endif
-
+function! s:choices_do(action, text) abort
     close
-    if a:flag == 'e'
-        execute a:action . a:text
-    elseif a:flag == 'f'
-        call a:action(a:text)
-    else
-        call s:echoerr('unknown flag: ' . a:flag)
-    endif
+    call a:action(a:text)
 endfunction
 
 function! Choices(text, data) abort
@@ -135,50 +108,70 @@ function! Choices(text, data) abort
 
     mapclear <buffer>
     mapclear! <buffer>
+
+    let omit_nr = -1
     if !empty(a:text)
         let width = 0
         let nr = 1
-        for i in split(a:text, '\n')
+
+        let c = 0
+        let lines = split(a:text, '\n')
+        for i in lines
+            let c += 1
+            if c >= 3 && c < len(lines)
+                if c == 3
+                    call setline(nr, '')
+                    let omit_nr = nr
+                    let nr += 1
+                endif
+                continue
+            endif
             call setline(nr, i)
             let nr += 1
             let width = max([width, len(i)])
         endfor
-        call setline(nr, repeat('=', min([winwidth(0), width])))
+        unlet lines
+        unlet c
+
+        let padding_len = min([winwidth(0), width])
+        if omit_nr > 0
+            call setline(omit_nr, repeat('.', padding_len / 2))
+        endif
+        call setline(nr, repeat('=', padding_len))
     endif
     let delim = nr
     let nr += 1
 
     let b:text = a:text
-    let b:cmds = {}
     let b:funcs = {}
     for [k, v] in items(a:data)
-        if k !~# '\v^[[:alnum:]]$'
+        if k !~# '\v^[[:alnum:]]+$'
             continue
-        elseif !empty(get(v, 'cmd'))
-            let b:cmds[k] = v.cmd
-            exe 'nnoremap <buffer> <silent>' k
-                        \ ':<C-u>call <SID>choices_do("e",
-                        \ b:cmds["' . escape(k, '"') . '"], b:text)<CR>'
-        elseif !empty(get(v, 'func'))
-            let b:funcs[k] = v.func
-            exe 'nnoremap <buffer> <silent>' k
-                        \ ':<C-u>call <SID>choices_do("f",
-                        \ b:funcs["' . escape(k, '"') . '"], b:text)<CR>'
+        elseif type(v) != type([])
+            continue
+        elseif len(v) < 2
+            continue
+        elseif type(v[0]) != type('') || type(v[1]) != type(function('tr'))
+            continue
         else
-            continue
+            let b:funcs[k] = v[1]
+            exe 'nnoremap <buffer> <silent>' k
+                        \ ':<C-u>call <SID>choices_do(
+                        \ b:funcs["' . escape(k, '"') . '"], b:text)<CR>'
         endif
-        call setline(nr, printf('[%s] %s', k, v.desc))
+        call setline(nr, printf('[%s] %s', k, v[0]))
         let nr += 1
     endfor
 
-    nnoremap <buffer> <silent> ;e :<C-u>call <SID>choices_do(';', 'e', b:text)<CR>
-    call setline(nr, '[;e] expand text')
-    let nr += 1
     call setline(nr, '[q] quit')
 
     syntax clear
+    if omit_nr > 0
+        exe 'syn region omit start=/\%' . omit_nr . 'l/ end=/\%' . (omit_nr + 1) . 'l/'
+    endif
     exe 'syn region delim start=/\%' . delim . 'l/ end=/\%' . (delim + 1) . 'l/'
     syn match shortCut /\v^\[(.{-})\]/
+    hi def link omit Comment
     hi def link delim Special
     hi def link shortCut Label
     setl ro
@@ -686,11 +679,11 @@ endfunction
 
 " TODO fix quote / escape
 let g:vimrc#gx = {
-            \'e': {'desc': 'edit in current buffer', 'func': {s -> execute('e ' . fnameescape(s))}},
-            \'s': {'desc': 'split', 'func': {s -> execute('split ' . fnameescape(s))}},
-            \'v': {'desc': 'vsplit', 'func': {s -> execute('vsplit ' . fnameescape(s))}},
-            \'t': {'desc': 'edit in new tab', 'func': {s -> execute('tabe ' . fnameescape(s))}},
-            \'o': {'desc': 'open', 'func': funcref('s:open_cmd')},
+            \'e': ['edit in current buffer', {s -> execute('e ' . fnameescape(s))}],
+            \'s': ['split', {s -> execute('split ' . fnameescape(s))}],
+            \'v': ['vsplit', {s -> execute('vsplit ' . fnameescape(s))}],
+            \'t': ['edit in new tab', {s -> execute('tabe ' . fnameescape(s))}],
+            \'o': ['open', funcref('s:open_cmd')],
             \}
 
 function! s:gx(mode)
