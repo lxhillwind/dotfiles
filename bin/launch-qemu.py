@@ -26,8 +26,8 @@ import yaml
 
 QEMU_IMG_DIR = os.path.expanduser('~/qemu/')
 
-if len(sys.argv) != 2:
-    print(f'usage: {sys.argv[0]} <profile>')
+if len(sys.argv) < 2:
+    print(f'usage: {sys.argv[0]} <profile> [optional args append to qemu host]')
     sys.exit(1)
 
 os.chdir(QEMU_IMG_DIR)
@@ -49,7 +49,7 @@ def flat_cmd(l):
 
 
 try:
-    action(flat_cmd(config[sys.argv[1]]))
+    action(flat_cmd(config[sys.argv[1]]) + sys.argv[2:])
 except KeyError as e:
     print(f'profile not found: {e}')
     sys.exit(1)
