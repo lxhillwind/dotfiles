@@ -122,3 +122,9 @@ else:
 config.unbind(';d')
 config.bind(';dc', 'download-clear')
 config.bind(';dq', 'download-cancel')
+
+# host config
+rc = pathlib.Path(__file__).parent.joinpath('rc.py')
+if rc.exists():
+    with rc.open() as f:
+        exec(f.read())
