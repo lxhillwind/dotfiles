@@ -9,6 +9,7 @@ refresh to get updated text; modify text to update text on the server.
 
 
 import flask
+import jinja2
 
 
 index = '''
@@ -18,9 +19,13 @@ index = '''
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 </head>
 <body>
-<textarea rows=32 cols=128 id='main' v-model='content' v-on:input='text'>{{ content }}</textarea>
+<textarea readonly rows=32 cols=128 id='main' v-model='content' v-on:input='text'>{{ content }}</textarea>
+{% raw %}
 <script>
 fetch('/api').then(s => s.json()).then(s => {
+    let el = document.querySelector('#main');
+    el.removeAttribute('readonly');
+    el.innerHTML = '{{ content }}';
     new Vue({
         el: '#main',
         data: {
@@ -41,6 +46,7 @@ fetch('/api').then(s => s.json()).then(s => {
     });
 });
 </script>
+{% endraw %}
 </body>
 </html>
 '''
@@ -53,7 +59,7 @@ app = flask.Flask(__name__)
 
 @app.route('/')
 def root():
-    return index
+    return jinja2.Template(index).render(content=clipboard.get('content'))
 
 
 @app.route('/api', methods=['POST', 'GET'])
