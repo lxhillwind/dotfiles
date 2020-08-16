@@ -6,5 +6,8 @@ for s:i in ['~/.vimrc', '~/_vimrc']
 endfor
 
 if !get(g:, 'vimrc#loaded')
-    so ~/lib/rc.vim
+    let s:i = '~/vimfiles/rc.vim'
+    if filereadable(expand(s:i))
+        exe 'so' s:i
+    endif
 endif
