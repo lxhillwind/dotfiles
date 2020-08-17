@@ -8,6 +8,8 @@ refresh to get updated text; modify text to update text on the server.
 '''
 
 
+import argparse
+
 import flask
 import jinja2
 
@@ -77,7 +79,10 @@ def api():
 
 
 def main():
-    app.run(host='0.0.0.0', port=2333)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('port', type=int, default=8000, nargs='?')
+    args = parser.parse_args()
+    app.run(host='0.0.0.0', port=args.port)
 
 
 if __name__ == '__main__':
