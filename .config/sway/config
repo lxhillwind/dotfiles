@@ -154,6 +154,8 @@ set $menu alacritty
     bindsym XF86AudioLowerVolume exec pamixer -d 5
     bindsym XF86AudioRaiseVolume exec pamixer -i 5
 
+    bindsym XF86PowerOff nop
+
 #
 # Resizing containers:
 #
