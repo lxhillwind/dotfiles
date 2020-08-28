@@ -29,7 +29,7 @@ QEMU_IMG_DIR = os.path.expanduser('~/qemu/')
 
 def main():
     if len(sys.argv) < 2:
-        print(f'usage: {sys.argv[0]} <profile> [optional args append to qemu host]')
+        print(f'usage: {sys.argv[0]} <profile> [replace args] [--] [append args]')
         sys.exit(1)
 
     os.chdir(QEMU_IMG_DIR)
@@ -47,7 +47,20 @@ def main():
         action = lambda x: os.execvp(x[0], x)
 
     argv = []
-    overwrite = cmd_group(sys.argv[2:])
+
+    replace_argv = []
+    append_argv = []
+    double_slash = False
+    for i in sys.argv[2:]:
+        if i == '--':
+            double_slash = True
+        else:
+            if double_slash:
+                append_argv.append(i)
+            else:
+                replace_argv.append(i)
+
+    overwrite = cmd_group(replace_argv)
     i0_to_idx = {}
     for idx, item in enumerate(overwrite):
         i0_to_idx[item[0]] = idx
@@ -57,6 +70,8 @@ def main():
             argv.extend(overwrite[idx])
         else:
             argv.extend(ls)
+
+    argv.extend(append_argv)
 
     action(argv)
 
