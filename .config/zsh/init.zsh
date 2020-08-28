@@ -43,9 +43,6 @@ setopt interactivecomments
 # simple PS1
 PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
 
-# window title
-precmd() { printf "\e]1;$USER@$HOST\a"; }
-
 compinit
 
 # customize rc

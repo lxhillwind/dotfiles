@@ -37,6 +37,7 @@ c.tabs.background = True
 c.tabs.last_close = 'close'
 c.tabs.position = 'left'
 c.tabs.new_position.unrelated = 'next'
+c.tabs.select_on_remove = 'last-used'
 c.url.default_page = pathlib.Path('~/html/index.html').expanduser().as_uri()
 c.url.searchengines = {
         'DEFAULT': 'https://bing.com/search?q={}&ensearch=1',
