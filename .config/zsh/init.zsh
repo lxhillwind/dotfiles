@@ -8,11 +8,6 @@ if ! [[ $PYTHONPATH =~ ~/lib/python: ]]; then
     export PYTHONPATH=~/lib/python:$PYTHONPATH
 fi
 
-# customize env
-if [[ -r ~/.config/zsh/env.zsh ]]; then
-    source ~/.config/zsh/env.zsh
-fi
-
 if ! [[ $- =~ i ]]; then
     return
 fi
@@ -33,6 +28,35 @@ zstyle ':completion:*' menu select
 export DIRSTACKSIZE=16
 setopt auto_pushd pushd_ignore_dups pushd_minus
 
+# vi insert mode
+bindkey -v \^A beginning-of-line
+bindkey -v \^E end-of-line
+bindkey -v \^F forward-char
+bindkey -v \^B backward-char
+bindkey -v \^N down-line-or-history
+bindkey -v \^P up-line-or-history
+bindkey -v \^D delete-char-or-list
+bindkey -v \^H backward-delete-char
+bindkey -v \^U backward-kill-line
+bindkey -v \^K kill-line
+bindkey -v \^W backward-kill-word
+bindkey -v \^Y yank
+
+zle-keymap-select()
+{
+    case $KEYMAP in
+        vicmd) print -n '\e[1 q' ;;  # block cursor
+        viins|main) print -n '\e[5 q' ;;  # less visible cursor
+    esac
+}
+zle -N zle-keymap-select
+
+# TODO load on `set -o emacs`
+_fix_cursor()
+{
+    print -n '\e[1 q'
+}
+
 # readline keybindings
 bindkey -e
 bindkey \^U backward-kill-line
@@ -44,12 +68,6 @@ setopt interactivecomments
 PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
 
 compinit
-
-# customize rc
-if [[ -r ~/.config/zsh/rc.zsh ]]; then
-    source ~/.config/zsh/rc.zsh
-    return
-fi
 
 man() {
     LESS_TERMCAP_md=$'\e[01;31m' \
