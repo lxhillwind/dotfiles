@@ -38,7 +38,7 @@ def main():
         config = yaml.load(f, Loader=yaml.SafeLoader)
 
     if sys.argv[1] not in config:
-        print(f'profile not found: {e}', file=sys.stderr)
+        print(f'profile not found: {sys.argv[1]}', file=sys.stderr)
         sys.exit(1)
 
     if str(os.environ.get('DEBUG')).lower() in ['1', 'yes', 'on', 'true']:
