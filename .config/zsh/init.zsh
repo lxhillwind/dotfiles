@@ -70,6 +70,7 @@ PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{
 compinit
 
 man() {
+    PAGER="sh -c 'sed -E s/[—−‐]/-/g | less'" \
     LESS_TERMCAP_md=$'\e[01;31m' \
     LESS_TERMCAP_me=$'\e[0m' \
     LESS_TERMCAP_se=$'\e[0m' \
