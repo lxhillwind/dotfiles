@@ -34,14 +34,15 @@ template = """
 </html>
 """
 
-html_dir = os.path.expanduser('~/html')
+os.chdir(os.path.expanduser('~/html'))
+
 # config example:
 # ```yaml
 # <file_or_folder_basename>:
 #   name: <str_to_show>  # optional
 #   index: <path_to_concat_folder_path>  # optional; example: doc/index.html
 # ```
-config_path = os.path.join(html_dir, 'config.yml')
+config_path = 'config.yml'
 if os.path.exists(config_path):
     with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.SafeLoader)
@@ -49,22 +50,22 @@ else:
     config = {}
 
 paths = []
-for p in sorted(os.listdir(html_dir)):
-    abs_path = f'{html_dir}/{p}'
-    if os.path.islink(abs_path):
-        if os.path.isdir(abs_path):
+for p in sorted(os.listdir('.')):
+    path = p
+    if os.path.islink(path):
+        if os.path.isdir(path):
             for i in [config.get(p, {}).get('index'), 'index.html', 'index.htm']:
                 if not i:
                     continue
                 # use normpath to allow ../ in index (config.yml)
-                index = os.path.normpath(os.path.join(abs_path, i))
+                index = os.path.normpath(os.path.join(path, i))
                 if os.path.exists(index):
-                    abs_path = index
+                    path = index
                     break
         paths.append({
-            'path': abs_path,
+            'path': path,
             'name': config.get(p, {}).get('name') or p,
             })
 
-with open(f'{html_dir}/index.html', 'w') as f:
+with open('index.html', 'w') as f:
     f.write(jinja2.Template(template).render(paths=paths))
