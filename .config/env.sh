@@ -77,7 +77,11 @@ alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
 # }}}
 
-if command -v zstyle >/dev/null; then
+# Following code may cause syntax error in strict POSIX shell
+# (like array construction), so return early.
+if ! command -v zstyle >/dev/null; then
+    return
+fi
 # {{{ zshrc
 
 # Command completion
@@ -134,4 +138,3 @@ PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{
 compinit
 
 # }}}
-fi
