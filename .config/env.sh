@@ -34,7 +34,7 @@ esac
 # }}}
 case "$-" in
     *i*) ;;
-    *) echo non-inter; return ;;
+    *) return ;;
 esac
 
 # rc {{{
