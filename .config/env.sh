@@ -39,7 +39,7 @@ esac
 
 # rc {{{
 
-if command -v local >/dev/null; then
+if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
     cd()
     {
         if [ $# -eq 0 ]; then
@@ -59,7 +59,7 @@ if command -v local >/dev/null; then
 fi
 
 man() {
-    PAGER="sh -c 'sed -E s/[—−‐]/-/g | less'" \
+    PAGER="sh -c 'sed -E \"s/[—−‐]/-/g\" | less'" \
     LESS_TERMCAP_md=$'\e[01;31m' \
     LESS_TERMCAP_me=$'\e[0m' \
     LESS_TERMCAP_se=$'\e[0m' \
