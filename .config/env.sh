@@ -42,7 +42,7 @@ if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
     _f_cd()
     {
         if [ $# -eq 0 ]; then
-            cd
+            \cd
             return
         fi
         if [ $# -eq 1 ]; then
@@ -53,7 +53,7 @@ if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
         if [ -e "$p" ] && ! [ -d "$p" ]; then
             p=${p%/*}
         fi
-        cd "$p"
+        \cd "$p"
     }
     alias cd=_f_cd
 fi
