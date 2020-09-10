@@ -1,6 +1,6 @@
-# {{{ vim:ft=zsh fdm=marker
-#
-# # Description
+#!/usr/bin/env false
+
+# # Description {{{
 # shell env | rc file.
 #
 # # Usage
@@ -15,8 +15,7 @@
 # (it will return only if it meets feature which is not available).
 #
 # If `ls` alias does not work (BSD ls, for example),
-# just unalias / re-alias it after source this file.
-# }}}
+# just unalias / re-alias it after source this file. }}}
 
 # env {{{
 export EDITOR=vim
@@ -34,7 +33,7 @@ esac
 # }}}
 case "$-" in
     *i*) ;;
-    *) return ;;
+    *) return 2>/dev/null || exit 1 ;;
 esac
 
 # rc {{{
@@ -138,3 +137,5 @@ PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{
 compinit
 
 # }}}
+
+# vim:ft=zsh fdm=marker
