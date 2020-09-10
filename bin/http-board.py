@@ -82,7 +82,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', type=int, default=8000, nargs='?')
     args = parser.parse_args()
-    app.run(host='0.0.0.0', port=args.port)
+    app.run(host='localhost', port=args.port)
 
 
 if __name__ == '__main__':
