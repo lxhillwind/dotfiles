@@ -27,10 +27,14 @@ import yaml
 QEMU_IMG_DIR = os.path.expanduser('~/qemu/')
 
 
+def abort(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+
 def main():
     if len(sys.argv) < 2:
-        print(f'usage: {sys.argv[0]} <profile> [replace args] [--] [append args]')
-        sys.exit(1)
+        abort(f'usage: {sys.argv[0]} <profile> [replace args] [--] [append args]')
 
     os.chdir(QEMU_IMG_DIR)
 
@@ -38,8 +42,7 @@ def main():
         config = yaml.load(f, Loader=yaml.SafeLoader)
 
     if sys.argv[1] not in config:
-        print(f'profile not found: {sys.argv[1]}', file=sys.stderr)
-        sys.exit(1)
+        abort(f'profile not found: {sys.argv[1]}')
 
     if str(os.environ.get('DEBUG')).lower() in ['1', 'yes', 'on', 'true']:
         action = lambda x: print(f'chdir {shlex.quote(QEMU_IMG_DIR)}\n{shlex.join(x)}')
@@ -68,8 +71,13 @@ def main():
         ls = shlex.split(i)
         if (idx := i0_to_idx.get(ls[0])) is not None:
             argv.extend(overwrite[idx])
+            i0_to_idx.pop(ls[0])
         else:
             argv.extend(ls)
+
+    if unused := i0_to_idx.values():
+        abort('ERROR: unused options: %s\nConsider to add them after "--"'
+                % [overwrite[i] for i in unused])
 
     argv.extend(append_argv)
 
@@ -78,9 +86,13 @@ def main():
 
 def cmd_group(ls):
     result = []
+    found_option = False
     for i in ls:
         if i.startswith('-'):
             result.append([])
+            found_option = True
+        if not found_option:
+            abort('ERROR: found option value before option flag! "-" is missing?')
         result[-1].append(i)
     return result
 
