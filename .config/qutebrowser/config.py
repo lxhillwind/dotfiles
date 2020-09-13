@@ -40,9 +40,9 @@ c.tabs.new_position.unrelated = 'next'
 c.tabs.select_on_remove = 'last-used'
 c.url.default_page = pathlib.Path('~/html/index.html').expanduser().as_uri()
 c.url.searchengines = {
-        'DEFAULT': 'https://bing.com/search?q={}&ensearch=1',
+        'DEFAULT': 'https://cn.bing.com/search?q={}&ensearch=1',
         'bd': 'https://www.baidu.com/s?wd={}',
-        'bg': 'https://bing.com/search?q={}&ensearch=1',
+        'bg': 'https://cn.bing.com/search?q={}&ensearch=1',
         'bl': 'https://search.bilibili.com/all?keyword={}',
         'cd': 'https://www.bing.com/dict/search?mkt=zh-CN&q={}',
         'gg': 'https://www.google.com/search?q={}',
