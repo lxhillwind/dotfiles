@@ -14,7 +14,7 @@ import yaml
 import jinja2
 
 
-template = """
+template = """\
 <!DOCTYPE html>
 <html>
     <head>
