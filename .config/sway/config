@@ -190,8 +190,9 @@ for_window [instance="sun-awt-X11-XFramePeer" class="jetbrains-pycharm-ce"] floa
 for_window [instance="qemu"] border none
 for_window [title="QEMU \(arch-1.*"] move workspace 4, floating disable
 for_window [title="QEMU \(arch-2.*"] move workspace 5, floating disable
-for_window [title="QEMU \(xp.*"] move workspace 6, floating enable
-for_window [title="QEMU \(win7.*"] move workspace 7, floating enable
+for_window [title="QEMU \(xp.*"] move workspace 6, fullscreen enable
+for_window [title="QEMU \(win7.*"] move workspace 7, fullscreen enable
+for_window [title="QEMU \(win10.*"] move workspace 8, fullscreen enable
 
 assign [app_id="Alacritty"] 1
 assign [app_id="qutebrowser"] 2
