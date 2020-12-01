@@ -31,8 +31,8 @@ set $menu alacritty
     bindsym $mod+Shift+q kill
     bindsym --border $mod+Shift+button1 kill
 
-    bindsym --border button4 exec python3 ~/bin/set_opacity.py +0.1
-    bindsym --border button5 exec python3 ~/bin/set_opacity.py -0.1
+    bindsym --border button4 opacity plus 0.1
+    bindsym --border button5 opacity minus 0.1
 
     # dim screen
     bindsym $mod+Ctrl+l exec sh -c 'swaylock -f; sleep 1; pkill -USR1 swayidle'
