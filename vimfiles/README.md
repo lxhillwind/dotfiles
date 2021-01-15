@@ -3,7 +3,5 @@
 Add in vimrc:
 
 ```vim
-so ~/vimfiles/rc.vim
+so ~/vimfiles/rc.vim  " path to ./rc.vim
 ```
-
-if this repository is cloned to `~/vimfiles`.
