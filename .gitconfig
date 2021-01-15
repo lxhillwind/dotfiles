@@ -1,0 +1,28 @@
+[user]
+    name = lxhillwind
+    email = lxhillwind@gmail.com
+[merge]
+    tool = vimdiff
+[mergetool "vimdiff"]
+    path = nvim
+[diff]
+    tool = vimdiff
+[difftool "vimdiff"]
+    path = nvim
+[alias]
+    a = !git config --get-regexp alias. | sort
+    sh = !zsh
+    g = !git --git-dir ~/dotfiles/.git --work-tree ~
+
+    au = add -u
+    dc = diff --cached
+
+    vim = !git -C ~/vimfiles/pack/git
+    vim-doc = !git vim submodule foreach nvim -Es -c 'sil! helpt doc'
+
+    vim-opt = !git -C ~/vimfiles/pack/git/opt
+    vim-start = !git -C ~/vimfiles/pack/git/start
+[mergetool]
+    keepBackup = false
+[pull]
+    rebase = false
