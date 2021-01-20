@@ -1,8 +1,6 @@
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
 
-let s:nvim = has('nvim')
-let s:unix = has('unix')
 let mapleader = 's'  " assign before use
 let maplocalleader = 'S'
 noremap s <Nop>
@@ -24,7 +22,7 @@ if !get(g:, 'vimrc#loaded')
   " (relative)number
   set nu
   set rnu
-  if s:nvim
+  if has('nvim')
     au TermOpen * setl nonu | setl nornu
   else
     au TerminalOpen * setl nonu | setl nornu
@@ -64,7 +62,7 @@ set cot-=preview
 "
 
 " set locale
-if s:unix
+if has('unix')
   lang en_US.UTF-8
 else
   let $LANG = 'en'
@@ -253,7 +251,7 @@ function! s:run(args) abort
   let cwd = s:getcwd()
   Ksnippet
   setl nonu | setl nornu
-  if s:nvim
+  if has('nvim')
     let opt = {
           \'on_exit': function('s:krun_cb'),
           \'buffer_nr': winbufnr(0),
@@ -371,7 +369,7 @@ command! -nargs=1 KmatchLongLine exe '/\%>' . <args> . 'v.\+'
 " }}}
 
 " rg with quickfix window; :Krg [arguments to rg]... {{{
-if executable('rg') && s:nvim
+if executable('rg') && has('nvim')
   command! -bang -nargs=+ Krg call <SID>Rg('<bang>', <q-args>)
 endif
 
@@ -497,7 +495,7 @@ au FileType vim inoremap <buffer> <Nul> <C-x><C-v>
 " terminal escape
 tnoremap <Nul> <C-\><C-n>
 tnoremap <C-Space> <C-\><C-n>
-if !s:nvim
+if !has('nvim')
   tnoremap <C-w> <C-w>.
 endif
 
@@ -563,7 +561,12 @@ vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
 " }}}
 
 " colorscheme {{{
-if $TERM !=? 'linux'
+if !has('unix') && !has('gui_running')  " win32 cmd
+  set nocursorcolumn
+  color pablo
+elseif (has('unix') && $TERM ==? 'linux')  " linux tty
+  set bg=dark
+else
   silent! set termguicolors
   if $BAT_THEME =~? 'light'
     set bg=light
@@ -571,6 +574,58 @@ if $TERM !=? 'linux'
     set bg=dark
   endif
   silent! color base16-dynamic
+endif
+" }}}
+
+" gui init {{{
+function! s:gui_init()
+  set guioptions=
+  set lines=32
+  set columns=128
+
+  if has('nvim')
+    GuiTabline 0
+  endif
+
+  " light theme
+  set bg=light
+endfunction
+
+if has('nvim') && exists(':GuiTabline') == 2  " nvim gui detect
+  au UIEnter * call <SID>gui_init()
+elseif has('gui_running')
+  call s:gui_init()
+endif
+" }}}
+
+" win32 sh; use busybox if possible {{{
+if !has('unix')
+  command! KtoggleShell call s:ToggleShell()
+
+  function! s:ToggleShell()
+    if !executable('busybox')
+      return
+    endif
+    if &shell =~ 'sh'
+      let &shell = 'cmd.exe'
+      let &shellcmdflag = '/s /c'
+      let &shellquote = ''
+    else
+      let &shell = 'busybox sh'
+      let &shellcmdflag = '-c'
+      if has('nvim')
+        let &shellquote = '"'
+      endif
+    endif
+  endfunction
+
+  " avoid /bin/sh as &shell; set busybox if possible; else set cmd.exe
+  KtoggleShell
+  if (!executable('busybox') && stridx(&sh, 'sh') >= 0)
+        \ ||
+        \ (executable('busybox') && stridx(&sh, 'sh') < 0)
+    KtoggleShell
+  endif
 endif
 " }}}
 
