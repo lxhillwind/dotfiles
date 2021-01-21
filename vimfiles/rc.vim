@@ -76,33 +76,12 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 " }}}
 
 " common func {{{
-function! s:getcwd()
-    let path = expand('%:p:h')
-    if empty(path) || &buftype == 'terminal'
-        let path = getcwd()
-    endif
-    return path
-endfunction
-
 function! s:echoerr(msg)
     echohl ErrorMsg
     echon a:msg
     echohl None
 endfunction
 
-function! s:get_project_dir()
-    let path = s:getcwd()
-    while 1
-        if isdirectory(path . '/.git')
-            return path
-        endif
-        let parent = fnamemodify(path, ':h')
-        if path == parent
-            return ''
-        endif
-        let path = parent
-    endwhile
-endfunction
 " }}}
 
 " add checklist to markdown file; <LocalLeader><Space> {{{
@@ -248,14 +227,12 @@ function! s:run(args) abort
         \'\=shellescape(expand(submatch(2)))', 'g')
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
-  let cwd = s:getcwd()
   Ksnippet
   setl nonu | setl nornu
   if has('nvim')
     let opt = {
           \'on_exit': function('s:krun_cb'),
           \'buffer_nr': winbufnr(0),
-          \'cwd': cwd,
           \}
     if empty(cmd)
       let cmd = &shell
@@ -278,7 +255,7 @@ function! s:run(args) abort
       endfor
       let args = add(args, cmd)
     endif
-    call term_start(args, {'curwin': 1, 'cwd': cwd})
+    call term_start(args, {'curwin': 1})
   endif
 endfunction
 " }}}
@@ -312,14 +289,18 @@ function! s:vim_expr(args)
 endfunction
 " }}}
 
-" open a new tmux window and cd to current directory; :KtmuxOpen [shell] {{{
-command! -nargs=? -complete=shellcmd KtmuxOpen
-      \ call <SID>open_tmux_window(<q-args>)
+" open a new tmux window (with current directory); :Tmux c/s/v {{{
+command! -nargs=1 Tmux call <SID>open_tmux_window(<q-args>)
 
 function! s:open_tmux_window(args)
+  let options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
+  let option = get(options, a:args)
+  if empty(option)
+    call s:echoerr('unknown option: ' . a:args . '; valid: ' . join(keys(options), ' / '))
+    return
+  endif
   if exists("$TMUX")
-    call system("tmux neww -c " . shellescape(s:getcwd())
-          \. " " . a:args)
+    call system("tmux " . option . " -c " . shellescape(getcwd()))
   else
     call s:echoerr('not in tmux session!')
   endif
@@ -405,15 +386,7 @@ function! s:rg_exit_cb(j, d, e) dict
 endfunction
 
 function! s:Rg(bang, args)
-  if empty(a:bang)
-    let path = s:get_project_dir()
-    if empty(path)
-      call s:echoerr('not in git repo!')
-      return
-    endif
-  else
-    let path = s:getcwd()
-  endif
+  let path = getcwd()  " if removed, `:Cd xxx :Krg yyy` will not work.
   let bufnr = winbufnr(0)
   let jid = jobstart(printf('rg --vimgrep %s %s', a:args, shellescape(path)),
         \{'bufnr': bufnr, 'counter': 0, 'title': 'rg ' . a:args,
@@ -467,6 +440,99 @@ function! s:clipboard_paste(cmd)
     else
         let @" = system(a:cmd)
     endif
+endfunction
+" }}}
+
+" cd; :Cd <path> / :Cdhome / :Cdbuffer / :Cdproject [:]cmd... {{{
+command! -nargs=1 -complete=dir Cd call <SID>cd('', <q-args>)
+command! -nargs=* -complete=command Cdhome call <SID>cd('home', <q-args>)
+command! -nargs=* -complete=command Cdbuffer call <SID>cd('buffer', <q-args>)
+command! -nargs=* -complete=command Cdproject call <SID>cd('project', <q-args>)
+
+function! s:cd(flag, args)
+  let cmd = a:args
+  if a:flag ==# 'home'
+    let path = expand('~')
+  elseif a:flag ==# 'project'
+    let path = s:get_project_dir()
+  elseif a:flag ==# 'buffer'
+    let path = s:get_buf_dir()
+  else
+    if a:args =~ '^:'
+      call s:echoerr('path argument is required!')
+    endif
+    " Cd: split argument as path & cmd
+    let path = substitute(a:args, '\v^(.{}) :.+$', '\1', '')
+    let cmd = a:args[len(path)+1:]
+  endif
+
+  if !isdirectory(path)
+    let path = expand(path)
+  endif
+  if !isdirectory(path)
+    let path = fnamemodify(path, ':h')
+  endif
+  if !isdirectory(path)
+    call s:echoerr('not a directory: ' . a:args)
+    return
+  endif
+
+  if !empty(cmd)
+    let old_cwd = getcwd()
+    let buf = bufnr(0)
+    try
+      " use buffer variable to store cwd if `exe` switch to new window
+      let b:vimrc_old_cwd = old_cwd
+      exe 'lcd' path
+      exe cmd
+    finally
+      if buf == bufnr(0)
+        if exists('b:vimrc_old_cwd')
+          unlet b:vimrc_old_cwd
+        endif
+        exe 'lcd' old_cwd
+      endif
+    endtry
+  else
+    exe 'lcd' path
+  endif
+endfunction
+
+function! s:cd_reset()
+  if exists('b:vimrc_old_cwd')
+    try
+      exe 'lcd' b:vimrc_old_cwd
+    finally
+      unlet b:vimrc_old_cwd
+    endtry
+  endif
+endfunction
+
+augroup vimrc_cd
+  au!
+  au BufEnter * call s:cd_reset()
+augroup end
+
+function! s:get_buf_dir()
+    let path = expand('%:p:h')
+    if empty(path) || &buftype == 'terminal'
+        let path = getcwd()
+    endif
+    return path
+endfunction
+
+function! s:get_project_dir()
+    let path = s:get_buf_dir()
+    while 1
+        if isdirectory(path . '/.git')
+            return path
+        endif
+        let parent = fnamemodify(path, ':h')
+        if path == parent
+            return ''
+        endif
+        let path = parent
+    endwhile
 endfunction
 " }}}
 
