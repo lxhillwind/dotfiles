@@ -221,12 +221,62 @@ function! s:krun_cb(...) dict
   endif
 endfunction
 
+function! s:no_pty()
+  " Fallback to this if util#shell_split is not available on Windows & (!nvim);
+  " Windows XP winpty is buggy, so use this even when the function is available.
+  if has('unix') || has('nvim')
+    return v:true
+  endif
+
+  if !has_key(s:, 'v_no_pty')
+    let s:v_no_pty = v:false
+    try
+      silent call util#shell_split('')
+    catch E117
+      let s:v_no_pty = v:true
+    endtry
+    if !s:v_no_pty
+      let s:v_no_pty = match(system('cmd /c ver'), 'Windows XP') >= 0
+    endif
+  endif
+  return s:v_no_pty
+endfunction
+
 function! s:run(args) abort
   " expand %
   let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
         \'\=shellescape(expand(submatch(2)))', 'g')
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
+
+  if s:no_pty()
+    let shell = &shell
+    let shellcmdflag = &shellcmdflag
+    try
+      let using_sh = match(shell, '\vsh(|.exe)$') >= 0
+      let &shell = 'cmd.exe'
+      let &shellcmdflag = '/s /c'
+      if empty(cmd)
+        if using_sh
+          exe '!start cmd /s /c' shell
+        else
+          exe '!start cmd /s'
+        endif
+      else
+        if using_sh
+          exe '!start cmd /s /c' shell shellcmdflag '"' . cmd . '"' '& pause'
+        else
+          exe '!start cmd /s /c' cmd '& pause'
+        endif
+      endif
+    finally
+      let &shell = shell
+      let &shellcmdflag = shellcmdflag
+    endtry
+
+    return
+  endif
+
   Ksnippet
   setl nonu | setl nornu
   if has('nvim')
