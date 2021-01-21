@@ -77,9 +77,9 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 
 " common func {{{
 function! s:echoerr(msg)
-    echohl ErrorMsg
-    echon a:msg
-    echohl None
+  echohl ErrorMsg
+  echon a:msg
+  echohl None
 endfunction
 
 " }}}
@@ -401,45 +401,45 @@ nnoremap <Leader>y :call <SID>clipboard_copy("")<CR>
 nnoremap <Leader>p :call <SID>clipboard_paste("")<CR>
 
 function! s:clipboard_copy(cmd)
-    if empty(a:cmd)
-        if has('clipboard')
-            let @+ = @"
-            return
-        endif
-        if executable('pbcopy')
-            let l:cmd = 'pbcopy'
-        elseif executable('xsel')
-            let l:cmd = 'xsel -ib'
-        elseif exists('$TMUX')
-            let l:cmd = 'tmux loadb -'
-        else
-            return
-        endif
-        call system(l:cmd, @")
-    else
-        call system(a:cmd, @")
+  if empty(a:cmd)
+    if has('clipboard')
+      let @+ = @"
+      return
     endif
+    if executable('pbcopy')
+      let l:cmd = 'pbcopy'
+    elseif executable('xsel')
+      let l:cmd = 'xsel -ib'
+    elseif exists('$TMUX')
+      let l:cmd = 'tmux loadb -'
+    else
+      return
+    endif
+    call system(l:cmd, @")
+  else
+    call system(a:cmd, @")
+  endif
 endfunction
 
 function! s:clipboard_paste(cmd)
-    if empty(a:cmd)
-        if has('clipboard')
-            let @" = @+
-            return
-        endif
-        if executable('pbpaste')
-            let l:cmd = 'pbpaste'
-        elseif executable('xsel')
-            let l:cmd = 'xsel -ob'
-        elseif exists('$TMUX')
-            let l:cmd = 'tmux saveb -'
-        else
-            return
-        endif
-        let @" = system(l:cmd)
-    else
-        let @" = system(a:cmd)
+  if empty(a:cmd)
+    if has('clipboard')
+      let @" = @+
+      return
     endif
+    if executable('pbpaste')
+      let l:cmd = 'pbpaste'
+    elseif executable('xsel')
+      let l:cmd = 'xsel -ob'
+    elseif exists('$TMUX')
+      let l:cmd = 'tmux saveb -'
+    else
+      return
+    endif
+    let @" = system(l:cmd)
+  else
+    let @" = system(a:cmd)
+  endif
 endfunction
 " }}}
 
@@ -514,25 +514,25 @@ augroup vimrc_cd
 augroup end
 
 function! s:get_buf_dir()
-    let path = expand('%:p:h')
-    if empty(path) || &buftype == 'terminal'
-        let path = getcwd()
-    endif
-    return path
+  let path = expand('%:p:h')
+  if empty(path) || &buftype == 'terminal'
+    let path = getcwd()
+  endif
+  return path
 endfunction
 
 function! s:get_project_dir()
-    let path = s:get_buf_dir()
-    while 1
-        if isdirectory(path . '/.git')
-            return path
-        endif
-        let parent = fnamemodify(path, ':h')
-        if path == parent
-            return ''
-        endif
-        let path = parent
-    endwhile
+  let path = s:get_buf_dir()
+  while 1
+    if isdirectory(path . '/.git')
+      return path
+    endif
+    let parent = fnamemodify(path, ':h')
+    if path == parent
+      return ''
+    endif
+    let path = parent
+  endwhile
 endfunction
 " }}}
 
@@ -575,31 +575,31 @@ nnoremap <Leader>E :e#<CR>
 " gx related {{{
 " TODO fix quote / escape
 function! s:gx_cmd(s)
-    if executable('qutebrowser') && !filereadable(a:s)
-        return ['qutebrowser', a:s]
-    elseif executable('xdg-open')
-        return ['xdg-open', a:s]
-    elseif executable('open')
-        return ['open', a:s]
-    elseif has('win32')
-        " TODO fix open for win32
-        return ['cmd', '/c', 'start', a:s]
-    else
-        call s:echoerr('do not know how to open')
-        return
-    endif
+  if executable('qutebrowser') && !filereadable(a:s)
+    return ['qutebrowser', a:s]
+  elseif executable('xdg-open')
+    return ['xdg-open', a:s]
+  elseif executable('open')
+    return ['open', a:s]
+  elseif has('win32')
+    " TODO fix open for win32
+    return ['cmd', '/c', 'start', a:s]
+  else
+    call s:echoerr('do not know how to open')
+    return
+  endif
 endfunction
 
 function! s:open(s)
-    let open_cmd = s:gx_cmd(a:s)
-    if empty(open_cmd)
-        return
-    endif
-    if has('nvim')
-        call jobstart(open_cmd, {'detach': 1})
-    else
-        call job_start(open_cmd, {'stoponexit': ''})
-    endif
+  let open_cmd = s:gx_cmd(a:s)
+  if empty(open_cmd)
+    return
+  endif
+  if has('nvim')
+    call jobstart(open_cmd, {'detach': 1})
+  else
+    call job_start(open_cmd, {'stoponexit': ''})
+  endif
 endfunction
 
 function! s:gx(mode)
