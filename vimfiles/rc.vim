@@ -728,6 +728,9 @@ endfunction
 " TODO show error?
 function! s:gx_open(...)
   let text = getline(1)
+  if empty(text)
+    return
+  endif
   if empty(a:0)
     let open_cmd = s:gx_open_cmd(text)
   else
