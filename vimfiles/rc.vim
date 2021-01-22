@@ -2,9 +2,12 @@ execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
 
 let mapleader = 's'  " assign before use
-let maplocalleader = 'S'
+let maplocalleader = "\<Space>"
 noremap s <Nop>
-noremap S <Nop>
+noremap <Space> <Nop>
+
+" make `:nmap <Space>` easier
+cnoremap <C-k><Space> <Char-60>Space<Char-62>
 
 " default {{{
 
@@ -584,6 +587,93 @@ function! s:get_project_dir()
     let path = parent
   endwhile
 endfunction
+" }}}
+
+" open file from list (order by opened times); <Leader>f {{{
+function! s:cd_cur_line()
+  let name = getline('.')
+  if empty(name)
+    return
+  endif
+  let name = fnamemodify(name, ':h')
+  exe 'lcd' fnameescape(name)
+  echo 'cwd: ' . getcwd()
+endfunction
+
+function! s:edit_cur_line()
+  let name = getline('.')
+  if empty(name)
+    return
+  endif
+  exe 'e' fnameescape(name)
+endfunction
+
+function! s:choose_filelist() abort
+  enew
+  setl buftype=nofile
+  setl noswapfile
+  call append(0, map(s:load_filelist(), 'v:val[1]'))
+  if empty(getline('.'))
+    norm dd
+  endif
+  norm gg
+  nnoremap <buffer> <LocalLeader><CR> :<C-u>call <SID>cd_cur_line()<CR>
+  nnoremap <buffer> <CR> :<C-u>call <SID>edit_cur_line()<CR>
+endfunction
+
+nnoremap <Leader>f :<C-u>call <SID>choose_filelist()<CR>
+
+let s:filelist_path = get(g:, 'filelist_path', expand('<sfile>:p:h') . '/filelist_path.cache')
+
+function! s:load_filelist()
+  try
+    let files = readfile(s:filelist_path)
+  catch E484
+    let files = []
+  endtry
+  let result = []
+  for i in files
+    try
+      " [number, filename]
+      let record = json_decode(i)
+    catch E474
+      " json decode err
+      continue
+    endtry
+    let result = add(result, record)
+  endfor
+  return result
+endfunction
+
+function! s:save_filelist() abort
+  " only save normal file
+  if !empty(&buftype)
+    return
+  endif
+
+  let current = expand('%:p')
+  let result = {}
+  for i in s:load_filelist()
+    let result[i[1]] = i[0]
+  endfor
+  if !has_key(result, current)
+    let result[current] = 0
+  endif
+  let result[current] += 1
+  let f_list = []
+  for [name, n] in items(result)
+    let f_list = add(f_list, [n, name])
+  endfor
+  let f_list = sort(f_list, {a, b -> a[0] < b[0]})
+  let f_list = map(f_list, 'json_encode(v:val)')
+  " file record limit
+  call writefile(f_list[:10000], s:filelist_path)
+endfunction
+
+augroup vimrc_filelist
+  au!
+  au BufNewFile,BufRead,BufWritePost * call s:save_filelist()
+augroup end
 " }}}
 
 " keymap {{{
