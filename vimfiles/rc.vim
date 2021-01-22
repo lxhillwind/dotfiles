@@ -221,25 +221,25 @@ function! s:krun_cb(...) dict
   endif
 endfunction
 
-function! s:no_pty()
+function! s:has_pty()
   " Fallback to this if util#shell_split is not available on Windows & (!nvim);
   " Windows XP winpty is buggy, so use this even when the function is available.
   if has('unix') || has('nvim')
-    return v:true
+    return 1
   endif
 
-  if !has_key(s:, 'v_no_pty')
-    let s:v_no_pty = v:false
+  if !has_key(s:, 'v_has_pty')
+    let s:v_has_pty = 1
     try
       silent call util#shell_split('')
     catch E117
-      let s:v_no_pty = v:true
+      let s:v_has_pty = 0
     endtry
-    if !s:v_no_pty
-      let s:v_no_pty = match(system('cmd /c ver'), 'Windows XP') >= 0
+    if s:v_has_pty
+      let s:v_has_pty = match(system('cmd /c ver'), 'Windows XP') < 0
     endif
   endif
-  return s:v_no_pty
+  return s:v_has_pty
 endfunction
 
 function! s:run(args) abort
@@ -249,7 +249,7 @@ function! s:run(args) abort
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if s:no_pty()
+  if !s:has_pty()
     let shell = &shell
     let shellcmdflag = &shellcmdflag
     try
