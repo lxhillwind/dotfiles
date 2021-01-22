@@ -222,22 +222,12 @@ function! s:krun_cb(...) dict
 endfunction
 
 function! s:has_pty()
-  " Fallback to this if util#shell_split is not available on Windows & (!nvim);
-  " Windows XP winpty is buggy, so use this even when the function is available.
   if has('unix') || has('nvim')
     return 1
   endif
-
   if !has_key(s:, 'v_has_pty')
-    let s:v_has_pty = 1
-    try
-      silent call util#shell_split('')
-    catch E117
-      let s:v_has_pty = 0
-    endtry
-    if s:v_has_pty
-      let s:v_has_pty = match(system('cmd /c ver'), 'Windows XP') < 0
-    endif
+    " Windows XP winpty is buggy
+    let s:v_has_pty = match(system('cmd /c ver'), 'Windows XP') < 0
   endif
   return s:v_has_pty
 endfunction
@@ -249,11 +239,12 @@ function! s:run(args) abort
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
+  " sh / bash, but not pwsh
+  let using_sh = match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
   if !s:has_pty()
     let shell = &shell
     let shellcmdflag = &shellcmdflag
     try
-      let using_sh = match(shell, '\vsh(|.exe)$') >= 0
       let &shell = 'cmd.exe'
       let &shellcmdflag = '/s /c'
       if empty(cmd)
@@ -264,6 +255,7 @@ function! s:run(args) abort
         endif
       else
         if using_sh
+          " TODO how to make `printf "foo bar"` work?
           exe '!start cmd /s /c' shell shellcmdflag '"' . cmd . '"' '& pause'
         else
           exe '!start cmd /s /c' cmd '& pause'
@@ -295,15 +287,13 @@ function! s:run(args) abort
     endif
     startinsert
   else
-    let args = []
-    for item in util#shell_split(&shell)
-      let args = add(args, item)
-    endfor
-    if !empty(cmd)
-      for item in util#shell_split(&shellcmdflag)
-        let args = add(args, item)
-      endfor
-      let args = add(args, cmd)
+    if has('unix')
+      let args = ['sh', '-c', cmd]
+    elseif using_sh && executable('busybox')
+      " add bash.exe if needed
+      let args = ['busybox', 'sh', '-c', cmd]
+    else
+      let args = printf('%s %s %s', &shell, &shellcmdflag, shellescape(cmd))
     endif
     call term_start(args, {'curwin': 1})
   endif
