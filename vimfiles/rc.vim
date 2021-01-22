@@ -704,7 +704,7 @@ endif
 
 vnoremap <Leader><Tab> :<C-u>KexpandWithCmd
 
-nnoremap <Leader>e :cd %:h \| e <cfile><CR>
+nnoremap <Leader>e :Cdbuffer e <cfile><CR>
 nnoremap <Leader>E :e#<CR>
 
 " }}}
