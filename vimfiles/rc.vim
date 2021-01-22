@@ -6,9 +6,6 @@ let maplocalleader = "\<Space>"
 noremap s <Nop>
 noremap <Space> <Nop>
 
-" make `:nmap <Space>` easier
-cnoremap <C-k><Space> <Char-60>Space<Char-62>
-
 " default {{{
 
 set nomodeline
@@ -89,7 +86,7 @@ endfunction
 
 " add checklist to markdown file; <LocalLeader><Space> {{{
 au FileType markdown call s:task_pre_func() | nnoremap <buffer>
-      \ <LocalLeader><Space> :<C-u>call <SID>toggle_task_status()<CR>
+      \ <LocalLeader>c :call <SID>toggle_task_status()<CR>
 
 function! s:task_pre_func()
   hi link CheckboxUnchecked Type
@@ -617,11 +614,11 @@ function! s:choose_filelist() abort
     norm dd
   endif
   norm gg
-  nnoremap <buffer> <LocalLeader><CR> :<C-u>call <SID>cd_cur_line()<CR>
-  nnoremap <buffer> <CR> :<C-u>call <SID>edit_cur_line()<CR>
+  nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
+  nnoremap <buffer> <CR> :call <SID>edit_cur_line()<CR>
 endfunction
 
-nnoremap <Leader>f :<C-u>call <SID>choose_filelist()<CR>
+nnoremap <Leader>f :call <SID>choose_filelist()<CR>
 
 let s:filelist_path = get(g:, 'filelist_path', expand('<sfile>:p:h') . '/filelist_path.cache')
 
@@ -714,10 +711,8 @@ nnoremap <Leader>E :e#<CR>
 
 " gx related {{{
 " TODO fix quote / escape
-function! s:gx_cmd(s)
-  if executable('qutebrowser') && !filereadable(a:s)
-    return ['qutebrowser', a:s]
-  elseif executable('xdg-open')
+function! s:gx_open_cmd(s)
+  if executable('xdg-open')
     return ['xdg-open', a:s]
   elseif executable('open')
     return ['open', a:s]
@@ -730,8 +725,14 @@ function! s:gx_cmd(s)
   endif
 endfunction
 
-function! s:open(s)
-  let open_cmd = s:gx_cmd(a:s)
+" TODO show error?
+function! s:gx_open(...)
+  let text = getline(1)
+  if empty(a:0)
+    let open_cmd = s:gx_open_cmd(text)
+  else
+    let open_cmd = a:1 . ' ' . shellescape(text)
+  endif
   if empty(open_cmd)
     return
   endif
@@ -742,7 +743,24 @@ function! s:open(s)
   endif
 endfunction
 
-function! s:gx(mode)
+function! s:gx_vim(...)
+  " a:1 -> cmd; a:2 -> text modifier.
+  let text = getline(1)
+  if empty(text)
+    return
+  endif
+  if empty(a:0)
+    let cmd = text
+  else
+    if a:0 == 2
+      let text = function(a:2)(text)
+    endif
+    let cmd = a:1 . ' ' . text
+  endif
+  exe cmd
+endfunction
+
+function! s:gx(mode) abort
   if a:mode == 'v'
     let t = @"
     silent normal gvy
@@ -751,18 +769,20 @@ function! s:gx(mode)
   else
     let text = expand(get(g:, 'netrw_gx', '<cfile>'))
   endif
-  call Choices(text, g:vimrc#gx)
+  Ksnippet
+  call setline(1, text)
+
+  " NOTE custom map here.
+  nnoremap <buffer> <LocalLeader>q :close<CR>
+  if executable('qutebrowser')
+    nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
+  endif
+  nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
+  nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
+  nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim()<CR>
 endfunction
 
-let g:vimrc#gx = {
-      \'fe': ['edit in current buffer', {s -> execute('e ' . fnameescape(s))}],
-      \'fs': ['split', {s -> execute('split ' . fnameescape(s))}],
-      \'fv': ['vsplit', {s -> execute('vsplit ' . fnameescape(s))}],
-      \'ft': ['edit in new tab', {s -> execute('tabe ' . fnameescape(s))}],
-      \'o': ['open', funcref('s:open')],
-      \}
-
-nnoremap <silent> gx :<C-u>call <SID>gx('n')<CR>
+nnoremap <silent> gx :call <SID>gx('n')<CR>
 vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
 " }}}
 
@@ -854,31 +874,16 @@ function! s:qutebrowser_edit_cmd()
   call setline(1, $QUTE_COMMANDLINE_TEXT[1:])
   call setline(2, '')
   call setline(3, 'hit `;q` to save cmd (first line) and quit')
-  nnoremap <buffer> ;q :<C-u> call writefile(['set-cmd-text -s :' . getline(1)], $QUTE_FIFO) \| q<CR>
+  nnoremap <buffer> ;q :call writefile(['set-cmd-text -s :' . getline(1)], $QUTE_FIFO) \| q<CR>
 endfunction
 
 " dirvish
 let g:loaded_netrwPlugin = 1
 au FileType dirvish nmap <buffer> H <Plug>(dirvish_up) | nmap <buffer> L i
-
-" gx
-if exists('$SWAYSOCK')
-  " swaywm
-  command! -nargs=+ Search call s:open(<q-args>) | sil! !swaymsg 'workspace 2'
-elseif $HOME =~# '^/Users'
-  " osx
-  command! -nargs=+ Search call s:open(<q-args>) | sil! !open -a 'qutebrowser'
-endif
-
-function! s:start_search(s)
-  call feedkeys(":\<C-u>Search  " . a:s)
-  call feedkeys("\<Home>")
-  call feedkeys(repeat("\<Right>", 7))
-endfunction
-call extend(g:vimrc#gx, {';s': ['search', funcref('s:start_search')]})
-
-nmap <Leader>s gx;s
-vmap <Leader>s gx;s
 " }}}
+
+" finally
+nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
+nnoremap <LocalLeader><LocalLeader> :nmap <Char-60>LocalLeader<Char-62><CR>
 
 " vim: fdm=marker
