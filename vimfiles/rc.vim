@@ -619,7 +619,7 @@ let s:filelist_path = get(g:, 'filelist_path', expand('<sfile>:p:h') . '/filelis
 function! s:load_filelist()
   try
     let files = readfile(s:filelist_path)
-  catch E484
+  catch /^Vim\%((\a\+)\)\=:E484:/
     let files = []
   endtry
   let result = []
@@ -627,7 +627,7 @@ function! s:load_filelist()
     try
       " [number, filename]
       let record = json_decode(i)
-    catch E474
+    catch /^Vim\%((\a\+)\)\=:E474:/
       " json decode err
       continue
     endtry
@@ -637,6 +637,11 @@ function! s:load_filelist()
 endfunction
 
 function! s:save_filelist() abort
+  " do not save if `vim -i NONE`
+  if &viminfofile ==# 'NONE'
+    return
+  endif
+
   " only save normal file
   if !empty(&buftype)
     return
