@@ -583,6 +583,8 @@ endfunction
 " }}}
 
 " open file from list (order by opened times); <Leader>f {{{
+nnoremap <Leader>f :call <SID>choose_filelist()<CR>
+
 function! s:cd_cur_line()
   let name = getline('.')
   if empty(name)
@@ -612,8 +614,6 @@ function! s:choose_filelist() abort
   nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
   nnoremap <buffer> <CR> :call <SID>edit_cur_line()<CR>
 endfunction
-
-nnoremap <Leader>f :call <SID>choose_filelist()<CR>
 
 let s:filelist_path = get(g:, 'filelist_path', expand('<sfile>:p:h') . '/filelist_path.cache')
 
@@ -725,8 +725,16 @@ function! s:join_line(sep)
 endfunction
 " }}}
 
-" render; select block or whole buffer {{{
-let s:render_var = 'XXX[a-z_]+'  " regex \v
+" render; write k: v in working buffer and then s/k/v/g; <Leader>r {{{
+nnoremap <Leader>r :call <SID>render()<CR>
+
+" regex \v; this is used to search var in source buffer;
+" it's ok to specify var name in render working buffer.
+"
+" NOTE if var name ends with '_', then eat a char after it;
+" e.g. foo_ bar -> :s/foo_./xxx/g
+let s:render_var = 'XXX[a-z_]+'
+
 function! s:render() abort
   if exists('b:render_source_buf')
     let buflist = tabpagebuflist()
@@ -737,22 +745,20 @@ function! s:render() abort
     endif
     let rules = []
     for line in getline(1, '$')
-      let key = matchstr(line, '\v^'.s:render_var)
-      let value = substitute(line, '\v^'.s:render_var.': ', '', '')
+      let key = matchstr(line, '\v^[^:]+')
+      let value = substitute(line, '\v^[^:]+: ', '', '')
       if !empty(key) && value !=# line
         call add(rules, [key, value])
       endif
     endfor
     exe bufidx+1 'wincmd w'
     for i in rules
-      " NOTE if var name ends with '_', then eat a char after it;
-      " e.g. foo_ bar -> :s/foo_./xxx/g
       if !empty(matchstr(i[0], '_$'))
         let eat = '.'
       else
         let eat = ''
       endif
-      exe printf('s/%s%s/%s/g', i[0], eat, escape(i[1], '\&'))
+      exe '%' . printf('s/%s%s/%s/g', i[0], eat, escape(i[1], '\&'))
     endfor
   else
     let buf = winbufnr(0)
@@ -776,6 +782,9 @@ endfunction
 " }}}
 
 " gx related {{{
+nnoremap <silent> gx :call <SID>gx('n')<CR>
+vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
+
 " TODO fix quote / escape
 function! s:gx_open_cmd(s)
   if executable('xdg-open')
@@ -853,9 +862,6 @@ function! s:gx(mode) abort
   nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
   nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
 endfunction
-
-nnoremap <silent> gx :call <SID>gx('n')<CR>
-vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
 " }}}
 
 " colorscheme {{{
