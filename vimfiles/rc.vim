@@ -25,7 +25,9 @@ if !get(g:, 'vimrc#loaded')
   if has('nvim')
     au TermOpen * setl nonu | setl nornu
   else
-    au TerminalOpen * setl nonu | setl nornu
+    " nvim paste in terminal mode will leave cursor position not changed;
+    " try to simulate this in vim, but failed.
+    au TerminalOpen * setl nonu | setl nornu | nnoremap p i<C-w>""<C-\><C-n>
   endif
   " hlsearch
   set hls
@@ -286,13 +288,17 @@ function! s:run(args) abort
     endif
     startinsert
   else
-    if has('unix')
-      let args = ['sh', '-c', cmd]
-    elseif using_sh && executable('busybox')
-      " add bash.exe if needed
-      let args = ['busybox', 'sh', '-c', cmd]
+    if empty(cmd)
+      let args = &shell
     else
-      let args = printf('%s %s %s', &shell, &shellcmdflag, shellescape(cmd))
+      if has('unix')
+        let args = ['sh', '-c', cmd]
+      elseif using_sh && executable('busybox')
+        " add bash.exe if needed
+        let args = ['busybox', 'sh', '-c', cmd]
+      else
+        let args = printf('%s %s %s', &shell, &shellcmdflag, shellescape(cmd))
+      endif
     endif
     call term_start(args, {'curwin': 1})
   endif
