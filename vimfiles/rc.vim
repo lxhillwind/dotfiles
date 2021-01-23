@@ -32,6 +32,7 @@ if !get(g:, 'vimrc#loaded')
   " hlsearch
   set hls
   let g:vimrc#loaded = 1
+  let g:vimrc#loaded_gui = 0
 endif
 
 " filetype / syntax
@@ -783,7 +784,7 @@ function! s:gx_open_cmd(s)
     return ['open', a:s]
   elseif has('win32')
     " TODO fix open for win32
-    return ['cmd', '/c', 'start', a:s]
+    return ['cmd', '/c', isdirectory(a:s) ? 'explorer' : 'start', a:s]
   else
     call s:echoerr('do not know how to open')
     return
@@ -876,6 +877,9 @@ endif
 
 " gui init {{{
 function! s:gui_init()
+  if get(g:, 'vimrc#loaded_gui')
+    return
+  endif
   set guioptions=
   set lines=32
   set columns=128
@@ -886,6 +890,7 @@ function! s:gui_init()
 
   " light theme
   set bg=light
+  let g:vimrc#loaded_gui = 1
 endfunction
 
 if has('nvim') && exists(':GuiTabline') == 2  " nvim gui detect
