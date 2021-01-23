@@ -725,7 +725,9 @@ function! s:join_line(sep)
 endfunction
 " }}}
 
-" render; write k: v in working buffer and then s/k/v/g; <Leader>r {{{
+" render; write k: v in working buffer and then s/k/v/g;
+" <Leader>r or :Render var-name-regex {{{
+command! -nargs=? Render call <SID>render(<q-args>)
 nnoremap <Leader>r :call <SID>render()<CR>
 
 " regex \v; this is used to search var in source buffer;
@@ -735,7 +737,12 @@ nnoremap <Leader>r :call <SID>render()<CR>
 " e.g. foo_ bar -> :s/foo_./xxx/g
 let s:render_var = 'XXX[a-z_]+'
 
-function! s:render() abort
+function! s:render(...) abort
+  if a:0 > 0 && !empty(a:1)
+    let var_regex = a:1
+  else
+    let var_regex = s:render_var
+  endif
   if exists('b:render_source_buf')
     let buflist = tabpagebuflist()
     let bufidx = index(buflist, b:render_source_buf)
@@ -764,7 +771,7 @@ function! s:render() abort
     let buf = winbufnr(0)
     let vars = []
     for line in getline(1, '$')
-      call substitute(line, '\v'.s:render_var, '\=add(vars, submatch(0))', 'g')
+      call substitute(line, '\v'.var_regex, '\=add(vars, submatch(0))', 'g')
     endfor
     Ksnippet | setl bufhidden=wipe
     nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
