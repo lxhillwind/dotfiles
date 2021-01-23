@@ -728,20 +728,20 @@ endfunction
 " render; write k: v in working buffer and then s/k/v/g;
 " <Leader>r or :Render var-name-regex {{{
 command! -nargs=? Render call <SID>render(<q-args>)
-nnoremap <Leader>r :call <SID>render()<CR>
+nnoremap <Leader>r :Render<Space>
 
 " regex \v; this is used to search var in source buffer;
 " it's ok to specify var name in render working buffer.
 "
 " NOTE if var name ends with '_', then eat a char after it;
 " e.g. foo_ bar -> :s/foo_./xxx/g
-let s:render_var = 'XXX[a-z_]+'
+let g:vimrc_render_var = 'XXX[a-z_]+'
 
 function! s:render(...) abort
   if a:0 > 0 && !empty(a:1)
     let var_regex = a:1
   else
-    let var_regex = s:render_var
+    let var_regex = g:vimrc_render_var
   endif
   if exists('b:render_source_buf')
     let buflist = tabpagebuflist()
@@ -752,8 +752,8 @@ function! s:render(...) abort
     endif
     let rules = []
     for line in getline(1, '$')
-      let key = matchstr(line, '\v^[^:]+')
-      let value = substitute(line, '\v^[^:]+: ', '', '')
+      let key = matchstr(line, '\v^.{-}(: )@=')
+      let value = substitute(line, '\v^.{-}(: )@=: ', '', '')
       if !empty(key) && value !=# line
         call add(rules, [key, value])
       endif
@@ -867,7 +867,6 @@ function! s:gx(mode) abort
   nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
   nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
   nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
-  nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
 endfunction
 " }}}
 
