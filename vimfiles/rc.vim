@@ -838,7 +838,7 @@ function! s:gx(mode) abort
   else
     let text = expand(get(g:, 'netrw_gx', '<cfile>'))
   endif
-  Ksnippet | setl bufhidden=wipe
+  Ksnippet!
   for line in split(text, "\n")
     call append('$', line)
   endfor
