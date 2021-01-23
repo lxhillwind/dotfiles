@@ -16,6 +16,7 @@
 
     au = add -u
     dc = diff --cached
+    dcw = diff --cached --color-words=.
 
     vim = !git -C ~/vimfiles/pack/git
     vim-doc = !git vim submodule foreach nvim -Es -c 'sil! helpt doc'

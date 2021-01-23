@@ -832,13 +832,12 @@ function! s:gx(mode) abort
   norm gg"_dd
 
   " NOTE custom map here.
-  nnoremap <buffer> <LocalLeader>q :close<CR>
   if executable('qutebrowser')
     nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
   endif
   nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
   nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
-  nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim()<CR>
+  nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
   nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
 endfunction
 
