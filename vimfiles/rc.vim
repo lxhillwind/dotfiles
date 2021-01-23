@@ -713,7 +713,7 @@ endfunction
 " }}}
 
 " render; select block or whole buffer {{{
-let s:render_var = '<XXX[a-z_]+'  " regex \v
+let s:render_var = 'XXX[a-z_]+'  " regex \v
 function! s:render() abort
   if exists('b:render_source_buf')
     let buflist = tabpagebuflist()
