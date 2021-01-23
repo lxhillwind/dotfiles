@@ -780,7 +780,7 @@ endfunction
 
 " TODO show error?
 function! s:gx_open(...)
-  let text = getline(1)
+  let text = join(getline(1, '$'), "\n")
   if empty(text)
     return
   endif
@@ -801,7 +801,7 @@ endfunction
 
 function! s:gx_vim(...)
   " a:1 -> cmd; a:2 -> text modifier.
-  let text = getline(1)
+  let text = join(getline(1, '$'), "\n")
   if empty(text)
     return
   endif
@@ -826,7 +826,10 @@ function! s:gx(mode) abort
     let text = expand(get(g:, 'netrw_gx', '<cfile>'))
   endif
   Ksnippet
-  call setline(1, text)
+  for line in split(text, "\n")
+    call append('$', line)
+  endfor
+  norm gg"_dd
 
   " NOTE custom map here.
   nnoremap <buffer> <LocalLeader>q :close<CR>
