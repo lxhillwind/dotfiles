@@ -193,9 +193,8 @@ function! s:snippet_in_new_window(bang, ft)
   if create_window
     exe printf('bo %dnew', &cwh)
     if create_buffer
-      setl buftype=nofile
+      setl buftype=nofile noswapfile
       setl bufhidden=hide
-      setl noswapfile
       silent! exe 'f' fnameescape(name)
     else
       exe s:ksnippet_bufnr . 'b'
@@ -597,8 +596,7 @@ endfunction
 
 function! s:choose_filelist() abort
   enew
-  setl buftype=nofile
-  setl noswapfile
+  setl buftype=nofile noswapfile
   call append(0, map(s:load_filelist(), 'v:val[1]'))
   if empty(getline('.'))
     norm dd
@@ -697,6 +695,21 @@ vnoremap <Leader><Tab> :<C-u>KexpandWithCmd
 nnoremap <Leader>e :Cdbuffer e <cfile><CR>
 nnoremap <Leader>E :e#<CR>
 
+" }}}
+
+" `J` with custom seperator; <visual>:J sep... {{{
+command! -nargs=1 -range J call s:join_line(<q-args>)
+function! s:join_line(sep)
+  let buf = @"
+  try
+    norm gv
+    norm x
+    let @" = substitute(@", "\n", a:sep, 'g')
+    norm P
+  finally
+    let @" = buf
+  endtry
+endfunction
 " }}}
 
 " gx related {{{
@@ -862,8 +875,7 @@ let g:is_posix = 1
 command! KqutebrowserEditCmd call s:qutebrowser_edit_cmd()
 
 function! s:qutebrowser_edit_cmd()
-  Ksnippet
-  wincmd o
+  setl buftype=nofile noswapfile
   call setline(1, $QUTE_COMMANDLINE_TEXT[1:])
   call setline(2, '')
   call setline(3, 'hit `;q` to save cmd (first line) and quit')
