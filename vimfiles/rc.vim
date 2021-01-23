@@ -760,7 +760,7 @@ function! s:render() abort
     for line in getline(1, '$')
       call substitute(line, '\v'.s:render_var, '\=add(vars, submatch(0))', 'g')
     endfor
-    Ksnippet
+    Ksnippet | setl bufhidden=wipe
     nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
     let b:render_source_buf = buf
     let appeared = []
@@ -838,7 +838,7 @@ function! s:gx(mode) abort
   else
     let text = expand(get(g:, 'netrw_gx', '<cfile>'))
   endif
-  Ksnippet
+  Ksnippet | setl bufhidden=wipe
   for line in split(text, "\n")
     call append('$', line)
   endfor
