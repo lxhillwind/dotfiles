@@ -599,7 +599,7 @@ function! s:choose_filelist() abort
   setl buftype=nofile noswapfile
   call append(0, map(s:load_filelist(), 'v:val[1]'))
   if empty(getline('.'))
-    norm dd
+    norm "_dd
   endif
   norm gg
   nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
@@ -712,6 +712,56 @@ function! s:join_line(sep)
 endfunction
 " }}}
 
+" render; select block or whole buffer {{{
+let s:render_var = '<XXX[a-z_]+'  " regex \v
+function! s:render() abort
+  if exists('b:render_source_buf')
+    let buflist = tabpagebuflist()
+    let bufidx = index(buflist, b:render_source_buf)
+    if bufidx < 0
+      " source buffer not found
+      return
+    endif
+    let rules = []
+    for line in getline(1, '$')
+      let key = matchstr(line, '\v^'.s:render_var)
+      let value = substitute(line, '\v^'.s:render_var.': ', '', '')
+      if !empty(key) && value !=# line
+        call add(rules, [key, value])
+      endif
+    endfor
+    exe bufidx+1 'wincmd w'
+    for i in rules
+      " NOTE if var name ends with '_', then eat a char after it;
+      " e.g. foo_ bar -> :s/foo_./xxx/g
+      if !empty(matchstr(i[0], '_$'))
+        let eat = '.'
+      else
+        let eat = ''
+      endif
+      exe printf('s/%s%s/%s/g', i[0], eat, escape(i[1], '\&'))
+    endfor
+  else
+    let buf = winbufnr(0)
+    let vars = []
+    for line in getline(1, '$')
+      call substitute(line, '\v'.s:render_var, '\=add(vars, submatch(0))', 'g')
+    endfor
+    Ksnippet
+    nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
+    let b:render_source_buf = buf
+    let appeared = []
+    for i in vars
+      if index(appeared, i) < 0
+        call append('$', printf('%s: ', i))
+        call add(appeared, i)
+      endif
+    endfor
+    norm gg"_dd
+  endif
+endfunction
+" }}}
+
 " gx related {{{
 " TODO fix quote / escape
 function! s:gx_open_cmd(s)
@@ -786,6 +836,7 @@ function! s:gx(mode) abort
   nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
   nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
   nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim()<CR>
+  nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
 endfunction
 
 nnoremap <silent> gx :call <SID>gx('n')<CR>
