@@ -261,7 +261,7 @@ function! s:run(args) abort
       if empty(cmd)
         exe '!start' shell
       else
-        exe '!start vimrun' cmd
+        exe '!start vimrun' shell shellcmdflag cmd
       endif
     finally
       let &shell = shell
