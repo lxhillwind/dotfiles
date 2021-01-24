@@ -251,16 +251,27 @@ function! s:run(args) abort
       let &shellcmdflag = '/s /c'
       if empty(cmd)
         if using_sh
-          exe '!start cmd /s /c' shell
+          exe '!start' shell
         else
           exe '!start cmd /s'
         endif
       else
         if using_sh
-          " TODO how to make `printf "foo bar"` work?
-          exe '!start cmd /s /c' shell shellcmdflag '"' . cmd . '"' '& pause'
+          " hope it work. To make it work reliably, it is worth reading:
+          " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+          "
+          " double all \ before "
+          let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+          " escape " with \
+          let cmd = escape(cmd, '"')
+          if match(shell, 'busybox') >= 0 || match(shell, 'bash') >= 0
+            exe '!start vimrun' shell shellcmdflag '"'.cmd.'"'
+          else
+            call s:echoerr(shell . ' is not supported!')
+            return
+          endif
         else
-          exe '!start cmd /s /c' cmd '& pause'
+          exe '!start vimrun' cmd
         endif
       endif
     finally
@@ -294,9 +305,14 @@ function! s:run(args) abort
     else
       if has('unix')
         let args = ['sh', '-c', cmd]
-      elseif using_sh && executable('busybox')
-        " add bash.exe if needed
-        let args = ['busybox', 'sh', '-c', cmd]
+      elseif using_sh
+        if executable('busybox')
+          let args = ['busybox', 'sh', '-c', cmd]
+        else
+          " add other shell if needed
+          call s:echoerr(&shell . ' is not supported!')
+          return
+        endif
       else
         let args = printf('%s %s %s', &shell, &shellcmdflag, shellescape(cmd))
       endif
