@@ -249,6 +249,8 @@ function! s:run(args) abort
     "
     " double all \ before "
     let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+    " double trailing \
+    let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
     " escape " with \
     let cmd = '"' . escape(cmd, '"') . '"'
   endif
