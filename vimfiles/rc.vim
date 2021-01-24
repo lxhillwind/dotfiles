@@ -336,7 +336,7 @@ endfunction
 " }}}
 
 " open a new tmux window (with current directory); :Tmux c/s/v {{{
-command! -nargs=1 Tmux call <SID>open_tmux_window(<q-args>)
+command! -nargs=1 -bar Tmux call <SID>open_tmux_window(<q-args>)
 
 function! s:open_tmux_window(args)
   let options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
@@ -829,7 +829,7 @@ function! s:gx_open(...)
 endfunction
 
 function! s:gx_vim(...)
-  " a:1 -> cmd; a:2 -> text modifier.
+  " a:1 -> cmd; a:2 -> text modifier; a: 3 -> post string.
   let text = join(getline(1, '$'), "\n")
   if empty(text)
     return
@@ -837,10 +837,13 @@ function! s:gx_vim(...)
   if empty(a:0)
     let cmd = text
   else
-    if a:0 == 2
+    if a:0 >= 2 && !empty(a:2)
       let text = function(a:2)(text)
     endif
     let cmd = a:1 . ' ' . text
+    if a:0 >= 3 && !empty(a:3)
+      let cmd .= a:3
+    endif
   endif
   exe cmd
 endfunction
@@ -867,6 +870,9 @@ function! s:gx(mode) abort
   nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
   nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
   nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
+  nnoremap <buffer> <LocalLeader>tc :call <SID>gx_vim('Cd', '', ' :Tmux c \| close')<CR>
+  nnoremap <buffer> <LocalLeader>ts :call <SID>gx_vim('Cd', '', ' :Tmux s \| close')<CR>
+  nnoremap <buffer> <LocalLeader>tv :call <SID>gx_vim('Cd', '', ' :Tmux v \| close')<CR>
 endfunction
 " }}}
 
