@@ -241,8 +241,17 @@ function! s:run(args) abort
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  " sh / bash, but not pwsh
-  let using_sh = match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
+  if !has('unix') && !empty(cmd) && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
+    " sh / bash / ..., but not pwsh;
+    " To make quote work reliably, it is worth reading:
+    " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+    "
+    " double all \ before "
+    let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+    " escape " with \
+    let cmd = '"' . escape(cmd, '"') . '"'
+  endif
+
   if !s:has_pty()
     let shell = &shell
     let shellcmdflag = &shellcmdflag
@@ -250,29 +259,9 @@ function! s:run(args) abort
       let &shell = 'cmd.exe'
       let &shellcmdflag = '/s /c'
       if empty(cmd)
-        if using_sh
-          exe '!start' shell
-        else
-          exe '!start cmd /s'
-        endif
+        exe '!start' shell
       else
-        if using_sh
-          " hope it work. To make it work reliably, it is worth reading:
-          " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
-          "
-          " double all \ before "
-          let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
-          " escape " with \
-          let cmd = escape(cmd, '"')
-          if match(shell, 'busybox') >= 0 || match(shell, 'bash') >= 0
-            exe '!start vimrun' shell shellcmdflag '"'.cmd.'"'
-          else
-            call s:echoerr(shell . ' is not supported!')
-            return
-          endif
-        else
-          exe '!start vimrun' cmd
-        endif
+        exe '!start vimrun' cmd
       endif
     finally
       let &shell = shell
@@ -304,17 +293,11 @@ function! s:run(args) abort
       let args = &shell
     else
       if has('unix')
-        let args = ['sh', '-c', cmd]
-      elseif using_sh
-        if executable('busybox')
-          let args = ['busybox', 'sh', '-c', cmd]
-        else
-          " add other shell if needed
-          call s:echoerr(&shell . ' is not supported!')
-          return
-        endif
+        let args = [
+              \ executable(&shell) && &shellcmdflag ==# '-c' ? &shell : 'sh',
+              \ '-c', cmd]
       else
-        let args = printf('%s %s %s', &shell, &shellcmdflag, shellescape(cmd))
+        let args = printf('%s %s %s', &shell, &shellcmdflag, cmd)
       endif
     endif
     call term_start(args, {'curwin': 1})
