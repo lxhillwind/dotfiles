@@ -241,7 +241,8 @@ function! s:run(args) abort
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if !has('unix') && !empty(cmd) && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
+  if !has('unix') && !has('nvim') && !empty(cmd) &&
+        \ match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
     " sh / bash / ..., but not pwsh;
     " To make quote work reliably, it is worth reading:
     " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
