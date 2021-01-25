@@ -149,8 +149,7 @@ let g:vimrc#edit_map = {
 function! s:f_edit_map(arg) abort
   let arr = get(g:vimrc#edit_map, a:arg)
   if empty(arr)
-    call s:echoerr(printf('edit_map: "%s" not found', a:arg))
-    return
+    call s:echoerr(printf('edit_map: "%s" not found', a:arg)) | return
   endif
   if filereadable(expand(arr[-1]))
     exe 'e' arr[-1]
@@ -344,8 +343,7 @@ function! s:open_tmux_window(args)
   let options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
   let option = get(options, a:args)
   if empty(option)
-    call s:echoerr('unknown option: ' . a:args . '; valid: ' . join(keys(options), ' / '))
-    return
+    call s:echoerr('unknown option: ' . a:args . '; valid: ' . join(keys(options), ' / ')) | return
   endif
   if exists("$TMUX")
     call system("tmux " . option . " -c " . shellescape(getcwd()))
@@ -369,8 +367,7 @@ function! s:shebang_insert(args)
   let first_line = getline(1)
   if len(first_line) >= 2 && first_line[0:1] ==# '#!'
     " shebang exists
-    call s:echoerr('shebang exists!')
-    return
+    call s:echoerr('shebang exists!') | return
   endif
   let shebang = '#!/usr/bin/env'
   if !empty(a:args)
@@ -378,8 +375,7 @@ function! s:shebang_insert(args)
   elseif has_key(g:vimrc#shebang_lines, &ft)
     let shebang = shebang . ' ' . g:vimrc#shebang_lines[&ft]
   else
-    call s:echoerr('shebang: which interpreter to run?')
-    return
+    call s:echoerr('shebang: which interpreter to run?') | return
   endif
   " insert at first line and leave cursor here (for further modification)
   normal ggO<Esc>
@@ -521,8 +517,7 @@ function! s:cd(flag, args)
     let path = fnamemodify(path, ':h')
   endif
   if !isdirectory(path)
-    call s:echoerr('not a directory: ' . a:args)
-    return
+    call s:echoerr('not a directory: ' . a:args) | return
   endif
 
   if !empty(cmd)
@@ -804,8 +799,7 @@ function! s:gx_open_cmd(s)
     " TODO fix open for win32
     return ['cmd', '/c', isdirectory(a:s) ? 'explorer' : 'start', a:s]
   else
-    call s:echoerr('do not know how to open')
-    return
+    call s:echoerr('do not know how to open') | return
   endif
 endfunction
 
@@ -949,6 +943,50 @@ if !has('unix')
     KtoggleShell
   endif
 endif
+" }}}
+
+" remote system() {{{
+function! System(cmd, ...) abort
+  let host = get(g:, 'vimrc_system_host', '10.0.2.2')
+  let port = get(g:, 'vimrc_system_port', '8001')
+  if !has('unix')
+    " on Windows, busybox-w32 is easier to get than curl
+    if match(&shell, 'busybox\s*sh') >= 0
+      let arg = printf('nc %s %s | tail -n 1', host, port)
+    elseif executable('busybox')
+      let arg = printf('busybox sh -c "nc %s %s | tail -n 1"', host, port)
+    else
+      call s:echoerr('busybox is required!') | return ''
+    endif
+  else
+    " on mac os, curl is easier to get than busybox
+    if executable('curl')
+      let arg = printf('curl -s %s:%s -H "Content-Type: application/json" -d @-', host, port)
+    else
+      call s:echoerr('curl is required!') | return ''
+    endif
+  endif
+  let payload = json_encode({'cmd': a:cmd, 'input': a:0 >= 1 ? a:1 : ''})
+  if match(arg, '^curl') < 0
+    let payload = [
+          \ 'POST / HTTP/1.0',
+          \ 'Content-Type: application/json',
+          \ 'Content-Length: ' . len(payload),
+          \ '',
+          \ payload,
+          \ ]
+    let payload = join(payload, "\r\n")
+  endif
+  let resp = json_decode(system(arg, payload))
+  if type(resp) != type({})
+    call s:echoerr('response is invalid!') | return ''
+  endif
+  if resp['exit_code'] == 0
+    return resp['stdout']
+  else
+    call s:echoerr(printf('[%s] %s', resp['exit_code'], resp['stderr'])) | return ''
+  endif
+endfunction
 " }}}
 
 " misc {{{
