@@ -27,7 +27,7 @@ if !get(g:, 'vimrc#loaded')
   else
     " nvim paste in terminal mode will leave cursor position not changed;
     " try to simulate this in vim, but failed.
-    au TerminalOpen * setl nonu | setl nornu | nnoremap p i<C-w>""<C-\><C-n>
+    au TerminalOpen * setl nonu | setl nornu | nnoremap <buffer> p i<C-w>""<C-\><C-n>
   endif
   " hlsearch
   set hls
