@@ -16,6 +16,7 @@
 
     au = add -u
     dc = diff --cached
+    dw = diff --color-words=.
     dcw = diff --cached --color-words=.
 
     vim = !git -C ~/vimfiles/pack/git

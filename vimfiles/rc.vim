@@ -767,7 +767,7 @@ function! s:render(...) abort
       else
         let eat = ''
       endif
-      exe '%' . printf('s/%s%s/%s/g', i[0], eat, escape(i[1], '\&'))
+      exe '%' . printf('s/%s%s/%s/g', i[0], eat, escape(i[1], '\&~/'))
     endfor
   else
     let buf = winbufnr(0)
