@@ -23,7 +23,9 @@ if !get(g:, 'vimrc#loaded')
   set sw=4
   " (relative)number
   set nu
-  set rnu
+  if exists('&rnu')
+    set rnu
+  endif
   if has('nvim')
     au TermOpen * setl nonu | setl nornu
   elseif exists('##TerminalOpen')
@@ -182,8 +184,13 @@ endfunction
 " }}}
 
 " snippet; :Ksnippet [filetype] {{{
-command! -bang -nargs=? -complete=filetype
-      \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
+if v:version > 702
+  command! -bang -nargs=? -complete=filetype
+        \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
+else
+  command! -bang -nargs=?
+        \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
+endif
 
 function! s:snippet_in_new_window(bang, ft)
   let name = '[Snippet]'
