@@ -89,6 +89,20 @@ function! s:echoerr(msg)
   echohl None
 endfunction
 
+function! s:execute(arg)
+  if exists('*execute')
+    return execute(a:arg)
+  endif
+  let l:res = ''
+  try
+    " exception message will be thrown away.
+    redir => l:res
+    exe a:arg
+  finally
+    redir END
+  endtry
+  return l:res
+endfunction
 " }}}
 
 " add checklist to markdown file; <LocalLeader><Space> {{{
@@ -125,7 +139,7 @@ function! s:expand_with_cmd(bang, cmd) abort
   sil normal gvy
   let code = @"
   if a:cmd ==# 'vim'
-    let output = execute(code)
+    let output = s:execute(code)
   else
     let output = system(a:cmd, code)
     if v:shell_error
@@ -319,7 +333,7 @@ command! -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>)
 
 function! s:vim_run(args)
   let buf = @"
-  sil! let @" = execute(a:args)
+  sil! let @" = s:execute(a:args)
   Ksnippet!
   normal p
   let @" = buf
