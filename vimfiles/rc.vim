@@ -234,6 +234,9 @@ function! s:has_pty()
 endfunction
 
 function! s:run(args) abort
+  if match(a:args, '\v(^|[&|;])\s*\%') >= 0 && executable(expand('%')) && system('head -c 2 ' . shellescape(expand('%'))) !=# '#!'
+    call s:echoerr('shebang not set!') | return
+  endif
   " expand %
   let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
         \'\=shellescape(expand(submatch(2)))', 'g')
