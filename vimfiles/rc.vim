@@ -1,3 +1,7 @@
+if v:version < 702
+  echoerr 'minimum supported vim version: 7.2' | finish
+endif
+
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 if exists('&pp')
   execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
