@@ -601,7 +601,13 @@ endfunction
 " }}}
 
 " open file from list (order by opened times); <Leader>f {{{
-nnoremap <Leader>f :call <SID>choose_filelist()<CR>
+if exists('*json_encode')  " vim8- not supported
+  nnoremap <Leader>f :call <SID>choose_filelist()<CR>
+  augroup vimrc_filelist
+    au!
+    au BufNewFile,BufRead,BufWritePost * call s:save_filelist()
+  augroup end
+endif
 
 function! s:cd_cur_line()
   let name = getline('.')
@@ -622,9 +628,6 @@ function! s:edit_cur_line()
 endfunction
 
 function! s:choose_filelist() abort
-  if !exists('*json_encode')  " exit early if not supported
-    return
-  endif
   enew
   setl buftype=nofile noswapfile
   call append(0, map(s:load_filelist(), 'v:val[1]'))
@@ -639,9 +642,6 @@ endfunction
 let s:filelist_path = get(g:, 'filelist_path', expand('<sfile>:p:h') . '/filelist_path.cache')
 
 function! s:load_filelist()
-  if !exists('*json_decode')
-    return
-  endif
   try
     let files = readfile(s:filelist_path)
   catch /^Vim\%((\a\+)\)\=:E484:/
@@ -662,9 +662,6 @@ function! s:load_filelist()
 endfunction
 
 function! s:save_filelist() abort
-  if !exists('*json_encode')
-    return
-  endif
   " do not save if `vim -i NONE`
   if &viminfofile ==# 'NONE'
     return
@@ -694,11 +691,6 @@ function! s:save_filelist() abort
   " file record limit
   call writefile(f_list[:10000], s:filelist_path)
 endfunction
-
-augroup vimrc_filelist
-  au!
-  au BufNewFile,BufRead,BufWritePost * call s:save_filelist()
-augroup end
 " }}}
 
 " keymap {{{
