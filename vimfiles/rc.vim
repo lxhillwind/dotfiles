@@ -1,5 +1,7 @@
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
-execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
+if exists('&pp')
+  execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
+endif
 
 let mapleader = 's'  " assign before use
 let maplocalleader = "\<Space>"
@@ -24,7 +26,7 @@ if !get(g:, 'vimrc#loaded')
   set rnu
   if has('nvim')
     au TermOpen * setl nonu | setl nornu
-  else
+  elseif exists('##TerminalOpen')
     " nvim paste in terminal mode will leave cursor position not changed;
     " try to simulate this in vim, but failed.
     au TerminalOpen * setl nonu | setl nornu | nnoremap <buffer> p i<C-w>""<C-\><C-n>
@@ -40,7 +42,9 @@ filetype on
 filetype plugin on
 filetype indent on
 " belloff
-set bo=all
+if exists('&bo')
+  set bo=all
+endif
 " incsearch
 set is
 " ttimeoutlen
@@ -604,6 +608,9 @@ function! s:edit_cur_line()
 endfunction
 
 function! s:choose_filelist() abort
+  if !exists('*json_encode')  " exit early if not supported
+    return
+  endif
   enew
   setl buftype=nofile noswapfile
   call append(0, map(s:load_filelist(), 'v:val[1]'))
@@ -618,6 +625,9 @@ endfunction
 let s:filelist_path = get(g:, 'filelist_path', expand('<sfile>:p:h') . '/filelist_path.cache')
 
 function! s:load_filelist()
+  if !exists('*json_decode')
+    return
+  endif
   try
     let files = readfile(s:filelist_path)
   catch /^Vim\%((\a\+)\)\=:E484:/
@@ -638,6 +648,9 @@ function! s:load_filelist()
 endfunction
 
 function! s:save_filelist() abort
+  if !exists('*json_encode')
+    return
+  endif
   " do not save if `vim -i NONE`
   if &viminfofile ==# 'NONE'
     return
@@ -697,10 +710,12 @@ au FileType vim inoremap <buffer> <C-space> <C-x><C-v>
 au FileType vim inoremap <buffer> <Nul> <C-x><C-v>
 
 " terminal escape
-tnoremap <Nul> <C-\><C-n>
-tnoremap <C-Space> <C-\><C-n>
-if !has('nvim')
-  tnoremap <C-w> <C-w>.
+if exists(':tnoremap') == 2
+  tnoremap <Nul> <C-\><C-n>
+  tnoremap <C-Space> <C-\><C-n>
+  if !has('nvim')
+    tnoremap <C-w> <C-w>.
+  endif
 endif
 
 vnoremap <Leader><Tab> :<C-u>KexpandWithCmd
