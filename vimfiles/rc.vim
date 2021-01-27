@@ -53,6 +53,8 @@ if exists('&bo')
 endif
 " incsearch
 set is
+" timeoutlen
+set tm=5000
 " ttimeoutlen
 set ttm=0
 " cursorcolumn & cursorline
@@ -914,6 +916,11 @@ if !has('unix') && !has('gui_running')  " win32 cmd
 elseif (has('unix') && $TERM ==? 'linux')  " linux tty
   set bg=dark
 else
+  if !has('nvim') && !has('gui_running') && exists('&tgc') && $TERM !~ 'xterm'
+    " make tgc work; :help xterm-true-color
+    let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+    let &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+  endif
   silent! set termguicolors
   if $BAT_THEME =~? 'light'
     set bg=light
