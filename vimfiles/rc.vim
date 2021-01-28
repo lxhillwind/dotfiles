@@ -91,12 +91,14 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 " }}}
 
 " common func {{{
+" :echoerr will raise exception (?)
 function! s:echoerr(msg)
   echohl ErrorMsg
   echon a:msg
   echohl None
 endfunction
 
+" execute() is introduced in Vim 7.4
 function! s:execute(arg)
   if exists('*execute')
     return execute(a:arg)
@@ -110,6 +112,52 @@ function! s:execute(arg)
     redir END
   endtry
   return l:res
+endfunction
+
+" system() on Windows does not handle " properly if &sh is set to UNIX sh
+function! System(arg, ...)
+  if has('unix') || match(&shell, '\v(pw)@<!sh(|.exe)$') < 0
+    if a:0 > 0
+      return system(a:arg, a:1)
+    else
+      return system(a:arg)
+    endif
+  else
+    let cmd = s:cmd_exe_quote(a:arg)
+    " dequote ^", since system() will quote " with ^
+    let cmd = substitute(cmd, '\v^(\^")|(\^")$', '', 'g')
+    " remove ^" and "$, since system() will add them
+    let cmd = substitute(cmd, '\v\^"', '"', 'g')
+    if a:0 > 0
+      return system(cmd, a:1)
+    else
+      return system(cmd)
+    endif
+  endif
+endfunction
+
+function! s:win32_quote(arg)
+  if match(&shell, '\v(pw)@<!sh(|.exe)$') < 0
+    " sh / bash / ..., but not pwsh;
+    return a:arg
+  endif
+  " To make quote work reliably, it is worth reading:
+  " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+  let cmd = a:arg
+  " double all \ before "
+  let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+  " double trailing \
+  let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
+  " escape " with \
+  let cmd = escape(cmd, '"')
+  " quote it
+  let cmd = '"' . cmd . '"'
+  return cmd
+endfunction
+
+function! s:cmd_exe_quote(arg)
+  " escape for cmd.exe
+  return substitute(s:win32_quote(a:arg), '\v[<>^|&()"]', '^&', 'g')
 endfunction
 " }}}
 
@@ -149,7 +197,7 @@ function! s:expand_with_cmd(bang, cmd) abort
   if a:cmd ==# 'vim'
     let output = s:execute(code)
   else
-    let output = system(a:cmd, code)
+    let output = System(a:cmd, code)
     if v:shell_error
       call s:echoerr('command failed: ' . a:cmd)
     endif
@@ -243,8 +291,10 @@ function! s:snippet_in_new_window(bang, ft)
 endfunction
 " }}}
 
-" run command (via :terminal), output to a separate window; :Krun [cmd]... {{{
-command! -nargs=* -complete=shellcmd Krun call <SID>run(<q-args>)
+" run command (via :terminal), output to a separate window; :Sh [cmd]...
+" On Windows XP (pty doesn't work), a seperate window is used.
+" It also fixes quote for sh on win32 {{{
+command! -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>)
 
 function! s:krun_cb(...) dict
   if self.buffer_nr == winbufnr(0) && mode() == 't'
@@ -265,7 +315,10 @@ function! s:has_pty()
 endfunction
 
 function! s:run(args) abort
-  if match(a:args, '\v(^|[&|;])\s*\%') >= 0 && executable(expand('%')) && system('head -c 2 ' . shellescape(expand('%'))) !=# '#!'
+  if has('unix')
+        \ && match(a:args, '\v(^|[&|;])\s*\%') >= 0
+        \ && executable(expand('%'))
+        \ && system('head -c 2 ' . shellescape(expand('%'))) !=# '#!'
     call s:echoerr('shebang not set!') | return
   endif
   " expand %
@@ -274,18 +327,8 @@ function! s:run(args) abort
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if !has('unix') && !has('nvim') && !empty(cmd) &&
-        \ match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
-    " sh / bash / ..., but not pwsh;
-    " To make quote work reliably, it is worth reading:
-    " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
-    "
-    " double all \ before "
-    let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
-    " double trailing \
-    let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
-    " escape " with \
-    let cmd = '"' . escape(cmd, '"') . '"'
+  if !has('unix') && !has('nvim') && !empty(cmd)
+    let cmd = s:win32_quote(cmd)
   endif
 
   if !s:has_pty()
@@ -297,7 +340,7 @@ function! s:run(args) abort
       if empty(cmd)
         exe '!start' shell
       else
-        exe '!start vimrun' shell shellcmdflag cmd
+        exe '!start vimrun' shell shellcmdflag s:cmd_exe_quote(cmd)
       endif
     finally
       let &shell = shell
@@ -493,9 +536,9 @@ function! s:clipboard_copy(cmd)
     else
       return
     endif
-    call system(l:cmd, @")
+    call System(l:cmd, @")
   else
-    call system(a:cmd, @")
+    call System(a:cmd, @")
   endif
 endfunction
 
@@ -514,9 +557,9 @@ function! s:clipboard_paste(cmd)
     else
       return
     endif
-    let @" = system(l:cmd)
+    let @" = System(l:cmd)
   else
-    let @" = system(a:cmd)
+    let @" = System(a:cmd)
   endif
 endfunction
 " }}}
@@ -927,7 +970,13 @@ else
   else
     set bg=dark
   endif
-  silent! color base16-dynamic
+  try
+    color base16-dynamic
+  catch
+    if has('gui_running') || exists('&tgc')
+      color desert
+    endif
+  endtry
 endif
 " }}}
 
@@ -944,8 +993,6 @@ function! s:gui_init()
     GuiTabline 0
   endif
 
-  " light theme
-  set bg=light
   let g:vimrc#loaded_gui = 1
 endfunction
 
@@ -988,7 +1035,7 @@ endif
 " }}}
 
 " remote system() {{{
-function! System(cmd, ...) abort
+function! SystemRemote(cmd, ...) abort
   let host = get(g:, 'vimrc_system_host', '10.0.2.2')
   let port = get(g:, 'vimrc_system_port', '8001')
   if !has('unix')
@@ -1019,7 +1066,7 @@ function! System(cmd, ...) abort
           \ ]
     let payload = join(payload, "\r\n")
   endif
-  let resp = json_decode(system(arg, payload))
+  let resp = json_decode(System(arg, payload))
   if type(resp) != type({})
     call s:echoerr('response is invalid!') | return ''
   endif
