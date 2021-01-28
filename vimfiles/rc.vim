@@ -123,7 +123,7 @@ function! System(arg, ...)
       return system(a:arg)
     endif
   else
-    let cmd = s:cmd_exe_quote(a:arg)
+    let cmd = s:cmd_exe_quote(s:win32_quote(a:arg))
     " dequote ^", since system() will quote " with ^
     let cmd = substitute(cmd, '\v^(\^")|(\^")$', '', 'g')
     " remove ^" and "$, since system() will add them
@@ -157,7 +157,7 @@ endfunction
 
 function! s:cmd_exe_quote(arg)
   " escape for cmd.exe
-  return substitute(s:win32_quote(a:arg), '\v[<>^|&()"]', '^&', 'g')
+  return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
 endfunction
 " }}}
 
