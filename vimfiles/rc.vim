@@ -124,15 +124,20 @@ function! System(arg, ...)
     endif
   else
     let cmd = s:cmd_exe_quote(s:win32_quote(a:arg))
-    " dequote ^", since system() will quote " with ^
-    let cmd = substitute(cmd, '\v^(\^")|(\^")$', '', 'g')
-    " remove ^" and "$, since system() will add them
-    let cmd = substitute(cmd, '\v\^"', '"', 'g')
-    if a:0 > 0
-      return system(cmd, a:1)
-    else
-      return system(cmd)
-    endif
+    let shq = &shq
+    let sxq = &sxq
+    try
+      let &shq = '"'
+      let &sxq = ''
+      if a:0 > 0
+        return system(cmd, a:1)
+      else
+        return system(cmd)
+      endif
+    finally
+      let &shq = shq
+      let &sxq = sxq
+    endtry
   endif
 endfunction
 
@@ -334,9 +339,11 @@ function! s:run(args) abort
   if !s:has_pty()
     let shell = &shell
     let shellcmdflag = &shellcmdflag
+    sil! let sxe = &sxe
     try
       let &shell = 'cmd.exe'
       let &shellcmdflag = '/s /c'
+      sil! let &sxe = ''
       if empty(cmd)
         exe '!start' shell
       else
@@ -345,6 +352,7 @@ function! s:run(args) abort
     finally
       let &shell = shell
       let &shellcmdflag = shellcmdflag
+      sil! let &sxe = sxe
     endtry
 
     return
@@ -1008,14 +1016,14 @@ if !has('unix')
   command! KtoggleShell call s:ToggleShell()
 
   function! s:ToggleShell()
-    if !executable('busybox')
-      return
-    endif
     if &shell =~ 'sh'
       let &shell = 'cmd.exe'
       let &shellcmdflag = '/s /c'
       let &shellquote = ''
     else
+      if !executable('busybox')
+        return
+      endif
       let &shell = 'busybox sh'
       let &shellcmdflag = '-c'
       if has('nvim')
@@ -1024,7 +1032,7 @@ if !has('unix')
     endif
   endfunction
 
-  " avoid /bin/sh as &shell; set busybox if possible; else set cmd.exe
+  " avoid $SHELL as &shell; set busybox if possible; else set cmd.exe
   KtoggleShell
   if (!executable('busybox') && stridx(&sh, 'sh') >= 0)
         \ ||
@@ -1096,6 +1104,20 @@ endfunction
 let g:loaded_netrwPlugin = 1
 au FileType dirvish nmap <buffer> H <Plug>(dirvish_up) | nmap <buffer> L i
 " }}}
+
+" export SID (:h SID)
+function! s:get_sid(filename)
+  for i in split(s:execute('scriptnames'), "\n")
+    let id = substitute(i, '\v^\s*(\d+): .*$', '\1', '')
+    let file = substitute(i, '\v^\s*\d+: ', '', '')
+    if a:filename ==# expand(file)
+      return id
+    endif
+  endfor
+  return 0
+endfunction
+" hide s:execute output.
+silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
 
 " finally
 nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
