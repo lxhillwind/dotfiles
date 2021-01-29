@@ -1038,22 +1038,15 @@ endif
 function! SystemRemote(cmd, ...) abort
   let host = get(g:, 'vimrc_system_host', '10.0.2.2')
   let port = get(g:, 'vimrc_system_port', '8001')
-  if !has('unix')
-    " on Windows, busybox-w32 is easier to get than curl
-    if match(&shell, 'busybox\s*sh') >= 0
-      let arg = printf('nc %s %s | tail -n 1', host, port)
-    elseif executable('busybox')
-      let arg = printf('busybox sh -c "nc %s %s | tail -n 1"', host, port)
-    else
-      call s:echoerr('busybox is required!') | return ''
-    endif
+  if executable('curl')
+    " use double quote so cmd.exe also works
+    let arg = printf('curl -s %s:%s -H "Content-Type: application/json" -d @-', host, port)
+  elseif match(&shell, 'busybox\s*sh') >= 0
+    let arg = printf('nc %s %s | tail -n 1', host, port)
+  elseif executable('busybox')
+    let arg = printf('busybox sh -c "nc %s %s | tail -n 1"', host, port)
   else
-    " on mac os, curl is easier to get than busybox
-    if executable('curl')
-      let arg = printf('curl -s %s:%s -H "Content-Type: application/json" -d @-', host, port)
-    else
-      call s:echoerr('curl is required!') | return ''
-    endif
+    call s:echoerr('curl or busybox is required!') | return ''
   endif
   let payload = json_encode({'cmd': a:cmd, 'input': a:0 >= 1 ? a:1 : ''})
   if match(arg, '^curl') < 0
