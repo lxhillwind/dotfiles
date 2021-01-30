@@ -21,6 +21,9 @@ c.aliases = {
         'ktpj': 'set tabs.position bottom'
         }
 
+c.content.blocking.adblock.lists.extend([
+    "https://easylist-downloads.adblockplus.org/easylistchina.txt",
+    ])
 c.fonts.completion.entry = '12pt monospace'
 c.fonts.downloads = '12pt monospace'
 c.fonts.hints = 'bold 11pt monospace'
@@ -55,11 +58,11 @@ c.url.start_pages = c.url.default_page
 #c.content.proxy = 'socks://localhost:1080'
 
 # Bindings with Keypad
-config.bind('<num-insert>', 'enter-mode passthrough')
-config.bind('<num-insert>', 'enter-mode normal', mode='passthrough')
-config.bind('<num-insert>', 'enter-mode normal', mode='insert')
-config.bind('<num-insert>', 'enter-mode normal', mode='prompt')
-config.bind('<num-insert>', 'enter-mode normal', mode='yesno')
+config.bind('<num-insert>', 'mode-enter passthrough')
+config.bind('<num-insert>', 'mode-enter normal', mode='passthrough')
+config.bind('<num-insert>', 'mode-enter normal', mode='insert')
+config.bind('<num-insert>', 'mode-enter normal', mode='prompt')
+config.bind('<num-insert>', 'mode-enter normal', mode='yesno')
 config.bind('<num-/>', 'back')
 config.bind('<num-*>', 'forward')
 config.bind('<num-->', 'navigate prev')
