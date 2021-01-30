@@ -320,12 +320,6 @@ function! s:has_pty()
 endfunction
 
 function! s:run(args) abort
-  if has('unix')
-        \ && match(a:args, '\v(^|[&|;])\s*\%') >= 0
-        \ && executable(expand('%'))
-        \ && system('head -c 2 ' . shellescape(expand('%'))) !=# '#!'
-    call s:echoerr('shebang not set!') | return
-  endif
   " expand %
   let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
         \'\=shellescape(expand(submatch(2)))', 'g')
@@ -703,11 +697,14 @@ function! s:choose_filelist() abort
   nnoremap <buffer> <CR> :call <SID>edit_cur_line()<CR>
 endfunction
 
-let s:filelist_path = get(g:, 'filelist_path', expand('<sfile>:p:h') . '/filelist_path.cache')
+function! s:filelist_path()
+  return get(g:, 'filelist_path', s:filelist_path_default)
+endfunction
+let s:filelist_path_default = expand('<sfile>:p:h') . '/filelist_path.cache'
 
 function! s:load_filelist()
   try
-    let files = readfile(s:filelist_path)
+    let files = readfile(s:filelist_path())
   catch /^Vim\%((\a\+)\)\=:E484:/
     let files = []
   endtry
@@ -753,7 +750,7 @@ function! s:save_filelist() abort
   let f_list = sort(f_list, {a, b -> a[0] < b[0] ? 1 : -1})
   let f_list = map(f_list, 'json_encode(v:val)')
   " file record limit
-  call writefile(f_list[:10000], s:filelist_path)
+  call writefile(f_list[:10000], s:filelist_path())
 endfunction
 " }}}
 
@@ -1105,7 +1102,7 @@ let g:loaded_netrwPlugin = 1
 au FileType dirvish nmap <buffer> H <Plug>(dirvish_up) | nmap <buffer> L i
 " }}}
 
-" export SID (:h SID)
+" export SID (:h SID); variable: g:vimrc_sid {{{
 function! s:get_sid(filename)
   for i in split(s:execute('scriptnames'), "\n")
     let id = substitute(i, '\v^\s*(\d+): .*$', '\1', '')
@@ -1118,6 +1115,7 @@ function! s:get_sid(filename)
 endfunction
 " hide s:execute output.
 silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
+" }}}
 
 " finally
 nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
