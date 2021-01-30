@@ -4,6 +4,8 @@ import pathlib
 #   qute://help/configuring.html
 #   qute://help/settings.html
 
+config.load_autoconfig(False)
+
 c.aliases = {
         'o': 'open',
         'O': 'open -t',
