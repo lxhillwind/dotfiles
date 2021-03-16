@@ -1,6 +1,4 @@
-# config for sway
-#
-# Read `man 5 sway` for a complete reference.
+# i3 config
 
 # font
 font pango:DejaVu Sans Mono bold 11
@@ -15,13 +13,7 @@ set $down j
 set $up k
 set $right l
 # Your preferred application launcher
-#set $menu rofi -modi "window:window-activate.py,drun,mpc:mpc-rofi" -show window -theme ~/Code/dotfiles/rofi.rasi
-set $menu alacritty
-
-### Output configuration
-#
-# Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-#output * bg ~/Pictures/wallpaper.png fill
+set $menu dmenu_run
 
 ### Key bindings
 #
@@ -29,23 +21,19 @@ set $menu alacritty
 #
     # kill focused window
     bindsym $mod+Shift+q kill
-    bindsym --border $mod+Shift+button1 kill
 
-    bindsym --border button4 opacity plus 0.1
-    bindsym --border button5 opacity minus 0.1
-
-    # dim screen
-    bindsym $mod+Ctrl+l exec sh -c 'swaylock -f; sleep 1; pkill -USR1 swayidle'
+    # lock screen
+    bindsym $mod+Ctrl+l exec --no-startup-id i3lock -c 233333
 
     # start your launcher
-    bindsym $mod+d exec $menu
+    bindsym $mod+d exec --no-startup-id $menu
 
     # Drag floating windows by holding down $mod and left mouse button.
     # Resize them with right mouse button + $mod.
     # Despite the name, also works for non-floating windows.
     # Change normal to inverse to use left mouse button for resizing and right
     # mouse button for dragging.
-    floating_modifier $mod normal
+    floating_modifier $mod
 
     # reload the configuration file
     bindsym $mod+Shift+c reload
@@ -150,11 +138,9 @@ set $menu alacritty
 #
 # multipedia
 #
-    bindsym XF86AudioMute exec pamixer -t
-    bindsym XF86AudioLowerVolume exec pamixer -d 5
-    bindsym XF86AudioRaiseVolume exec pamixer -i 5
-
-    bindsym XF86PowerOff nop
+    bindsym XF86AudioMute exec --no-startup-id pamixer -t
+    bindsym XF86AudioLowerVolume exec --no-startup-id pamixer -d 5
+    bindsym XF86AudioRaiseVolume exec --no-startup-id pamixer -i 5
 
 #
 # Resizing containers:
@@ -184,10 +170,10 @@ mode "resize" {
 bindsym $mod+r mode "resize"
 
 for_window [title=".*"] floating enable
-for_window [app_id="Alacritty"] move workspace 1, floating disable, border pixel
-for_window [app_id="qutebrowser"] move workspace 2, floating disable
-for_window [instance="sun-awt-X11-XFramePeer" app_id="jetbrains-pycharm-ce"] move workspace 3, floating disable
-assign [app_id="qpdfview"] 4
+for_window [class="Alacritty"] move workspace 1, floating disable, border pixel
+for_window [class="qutebrowser"] move workspace 2, floating disable
+for_window [instance="sun-awt-X11-XFramePeer" class="jetbrains-pycharm-ce"] move workspace 3, floating disable
+assign [class="qpdfview"] 4
 for_window [instance="qemu"] border none
 for_window [title="QEMU \(arch.*"] move workspace 5, floating disable
 for_window [title="QEMU \(xp.*"] move workspace 6, fullscreen enable
@@ -203,11 +189,12 @@ for_window [title="QEMU \(win10.*"] move workspace 8, fullscreen enable
 # http://okraits.de
 
 # $i3-theme-window
-# class                 border  backgr. text    indica. child_border
-client.focused          #0088CC #0088CC #ffffff #dddddd #285577
-client.focused_inactive #333333 #333333 #888888 #292d2e #5f676a
-client.unfocused        #333333 #333333 #888888 #292d2e #222222
-client.urgent           #2f343a #900000 #ffffff #900000 #900000
+# class                 border  backgr. text    indicator
+client.focused          #0088CC #0088CC #ffffff #dddddd
+#client.focused_inactive #0C2D3C #0C2D3C #888888 #484e50 # I don't like it that way
+client.focused_inactive #333333 #333333 #888888 #292d2e
+client.unfocused        #333333 #333333 #888888 #292d2e
+client.urgent           #2f343a #900000 #ffffff #900000
 # $i3-theme-bar
 #
 bar {
@@ -224,13 +211,7 @@ bar {
     }
 }
 
-input type:keyboard {
-    xkb_options ctrl:nocaps
-}
-
-include /etc/sway/config.d/*
-
-exec alacritty
-exec qutebrowser
-exec qpdfview
-exec swayidle timeout 1800 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"'
+exec --no-startup-id compton --backend glx --vsync opengl-swc
+exec --no-startup-id alacritty
+exec --no-startup-id qutebrowser
+exec --no-startup-id qpdfview
