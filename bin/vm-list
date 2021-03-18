@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -e
+
+err()
+{
+    printf 'not implemented: %s\n' "$*"
+    exit 1
+}
+
+basename=${0##*/}
+
+if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/qemu/config.yml ]; then
+    case "$basename" in
+        vm-list)
+            exec VBoxManage list vms ;;
+        vm-start)
+            exec VBoxManage startvm "$@" ;;
+        *)
+            err "$basename" ;;
+    esac
+
+else
+    case "$basename" in
+        vm-list)
+            exec grep -E ':$' ~/qemu/config.yml ;;
+        vm-start)
+            exec launch-qemu.py "$@" ;;
+        *)
+            err "$basename" ;;
+    esac
+fi

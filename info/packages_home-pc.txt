@@ -155,5 +155,6 @@ xorg-server
 xorg-xinit
 xorg-xprop
 xorg-xwayland
+xsel
 youtube-dl
 zsh-completions
