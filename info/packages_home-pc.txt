@@ -1,5 +1,5 @@
 # get list:
-#   comm <(pacman -Qgq base-devel | sort | uniq) <(pacman -Qeq | sort) -13
+#   comm <({ pacman -Qgq base-devel; pacman -Qiq base | grep 'Depends On' | cut -d: -f2 | tr ' ' '\n'; } | sort | uniq) <(pacman -Qeq | sort) -13
 # install from list:
 #   pacman -S --needed $(grep -v ^# packages.txt)
 alacritty
@@ -7,15 +7,12 @@ alsa-firmware
 amd-ucode
 arc-gtk-theme
 aria2
-bash
+base
 bat
 bind
 breeze-icons
 busybox
-bzip2
 cmake
-coreutils
-cryptsetup
 ctags
 device-mapper
 dhcpcd
@@ -26,12 +23,9 @@ efibootmgr
 exa
 exfat-utils
 fd
-filesystem
 fzf
-gcc-libs
 gdb
 git
-glibc
 gnu-netcat
 graphviz
 grim
@@ -47,14 +41,11 @@ i3lock
 i3-wm
 imagemagick
 inetutils
-iproute2
-iputils
 ipython
 jq
 less
 libva-mesa-driver
 libva-utils
-licenses
 linux
 linux-firmware
 linux-headers
@@ -83,15 +74,10 @@ os-prober
 p7zip
 pamixer
 pavucontrol-qt
-pciutils
 pcmanfm-qt
-perl
-perl-file-mimeinfo
 polipo
-procps-ng
 progress
 proxychains-ng
-psmisc
 pulseaudio
 pulseaudio-alsa
 pv
@@ -119,7 +105,6 @@ ripgrep
 rlwrap
 rsync
 samba
-shadow
 shadowsocks-libev
 socat
 sox
@@ -127,10 +112,6 @@ strace
 sway
 swayidle
 swaylock
-sysfsutils
-systemd
-systemd-sysvcompat
-tar
 tmux
 tokei
 tree
@@ -138,19 +119,16 @@ ttf-dejavu
 ttf-hack
 ttf-liberation
 usbutils
-util-linux
 valgrind
 vi
 vim
 w3m
-wayland-protocols
 wget
 wl-clipboard
 wqy-microhei
 wqy-zenhei
 xdg-user-dirs
 xf86-video-amdgpu
-xfsprogs
 xorg-server
 xorg-xinit
 xorg-xprop

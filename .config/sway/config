@@ -133,7 +133,9 @@ set $menu alacritty
     bindsym $mod+space focus mode_toggle
 
     # move focus to the parent container
-    bindsym $mod+a focus parent
+    bindsym $mod+p focus parent
+
+    bindsym $mod+Shift+p focus child
 #
 # Scratchpad:
 #
