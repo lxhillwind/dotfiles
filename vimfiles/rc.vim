@@ -523,6 +523,9 @@ endfunction
 nnoremap <Leader>y :call <SID>clipboard_copy("")<CR>
 nnoremap <Leader>p :call <SID>clipboard_paste("")<CR>
 
+" use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
+" detection is defined there. (~/bin/{pbcopy,pbpaste})
+
 function! s:clipboard_copy(cmd)
   if empty(a:cmd)
     if has('clipboard')
@@ -531,12 +534,8 @@ function! s:clipboard_copy(cmd)
     endif
     if executable('pbcopy')
       let l:cmd = 'pbcopy'
-    elseif executable('xsel')
-      let l:cmd = 'xsel -ib'
-    elseif exists('$TMUX')
-      let l:cmd = 'tmux loadb -'
     else
-      return
+      call s:echoerr('clipboard not found!') | return
     endif
     call System(l:cmd, @")
   else
@@ -552,12 +551,8 @@ function! s:clipboard_paste(cmd)
     endif
     if executable('pbpaste')
       let l:cmd = 'pbpaste'
-    elseif executable('xsel')
-      let l:cmd = 'xsel -ob'
-    elseif exists('$TMUX')
-      let l:cmd = 'tmux saveb -'
     else
-      return
+      call s:echoerr('clipboard not found!') | return
     endif
     let @" = System(l:cmd)
   else

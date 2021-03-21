@@ -1,7 +1,5 @@
 #!/bin/sh
 
-# TODO handle tty mode
-
 if [ -e /usr/bin/pbcopy ]; then
     exec /usr/bin/pbcopy "$@"
 else
@@ -9,6 +7,8 @@ else
         exec wl-copy
     elif [ -n "$DISPLAY" ]; then
         exec xsel -ib
+    elif [ -n "$TMUX" ]; then
+        exec tmux loadb -
     else
         :
     fi

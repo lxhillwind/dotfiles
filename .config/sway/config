@@ -15,8 +15,7 @@ set $down j
 set $up k
 set $right l
 # Your preferred application launcher
-#set $menu rofi -modi "window:window-activate.py,drun,mpc:mpc-rofi" -show window -theme ~/Code/dotfiles/rofi.rasi
-set $menu alacritty
+set $menu bemenu-run -i
 
 ### Output configuration
 #
@@ -36,6 +35,7 @@ set $menu alacritty
 
     # dim screen
     bindsym $mod+Ctrl+l exec sh -c 'swaylock -f; sleep 1; pkill -USR1 swayidle'
+    bindsym $mod+Ctrl+m exec sh -c 'sleep 1; pkill -USR1 swayidle'
 
     # start your launcher
     bindsym $mod+d exec $menu
@@ -190,8 +190,7 @@ for_window [app_id="Alacritty"] move workspace 1, floating disable, border pixel
 for_window [app_id="qutebrowser"] move workspace 2, floating disable
 for_window [instance="sun-awt-X11-XFramePeer" app_id="jetbrains-pycharm-ce"] move workspace 3, floating disable
 assign [app_id="qpdfview"] 4
-for_window [instance="qemu"] border none
-for_window [title="QEMU \(arch.*"] move workspace 5, floating disable
+for_window [title="QEMU \(arch.*"] move workspace 5, floating disable, border none
 for_window [title="QEMU \(xp.*"] move workspace 6, fullscreen enable
 for_window [title="QEMU \(win7.*"] move workspace 7, fullscreen enable
 for_window [title="QEMU \(win10.*"] move workspace 8, fullscreen enable

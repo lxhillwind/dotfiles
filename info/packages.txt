@@ -9,6 +9,7 @@ arc-gtk-theme
 aria2
 base
 bat
+bemenu
 bind
 breeze-icons
 busybox
