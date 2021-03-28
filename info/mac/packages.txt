@@ -1,0 +1,43 @@
+# homebrew
+
+# gnu
+bc
+coreutils
+diffutils
+ex-vi
+file-formula
+findutils
+gawk
+gnu-sed
+gnu-tar
+grep
+gzip
+less
+make
+
+# nice to have (or up to date)
+aria2
+bat
+ctags
+curl
+exa
+fd
+fzf
+git
+git-lfs
+htop
+jq
+neovim
+p7zip
+progress
+pv
+ripgrep
+rlwrap
+tmux
+tokei
+w3m
+watch
+zsh
+
+# used by pyenv
+xz

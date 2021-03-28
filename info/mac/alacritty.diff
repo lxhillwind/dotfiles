@@ -1,0 +1,16 @@
+~/.config/alacritty/alacritty.yml
+
+Apply them manually.
+
+==============================================================================
+
+-  - { key: Back,                    chars: "\x7f"                        }
++  # osx: pinyin https://github.com/alacritty/alacritty/issues/1606
++  - { key: Back,                    action: ReceiveChar                  }
+
+==============================================================================
+
++  # osx https://github.com/alacritty/alacritty/issues/99 (closed)
++  - { key: Space,    mods: Control, chars: "\x00"                        }
++  # osx https://github.com/alacritty/alacritty/issues/34 (closed)
++  - { key: Return,   mods: Command, action: "ToggleFullscreen"           }

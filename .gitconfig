@@ -1,30 +1,38 @@
+# vim:noet:sw=8:ts=8
+
 [user]
-    name = lxhillwind
-    email = lxhillwind@gmail.com
+	name = lxhillwind
+	email = lxhillwind@gmail.com
 [merge]
-    tool = vimdiff
+	tool = vimdiff
 [mergetool "vimdiff"]
-    path = nvim
+	path = nvim
 [diff]
-    tool = vimdiff
+	tool = vimdiff
 [difftool "vimdiff"]
-    path = nvim
+	path = nvim
 [alias]
-    a = !git config --get-regexp alias. | sort
-    sh = !zsh
-    g = !git --git-dir ~/dotfiles/.git --work-tree ~
+	a = !git config --get-regexp alias. | sort
+	sh = !zsh
+	g = !git --git-dir ~/dotfiles/.git --work-tree ~
 
-    au = add -u
-    dc = diff --cached
-    dw = diff --color-words=.
-    dcw = diff --cached --color-words=.
+	au = add -u
+	dc = diff --cached
+	dw = diff --color-words=.
+	dcw = diff --cached --color-words=.
 
-    vim = !git -C ~/vimfiles/pack/git
-    vim-doc = !git vim submodule foreach nvim -Es -c 'sil! helpt doc'
+	vim = !git -C ~/vimfiles/pack/git
+	vim-doc = !git vim submodule foreach nvim -Es -c 'sil! helpt doc'
 
-    vim-opt = !git -C ~/vimfiles/pack/git/opt
-    vim-start = !git -C ~/vimfiles/pack/git/start
+	vim-opt = !git -C ~/vimfiles/pack/git/opt
+	vim-start = !git -C ~/vimfiles/pack/git/start
 [mergetool]
-    keepBackup = false
+	keepBackup = false
 [pull]
-    rebase = false
+	rebase = false
+[core]
+	quotepath = off
+[tag]
+	sort = -taggerdate
+[log]
+	date = local
