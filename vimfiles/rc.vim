@@ -472,53 +472,6 @@ endfunction
 command! -nargs=1 KmatchLongLine exe '/\%>' . <args> . 'v.\+'
 " }}}
 
-" rg with quickfix window; :Krg [arguments to rg]... {{{
-if executable('rg') && has('nvim')
-  command! -bang -nargs=+ Krg call <SID>Rg('<bang>', <q-args>)
-endif
-
-function! s:jobstop(jid)
-  if jobwait([a:jid], 0)[0] == -1
-    call jobstop(a:jid)
-    echo 'job terminated.'
-  else
-    echo 'job already exit.'
-  endif
-endfunction
-
-function! s:rg_stdout_cb(j, d, e) dict
-  if a:d == ['']
-    return
-  endif
-  lad a:d
-  if self.counter == 0 && winbufnr(0) == self.bufnr
-    lop
-    let &l:stl = '[Location List] (' . self.title . ')%=' . '[%p%%~%lL,%cC]'
-    " press <C-c> to terminate job.
-    exe 'nnoremap <buffer> <C-c> :call <SID>jobstop(' . a:j . ')<CR>'
-  endif
-  let self.counter += 1
-endfunction
-
-function! s:rg_exit_cb(j, d, e) dict
-  if self.counter == 0
-    echo 'nothing matches.'
-  else
-    echo 'rg finished.'
-  endif
-endfunction
-
-function! s:Rg(bang, args)
-  let path = getcwd()  " if removed, `:Cd xxx :Krg yyy` will not work.
-  let bufnr = winbufnr(0)
-  let jid = jobstart(printf('rg --vimgrep %s %s', a:args, shellescape(path)),
-        \{'bufnr': bufnr, 'counter': 0, 'title': 'rg ' . a:args,
-        \'on_stdout': function('s:rg_stdout_cb'),
-        \'on_exit': function('s:rg_exit_cb'),
-        \})
-endfunction
-" }}}
-
 " clipboard; <Leader>y / <Leader>p {{{
 nnoremap <Leader>y :call <SID>clipboard_copy("")<CR>
 nnoremap <Leader>p :call <SID>clipboard_paste("")<CR>
@@ -802,69 +755,6 @@ function! s:join_line(sep)
 endfunction
 " }}}
 
-" render; write k: v in working buffer and then s/k/v/g;
-" <Leader>r or :Render var-name-regex {{{
-command! -nargs=? Render call <SID>render(<q-args>)
-nnoremap <Leader>r :Render<Space>
-
-" regex \v; this is used to search var in source buffer;
-" it's ok to specify var name in render working buffer.
-"
-" NOTE if var name ends with '_', then eat a char after it;
-" e.g. foo_ bar -> :s/foo_./xxx/g
-let g:vimrc_render_var = 'XXX[a-z_]+'
-
-function! s:render(...) abort
-  if a:0 > 0 && !empty(a:1)
-    let var_regex = a:1
-  else
-    let var_regex = g:vimrc_render_var
-  endif
-  if exists('b:render_source_buf')
-    let buflist = tabpagebuflist()
-    let bufidx = index(buflist, b:render_source_buf)
-    if bufidx < 0
-      " source buffer not found
-      return
-    endif
-    let rules = []
-    for line in getline(1, '$')
-      let key = matchstr(line, '\v^.{-}(: )@=')
-      let value = substitute(line, '\v^.{-}(: )@=: ', '', '')
-      if !empty(key) && value !=# line
-        call add(rules, [key, value])
-      endif
-    endfor
-    exe bufidx+1 'wincmd w'
-    for i in rules
-      if !empty(matchstr(i[0], '_$'))
-        let eat = '.'
-      else
-        let eat = ''
-      endif
-      exe '%' . printf('s/%s%s/%s/g', i[0], eat, escape(i[1], '\&~/'))
-    endfor
-  else
-    let buf = winbufnr(0)
-    let vars = []
-    for line in getline(1, '$')
-      call substitute(line, '\v'.var_regex, '\=add(vars, submatch(0))', 'g')
-    endfor
-    Ksnippet | setl bufhidden=wipe
-    nnoremap <buffer> <LocalLeader>r :call <SID>render()<CR>
-    let b:render_source_buf = buf
-    let appeared = []
-    for i in vars
-      if index(appeared, i) < 0
-        call append('$', printf('%s: ', i))
-        call add(appeared, i)
-      endif
-    endfor
-    norm gg"_dd
-  endif
-endfunction
-" }}}
-
 " gx related {{{
 nnoremap <silent> gx :call <SID>gx('n')<CR>
 vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
@@ -1032,43 +922,6 @@ if !has('unix')
     KtoggleShell
   endif
 endif
-" }}}
-
-" remote system() {{{
-function! SystemRemote(cmd, ...) abort
-  let host = get(g:, 'vimrc_system_host', '10.0.2.2')
-  let port = get(g:, 'vimrc_system_port', '8001')
-  if executable('curl')
-    " use double quote so cmd.exe also works
-    let arg = printf('curl -s %s:%s -H "Content-Type: application/json" -d @-', host, port)
-  elseif match(&shell, 'busybox\s*sh') >= 0
-    let arg = printf('nc %s %s | tail -n 1', host, port)
-  elseif executable('busybox')
-    let arg = printf('busybox sh -c "nc %s %s | tail -n 1"', host, port)
-  else
-    call s:echoerr('curl or busybox is required!') | return ''
-  endif
-  let payload = json_encode({'cmd': a:cmd, 'input': a:0 >= 1 ? a:1 : ''})
-  if match(arg, '^curl') < 0
-    let payload = [
-          \ 'POST / HTTP/1.0',
-          \ 'Content-Type: application/json',
-          \ 'Content-Length: ' . len(payload),
-          \ '',
-          \ payload,
-          \ ]
-    let payload = join(payload, "\r\n")
-  endif
-  let resp = json_decode(System(arg, payload))
-  if type(resp) != type({})
-    call s:echoerr('response is invalid!') | return ''
-  endif
-  if resp['exit_code'] == 0
-    return resp['stdout']
-  else
-    call s:echoerr(printf('[%s] %s', resp['exit_code'], resp['stderr'])) | return ''
-  endif
-endfunction
 " }}}
 
 " misc {{{
