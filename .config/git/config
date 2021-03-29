@@ -1,8 +1,8 @@
-# vim:noet:sw=8:ts=8
+# vim:noet:sw=8:ts=8:ft=gitconfig
+#
+# Create file ~/.gitconfig before `git config --global xxx`,
+# otherwise git will write to $XDG_CONFIG_HOME/git/config
 
-[user]
-	name = lxhillwind
-	email = lxhillwind@gmail.com
 [merge]
 	tool = vimdiff
 [mergetool "vimdiff"]
