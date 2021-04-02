@@ -1,4 +1,4 @@
-# vim:noet:sw=8:ts=8:ft=gitconfig
+# vim:noet:sw=0:ft=gitconfig
 #
 # Create file ~/.gitconfig before `git config --global xxx`,
 # otherwise git will write to $XDG_CONFIG_HOME/git/config
@@ -21,6 +21,8 @@
 	dw = diff --color-words=.
 	dcw = diff --cached --color-words=.
 
+	tag-ver = tag --sort=-version:refname
+
 	vim = !git -C ~/vimfiles/pack/git
 	vim-doc = !git vim submodule foreach nvim -Es -c 'sil! helpt doc'
 
@@ -33,6 +35,6 @@
 [core]
 	quotepath = off
 [tag]
-	sort = -taggerdate
+	sort = -creatordate
 [log]
 	date = local
