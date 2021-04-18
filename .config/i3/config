@@ -203,7 +203,7 @@ client.urgent           #2f343a #900000 #ffffff #900000
 # $i3-theme-bar
 #
 bar {
-    status_command while :; do date +%F\ %H:%M:%S; sleep 1; done
+    status_command while :; do date +%F\ %H:%M; sleep 1; done
     position top
     colors {
         background #222222
@@ -219,3 +219,4 @@ bar {
 exec alacritty
 exec qutebrowser
 exec qpdfview
+exec fcitx5
