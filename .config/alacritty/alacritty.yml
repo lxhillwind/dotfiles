@@ -184,7 +184,7 @@ themes:
       cyan: '0x00FFFF'
       white: '0xEEEEEE'
 
-colors: *light
+colors: *dark
 
 # Visual Bell
 #

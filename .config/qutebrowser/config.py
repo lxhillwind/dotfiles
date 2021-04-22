@@ -52,6 +52,8 @@ c.url.searchengines = {
         'cd': 'https://www.bing.com/dict/search?mkt=zh-CN&q={}',
         'gg': 'https://www.google.com/search?q={}',
         'sh': 'http://symbolhound.com/?q={}',
+        'man': 'https://man.archlinux.org/search?q={}&go=Go',
+        'man-a': 'https://man.archlinux.org/search?q={}',
         'wk': 'https://www.wikipedia.org/w/index.php?title=Special:Search&search={}',
         }
 c.url.start_pages = c.url.default_page
@@ -88,6 +90,7 @@ config.bind('ZQ', 'close')
 config.bind('ZZ', 'session-save ;; close')
 config.bind('af', 'hint --rapid links tab-bg')
 config.bind('cc', 'yank selection')
+config.bind('cd', 'spawn -u dict')  # query selected text in bing dict
 config.bind('d', 'scroll-page 0 0.49')
 config.bind('ef', 'hint all fill :o {hint-url}')
 config.bind('f', 'hint all current')

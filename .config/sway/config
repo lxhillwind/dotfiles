@@ -233,5 +233,5 @@ include /etc/sway/config.d/*
 
 exec alacritty
 exec qutebrowser
-exec qpdfview
+exec qpdfview --unique
 exec swayidle timeout 1800 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"'

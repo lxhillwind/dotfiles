@@ -218,5 +218,5 @@ bar {
 
 exec alacritty
 exec qutebrowser
-exec qpdfview
+exec qpdfview --unique
 exec fcitx5
