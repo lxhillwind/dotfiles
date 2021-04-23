@@ -25,7 +25,7 @@ def root():
         '''
     if request.method == 'POST':
         for obj in request.files.getlist('files'):
-            name = obj.filename
+            name = secure_filename(obj.filename)
             print(f'upload {name}...')
             obj.save(name)
             response = f'uploaded: {name}<br />' + response
