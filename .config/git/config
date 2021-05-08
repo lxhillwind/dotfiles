@@ -13,6 +13,7 @@
 	path = nvim
 [alias]
 	a = !git config --get-regexp alias. | sort
+	archive-worktree = !f() { cd "${GIT_PREFIX:-.}/$1" || return -1 \n git ls-files 2>/dev/null | xargs tar -cf /dev/stdout -- \n } \n f
 	sh = !zsh
 	g = !git --git-dir ~/dotfiles/.git --work-tree ~
 

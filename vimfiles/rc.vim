@@ -112,9 +112,10 @@ function! s:execute(arg)
   return l:res
 endfunction
 
-" system() on Windows does not handle " properly if &sh is set to UNIX sh
+" use unix shell if possible (win32)
 function! System(arg, ...)
-  if has('unix') || match(&shell, '\v(pw)@<!sh(|.exe)$') < 0
+  if has('unix') || (!s:sh_on_win32 && v:version > 702)
+    " TODO verify win32 vim (v 703, 704) quote
     if a:0 > 0
       return system(a:arg, a:1)
     else
@@ -125,6 +126,7 @@ function! System(arg, ...)
     let shq = &shq
     let sxq = &sxq
     try
+      call s:toggle_shell(1)
       let &shq = '"'
       let &sxq = ''
       if a:0 > 0
@@ -135,27 +137,13 @@ function! System(arg, ...)
     finally
       let &shq = shq
       let &sxq = sxq
+      call s:toggle_shell(0)
     endtry
   endif
 endfunction
 
 function! s:win32_quote(arg)
-  if match(&shell, '\v(pw)@<!sh(|.exe)$') < 0
-    " sh / bash / ..., but not pwsh;
-    return a:arg
-  endif
-  " To make quote work reliably, it is worth reading:
-  " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
-  let cmd = a:arg
-  " double all \ before "
-  let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
-  " double trailing \
-  let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
-  " escape " with \
-  let cmd = escape(cmd, '"')
-  " quote it
-  let cmd = '"' . cmd . '"'
-  return cmd
+  return '"' . a:arg . '"'
 endfunction
 
 function! s:cmd_exe_quote(arg)
@@ -312,15 +300,21 @@ function! s:has_pty()
   endif
   if !has_key(s:, 'v_has_pty')
     " Windows XP winpty is buggy
-    let s:v_has_pty = match(system('cmd /c ver'), 'Windows XP') < 0
+    let s:v_has_pty = has('terminal') && match(system('ver'), 'Windows XP') < 0
   endif
   return s:v_has_pty
 endfunction
 
 function! s:run(args) abort
   " expand %
-  let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
-        \'\=shellescape(expand(submatch(2)))', 'g')
+  let slash = &shellslash
+  try
+    if s:sh_on_win32 | set shellslash | endif
+    let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
+          \'\=shellescape(expand(submatch(2)))', 'g')
+  finally
+    if s:sh_on_win32 | let &shellslash = slash | endif
+  endtry
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
@@ -328,55 +322,57 @@ function! s:run(args) abort
     let cmd = s:win32_quote(cmd)
   endif
 
-  if !s:has_pty()
+  if !s:sh_on_win32
     let shell = &shell
     let shellcmdflag = &shellcmdflag
-    sil! let sxe = &sxe
-    try
-      let &shell = 'cmd.exe'
-      let &shellcmdflag = '/s /c'
-      sil! let &sxe = ''
-      if empty(cmd)
-        exe '!start' shell
-      else
-        exe '!start vimrun' shell shellcmdflag s:cmd_exe_quote(cmd)
-      endif
-    finally
-      let &shell = shell
-      let &shellcmdflag = shellcmdflag
-      sil! let &sxe = sxe
-    endtry
+  else
+    let shell = s:shell_opt_sh.shell
+    let shellcmdflag = s:shell_opt_sh.shellcmdflag
+  endif
+
+  if !s:has_pty()
+    if empty(cmd)
+      exe '!start' shell
+    else
+      exe '!start vimrun' shell shellcmdflag s:cmd_exe_quote(cmd)
+    endif
 
     return
   endif
 
   Ksnippet
-  setl nonu | setl nornu
+  " nornu not available in vim72
+  setl nonu | silent! setl nornu
   if has('nvim')
     let opt = {
           \'on_exit': function('s:krun_cb'),
           \'buffer_nr': winbufnr(0),
           \}
     if empty(cmd)
-      let cmd = &shell
+      let cmd = shell
     endif
-    if &shellquote == '"'
-      " [b]ash on win32
-      call termopen(printf('"%s"', cmd), opt)
-    else
+    if !s:sh_on_win32
       call termopen(cmd, opt)
+    else
+      " TODO verify quote in [b]ash on win32
+      call s:toggle_shell(1)
+      try
+        call termopen(printf('"%s"', cmd), opt)
+      finally
+        call s:toggle_shell(0)
+      endtry
     endif
     startinsert
   else
     if empty(cmd)
-      let args = &shell
+      let args = shell
     else
       if has('unix')
         let args = [
-              \ executable(&shell) && &shellcmdflag ==# '-c' ? &shell : 'sh',
+              \ executable(shell) && shellcmdflag ==# '-c' ? shell : 'sh',
               \ '-c', cmd]
       else
-        let args = printf('%s %s %s', &shell, &shellcmdflag, cmd)
+        let args = printf('%s %s %s', shell, shellcmdflag, cmd)
       endif
     endif
     call term_start(args, {'curwin': 1})
@@ -891,35 +887,50 @@ elseif has('gui_running')
 endif
 " }}}
 
-" win32 sh; use busybox if possible {{{
+" win32 shell helper {{{
 if !has('unix')
-  command! KtoggleShell call s:ToggleShell()
+  let s:shell_opt_cmd = {
+        \ 'shell': 'cmd.exe',
+        \ 'shellcmdflag': '/s /c',
+        \ 'shellquote': '',
+        \ }
 
-  function! s:ToggleShell()
-    if &shell =~ 'sh'
-      let &shell = 'cmd.exe'
-      let &shellcmdflag = '/s /c'
-      let &shellquote = ''
-    else
-      if !executable('busybox')
-        return
-      endif
-      let &shell = 'busybox sh'
-      let &shellcmdflag = '-c'
-      if has('nvim')
-        let &shellquote = '"'
-      endif
-    endif
-  endfunction
+  let s:shell_opt_sh = {
+        \ 'shell': executable('busybox') ? 'busybox sh' : 'bash',
+        \ 'shellcmdflag': '-c',
+        \ 'shellquote': has('nvim') ? '"' : '',
+        \ }
 
-  " avoid $SHELL as &shell; set busybox if possible; else set cmd.exe
-  KtoggleShell
-  if (!executable('busybox') && stridx(&sh, 'sh') >= 0)
-        \ ||
-        \ (executable('busybox') && stridx(&sh, 'sh') < 0)
-    KtoggleShell
+  " win32 vim from unix shell will set &shell incorrectly, so restore it
+  if match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
+    let &shell = s:shell_opt_cmd.shell
+    let &shellcmdflag = s:shell_opt_cmd.shellcmdflag
+    let &shellquote = s:shell_opt_cmd.shellquote
+    silent! let &shellxquote = ''
   endif
 endif
+
+" true if on win32 and posix sh is available
+let s:sh_on_win32 = !has('unix') && (executable('busybox') || executable('bash'))
+
+" set shell related option
+function! s:toggle_shell(...)
+  if !s:sh_on_win32
+    return
+  endif
+  if a:0 > 0
+    if empty(a:1)
+      let tmp = s:shell_opt_cmd
+    else
+      let tmp = s:shell_opt_sh
+    endif
+  else
+    let tmp = &shell ==# s:shell_opt_cmd.shell ? s:shell_opt_sh : s:shell_opt_cmd
+  endif
+  let &shell = tmp.shell
+  let &shellcmdflag = tmp.shellcmdflag
+  let &shellquote = tmp.shellquote
+endfunction
 " }}}
 
 " misc {{{
