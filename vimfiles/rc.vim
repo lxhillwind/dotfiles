@@ -3,9 +3,7 @@ if v:version < 702
 endif
 
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
-if exists('&pp')
-  execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
-endif
+execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
 
 let mapleader = 's'  " assign before use
 let maplocalleader = "\<Space>"

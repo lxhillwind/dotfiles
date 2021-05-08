@@ -158,6 +158,10 @@ set $menu bemenu-run -i
 
     bindsym XF86PowerOff nop
 
+    bindsym $mod+comma exec mpc prev
+    bindsym $mod+period exec mpc next
+    bindsym $mod+slash exec mpc toggle
+
 #
 # Resizing containers:
 #

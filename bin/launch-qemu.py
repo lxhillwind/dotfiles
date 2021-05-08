@@ -39,7 +39,7 @@ def main():
     os.chdir(QEMU_IMG_DIR)
 
     with open('config.yml') as f:
-        config = yaml.load(f, Loader=yaml.SafeLoader)
+        config = yaml.safe_load(f)
 
     if sys.argv[1] not in config:
         abort(f'profile not found: {sys.argv[1]}')
