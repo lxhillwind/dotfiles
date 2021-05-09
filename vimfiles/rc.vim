@@ -805,7 +805,12 @@ function! s:execute_lines(mode)
     " TODO add more comment (or based on filetype).
     let result = add(result, substitute(l:i, '\v^\s*(//|#|"|--)+', '', ''))
   endfor
-  execute join(result, "\n")
+  echo 'execute? y/N '
+  if nr2char(getchar()) ==? 'y'
+    execute join(result, "\n")
+  else
+    echon 'cancelled.'
+  endif
 endfunction
 " }}}
 
