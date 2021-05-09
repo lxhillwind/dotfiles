@@ -331,10 +331,12 @@ function! s:run(args) abort
   endif
 
   if !s:has_pty()
+    "   :help E162
+    " to know why :silent
     if empty(cmd)
-      exe '!start' shell
+      silent exe '!start' shell
     else
-      exe '!start vimrun' shell shellcmdflag s:cmd_exe_quote(cmd)
+      silent exe '!start vimrun' shell shellcmdflag s:cmd_exe_quote(cmd)
     endif
 
     return
@@ -807,12 +809,12 @@ function! s:execute_lines(mode)
     let result = add(result, substitute(l:i, '\v^\s*(//|#|"|--)+', '', ''))
   endfor
   let result = join(result, "\n")
-  echo result
+  echom result
   echo 'execute? y/N '
   if nr2char(getchar()) ==? 'y'
-    execute 'Cdbuffer' result
+    redraws | execute 'Cdbuffer' result
   else
-    echon 'cancelled.'
+    redraws | echon 'cancelled.'
   endif
 endfunction
 " }}}
