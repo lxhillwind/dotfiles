@@ -751,7 +751,7 @@ endfunction
 " }}}
 
 " <Leader><CR> to execute current line (or select lines), comment removed {{{
-nnoremap <Leader><CR> <Cmd>call <SID>execute_lines('n')<CR>
+nnoremap <Leader><CR> :call <SID>execute_lines('n')<CR>
 vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 
 " return selected content as a list (preserve visual mode)
