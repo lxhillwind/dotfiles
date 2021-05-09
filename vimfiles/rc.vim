@@ -805,9 +805,11 @@ function! s:execute_lines(mode)
     " TODO add more comment (or based on filetype).
     let result = add(result, substitute(l:i, '\v^\s*(//|#|"|--)+', '', ''))
   endfor
+  let result = join(result, "\n")
+  echo result
   echo 'execute? y/N '
   if nr2char(getchar()) ==? 'y'
-    execute 'Cdbuffer' join(result, "\n")
+    execute 'Cdbuffer' result
   else
     echon 'cancelled.'
   endif
