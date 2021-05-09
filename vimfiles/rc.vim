@@ -749,6 +749,66 @@ function! s:join_line(sep)
 endfunction
 " }}}
 
+" <Leader><CR> to execute current line (or select lines), comment removed {{{
+nnoremap <Leader><CR> <Cmd>call <SID>execute_lines('n')<CR>
+vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
+
+" return selected content as a list (preserve visual mode)
+function! s:get_lines_in_visual_mode() " {{{
+  let result = []
+  let line_begin = line('v')
+  let line_end = line('.')
+  let col_begin = col('v')
+  let col_end = col('.')
+  let mode_ = mode()[0]
+
+  if line_begin > line_end
+    let [line_begin, line_end] = [line_end, line_begin]
+    if mode_ ==# 'v'
+      let [col_begin, col_end] = [col_end, col_begin]
+    endif
+  endif
+  if col_begin > col_end && mode_ ==# "\x16"  " <C-v>
+    let [col_begin, col_end] = [col_end, col_begin]
+  endif
+
+  for l:line in range(line_begin, line_end)
+    if mode_ ==# 'V'
+      let result = add(result, getline(l:line))
+    elseif mode_ ==# "\x16"  " <C-v>
+      let result = add(result, getline(l:line)[col_begin-1:col_end-1])
+    else
+      if l:line == line_begin
+        let result = add(result, getline(l:line)[col_begin-1:])
+      elseif l:line == line_end
+        let result = add(result, getline(l:line)[:col_end-1])
+      else
+        let result = add(result, getline(l:line))
+      endif
+    endif
+  endfor
+  return result
+endfunction
+" }}}
+
+function! s:execute_lines(mode)
+  if a:mode == 'n'
+    let lines = [getline('.')]
+  elseif a:mode == 'v'
+    let t = @"
+    silent normal gvy
+    let lines = split(@", "\n")
+    let @" = t
+  endif
+  let result = []
+  for l:i in lines
+    " TODO add more comment (or based on filetype).
+    let result = add(result, substitute(l:i, '\v^\s*(//|#|"|--)+', '', ''))
+  endfor
+  execute join(result, "\n")
+endfunction
+" }}}
+
 " gx related {{{
 nnoremap <silent> gx :call <SID>gx('n')<CR>
 vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
@@ -953,10 +1013,6 @@ function! s:qutebrowser_edit_cmd()
   call setline(3, 'hit `;q` to save cmd (first line) and quit')
   nnoremap <buffer> ;q :call writefile(['set-cmd-text -s :' . getline(1)], $QUTE_FIFO) \| q<CR>
 endfunction
-
-" dirvish
-let g:loaded_netrwPlugin = 1
-au FileType dirvish nmap <buffer> H <Plug>(dirvish_up) | nmap <buffer> L i
 " }}}
 
 " export SID (:h SID); variable: g:vimrc_sid {{{
