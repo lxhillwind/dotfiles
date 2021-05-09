@@ -4,7 +4,13 @@
 "
 "     let g:vimrc#pkgs = {'base': 1, 'coc': 0}
 "
-" echo g:vimrc#pkgs to get available pkgs.
+" to get available pkgs:
+"
+"     echo g:vimrc#pkgs
+"
+" or copy it via <Leader><CR> (see rc.vim):
+"
+"     let @" = 'let g:vimrc#pkgs = ' . string(g:vimrc#pkgs) | echo 'copied:' @"
 "
 " plug#begin(...) / plug#end() should be called explicitly.
 " {{{
