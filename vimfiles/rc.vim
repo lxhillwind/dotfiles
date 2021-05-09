@@ -807,7 +807,7 @@ function! s:execute_lines(mode)
   endfor
   echo 'execute? y/N '
   if nr2char(getchar()) ==? 'y'
-    execute join(result, "\n")
+    execute 'Cdbuffer' join(result, "\n")
   else
     echon 'cancelled.'
   endif
