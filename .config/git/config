@@ -12,10 +12,12 @@
 [difftool "vimdiff"]
 	path = nvim
 [alias]
-	a = !git config --get-regexp alias. | sort
-	archive-worktree = !f() { cd "${GIT_PREFIX:-.}/$1" || return -1 \n git ls-files 2>/dev/null | xargs tar -cf /dev/stdout -- \n } \n f
-	sh = !zsh
+	# use grep since some alias contains newline
+	a = !git config --get-regexp alias. | grep ^alias | sort
+
 	g = !git --git-dir ~/dotfiles/.git --work-tree ~
+
+	archive-worktree = !f() { cd "${GIT_PREFIX:-.}/$1" || return -1 \n git ls-files 2>/dev/null | xargs tar -cf /dev/stdout -- \n } \n f
 
 	au = add -u
 	dc = diff --cached
@@ -23,12 +25,6 @@
 	dcw = diff --cached --color-words=.
 
 	tag-ver = tag --sort=-version:refname
-
-	vim = !git -C ~/vimfiles/pack/git
-	vim-doc = !git vim submodule foreach nvim -Es -c 'sil! helpt doc'
-
-	vim-opt = !git -C ~/vimfiles/pack/git/opt
-	vim-start = !git -C ~/vimfiles/pack/git/start
 [mergetool]
 	keepBackup = false
 [pull]

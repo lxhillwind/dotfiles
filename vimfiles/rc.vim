@@ -475,7 +475,8 @@ nnoremap <Leader>p :call <SID>clipboard_paste("")<CR>
 
 function! s:clipboard_copy(cmd)
   if empty(a:cmd)
-    if has('clipboard')
+    if has('clipboard') && !has('unix')
+      " unix: X11 clipboard content will disapper when program exits.
       let @+ = @"
       return
     endif
@@ -492,7 +493,7 @@ endfunction
 
 function! s:clipboard_paste(cmd)
   if empty(a:cmd)
-    if has('clipboard')
+    if has('clipboard') && !has('unix')
       let @" = @+
       return
     endif
