@@ -285,7 +285,7 @@ endfunction
 " run command (via :terminal), output to a separate window; :Sh [cmd]...
 " On Windows XP (pty doesn't work), a seperate window is used.
 " It also fixes quote for sh on win32 {{{
-command! -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>)
+command! -bang -range -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, ['<bang>', <range>])
 
 function! s:krun_cb(...) dict
   if self.buffer_nr == winbufnr(0) && mode() == 't'
@@ -295,7 +295,7 @@ function! s:krun_cb(...) dict
 endfunction
 
 function! s:has_pty()
-  if has('unix') || has('nvim')
+  if ( has('unix') && has('terminal') ) || has('nvim')
     return 1
   endif
   if !has_key(s:, 'v_has_pty')
@@ -305,7 +305,19 @@ function! s:has_pty()
   return s:v_has_pty
 endfunction
 
-function! s:run(args) abort
+function! s:run(args, ...) abort
+  if has('unix') && !has('nvim') && !has('terminal')
+    call s:echoerr('feature +terminal / nvim is required!') | return
+  endif
+  " TODO l:bang impl
+  if a:0 > 0
+    let l:bang = a:1[0] ==# '!'
+    let l:range = a:1[1] == 2
+  else
+    let l:bang = 0
+    let l:range = 0
+  endif
+
   " expand %
   let slash = &shellslash
   try
@@ -330,13 +342,44 @@ function! s:run(args) abort
     let shellcmdflag = s:shell_opt_sh.shellcmdflag
   endif
 
+  " tmpfile prepare for visual mode
+  let [cmd_suffix, tmpfile, tmpbuf] = ['', '', '']
+  if l:range
+    if empty(cmd)
+      call s:echoerr('`<range>Sh` not allowed!') | return
+    elseif match(cmd, '\v[&|;]') >= 0
+      call s:echoerr('`<range>Sh` cmd contains meta char!') | return
+    endif
+    let tmp = @"
+    normal gvy
+    let data = split(@", "\n")
+    let @" = tmp
+    unlet tmp
+
+    if !s:has_pty() || has('nvim')
+      let tmpfile = tempname()
+      call writefile(data, tmpfile)
+      let cmd_suffix = ' < ' . shellescape(tmpfile)
+    else
+      let tmpbuf = bufadd('')
+      call bufload(tmpbuf)
+      let l:idx = 1
+      for l:line in data
+        call setbufline(tmpbuf, l:idx, l:line)
+        let l:idx += 1
+      endfor
+      unlet l:idx
+    endif
+  endif
+
   if !s:has_pty()
     "   :help E162
     " to know why :silent
     if empty(cmd)
-      silent exe '!start' shell
+      silent exe '!start' shell . cmd_suffix
     else
-      silent exe '!start vimrun' shell shellcmdflag s:cmd_exe_quote(cmd)
+      let cmd = s:cmd_exe_quote(cmd)
+      silent exe '!start vimrun' shell shellcmdflag cmd . cmd_suffix
     endif
 
     return
@@ -354,12 +397,12 @@ function! s:run(args) abort
       let cmd = shell
     endif
     if !s:sh_on_win32
-      call termopen(cmd, opt)
+      call termopen(cmd . cmd_suffix, opt)
     else
       " TODO verify quote in [b]ash on win32
       call s:toggle_shell(1)
       try
-        call termopen(printf('"%s"', cmd), opt)
+        call termopen(printf('"%s"' . cmd_suffix, cmd), opt)
       finally
         call s:toggle_shell(0)
       endtry
@@ -377,7 +420,14 @@ function! s:run(args) abort
         let args = printf('%s %s %s', shell, shellcmdflag, cmd)
       endif
     endif
-    call term_start(args, {'curwin': 1})
+    let term_args = {'curwin': 1}
+    if empty(tmpbuf)
+      call term_start(args, term_args)
+    else
+      call term_start(args,
+            \ extend(term_args, {'in_io': 'buffer', 'in_buf': tmpbuf}))
+      silent execute tmpbuf . 'bd!'
+    endif
   endif
 endfunction
 " }}}
