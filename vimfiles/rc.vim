@@ -385,9 +385,9 @@ function! s:run(args, ...) abort
     return
   endif
 
-  Ksnippet
+  Ksnippet | setl bufhidden=wipe
   " nornu not available in vim72
-  setl nonu | silent! setl nornu
+  setl nonu | setl nornu
   if has('nvim')
     let opt = {
           \'on_exit': function('s:krun_cb'),
