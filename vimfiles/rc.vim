@@ -433,8 +433,16 @@ function! s:run(args, ...) abort
     if empty(tmpbuf)
       call term_start(args, term_args)
     else
-      call term_start(args,
-            \ extend(term_args, {'in_io': 'buffer', 'in_buf': tmpbuf}))
+      if has('unix')
+        call term_start(args,
+              \ extend(term_args, {'in_io': 'buffer', 'in_buf': tmpbuf}))
+      else
+        call term_start(args,
+              \ extend(term_args, {'in_io': 'buffer', 'in_buf': tmpbuf,
+              \ 'eof_chars': "\x1a"}))
+        " <C-z>
+        sleep 1m
+      endif
       silent execute tmpbuf . 'bd!'
     endif
   endif
