@@ -122,7 +122,11 @@ function! System(arg, ...)
       return system(a:arg)
     endif
   else
-    let cmd = s:cmd_exe_quote(s:win32_quote(a:arg))
+    if has('nvim')
+      let cmd = a:arg
+    else
+      let cmd = s:cmd_exe_quote(s:win32_quote(a:arg))
+    endif
     let shq = &shq
     let sxq = &sxq
     try
@@ -295,8 +299,15 @@ function! s:krun_cb(...) dict
 endfunction
 
 function! s:has_pty()
-  if ( has('unix') && has('terminal') ) || has('nvim')
+  if has('nvim')
     return 1
+  endif
+  if has('unix')
+    if has('terminal')
+      return 1
+    else
+      return 0
+    endif
   endif
   if !has_key(s:, 'v_has_pty')
     " Windows XP winpty is buggy
@@ -306,7 +317,7 @@ function! s:has_pty()
 endfunction
 
 function! s:run(args, ...) abort
-  if has('unix') && !has('nvim') && !has('terminal')
+  if has('unix') && !s:has_pty()
     call s:echoerr('feature +terminal / nvim is required!') | return
   endif
   " TODO l:bang impl
@@ -330,10 +341,6 @@ function! s:run(args, ...) abort
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if !has('unix') && !has('nvim') && !empty(cmd)
-    let cmd = s:win32_quote(cmd)
-  endif
-
   if !s:sh_on_win32
     let shell = &shell
     let shellcmdflag = &shellcmdflag
@@ -347,16 +354,18 @@ function! s:run(args, ...) abort
   if l:range
     if empty(cmd)
       call s:echoerr('`<range>Sh` not allowed!') | return
-    elseif match(cmd, '\v[&|;]') >= 0
-      call s:echoerr('`<range>Sh` cmd contains meta char!') | return
     endif
     let tmp = @"
-    normal gvy
+    silent normal gvy
     let data = split(@", "\n")
     let @" = tmp
     unlet tmp
 
     if !s:has_pty() || has('nvim')
+      " from posix standard: utilities/V3_chap02.html#tag_18_02
+      if match(cmd, '\v[|&;<>()$`\"' . "'" . '*?[#~=%]') >= 0 && has('unix')
+        let cmd = 'sh -c ' . shellescape(cmd)
+      endif
       let tmpfile = tempname()
       call writefile(data, tmpfile)
       let cmd_suffix = ' < ' . shellescape(tmpfile)
@@ -372,14 +381,24 @@ function! s:run(args, ...) abort
     endif
   endif
 
+  if !empty(cmd) && !has('unix')
+    let cmd = s:win32_quote(cmd)
+    if ! (s:has_pty() && !has('nvim'))
+      " use cmd.exe if in nvim or vimrun (not in vim terminal)
+      let cmd = s:cmd_exe_quote(cmd)
+    endif
+    let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
+  endif
+
   if !s:has_pty()
+    " win32; unix is rejected early.
+    "
     "   :help E162
     " to know why :silent
     if empty(cmd)
       silent exe '!start' shell . cmd_suffix
     else
-      let cmd = s:cmd_exe_quote(cmd)
-      silent exe '!start vimrun' shell shellcmdflag cmd . cmd_suffix
+      silent exe '!start vimrun' cmd . cmd_suffix
     endif
 
     return
@@ -396,17 +415,7 @@ function! s:run(args, ...) abort
     if empty(cmd)
       let cmd = shell
     endif
-    if !s:sh_on_win32
-      call termopen(cmd . cmd_suffix, opt)
-    else
-      " TODO verify quote in [b]ash on win32
-      call s:toggle_shell(1)
-      try
-        call termopen(printf('"%s"' . cmd_suffix, cmd), opt)
-      finally
-        call s:toggle_shell(0)
-      endtry
-    endif
+    call termopen(cmd . cmd_suffix, opt)
     startinsert
   else
     if empty(cmd)
@@ -417,7 +426,7 @@ function! s:run(args, ...) abort
               \ executable(shell) && shellcmdflag ==# '-c' ? shell : 'sh',
               \ '-c', cmd]
       else
-        let args = printf('%s %s %s', shell, shellcmdflag, cmd)
+        let args = cmd
       endif
     endif
     let term_args = {'curwin': 1}
@@ -957,7 +966,7 @@ endfunction
 " }}}
 
 " colorscheme {{{
-if !has('unix') && !has('gui_running')  " win32 cmd
+if !has('unix') && !has('gui_running') && !has('nvim')  " win32 cmd
   set nocursorcolumn
   color pablo
 elseif (has('unix') && $TERM ==? 'linux')  " linux tty
