@@ -154,6 +154,43 @@ function! s:cmd_exe_quote(arg)
   " escape for cmd.exe
   return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
 endfunction
+
+" return selected content as a list (preserve visual mode)
+function! s:get_lines_in_visual_mode()
+  let result = []
+  let line_begin = line('v')
+  let line_end = line('.')
+  let col_begin = col('v')
+  let col_end = col('.')
+  let mode_ = mode()[0]
+
+  if line_begin > line_end
+    let [line_begin, line_end] = [line_end, line_begin]
+    if mode_ ==# 'v'
+      let [col_begin, col_end] = [col_end, col_begin]
+    endif
+  endif
+  if col_begin > col_end && mode_ ==# "\x16"  " <C-v>
+    let [col_begin, col_end] = [col_end, col_begin]
+  endif
+
+  for l:line in range(line_begin, line_end)
+    if mode_ ==# 'V'
+      let result = add(result, getline(l:line))
+    elseif mode_ ==# "\x16"  " <C-v>
+      let result = add(result, getline(l:line)[col_begin-1:col_end-1])
+    else
+      if l:line == line_begin
+        let result = add(result, getline(l:line)[col_begin-1:])
+      elseif l:line == line_end
+        let result = add(result, getline(l:line)[:col_end-1])
+      else
+        let result = add(result, getline(l:line))
+      endif
+    endif
+  endfor
+  return result
+endfunction
 " }}}
 
 " add checklist to markdown file; <LocalLeader><Space> {{{
@@ -289,7 +326,12 @@ endfunction
 " run command (via :terminal), output to a separate window; :Sh [cmd]...
 " On Windows XP (pty doesn't work), a seperate window is used.
 " It also fixes quote for sh on win32 {{{
-command! -bang -range -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, ['<bang>', <range>])
+if has('patch-8.0.1089')
+  command! -bang -range -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, <bang>0, <range>)
+else
+  " not support <range>
+  command! -bang -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, <bang>0, 0)
+endif
 
 function! s:krun_cb(...) dict
   if self.buffer_nr == winbufnr(0) && mode() == 't'
@@ -316,18 +358,12 @@ function! s:has_pty()
   return s:v_has_pty
 endfunction
 
-function! s:run(args, ...) abort
+function! s:run(args, bang, range) abort
   if has('unix') && !s:has_pty()
     call s:echoerr('feature +terminal / nvim is required!') | return
   endif
-  " TODO l:bang impl
-  if a:0 > 0
-    let l:bang = a:1[0] ==# '!'
-    let l:range = a:1[1] == 2
-  else
-    let l:bang = 0
-    let l:range = 0
-  endif
+  let l:bang = a:bang
+  let l:range = a:range == 2
 
   " expand %
   let slash = &shellslash
@@ -823,44 +859,6 @@ endfunction
 nnoremap <Leader><CR> :call <SID>execute_lines('n')<CR>
 vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 
-" return selected content as a list (preserve visual mode)
-function! s:get_lines_in_visual_mode() " {{{
-  let result = []
-  let line_begin = line('v')
-  let line_end = line('.')
-  let col_begin = col('v')
-  let col_end = col('.')
-  let mode_ = mode()[0]
-
-  if line_begin > line_end
-    let [line_begin, line_end] = [line_end, line_begin]
-    if mode_ ==# 'v'
-      let [col_begin, col_end] = [col_end, col_begin]
-    endif
-  endif
-  if col_begin > col_end && mode_ ==# "\x16"  " <C-v>
-    let [col_begin, col_end] = [col_end, col_begin]
-  endif
-
-  for l:line in range(line_begin, line_end)
-    if mode_ ==# 'V'
-      let result = add(result, getline(l:line))
-    elseif mode_ ==# "\x16"  " <C-v>
-      let result = add(result, getline(l:line)[col_begin-1:col_end-1])
-    else
-      if l:line == line_begin
-        let result = add(result, getline(l:line)[col_begin-1:])
-      elseif l:line == line_end
-        let result = add(result, getline(l:line)[:col_end-1])
-      else
-        let result = add(result, getline(l:line))
-      endif
-    endif
-  endfor
-  return result
-endfunction
-" }}}
-
 function! s:execute_lines(mode)
   if a:mode == 'n'
     let lines = [getline('.')]
@@ -889,6 +887,8 @@ endfunction
 " gx related {{{
 nnoremap <silent> gx :call <SID>gx('n')<CR>
 vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
+" vim72 (linux) bundled netrw will map `gx` anyway, so skip loading it.
+let g:loaded_netrwPlugin = 1
 
 " TODO fix quote / escape
 function! s:gx_open_cmd(s)
