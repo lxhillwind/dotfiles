@@ -327,7 +327,7 @@ endfunction
 " On Windows XP (pty doesn't work), a seperate window is used.
 " It also fixes quote for sh on win32 {{{
 if has('patch-8.0.1089')
-  command! -bang -range -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, <bang>0, <range>)
+  command! -bang -range -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, <bang>0, <range> == 2)
 else
   " not support <range>
   command! -bang -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, <bang>0, 0)
@@ -362,8 +362,6 @@ function! s:run(args, bang, range) abort
   if has('unix') && !s:has_pty()
     call s:echoerr('feature +terminal / nvim is required!') | return
   endif
-  let l:bang = a:bang
-  let l:range = a:range == 2
 
   " expand %
   let slash = &shellslash
@@ -387,7 +385,7 @@ function! s:run(args, bang, range) abort
 
   " tmpfile prepare for visual mode
   let [cmd_suffix, tmpfile, tmpbuf] = ['', '', '']
-  if l:range
+  if a:range
     if empty(cmd)
       call s:echoerr('`<range>Sh` not allowed!') | return
     endif

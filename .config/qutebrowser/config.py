@@ -110,6 +110,7 @@ config.bind('yf', 'hint links yank')
 config.bind('<ctrl-d>', 'rl-delete-char', mode='command')
 config.bind('<ctrl-i>', 'completion-item-focus next', mode='command')
 config.bind('<ctrl-shift-i>', 'completion-item-focus prev', mode='command')
+config.bind('<ctrl-;>', 'spawn -u vim-edit-cmd', 'command')  # edit cmd text in vim
 
 # Bindings for insert mode
 config.bind('<ctrl-a>', 'fake-key <home>', mode='insert')
