@@ -361,15 +361,12 @@ function! s:has_pty()
   return s:v_has_pty
 endfunction
 
-" TODO
-" - Ksnippet show job output
-" - Windows XP tty workaround
 function! Sh(cmd, ...) abort
   let opt = {'tty': 1, 'shell': 1, 'visual': 0}
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
-    if type(a:0) == type('')
+    if type(a:1) == type('')
       let stdin = split(a:1, "\n")
     else
       let opt = extend(opt, a:1)
@@ -430,10 +427,24 @@ function! Sh(cmd, ...) abort
       endif
     endif
   else
+    let shell = s:shell_opt_sh.shell
+    let shellcmdflag = s:shell_opt_sh.shellcmdflag
+
+    if has('nvim') && empty(opt.tty)
+      if empty(opt.shell)
+        " TODO handle quote / space correctly; handle opt.shell;
+        " in neovim, cmd must be passed as list to skip shell.
+        let cmd = split(shell) + split(shellcmdflag) + [cmd]
+      endif
+      if stdin is# 0
+        return system(cmd)
+      else
+        return system(cmd, stdin)
+      endif
+    endif
+
     if !empty(opt.shell)
       " TODO handle cmd.exe?
-      let shell = s:shell_opt_sh.shell
-      let shellcmdflag = s:shell_opt_sh.shellcmdflag
       if empty(cmd)
         let cmd = shell
       else
