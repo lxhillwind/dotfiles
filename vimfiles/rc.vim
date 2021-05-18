@@ -69,6 +69,8 @@ set sc
 set wmnu
 " completeopt
 set cot-=preview
+" shortmess; show search count message (default in neovim)
+set shm-=S
 
 "
 " encoding
@@ -229,7 +231,7 @@ function! s:expand_with_cmd(bang, cmd) abort
   if a:cmd ==# 'vim'
     let output = s:execute(code)
   else
-    let output = System(a:cmd, code)
+    let output = Sh('-T ' . a:cmd, code)
     if v:shell_error
       call s:echoerr('command failed: ' . a:cmd)
     endif
@@ -327,10 +329,10 @@ endfunction
 " On Windows XP (pty doesn't work), a seperate window is used.
 " It also fixes quote for sh on win32 {{{
 if has('patch-8.0.1089')
-  command! -bang -range -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, <bang>0, <range> == 2)
+  command! -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'range': <range>, 'line1': <line1>, 'line2': <line2>})
 else
   " not support <range>
-  command! -bang -nargs=* -complete=shellcmd Sh call <SID>run(<q-args>, <bang>0, 0)
+  command! -nargs=* -complete=shellcmd Sh call Sh(<q-args>)
 endif
 
 function! s:krun_cb(...) dict
@@ -353,134 +355,175 @@ function! s:has_pty()
   endif
   if !has_key(s:, 'v_has_pty')
     " Windows XP winpty is buggy
-    let s:v_has_pty = has('terminal') && match(system('ver'), 'Windows XP') < 0
+    " call Sh() with -ST and not stdin to avoid recursive call
+    let s:v_has_pty = has('terminal') && match(Sh('-ST cmd /c ver'), 'Windows XP') < 0
   endif
   return s:v_has_pty
 endfunction
 
-function! s:run(args, bang, range) abort
-  if has('unix') && !s:has_pty()
-    call s:echoerr('feature +terminal / nvim is required!') | return
+" TODO
+" - Ksnippet show job output
+" - Windows XP tty workaround
+function! Sh(cmd, ...) abort
+  let opt = {'tty': 1, 'shell': 1, 'visual': 0}
+  let stdin = 0
+  if a:0 > 0
+    " a:1: string (stdin) or dict.
+    if type(a:0) == type('')
+      let stdin = split(a:1, "\n")
+    else
+      let opt = extend(opt, a:1)
+    endif
   endif
 
+  " -vST
+  let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
+  let opt.visual = match(opt_string, 'v') >= 0
+  let opt.shell = match(opt_string, 'S') < 0
+  let opt.tty = match(opt_string, 'T') < 0
+
+  let cmd = a:cmd[len(opt_string):]
   " expand %
   let slash = &shellslash
   try
     if s:sh_on_win32 | set shellslash | endif
-    let cmd = substitute(a:args, '\v(^|\s)@<=(\%(\:[phtre])*)',
+    let cmd = substitute(cmd, '\v(^|\s)@<=(\%(\:[phtre])*)',
           \'\=shellescape(expand(submatch(2)))', 'g')
   finally
     if s:sh_on_win32 | let &shellslash = slash | endif
   endtry
+  let cmd = substitute(cmd, '\v^\s+', '', '')
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if !s:sh_on_win32
-    let shell = &shell
-    let shellcmdflag = &shellcmdflag
-  else
-    let shell = s:shell_opt_sh.shell
-    let shellcmdflag = s:shell_opt_sh.shellcmdflag
-  endif
-
-  " tmpfile prepare for visual mode
-  let [cmd_suffix, tmpfile, tmpbuf] = ['', '', '']
-  if a:range
-    if empty(cmd)
-      call s:echoerr('`<range>Sh` not allowed!') | return
-    endif
+  if !empty(opt.visual)
     let tmp = @"
     silent normal gvy
-    let data = split(@", "\n")
+    let stdin = split(@", "\n")
     let @" = tmp
     unlet tmp
+  else
+    if get(opt, 'range') == 2
+      let stdin = getline(opt.line1, opt.line2)
+    endif
+  endif
 
+  " ignore opt.shell for unix.
+  if empty(opt.tty) && has('unix')
+    if stdin is# 0
+      return system(cmd)
+    else
+      return system(cmd, stdin)
+    endif
+  endif
+
+  if has('unix')
+    if has('nvim')
+      if empty(cmd)
+        let cmd = &shell
+      endif
+    else
+      if empty(cmd)
+        let cmd = split(&shell)
+      else
+        let cmd = ['sh', '-c', cmd]
+      endif
+    endif
+  else
+    if !empty(opt.shell)
+      " TODO handle cmd.exe?
+      let shell = s:shell_opt_sh.shell
+      let shellcmdflag = s:shell_opt_sh.shellcmdflag
+      if empty(cmd)
+        let cmd = shell
+      else
+        let cmd = s:win32_quote(cmd)
+        if ! (s:has_pty() && !has('nvim'))
+          " use cmd.exe if in nvim or vimrun (not in vim terminal)
+          let cmd = s:cmd_exe_quote(cmd)
+        endif
+        let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
+        if !s:has_pty()
+          let cmd = 'vimrun ' . cmd
+        endif
+      endif
+    endif
+  endif
+
+  let [cmd_suffix, tmpfile, tmpbuf] = ['', '', '']
+  if stdin isnot# 0
     if !s:has_pty() || has('nvim')
       " from posix standard: utilities/V3_chap02.html#tag_18_02
       if match(cmd, '\v[|&;<>()$`\"' . "'" . '*?[#~=%]') >= 0 && has('unix')
         let cmd = 'sh -c ' . shellescape(cmd)
       endif
       let tmpfile = tempname()
-      call writefile(data, tmpfile)
+      call writefile(stdin, tmpfile)
       let cmd_suffix = ' < ' . shellescape(tmpfile)
+      let cmd .= cmd_suffix
     else
       let tmpbuf = bufadd('')
       call bufload(tmpbuf)
       let l:idx = 1
-      for l:line in data
+      for l:line in stdin
         call setbufline(tmpbuf, l:idx, l:line)
         let l:idx += 1
       endfor
       unlet l:idx
     endif
   endif
-
-  if !empty(cmd) && !has('unix')
-    let cmd = s:win32_quote(cmd)
-    if ! (s:has_pty() && !has('nvim'))
-      " use cmd.exe if in nvim or vimrun (not in vim terminal)
-      let cmd = s:cmd_exe_quote(cmd)
+  let job_opt = {}
+  if !empty(tmpbuf)
+    let job_opt = extend(job_opt, {'in_io': 'buffer', 'in_buf': tmpbuf})
+    if !has('unix')
+      " <C-z>
+      let job_opt = extend(job_opt, {'eof_chars': "\x1a"})
     endif
-    let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
   endif
 
-  if !s:has_pty()
+  if opt.tty && !s:has_pty()
     " win32; unix is rejected early.
     "
     "   :help E162
     " to know why :silent
-    if empty(cmd)
-      silent exe '!start' shell . cmd_suffix
-    else
-      silent exe '!start vimrun' cmd . cmd_suffix
-    endif
-
+    silent exe '!start' cmd . cmd_suffix
     return
   endif
 
-  Ksnippet | setl bufhidden=wipe
-  " nornu not available in vim72
-  setl nonu | setl nornu
-  if has('nvim')
-    let opt = {
-          \'on_exit': function('s:krun_cb'),
-          \'buffer_nr': winbufnr(0),
-          \}
-    if empty(cmd)
-      let cmd = shell
+  if opt.tty
+    Ksnippet | setl bufhidden=wipe
+    if has('nvim')
+      let opt = {
+            \'on_exit': function('s:krun_cb'),
+            \'buffer_nr': winbufnr(0),
+            \}
+      call termopen(cmd . cmd_suffix, opt)
+      startinsert
+    else
+      let job_opt = extend(job_opt, {'curwin': 1})
+      let job = term_start(cmd, job_opt)
     endif
-    call termopen(cmd . cmd_suffix, opt)
-    startinsert
   else
-    if empty(cmd)
-      let args = shell
-    else
-      if has('unix')
-        let args = [
-              \ executable(shell) && shellcmdflag ==# '-c' ? shell : 'sh',
-              \ '-c', cmd]
-      else
-        let args = cmd
-      endif
-    endif
-    let term_args = {'curwin': 1}
-    if empty(tmpbuf)
-      call term_start(args, term_args)
-    else
-      if has('unix')
-        call term_start(args,
-              \ extend(term_args, {'in_io': 'buffer', 'in_buf': tmpbuf}))
-      else
-        call term_start(args,
-              \ extend(term_args, {'in_io': 'buffer', 'in_buf': tmpbuf,
-              \ 'eof_chars': "\x1a"}))
-        " <C-z>
-        sleep 1m
-      endif
-      silent execute tmpbuf . 'bd!'
-    endif
+    " TODO handle non-tty stderr
+    let job_opt = extend(job_opt, {'out_io': 'buffer', 'out_msg': 0})
+    let job = job_start(cmd, job_opt)
   endif
+  if !empty(tmpbuf)
+    if !has('unix')
+      sleep 1m
+    endif
+    silent execute tmpbuf . 'bd!'
+  endif
+  if opt.tty
+    return job
+  endif
+
+  while job_status(job) ==# 'run'
+    sleep 1m
+  endwhile
+  return join(getbufline(ch_getbufnr(job, 'out'), 1, '$'), "\n")
 endfunction
+
 " }}}
 
 " run vim command; :KvimRun {vim_command}... {{{
@@ -517,12 +560,18 @@ command! -nargs=1 -bar Tmux call <SID>open_tmux_window(<q-args>)
 
 function! s:open_tmux_window(args)
   let options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
-  let option = get(options, a:args)
+  let ch = match(a:args, '\s')
+  if ch == -1
+    let [option, args] = [a:args, '']
+  else
+    let [option, args] = [a:args[:ch], a:args[ch:]]
+  endif
+  let option = get(options, trim(option))
   if empty(option)
     call s:echoerr('unknown option: ' . a:args . '; valid: ' . join(keys(options), ' / ')) | return
   endif
   if exists("$TMUX")
-    call system("tmux " . option . " -c " . shellescape(getcwd()))
+    call system("tmux " . option . " -c " . shellescape(getcwd()) . args)
   else
     call s:echoerr('not in tmux session!')
   endif
@@ -588,9 +637,9 @@ function! s:clipboard_copy(cmd)
     else
       call s:echoerr('clipboard not found!') | return
     endif
-    call System(l:cmd, @")
+    call system(l:cmd, @")
   else
-    call System(a:cmd, @")
+    call system(a:cmd, @")
   endif
 endfunction
 
@@ -605,9 +654,9 @@ function! s:clipboard_paste(cmd)
     else
       call s:echoerr('clipboard not found!') | return
     endif
-    let @" = System(l:cmd)
+    let @" = system(l:cmd)
   else
-    let @" = System(a:cmd)
+    let @" = system(a:cmd)
   endif
 endfunction
 " }}}
