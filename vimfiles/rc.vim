@@ -509,6 +509,7 @@ function! Sh(cmd, ...) abort
     endif
     if !empty(opt.bang)
       let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
+      call filter(s:sh_buf_cache, 'bufexists(v:val)')
     endif
   else
     " TODO handle non-tty stderr
