@@ -480,22 +480,20 @@ function! Sh(cmd, ...) abort
   endif
 
   if opt.tty
-    let buf = 0
+    let buf_idx = -1
     if !empty(opt.bang)
-      let buf = get(s:, 'sh_buf_cache', 0)
-      if !empty(buf)
-        let buflist = tabpagebuflist()
+      let buffers = get(s:, 'sh_buf_cache', [])
+      let buflist = tabpagebuflist()
+      for buf in buffers
         let buf_idx = index(buflist, buf)
         if buf_idx >= 0
           " TODO check previous job running
-          " TODO cache for each tab
           exe buf_idx + 1 . 'wincmd w'
-        else
-          let buf = 0
+          break
         endif
-      endif
+      endfor
     endif
-    if empty(buf)
+    if buf_idx < 0
       Ksnippet | setl bufhidden=wipe
     endif
     if has('nvim')
@@ -510,7 +508,7 @@ function! Sh(cmd, ...) abort
       let job = term_start(cmd, job_opt)
     endif
     if !empty(opt.bang)
-      let s:sh_buf_cache = bufnr()
+      let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
     endif
   else
     " TODO handle non-tty stderr
