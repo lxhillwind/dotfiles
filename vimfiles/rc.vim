@@ -306,10 +306,10 @@ endfunction
 " On Windows XP (pty doesn't work), a seperate window is used.
 " It also fixes quote for sh on win32 {{{
 if has('patch-8.0.1089')
-  command! -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 else
   " not support <range>
-  command! -nargs=* -complete=shellcmd Sh call Sh(<q-args>)
+  command! -bang -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0})
 endif
 
 function! s:krun_cb(...) dict
@@ -340,7 +340,7 @@ endfunction
 
 function! Sh(cmd, ...) abort
   " shell (-T) only works for vim on win32
-  let opt = {'tty': 1, 'shell': 1, 'visual': 0}
+  let opt = {'tty': 1, 'shell': 1, 'visual': 0, 'bang': 0}
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
@@ -480,7 +480,24 @@ function! Sh(cmd, ...) abort
   endif
 
   if opt.tty
-    Ksnippet | setl bufhidden=wipe
+    let buf = 0
+    if !empty(opt.bang)
+      let buf = get(s:, 'sh_buf_cache', 0)
+      if !empty(buf)
+        let buflist = tabpagebuflist()
+        let buf_idx = index(buflist, buf)
+        if buf_idx >= 0
+          " TODO check previous job running
+          " TODO cache for each tab
+          exe buf_idx + 1 . 'wincmd w'
+        else
+          let buf = 0
+        endif
+      endif
+    endif
+    if empty(buf)
+      Ksnippet | setl bufhidden=wipe
+    endif
     if has('nvim')
       let job_opt = {
             \'on_exit': function('s:krun_cb'),
@@ -491,6 +508,9 @@ function! Sh(cmd, ...) abort
     else
       let job_opt = extend(job_opt, {'curwin': 1})
       let job = term_start(cmd, job_opt)
+    endif
+    if !empty(opt.bang)
+      let s:sh_buf_cache = bufnr()
     endif
   else
     " TODO handle non-tty stderr
