@@ -114,42 +114,19 @@ function! s:execute(arg)
   return l:res
 endfunction
 
-" use unix shell if possible (win32)
-function! System(arg, ...)
-  if has('unix') || (!s:sh_on_win32 && v:version > 702)
-    " TODO verify win32 vim (v 703, 704) quote
-    if a:0 > 0
-      return system(a:arg, a:1)
-    else
-      return system(a:arg)
-    endif
-  else
-    if has('nvim')
-      let cmd = a:arg
-    else
-      let cmd = s:cmd_exe_quote(s:win32_quote(a:arg))
-    endif
-    let shq = &shq
-    let sxq = &sxq
-    try
-      call s:toggle_shell(1)
-      let &shq = '"'
-      let &sxq = ''
-      if a:0 > 0
-        return system(cmd, a:1)
-      else
-        return system(cmd)
-      endif
-    finally
-      let &shq = shq
-      let &sxq = sxq
-      call s:toggle_shell(0)
-    endtry
-  endif
-endfunction
-
 function! s:win32_quote(arg)
-  return '"' . a:arg . '"'
+  " To make quote work reliably, it is worth reading:
+  " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+  let cmd = a:arg
+  " double all \ before "
+  let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+  " double trailing \
+  let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
+  " escape " with \
+  let cmd = escape(cmd, '"')
+  " quote it
+  let cmd = '"' . cmd . '"'
+  return cmd
 endfunction
 
 function! s:cmd_exe_quote(arg)
@@ -362,6 +339,7 @@ function! s:has_pty()
 endfunction
 
 function! Sh(cmd, ...) abort
+  " shell (-T) only works for vim on win32
   let opt = {'tty': 1, 'shell': 1, 'visual': 0}
   let stdin = 0
   if a:0 > 0
@@ -431,7 +409,7 @@ function! Sh(cmd, ...) abort
     let shellcmdflag = s:shell_opt_sh.shellcmdflag
 
     if has('nvim') && empty(opt.tty)
-      if empty(opt.shell)
+      if !empty(opt.shell)
         " TODO handle quote / space correctly; handle opt.shell;
         " in neovim, cmd must be passed as list to skip shell.
         let cmd = split(shell) + split(shellcmdflag) + [cmd]
@@ -504,11 +482,11 @@ function! Sh(cmd, ...) abort
   if opt.tty
     Ksnippet | setl bufhidden=wipe
     if has('nvim')
-      let opt = {
+      let job_opt = {
             \'on_exit': function('s:krun_cb'),
             \'buffer_nr': winbufnr(0),
             \}
-      call termopen(cmd . cmd_suffix, opt)
+      let job = termopen(cmd . cmd_suffix, job_opt)
       startinsert
     else
       let job_opt = extend(job_opt, {'curwin': 1})
