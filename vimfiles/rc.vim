@@ -464,8 +464,8 @@ function! Sh(cmd, ...) abort
   let job_opt = {}
   if !empty(tmpbuf)
     let job_opt = extend(job_opt, {'in_io': 'buffer', 'in_buf': tmpbuf})
-    if !has('unix')
-      " <C-z>
+    if !has('unix') && opt.tty
+      " <C-z>; nvim won't take job_opt below.
       let job_opt = extend(job_opt, {'eof_chars': "\x1a"})
     endif
   endif
@@ -512,6 +512,7 @@ function! Sh(cmd, ...) abort
       call filter(s:sh_buf_cache, 'bufexists(v:val)')
     endif
   else
+    " nvim calls system() early.
     " TODO handle non-tty stderr
     let job_opt = extend(job_opt, {'out_io': 'buffer', 'out_msg': 0})
     let job = job_start(cmd, job_opt)
