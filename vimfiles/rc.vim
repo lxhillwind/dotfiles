@@ -197,29 +197,28 @@ function! s:toggle_task_status()
 endfunction
 " }}}
 
-" vim's *filter*, char level; {VISUAL}<Leader><Tab> {{{
-command! -bang -nargs=+ -complete=shellcmd
-      \ KexpandWithCmd call <SID>expand_with_cmd('<bang>', <q-args>)
+" vim's *filter*, char level; {VISUAL}:Filter {cmd} {{{
+command! -nargs=+ -range -complete=shellcmd Filter call <SID>filter(<q-args>)
 
-function! s:expand_with_cmd(bang, cmd) abort
+function! s:filter(cmd) abort
   let previous = @"
+  try
+    call s:filter_impl(a:cmd)
+  finally
+    let @" = previous
+  endtry
+endfunction
+
+function! s:filter_impl(cmd) abort
   sil normal gvy
   let code = @"
   if a:cmd ==# 'vim'
     let output = s:execute(code)
   else
     let output = Sh('-T ' . a:cmd, code)
-    if v:shell_error
-      call s:echoerr('command failed: ' . a:cmd)
-    endif
   endif
   let @" = substitute(output, '\n\+$', '', '')
-  if empty(a:bang)
-    KvimRun echon @"
-  else
-    normal gvp
-  endif
-  let @" = previous
+  normal gvp
 endfunction
 " }}}
 
@@ -889,8 +888,6 @@ if exists(':tnoremap') == 2
   endif
 endif
 
-vnoremap <Leader><Tab> :<C-u>KexpandWithCmd
-
 nnoremap <Leader>e :Cdbuffer e <cfile><CR>
 nnoremap <Leader>E :e#<CR>
 
@@ -1089,7 +1086,7 @@ if !has('unix')
         \ }
 
   let s:shell_opt_sh = {
-        \ 'shell': executable('busybox') ? 'busybox sh' : 'bash',
+        \ 'shell': 'busybox sh',
         \ 'shellcmdflag': '-c',
         \ 'shellquote': has('nvim') ? '"' : '',
         \ }
@@ -1104,25 +1101,49 @@ if !has('unix')
 endif
 
 " true if on win32 and posix sh is available
-let s:sh_on_win32 = !has('unix') && (executable('busybox') || executable('bash'))
+let s:sh_on_win32 = !has('unix') && executable('busybox')
+" }}}
 
-" set shell related option
-function! s:toggle_shell(...)
-  if !s:sh_on_win32
-    return
+" win32: replace :! && :'<,'>! with busybox shell {{{
+if s:sh_on_win32
+  cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
+  command! -nargs=+ -range Win32Filter call <SID>win32_filter(<q-args>, <range>, <line1>, <line2>)
+endif
+
+function! s:shell_replace()
+  let cmd = getcmdline()
+  if match(cmd, '\v^!') >= 0
+    let cmd = 'Win32Filter ' . cmd[1:]
+  elseif match(cmd, printf('\v%s\<,%s\>\!', "'", "'")) >= 0
+    let cmd = "'<,'>Win32Filter " . cmd[6:]
   endif
-  if a:0 > 0
-    if empty(a:1)
-      let tmp = s:shell_opt_cmd
+  return cmd
+endfunction
+
+function! s:win32_filter(cmd, range, line1, line2)
+  let previous = @"
+  try
+    let @" = trim(Sh('-T ' . a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2}))
+    if a:range == 2
+      let first = 1 == a:line1
+      let last = line('$') == a:line2
+      execute 'normal' a:line1 . 'gg'
+      execute 'normal' a:line2 - a:line1 + 1 . '"_dd'
+      if last
+        if first
+          normal P
+        else
+          execute 'normal' "o\<Esc>P"
+        endif
+      else
+        execute 'normal' "O\<Esc>P"
+      endif
     else
-      let tmp = s:shell_opt_sh
+      redraws | echon @"
     endif
-  else
-    let tmp = &shell ==# s:shell_opt_cmd.shell ? s:shell_opt_sh : s:shell_opt_cmd
-  endif
-  let &shell = tmp.shell
-  let &shellcmdflag = tmp.shellcmdflag
-  let &shellquote = tmp.shellquote
+  finally
+    let @" = previous
+  endtry
 endfunction
 " }}}
 
