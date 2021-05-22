@@ -5,9 +5,8 @@ endif
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
 
-let mapleader = 's'  " assign before use
-let maplocalleader = "\<Space>"
-noremap s <Nop>
+let mapleader = ' '  " assign before use
+let maplocalleader = ' ;'
 noremap <Space> <Nop>
 
 " default {{{
@@ -172,7 +171,7 @@ function! s:get_lines_in_visual_mode()
 endfunction
 " }}}
 
-" add checklist to markdown file; <LocalLeader><Space> {{{
+" add checklist to markdown file; <LocalLeader>c {{{
 au FileType markdown call s:task_pre_func() | nnoremap <buffer>
       \ <LocalLeader>c :call <SID>toggle_task_status()<CR>
 
@@ -337,9 +336,19 @@ function! s:has_pty()
   return s:v_has_pty
 endfunction
 
+function! s:sh_echo_check(str, cond)
+  if !empty(a:cond)
+    redraws | echon trim(a:str, "\n")
+    return 0
+  else
+    return a:str
+  endif
+endfunction
+
 function! Sh(cmd, ...) abort
   " shell (-T) only works for vim on win32
-  let opt = {'tty': 1, 'shell': 1, 'visual': 0, 'bang': 0}
+  " echo (-e) implies -T.
+  let opt = {'tty': 1, 'shell': 1, 'visual': 0, 'bang': 0, 'echo': 0}
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
@@ -350,11 +359,16 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
-  " -vST
+  " -vSTe
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
   let opt.visual = match(opt_string, 'v') >= 0
   let opt.shell = match(opt_string, 'S') < 0
   let opt.tty = match(opt_string, 'T') < 0
+  let opt.echo = match(opt_string, 'e') >= 0
+
+  if !empty(opt.echo)
+    let opt.tty = 0
+  endif
 
   let cmd = a:cmd[len(opt_string):]
   " expand %
@@ -385,9 +399,9 @@ function! Sh(cmd, ...) abort
   " ignore opt.shell for unix.
   if empty(opt.tty) && has('unix')
     if stdin is# 0
-      return system(cmd)
+      return s:sh_echo_check(system(cmd), opt.echo)
     else
-      return system(cmd, stdin)
+      return s:sh_echo_check(system(cmd, stdin), opt.echo)
     endif
   endif
 
@@ -414,9 +428,9 @@ function! Sh(cmd, ...) abort
         let cmd = split(shell) + split(shellcmdflag) + [cmd]
       endif
       if stdin is# 0
-        return system(cmd)
+        return s:sh_echo_check(system(cmd), opt.echo)
       else
-        return system(cmd, stdin)
+        return s:sh_echo_check(system(cmd, stdin), opt.echo)
       endif
     endif
 
@@ -529,7 +543,10 @@ function! Sh(cmd, ...) abort
   while job_status(job) ==# 'run'
     sleep 1m
   endwhile
-  return join(getbufline(ch_getbufnr(job, 'out'), 1, '$'), "\n")
+  return s:sh_echo_check(
+        \join(getbufline(ch_getbufnr(job, 'out'), 1, '$'), "\n"),
+        \opt.echo
+        \)
 endfunction
 
 " }}}
@@ -1107,39 +1124,35 @@ let s:sh_on_win32 = !has('unix') && executable('busybox')
 " win32: replace :! && :'<,'>! with busybox shell {{{
 if s:sh_on_win32
   cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
-  command! -nargs=+ -range Win32Filter call <SID>win32_filter(<q-args>, <range>, <line1>, <line2>)
+  command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
 endif
 
 function! s:shell_replace()
   let cmd = getcmdline()
   if match(cmd, '\v^!') >= 0
-    let cmd = 'Win32Filter ' . cmd[1:]
+    let cmd = 'Sh -e ' . cmd[1:]
   elseif match(cmd, printf('\v%s\<,%s\>\!', "'", "'")) >= 0
-    let cmd = "'<,'>Win32Filter " . cmd[6:]
+    let cmd = "'<,'>FilterV " . cmd[6:]
   endif
   return cmd
 endfunction
 
-function! s:win32_filter(cmd, range, line1, line2)
+function! s:filterV(cmd, range, line1, line2)
   let previous = @"
   try
-    let @" = trim(Sh('-T ' . a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2}))
-    if a:range == 2
-      let first = 1 == a:line1
-      let last = line('$') == a:line2
-      execute 'normal' a:line1 . 'gg'
-      execute 'normal' a:line2 - a:line1 + 1 . '"_dd'
-      if last
-        if first
-          normal P
-        else
-          execute 'normal' "o\<Esc>P"
-        endif
+    let @" = trim(Sh('-T ' . a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2}), "\n")
+    let first = 1 == a:line1
+    let last = line('$') == a:line2
+    execute 'normal' a:line1 . 'gg'
+    execute 'normal' a:line2 - a:line1 + 1 . '"_dd'
+    if last
+      if first
+        normal P
       else
-        execute 'normal' "O\<Esc>P"
+        execute 'normal' "o\<Esc>P"
       endif
     else
-      redraws | echon @"
+      execute 'normal' "O\<Esc>P"
     endif
   finally
     let @" = previous
@@ -1185,7 +1198,11 @@ silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
 " }}}
 
 " finally
+" e.g. <Space><Space>
 nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
-nnoremap <LocalLeader><LocalLeader> :nmap <Char-60>LocalLeader<Char-62><CR>
+" e.g. <Space>;; / \\
+execute 'nnoremap <LocalLeader>' .
+      \ (len(maplocalleader) > 1 ? matchstr(maplocalleader, '.$') : '<LocalLeader>') .
+      \ ' :nmap <Char-60>LocalLeader<Char-62><CR>'
 
 " vim: fdm=marker
