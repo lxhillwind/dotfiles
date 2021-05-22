@@ -409,7 +409,8 @@ function! Sh(cmd, ...) abort
     if stdin is# 0
       return s:sh_echo_check(system(cmd), opt.echo)
     else
-      return s:sh_echo_check(system(cmd, stdin), opt.echo)
+      " add final [''] to add final newline; (required for nvim?)
+      return s:sh_echo_check(system(cmd, stdin + ['']), opt.echo)
     endif
   endif
 
@@ -438,7 +439,7 @@ function! Sh(cmd, ...) abort
       if stdin is# 0
         return s:sh_echo_check(system(cmd), opt.echo)
       else
-        return s:sh_echo_check(system(cmd, stdin), opt.echo)
+        return s:sh_echo_check(system(cmd, stdin + ['']), opt.echo)
       endif
     endif
 
@@ -523,7 +524,7 @@ function! Sh(cmd, ...) abort
             \'buffer_nr': winbufnr(0),
             \}
       let job = termopen(cmd . cmd_suffix, job_opt)
-      startinsert
+      startinsert  " add a comment to make hl in vim work...
     else
       let job_opt = extend(job_opt, {'curwin': 1})
       let job = term_start(cmd, job_opt)
@@ -579,7 +580,7 @@ function! s:filter_impl(cmd) abort
   else
     let output = Sh('-T ' . a:cmd, code)
   endif
-  let @" = substitute(output, '\n\+$', '', '')
+  let @" = trim(output, "\n")
   normal gvp
 endfunction
 " }}}
