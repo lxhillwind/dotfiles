@@ -876,7 +876,7 @@ endfunction
 
 " keymap {{{
 " clear hlsearch
-nnoremap <silent> <Leader><Space> :noh<CR>
+nnoremap <silent> <Leader>l :noh<CR>
 " custom text object
 vnoremap aa :<C-u>normal! ggVG<CR>
 onoremap aa :<C-u>normal! ggVG<CR>
