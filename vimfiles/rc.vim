@@ -839,13 +839,13 @@ function! s:choose_filelist() abort
   endif
   enew
   setl buftype=nofile noswapfile
+  " a special filetype
+  setl ft=filelist
   call append(0, map(s:load_filelist(), 'v:val[1]'))
   if empty(getline('.'))
     norm "_dd
   endif
   norm gg
-  nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
-  nnoremap <buffer> <CR> :call <SID>edit_cur_line()<CR>
 endfunction
 
 function! s:filelist_path()
@@ -1020,21 +1020,12 @@ function! s:gx(mode) abort
     let text = expand(get(g:, 'netrw_gx', '<cfile>'))
   endif
   Ksnippet!
+  " a special filetype
+  setl ft=gx
   for line in split(text, "\n")
     call append('$', line)
   endfor
   norm gg"_dd
-
-  " NOTE custom map here.
-  if executable('qutebrowser')
-    nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
-  endif
-  nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
-  nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
-  nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
-  nnoremap <buffer> <LocalLeader>tc :call <SID>gx_vim('Cd', '', ' :Tmux c \| close')<CR>
-  nnoremap <buffer> <LocalLeader>ts :call <SID>gx_vim('Cd', '', ' :Tmux s \| close')<CR>
-  nnoremap <buffer> <LocalLeader>tv :call <SID>gx_vim('Cd', '', ' :Tmux v \| close')<CR>
 endfunction
 " }}}
 
@@ -1234,6 +1225,25 @@ augroup vimrc_filetype
   " markdown checkbox
   au FileType markdown call s:task_pre_func() | nnoremap <buffer>
         \ <LocalLeader>c :call <SID>toggle_task_status()<CR>
+
+  function! s:filelist_map()
+    nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
+    nnoremap <buffer> <CR> :call <SID>edit_cur_line()<CR>
+  endfunction
+  au FileType filelist call <SID>filelist_map()
+
+  function! s:gx_map()
+    if executable('qutebrowser')
+      nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
+    endif
+    nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
+    nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
+    nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
+    nnoremap <buffer> <LocalLeader>tc :call <SID>gx_vim('Cd', '', ' :Tmux c \| close')<CR>
+    nnoremap <buffer> <LocalLeader>ts :call <SID>gx_vim('Cd', '', ' :Tmux s \| close')<CR>
+    nnoremap <buffer> <LocalLeader>tv :call <SID>gx_vim('Cd', '', ' :Tmux v \| close')<CR>
+  endfunction
+  au FileType gx call <SID>gx_map()
 augroup END
 
 " :h ft-sh-syntax
