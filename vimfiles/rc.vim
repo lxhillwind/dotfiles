@@ -838,7 +838,6 @@ function! s:choose_filelist() abort
     return
   endif
   enew
-  setl buftype=nofile noswapfile
   " a special filetype
   setl ft=filelist
   call append(0, map(s:load_filelist(), 'v:val[1]'))
@@ -1226,13 +1225,16 @@ augroup vimrc_filetype
   au FileType markdown call s:task_pre_func() | nnoremap <buffer>
         \ <LocalLeader>c :call <SID>toggle_task_status()<CR>
 
-  function! s:filelist_map()
+  function! s:filelist_init()
+    setl buftype=nofile noswapfile
     nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
     nnoremap <buffer> <CR> :call <SID>edit_cur_line()<CR>
   endfunction
-  au FileType filelist call <SID>filelist_map()
+  au FileType filelist call <SID>filelist_init()
 
-  function! s:gx_map()
+  function! s:gx_init()
+    setl buftype=nofile noswapfile
+    setl bufhidden=hide
     if executable('qutebrowser')
       nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
     endif
@@ -1243,7 +1245,7 @@ augroup vimrc_filetype
     nnoremap <buffer> <LocalLeader>ts :call <SID>gx_vim('Cd', '', ' :Tmux s \| close')<CR>
     nnoremap <buffer> <LocalLeader>tv :call <SID>gx_vim('Cd', '', ' :Tmux v \| close')<CR>
   endfunction
-  au FileType gx call <SID>gx_map()
+  au FileType gx call <SID>gx_init()
 augroup END
 
 " :h ft-sh-syntax
