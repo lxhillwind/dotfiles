@@ -374,7 +374,7 @@ function! Sh(cmd, ...) abort
   let opt.tty = match(opt_string, 'T') < 0
   let opt.echo = match(opt_string, 'e') >= 0
 
-  if !empty(opt.echo)
+  if opt.echo
     let opt.tty = 0
   endif
 
@@ -392,7 +392,7 @@ function! Sh(cmd, ...) abort
   " remove trailing whitespace (nvim, [b]ash on Windows)
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if !empty(opt.visual)
+  if opt.visual
     let tmp = @"
     silent normal gvy
     let stdin = split(@", "\n")
@@ -405,7 +405,7 @@ function! Sh(cmd, ...) abort
   endif
 
   " ignore opt.shell for unix.
-  if empty(opt.tty) && s:is_unix
+  if !opt.tty && s:is_unix
     if stdin is# 0
       return s:sh_echo_check(system(cmd), opt.echo)
     else
@@ -430,8 +430,8 @@ function! Sh(cmd, ...) abort
     let shell = s:shell_opt_sh.shell
     let shellcmdflag = s:shell_opt_sh.shellcmdflag
 
-    if s:is_nvim && empty(opt.tty)
-      if !empty(opt.shell)
+    if s:is_nvim && !opt.tty
+      if opt.shell
         " TODO handle quote / space correctly; handle opt.shell;
         " in neovim, cmd must be passed as list to skip shell.
         let cmd = split(shell) + split(shellcmdflag) + [cmd]
@@ -443,27 +443,27 @@ function! Sh(cmd, ...) abort
       endif
     endif
 
-    if !empty(opt.shell)
+    if opt.shell
       " TODO handle cmd.exe?
       if empty(cmd)
         let cmd = shell
       else
         let cmd = s:win32_quote(cmd)
-        if ! (s:has_pty() && !s:is_nvim)
+        if (opt.tty && !s:has_pty()) || s:is_nvim
           " use cmd.exe if in nvim or vimrun (not in vim terminal)
           let cmd = s:cmd_exe_quote(cmd)
         endif
         let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
-        if !s:has_pty()
+        if opt.tty && !s:has_pty()
           let cmd = 'vimrun ' . cmd
         endif
       endif
     endif
   endif
 
-  let [cmd_suffix, tmpfile, tmpbuf] = ['', '', '']
+  let [tmpfile, tmpbuf] = ['', '']
   if stdin isnot# 0
-    if !s:has_pty() || s:is_nvim
+    if (opt.tty && !s:has_pty()) || s:is_nvim
       " from posix standard: utilities/V3_chap02.html#tag_18_02
       if match(cmd, '\v[|&;<>()$`\"' . "'" . '*?[#~=%]') >= 0 && s:is_unix
         let cmd = 'sh -c ' . shellescape(cmd)
@@ -497,7 +497,7 @@ function! Sh(cmd, ...) abort
     "
     "   :help E162
     " to know why :silent
-    silent exe '!start' cmd . cmd_suffix
+    silent exe '!start' cmd
     return
   endif
 
@@ -523,7 +523,7 @@ function! Sh(cmd, ...) abort
             \'on_exit': function('s:krun_cb'),
             \'buffer_nr': winbufnr(0),
             \}
-      let job = termopen(cmd . cmd_suffix, job_opt)
+      let job = termopen(cmd, job_opt)
       startinsert  " add a comment to make hl in vim work...
     else
       let job_opt = extend(job_opt, {'curwin': 1})
