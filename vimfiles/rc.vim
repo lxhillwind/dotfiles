@@ -334,7 +334,8 @@ endfunction
 function! Sh(cmd, ...) abort
   " shell (-T) only works for vim on win32
   " echo (-e) implies -T.
-  let opt = {'tty': 1, 'shell': 1, 'visual': 0, 'bang': 0, 'echo': 0}
+  " external terminal window (-w) currently only works for vim && nvim on win32.
+  let opt = {'tty': 1, 'shell': 1, 'visual': 0, 'bang': 0, 'echo': 0, 'window': 0}
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
@@ -351,9 +352,15 @@ function! Sh(cmd, ...) abort
   let opt.shell = match(opt_string, 'S') < 0
   let opt.tty = match(opt_string, 'T') < 0
   let opt.echo = match(opt_string, 'e') >= 0
+  let opt.window = match(opt_string, 'w') >= 0
 
   if opt.echo
     let opt.tty = 0
+  endif
+
+  " NOTE check opt.tty first to avoid recursive call!
+  if opt.tty && !s:has_pty()
+    let opt.window = 1
   endif
 
   let cmd = a:cmd[len(opt_string):]
@@ -427,12 +434,12 @@ function! Sh(cmd, ...) abort
         let cmd = shell
       else
         let cmd = s:win32_quote(cmd)
-        if (opt.tty && !s:has_pty()) || s:is_nvim
+        if opt.window || s:is_nvim
           " use cmd.exe if in nvim or vimrun (not in vim terminal)
           let cmd = s:cmd_exe_quote(cmd)
         endif
         let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
-        if opt.tty && !s:has_pty()
+        if opt.window
           let cmd = 'vimrun ' . cmd
         endif
       endif
@@ -441,7 +448,7 @@ function! Sh(cmd, ...) abort
 
   let [tmpfile, tmpbuf] = ['', '']
   if stdin isnot# 0
-    if (opt.tty && !s:has_pty()) || s:is_nvim
+    if opt.window || s:is_nvim
       " from posix standard: utilities/V3_chap02.html#tag_18_02
       if match(cmd, '\v[|&;<>()$`\"' . "'" . '*?[#~=%]') >= 0 && s:is_unix
         let cmd = 'sh -c ' . shellescape(cmd)
@@ -470,12 +477,14 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
-  if opt.tty && !s:has_pty()
-    " win32; unix is rejected early.
-    "
+  if opt.window
     "   :help E162
     " to know why :silent
-    silent exe '!start' cmd
+    if s:is_win32
+      silent exe '!start' cmd
+    else
+      call s:echoerr('-w option is not supported in unix')
+    endif
     return
   endif
 
