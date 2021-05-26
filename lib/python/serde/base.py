@@ -37,7 +37,7 @@ class ParseError(ValueError):
 
 
 def parse(
-        cls: T, value: typing.Any,
+        cls: typing.Type[T], value: typing.Any,
         missing_as_none=True, unknown_as_error=False,
         type_table: dict = None) -> T:
     """

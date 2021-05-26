@@ -180,28 +180,6 @@ function! s:get_lines_in_visual_mode()
 endfunction
 " }}}
 
-" add checklist to markdown file (see markdown in keymap) {{{
-function! s:task_pre_func()
-  hi link CheckboxUnchecked Type
-  hi link CheckboxChecked Comment
-  call matchadd('CheckboxUnchecked', '\v^\s*- \[ \] ')
-  call matchadd('CheckboxChecked', '\v^\s*- \[X\] ')
-endfunction
-
-function! s:toggle_task_status()
-  let lineno = line('.')
-  let line = getline(lineno)
-  if line =~# '\v^\s*- \[X\] '
-    let line = substitute(line, '\v(^\s*- )@<=\[X\] ', '', '')
-  elseif line =~# '\v^\s*- \[ \] '
-    let line = substitute(line, '\v(^\s*- \[)@<= ', 'X', '')
-  elseif line =~# '\v^\s*- '
-    let line = substitute(line, '\v(^\s*-)@<= ', ' [ ] ', '')
-  endif
-  call setline(lineno, line)
-endfunction
-" }}}
-
 " quick edit (with completion); :Ke {shortcut} {{{
 command! -nargs=1 -complete=custom,<SID>complete_edit_map
       \ Ke call <SID>f_edit_map(<q-args>)
@@ -1221,10 +1199,31 @@ augroup vimrc_filetype
   " viml completion
   au FileType vim inoremap <buffer> <C-space> <C-x><C-v>
 
-  " markdown checkbox
-  au FileType markdown call s:task_pre_func() | nnoremap <buffer>
-        \ <LocalLeader>c :call <SID>toggle_task_status()<CR>
+  " markdown checkbox {{{
+  function! s:markdown_checkbox()
+    hi link CheckboxUnchecked Type
+    hi link CheckboxChecked Comment
+    syn match CheckboxUnchecked '\v^\s*- \[ \] '
+    syn match CheckboxChecked '\v^\s*- \[X\] '
+  endfunction
 
+  function! s:markdown_toggle_task_status()
+    let lineno = line('.')
+    let line = getline(lineno)
+    if line =~# '\v^\s*- \[X\] '
+      let line = substitute(line, '\v(^\s*- )@<=\[X\] ', '', '')
+    elseif line =~# '\v^\s*- \[ \] '
+      let line = substitute(line, '\v(^\s*- \[)@<= ', 'X', '')
+    elseif line =~# '\v^\s*- '
+      let line = substitute(line, '\v(^\s*-)@<= ', ' [ ] ', '')
+    endif
+    call setline(lineno, line)
+  endfunction
+  " }}}
+  au FileType markdown call s:markdown_checkbox() | nnoremap <buffer>
+        \ <LocalLeader>c :call <SID>markdown_toggle_task_status()<CR>
+
+  " simple filelist
   function! s:filelist_init()
     setl buftype=nofile noswapfile
     nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
@@ -1232,6 +1231,7 @@ augroup vimrc_filetype
   endfunction
   au FileType filelist call <SID>filelist_init()
 
+  " gx
   function! s:gx_init()
     setl buftype=nofile noswapfile
     setl bufhidden=hide
