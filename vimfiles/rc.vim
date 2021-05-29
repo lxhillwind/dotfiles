@@ -97,6 +97,9 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
 let s:is_nvim = has('nvim')
+let s:has_gui = has('gui_running')
+      \ || (has('unix') && system('uname -s') =~? 'Darwin')
+      \ || (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY)))
 
 " common func {{{
 " :echoerr will raise exception (?)
@@ -331,6 +334,26 @@ function! s:sh_echo_check(str, cond)
   endif
 endfunction
 
+function! s:unix_cmd_to_list(cmd)
+  if empty(a:cmd)
+    return split(&shell)
+  else
+    return ['sh', '-c', a:cmd]
+  endif
+endfunction
+
+function! s:unix_cmd_to_str(cmd)
+  return empty(a:cmd) ? &shell : a:cmd
+endfunction
+
+function! s:dispatch(cmd)
+  if has('nvim')
+    return jobstart(a:cmd, {'detach': 1})
+  else
+    return job_start(a:cmd, {'stoponexit': ''})
+  endif
+endfunction
+
 function! Sh(cmd, ...) abort
   " shell (-T) only works for vim on win32
   " echo (-e) implies -T.
@@ -403,19 +426,7 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
-  if s:is_unix
-    if s:is_nvim
-      if empty(cmd)
-        let cmd = &shell
-      endif
-    else
-      if empty(cmd)
-        let cmd = split(&shell)
-      else
-        let cmd = ['sh', '-c', cmd]
-      endif
-    endif
-  else
+  if s:is_win32
     let shell = s:shell_opt_sh.shell
     let shellcmdflag = s:shell_opt_sh.shellcmdflag
 
@@ -500,16 +511,31 @@ function! Sh(cmd, ...) abort
         if !l:win32_cmd_empty
           let cmd = cmd . ' ^& pause'
         endif
-        call jobstart(cmd, {'detach': 1})
+        call s:dispatch(cmd)
       else
         silent exe '!start' cmd
       endif
     else
-      call s:echoerr('-w option is not supported in unix')
+      if !executable('urxvt') && s:has_gui
+        call s:dispatch(['urxvt', '-e'] + s:unix_cmd_to_list(cmd))
+      elseif executable('alacritty') && s:has_gui
+        call s:dispatch(['alacritty', '-e'] + s:unix_cmd_to_list(cmd))
+      elseif !empty($TMUX)
+        call s:dispatch(['tmux', 'neww', s:unix_cmd_to_str(cmd)])
+      else
+        call s:echoerr('-w option is not supported')
+      endif
     endif
+
     return
   endif
 
+  if s:is_unix
+    if has('nvim')
+      let cmd = s:unix_cmd_to_str(cmd)
+    else
+      let cmd = s:unix_cmd_to_list(cmd)
+  endif
   if opt.tty
     let buf_idx = -1
     if !empty(opt.bang)
@@ -991,11 +1017,7 @@ function! s:gx_open(...)
   if empty(open_cmd)
     return
   endif
-  if s:is_nvim
-    call jobstart(open_cmd, {'detach': 1})
-  else
-    call job_start(open_cmd, {'stoponexit': ''})
-  endif
+  call s:dispatch(open_cmd)
 endfunction
 
 function! s:gx_vim(...)
