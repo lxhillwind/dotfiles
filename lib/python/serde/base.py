@@ -36,6 +36,10 @@ class ParseError(ValueError):
         self.args = (error_info,)
 
 
+def is_type(val, typ) -> bool:
+    return type(val) is typ
+
+
 def parse(
         cls: typing.Type[T], value: typing.Any,
         missing_as_none=True, unknown_as_error=False,
@@ -84,7 +88,7 @@ def parse(
     if generic:
         args = typing.get_args(cls)
         if generic is dict:
-            if not isinstance(v, dict):
+            if not is_type(v, dict):
                 raise ParseError(
                         type=cls, value=v,
                         msg='is not dict'
@@ -94,7 +98,7 @@ def parse(
                     for s_k, s_v in v.items()
                 }
         elif generic is list:
-            if not isinstance(v, list):
+            if not is_type(v, list):
                 raise ParseError(
                         type=cls, value=v,
                         msg='is not list'
@@ -107,16 +111,16 @@ def parse(
                     )
 
     if cls in mixed_type_table:
-        if not isinstance(v, cls) and callable(mixed_type_table[cls]):
+        if not is_type(v, cls) and callable(mixed_type_table[cls]):
             v = mixed_type_table[cls](v)
-        if isinstance(v, cls):
+        if is_type(v, cls):
             return v
         else:
             raise ParseError(
                     type=cls, value=value,
                     msg='type not match'
                     )
-    elif dataclasses.is_dataclass(cls) and isinstance(cls, type):
+    elif dataclasses.is_dataclass(cls) and is_type(cls, type):
         if unknown_as_error:
             if (s :=
                     set(value.keys())
@@ -168,9 +172,9 @@ def dumps(obj: typing.Any, type_table: dict = None):
 
     if obj is None:
         return obj
-    elif isinstance(obj, list):
+    elif is_type(obj, list):
         return [dumps(i, **kwargs) for i in obj]
-    elif isinstance(obj, dict):
+    elif is_type(obj, dict):
         return {dumps(k, **kwargs): dumps(v, **kwargs) for k, v in obj.items()}
     elif type(obj) in mixed_type_table:
         converter = mixed_type_table[type(obj)]
@@ -178,7 +182,7 @@ def dumps(obj: typing.Any, type_table: dict = None):
             return converter(obj)
         else:
             return obj
-    elif dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+    elif dataclasses.is_dataclass(obj) and not is_type(obj, type):
         return dumps(dataclasses.asdict(obj), **kwargs)
     else:
         raise ValueError('unsupported type: %s; value: %s' % (type(obj), obj))
