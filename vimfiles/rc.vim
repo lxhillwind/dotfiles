@@ -1,6 +1,4 @@
-if v:version < 702
-  echoerr 'minimum supported vim version: 7.2' | finish
-endif
+" Always require latest vim. (not neovim!)
 
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
@@ -24,19 +22,11 @@ if !get(g:, 'vimrc#loaded')
   set sw=4
   " (relative)number
   set nu
-  if exists('&rnu')
-    set rnu
-  endif
+  set rnu
   augroup vimrc_terminal
     au!
-    if has('nvim')
-      au TermOpen * setl nonu | setl nornu
-    elseif exists('##TerminalOpen')
-      " nvim paste in terminal mode will leave cursor position not changed;
-      " try to simulate this in vim, but failed.
-      " NOTE: keymap defined here (terminal [p]aste).
-      au TerminalOpen * setl nonu | setl nornu | nnoremap <buffer> p i<C-w>""<C-\><C-n>
-    endif
+    " NOTE: keymap defined here (terminal [p]aste).
+    au TerminalOpen * setl nonu | setl nornu | nnoremap <buffer> p i<C-w>""<C-\><C-n>
   augroup END
   " hlsearch
   set hls
@@ -49,9 +39,7 @@ filetype on
 filetype plugin on
 filetype indent on
 " belloff
-if exists('&bo')
-  set bo=all
-endif
+set bo=all
 " incsearch
 set is
 " timeoutlen
@@ -96,7 +84,6 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 " common platform detection
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
-let s:is_nvim = has('nvim')
 let s:has_gui = has('gui_running')
       \ || (has('unix') && system('uname -s') =~? 'Darwin')
       \ || (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY)))
@@ -107,22 +94,6 @@ function! s:echoerr(msg)
   echohl ErrorMsg
   echon a:msg
   echohl None
-endfunction
-
-" execute() is introduced in Vim 7.4
-function! s:execute(arg)
-  if exists('*execute')
-    return execute(a:arg)
-  endif
-  let l:res = ''
-  try
-    " exception message will be thrown away.
-    redir => l:res
-    exe a:arg
-  finally
-    redir END
-  endtry
-  return l:res
 endfunction
 
 function! s:win32_quote(arg)
@@ -138,48 +109,6 @@ function! s:win32_quote(arg)
   " quote it
   let cmd = '"' . cmd . '"'
   return cmd
-endfunction
-
-function! s:cmd_exe_quote(arg)
-  " escape for cmd.exe
-  return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
-endfunction
-
-" return selected content as a list (preserve visual mode)
-function! s:get_lines_in_visual_mode()
-  let result = []
-  let line_begin = line('v')
-  let line_end = line('.')
-  let col_begin = col('v')
-  let col_end = col('.')
-  let mode_ = mode()[0]
-
-  if line_begin > line_end
-    let [line_begin, line_end] = [line_end, line_begin]
-    if mode_ ==# 'v'
-      let [col_begin, col_end] = [col_end, col_begin]
-    endif
-  endif
-  if col_begin > col_end && mode_ ==# "\x16"  " <C-v>
-    let [col_begin, col_end] = [col_end, col_begin]
-  endif
-
-  for l:line in range(line_begin, line_end)
-    if mode_ ==# 'V'
-      let result = add(result, getline(l:line))
-    elseif mode_ ==# "\x16"  " <C-v>
-      let result = add(result, getline(l:line)[col_begin-1:col_end-1])
-    else
-      if l:line == line_begin
-        let result = add(result, getline(l:line)[col_begin-1:])
-      elseif l:line == line_end
-        let result = add(result, getline(l:line)[:col_end-1])
-      else
-        let result = add(result, getline(l:line))
-      endif
-    endif
-  endfor
-  return result
 endfunction
 " }}}
 
@@ -273,7 +202,7 @@ if s:is_win32
   let s:shell_opt_sh = {
         \ 'shell': 'busybox sh',
         \ 'shellcmdflag': '-c',
-        \ 'shellquote': s:is_nvim ? '"' : '',
+        \ 'shellquote': '',
         \ }
 
   " win32 vim from unix shell will set &shell incorrectly, so restore it
@@ -284,46 +213,11 @@ if s:is_win32
     silent! let &shellxquote = ''
   endif
 endif
-
-" true if on win32 and posix sh is available
-let s:sh_on_win32 = s:is_win32 && executable('busybox')
 " }}}
 
 " run command (via :terminal), output to a separate window; :Sh [cmd]...
-" On Windows XP (pty doesn't work), a seperate window is used.
 " It also fixes quote for sh on win32 {{{
-if has('patch-8.0.1089')
-  command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-else
-  " not support <range>
-  command! -bang -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0})
-endif
-
-function! s:krun_cb(...) dict
-  if self.buffer_nr == winbufnr(0) && mode() == 't'
-    " vim 8 behavior: exit to normal mode after TermClose.
-    call feedkeys("\<C-\>\<C-n>", 'n')
-  endif
-endfunction
-
-function! s:has_pty()
-  if s:is_nvim
-    return 1
-  endif
-  if s:is_unix
-    if has('terminal')
-      return 1
-    else
-      return 0
-    endif
-  endif
-  if !has_key(s:, 'v_has_pty')
-    " Windows XP winpty is buggy
-    " call Sh() with -ST and not stdin to avoid recursive call
-    let s:v_has_pty = has('terminal') && match(Sh('-ST cmd /c ver'), 'Windows XP') < 0
-  endif
-  return s:v_has_pty
-endfunction
+command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 
 function! s:sh_echo_check(str, cond)
   if !empty(a:cond)
@@ -334,31 +228,9 @@ function! s:sh_echo_check(str, cond)
   endif
 endfunction
 
-function! s:unix_cmd_to_list(cmd)
-  if empty(a:cmd)
-    return split(&shell)
-  else
-    return ['sh', '-c', a:cmd]
-  endif
-endfunction
-
-function! s:unix_cmd_to_str(cmd)
-  return empty(a:cmd) ? &shell : a:cmd
-endfunction
-
-function! s:dispatch(cmd)
-  if has('nvim')
-    return jobstart(a:cmd, {'detach': 1})
-  else
-    return job_start(a:cmd, {'stoponexit': ''})
-  endif
-endfunction
-
 function! Sh(cmd, ...) abort
-  " shell (-T) only works for vim on win32
   " echo (-e) implies -T.
-  " external terminal window (-w) currently only works for vim && nvim on win32.
-  let opt = {'tty': 1, 'shell': 1, 'visual': 0, 'bang': 0, 'echo': 0, 'window': 0}
+  let opt = {'tty': 1, 'visual': 0, 'bang': 0, 'echo': 0}
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
@@ -369,35 +241,28 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
-  " -vSTe
+  " -vTe
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
   let opt.visual = match(opt_string, 'v') >= 0
-  let opt.shell = match(opt_string, 'S') < 0
   let opt.tty = match(opt_string, 'T') < 0
   let opt.echo = match(opt_string, 'e') >= 0
-  let opt.window = match(opt_string, 'w') >= 0
 
   if opt.echo
     let opt.tty = 0
-  endif
-
-  " NOTE check opt.tty first to avoid recursive call!
-  if opt.tty && !s:has_pty()
-    let opt.window = 1
   endif
 
   let cmd = a:cmd[len(opt_string):]
   " expand %
   let slash = &shellslash
   try
-    if s:sh_on_win32 | set shellslash | endif
+    if s:is_win32 | set shellslash | endif
     let cmd = substitute(cmd, '\v(^|\s)@<=(\%(\:[phtre])*)',
           \'\=shellescape(expand(submatch(2)))', 'g')
   finally
-    if s:sh_on_win32 | let &shellslash = slash | endif
+    if s:is_win32 | let &shellslash = slash | endif
   endtry
   let cmd = substitute(cmd, '\v^\s+', '', '')
-  " remove trailing whitespace (nvim, [b]ash on Windows)
+  " remove trailing whitespace
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
   if opt.visual
@@ -416,7 +281,6 @@ function! Sh(cmd, ...) abort
     call s:echoerr('pipe to empty cmd is not allowed!') | return
   endif
 
-  " ignore opt.shell for unix.
   if !opt.tty && s:is_unix
     if stdin is# 0
       return s:sh_echo_check(system(cmd), opt.echo)
@@ -430,111 +294,40 @@ function! Sh(cmd, ...) abort
     let shell = s:shell_opt_sh.shell
     let shellcmdflag = s:shell_opt_sh.shellcmdflag
 
-    if s:is_nvim && !opt.tty
-      if opt.shell
-        " TODO handle quote / space correctly; handle opt.shell;
-        " in neovim, cmd must be passed as list to skip shell.
-        let cmd = split(shell) + split(shellcmdflag) + [cmd]
-      endif
-      if stdin is# 0
-        return s:sh_echo_check(system(cmd), opt.echo)
-      else
-        return s:sh_echo_check(system(cmd, stdin + ['']), opt.echo)
-      endif
-    endif
-
-    " add a flag
-    let l:win32_cmd_empty = 0
-    if opt.shell
-      " TODO handle cmd.exe?
-      if empty(cmd)
-        let cmd = shell
-        let l:win32_cmd_empty = 1
-      else
-        let cmd = s:win32_quote(cmd)
-        if opt.window || s:is_nvim
-          " use cmd.exe if in nvim or vimrun (not in vim terminal)
-          let cmd = s:cmd_exe_quote(cmd)
-        endif
-        let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
-        if opt.window
-          if s:is_nvim
-            let cmd = 'cmd /c ' . cmd
-          else
-            let cmd = 'vimrun ' . cmd
-          endif
-        endif
-      endif
+    if empty(cmd)
+      let cmd = shell
+    else
+      let cmd = s:win32_quote(cmd)
+      let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
     endif
   endif
 
-  let [tmpfile, tmpbuf] = ['', '']
+  let tmpbuf = ''
   if stdin isnot# 0
-    if opt.window || s:is_nvim
-      " from posix standard: utilities/V3_chap02.html#tag_18_02
-      if match(cmd, '\v[|&;<>()$`\"' . "'" . '*?[#~=%]') >= 0 && s:is_unix
-        let cmd = 'sh -c ' . shellescape(cmd)
-      endif
-      let tmpfile = tempname()
-      call writefile(stdin, tmpfile)
-      if opt.window && s:is_win32 && s:is_nvim
-        let cmd_suffix = ' ^< ' . shellescape(tmpfile)
-      else
-        let cmd_suffix = ' < ' . shellescape(tmpfile)
-      endif
-      let cmd .= cmd_suffix
-    else
-      let tmpbuf = bufadd('')
-      call bufload(tmpbuf)
-      let l:idx = 1
-      for l:line in stdin
-        call setbufline(tmpbuf, l:idx, l:line)
-        let l:idx += 1
-      endfor
-      unlet l:idx
-    endif
+    let tmpbuf = bufadd('')
+    call bufload(tmpbuf)
+    let l:idx = 1
+    for l:line in stdin
+      call setbufline(tmpbuf, l:idx, l:line)
+      let l:idx += 1
+    endfor
+    unlet l:idx
   endif
   let job_opt = {}
   if !empty(tmpbuf)
     let job_opt = extend(job_opt, {'in_io': 'buffer', 'in_buf': tmpbuf})
-    if !s:is_unix && opt.tty
-      " <C-z>; nvim won't take job_opt below.
+    if s:is_win32 && opt.tty
+      " <C-z>
       let job_opt = extend(job_opt, {'eof_chars': "\x1a"})
     endif
   endif
 
-  if opt.window
-    "   :help E162
-    " to know why :silent
-    if s:is_win32
-      if s:is_nvim
-        if !l:win32_cmd_empty
-          let cmd = cmd . ' ^& pause'
-        endif
-        call s:dispatch(cmd)
-      else
-        silent exe '!start' cmd
-      endif
-    else
-      if !executable('urxvt') && s:has_gui
-        call s:dispatch(['urxvt', '-e'] + s:unix_cmd_to_list(cmd))
-      elseif executable('alacritty') && s:has_gui
-        call s:dispatch(['alacritty', '-e'] + s:unix_cmd_to_list(cmd))
-      elseif !empty($TMUX)
-        call s:dispatch(['tmux', 'neww', s:unix_cmd_to_str(cmd)])
-      else
-        call s:echoerr('-w option is not supported')
-      endif
-    endif
-
-    return
-  endif
-
   if s:is_unix
-    if has('nvim')
-      let cmd = s:unix_cmd_to_str(cmd)
+    if empty(cmd)
+      let cmd = split(&shell)
     else
-      let cmd = s:unix_cmd_to_list(cmd)
+      let cmd =  ['sh', '-c', cmd]
+    endif
   endif
   if opt.tty
     let buf_idx = -1
@@ -553,29 +346,19 @@ function! Sh(cmd, ...) abort
     if buf_idx < 0
       Ksnippet | setl bufhidden=wipe
     endif
-    if s:is_nvim
-      let job_opt = {
-            \'on_exit': function('s:krun_cb'),
-            \'buffer_nr': winbufnr(0),
-            \}
-      let job = termopen(cmd, job_opt)
-      startinsert  " add a comment to make hl in vim work...
-    else
-      let job_opt = extend(job_opt, {'curwin': 1})
-      let job = term_start(cmd, job_opt)
-    endif
+    let job_opt = extend(job_opt, {'curwin': 1})
+    let job = term_start(cmd, job_opt)
     if !empty(opt.bang)
       let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
       call filter(s:sh_buf_cache, 'bufexists(v:val)')
     endif
   else
-    " nvim calls system() early.
     " TODO handle non-tty stderr
     let job_opt = extend(job_opt, {'out_io': 'buffer', 'out_msg': 0})
     let job = job_start(cmd, job_opt)
   endif
   if !empty(tmpbuf)
-    if !s:is_unix
+    if s:is_win32
       sleep 1m
     endif
     silent execute tmpbuf . 'bd!'
@@ -611,7 +394,7 @@ function! s:filter_impl(cmd) abort
   sil normal gvy
   let code = @"
   if a:cmd ==# 'vim'
-    let output = s:execute(code)
+    let output = execute(code)
   else
     let output = Sh('-T ' . a:cmd, code)
   endif
@@ -625,7 +408,7 @@ command! -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>)
 
 function! s:vim_run(args)
   let buf = @"
-  sil! let @" = s:execute(a:args)
+  sil! let @" = execute(a:args)
   Ksnippet!
   normal p
   let @" = buf
@@ -869,9 +652,6 @@ function! s:edit_cur_line()
 endfunction
 
 function! s:choose_filelist() abort
-  if !exists('*json_encode')  " vim8- not supported
-    return
-  endif
   enew
   " a special filetype
   setl ft=filelist
@@ -908,9 +688,6 @@ function! s:load_filelist()
 endfunction
 
 function! s:save_filelist() abort
-  if !exists('*json_encode')  " vim8- not supported
-    return
-  endif
   " do not save if `vim -i NONE`
   if &viminfofile ==# 'NONE'
     return
@@ -1017,7 +794,7 @@ function! s:gx_open(...)
   if empty(open_cmd)
     return
   endif
-  call s:dispatch(open_cmd)
+  call job_start(open_cmd, {'stoponexit': ''})
 endfunction
 
 function! s:gx_vim(...)
@@ -1060,13 +837,13 @@ endfunction
 " }}}
 
 " colorscheme {{{
-if !s:is_unix && !has('gui_running') && !s:is_nvim  " win32 cmd
+if !s:is_unix && !has('gui_running')  " win32 cmd
   set nocursorcolumn
   color pablo
 elseif (s:is_unix && $TERM ==? 'linux')  " linux tty
   set bg=dark
 else
-  if !s:is_nvim && !has('gui_running') && exists('&tgc') && $TERM !~ 'xterm'
+  if !has('gui_running') && exists('&tgc') && $TERM !~ 'xterm'
     " make tgc work; :help xterm-true-color
     let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
     let &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
@@ -1096,25 +873,16 @@ function! s:gui_init()
   set lines=32
   set columns=128
 
-  if s:is_nvim
-    GuiTabline 0
-  endif
-
   let g:vimrc#loaded_gui = 1
 endfunction
 
-if s:is_nvim && exists(':GuiTabline') == 2  " nvim gui detect
-  augroup vimrc_gui
-    au!
-    au UIEnter * call <SID>gui_init()
-  augroup END
-elseif has('gui_running')
+if has('gui_running')
   call s:gui_init()
 endif
 " }}}
 
 " win32: replace :! && :'<,'>! with busybox shell {{{
-if s:sh_on_win32
+if s:is_win32
   cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
   command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
 endif
@@ -1179,7 +947,7 @@ endfunction
 
 " export SID (:h SID); variable: g:vimrc_sid {{{
 function! s:get_sid(filename)
-  for i in split(s:execute('scriptnames'), "\n")
+  for i in split(execute('scriptnames'), "\n")
     let id = substitute(i, '\v^\s*(\d+): .*$', '\1', '')
     let file = substitute(i, '\v^\s*\d+: ', '', '')
     if a:filename ==# expand(file)
@@ -1188,7 +956,7 @@ function! s:get_sid(filename)
   endfor
   return 0
 endfunction
-" hide s:execute output.
+" hide execute output.
 silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
 " }}}
 
@@ -1224,12 +992,8 @@ nnoremap <Leader><CR> :call <SID>execute_lines('n')<CR>
 vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 
 " terminal escape
-if exists(':tnoremap') == 2
-  tnoremap <C-Space> <C-\><C-n>
-  if !s:is_nvim
-    tnoremap <C-w> <C-w>.
-  endif
-endif
+tnoremap <C-Space> <C-\><C-n>
+tnoremap <C-w> <C-w>.
 
 nnoremap <Leader>e :Cdbuffer e <cfile><CR>
 nnoremap <Leader>E :e#<CR>
@@ -1250,7 +1014,7 @@ augroup vimrc_filetype
         \| nnoremap <buffer> <leader><CR> <CR>
 
   " viml completion
-  au FileType vim inoremap <buffer> <C-space> <C-x><C-v>
+  au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
 
   " markdown checkbox {{{
   function! s:markdown_checkbox()
