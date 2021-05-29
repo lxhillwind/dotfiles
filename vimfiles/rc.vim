@@ -389,6 +389,10 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
+  if empty(cmd) && stdin isnot# 0
+    call s:echoerr('pipe to empty cmd is not allowed!') | return
+  endif
+
   " ignore opt.shell for unix.
   if !opt.tty && s:is_unix
     if stdin is# 0
@@ -428,10 +432,13 @@ function! Sh(cmd, ...) abort
       endif
     endif
 
+    " add a flag
+    let l:win32_cmd_empty = 0
     if opt.shell
       " TODO handle cmd.exe?
       if empty(cmd)
         let cmd = shell
+        let l:win32_cmd_empty = 1
       else
         let cmd = s:win32_quote(cmd)
         if opt.window || s:is_nvim
@@ -440,7 +447,11 @@ function! Sh(cmd, ...) abort
         endif
         let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
         if opt.window
-          let cmd = 'vimrun ' . cmd
+          if s:is_nvim
+            let cmd = 'cmd /c ' . cmd
+          else
+            let cmd = 'vimrun ' . cmd
+          endif
         endif
       endif
     endif
@@ -455,7 +466,11 @@ function! Sh(cmd, ...) abort
       endif
       let tmpfile = tempname()
       call writefile(stdin, tmpfile)
-      let cmd_suffix = ' < ' . shellescape(tmpfile)
+      if opt.window && s:is_win32 && s:is_nvim
+        let cmd_suffix = ' ^< ' . shellescape(tmpfile)
+      else
+        let cmd_suffix = ' < ' . shellescape(tmpfile)
+      endif
       let cmd .= cmd_suffix
     else
       let tmpbuf = bufadd('')
@@ -481,7 +496,14 @@ function! Sh(cmd, ...) abort
     "   :help E162
     " to know why :silent
     if s:is_win32
-      silent exe '!start' cmd
+      if s:is_nvim
+        if !l:win32_cmd_empty
+          let cmd = cmd . ' ^& pause'
+        endif
+        call jobstart(cmd, {'detach': 1})
+      else
+        silent exe '!start' cmd
+      endif
     else
       call s:echoerr('-w option is not supported in unix')
     endif
