@@ -656,9 +656,8 @@ function! s:choose_filelist() abort
   " a special filetype
   setl ft=filelist
   call append(0, map(s:load_filelist(), 'v:val[1]'))
-  if empty(getline('.'))
-    norm "_dd
-  endif
+  call append(0, '')
+  call append(0, filter(v:oldfiles, 'stridx(expand(v:val), $VIMRUNTIME) != 0')[:9])
   norm gg
 endfunction
 
