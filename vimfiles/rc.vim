@@ -655,9 +655,11 @@ function! s:choose_filelist() abort
   enew
   " a special filetype
   setl ft=filelist
-  call append(0, map(s:load_filelist(), 'v:val[1]'))
+  let l:list = map(s:load_filelist(), 'v:val[1]')
+  call reverse(l:list)
+  call append(0, l:list)
   call append(0, '')
-  call append(0, filter(v:oldfiles, 'stridx(expand(v:val), $VIMRUNTIME) != 0')[:9])
+  call append(0, filter(v:oldfiles, 'stridx(expand(v:val), $VIMRUNTIME) != 0'))
   norm gg
 endfunction
 
