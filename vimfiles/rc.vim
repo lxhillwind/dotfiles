@@ -232,7 +232,7 @@ endfunction
 
 function! Sh(cmd, ...) abort
   " echo (-e) implies -T.
-  let opt = {'tty': 1, 'visual': 0, 'bang': 0, 'echo': 0, 'newwin': 1}
+  let opt = {'tty': 1, 'visual': 0, 'bang': 0, 'echo': 0, 'close': 0, 'newwin': 1}
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
@@ -243,11 +243,12 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
-  " -vTe
+  " -vTec
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
   let opt.visual = match(opt_string, 'v') >= 0
   let opt.tty = match(opt_string, 'T') < 0
   let opt.echo = match(opt_string, 'e') >= 0
+  let opt.close = match(opt_string, 'c') >= 0
 
   if opt.echo
     let opt.tty = 0
@@ -349,6 +350,9 @@ function! Sh(cmd, ...) abort
       Ksnippet | setl bufhidden=wipe
     endif
     let job_opt = extend(job_opt, {'curwin': 1})
+    if opt.close
+      let job_opt = extend(job_opt, {'term_finish': 'close'})
+    endif
     let job = term_start(cmd, job_opt)
     if !empty(opt.bang)
       let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
