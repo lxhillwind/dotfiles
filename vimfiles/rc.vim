@@ -358,13 +358,14 @@ function! Sh(cmd, ...) abort
       endfor
     endif
     if opt.newwin && buf_idx < 0
-      Ksnippet | setl bufhidden=wipe
+      Ksnippet
     endif
     let job_opt = extend(job_opt, {'curwin': 1})
     if opt.close
       let job_opt = extend(job_opt, {'term_finish': 'close'})
     endif
     let job = term_start(cmd, job_opt)
+    setl bufhidden=wipe
     if !empty(opt.bang)
       let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
       call filter(s:sh_buf_cache, 'bufexists(v:val)')
