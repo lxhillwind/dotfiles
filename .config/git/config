@@ -5,12 +5,8 @@
 
 [merge]
 	tool = vimdiff
-[mergetool "vimdiff"]
-	path = nvim
 [diff]
 	tool = vimdiff
-[difftool "vimdiff"]
-	path = nvim
 [alias]
 	# use grep since some alias contains newline
 	a = !git config --get-regexp alias. | grep ^alias | sort
