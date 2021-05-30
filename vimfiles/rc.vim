@@ -570,14 +570,14 @@ function! s:cd(flag, args)
 
   if !empty(cmd)
     let old_cwd = getcwd()
-    let buf = bufnr(0)
+    let buf = bufnr()
     try
       " use buffer variable to store cwd if `exe` switch to new window
       let b:vimrc_old_cwd = old_cwd
       exe 'lcd' path
       exe cmd
     finally
-      if buf == bufnr(0)
+      if buf == bufnr()
         if exists('b:vimrc_old_cwd')
           unlet b:vimrc_old_cwd
         endif
