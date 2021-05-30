@@ -219,7 +219,7 @@ endif
 " :Sh [cmd]... (new window) or :Terminal [cmd]... (curwin)
 " It also fixes quote for sh on win32 {{{
 command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>, 'echo': 1})
-command! -bang -range -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>, 'tty': 1, 'newwin': 0})
+command! -range -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'range': <range>, 'line1': <line1>, 'line2': <line2>, 'tty': 1, 'newwin': 0})
 
 function! s:sh_echo_check(str, cond)
   if !empty(a:cond)
