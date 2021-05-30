@@ -215,9 +215,11 @@ if s:is_win32
 endif
 " }}}
 
-" run command (via :terminal), output to a separate window; :Sh [cmd]...
+" run command (via :terminal), output to a separate window;
+" :Sh [cmd]... (new window) or :Terminal [cmd]... (curwin)
 " It also fixes quote for sh on win32 {{{
 command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+command! -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'newwin': 0})
 
 function! s:sh_echo_check(str, cond)
   if !empty(a:cond)
@@ -230,7 +232,7 @@ endfunction
 
 function! Sh(cmd, ...) abort
   " echo (-e) implies -T.
-  let opt = {'tty': 1, 'visual': 0, 'bang': 0, 'echo': 0}
+  let opt = {'tty': 1, 'visual': 0, 'bang': 0, 'echo': 0, 'newwin': 1}
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
@@ -343,7 +345,7 @@ function! Sh(cmd, ...) abort
         endif
       endfor
     endif
-    if buf_idx < 0
+    if opt.newwin && buf_idx < 0
       Ksnippet | setl bufhidden=wipe
     endif
     let job_opt = extend(job_opt, {'curwin': 1})

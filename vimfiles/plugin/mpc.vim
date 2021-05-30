@@ -9,7 +9,7 @@ command! Mpc call <SID>mpc()
 let s:type = 'song'
 
 function! s:mpc() abort
-  enew | setl buftype=nofile noswapfile
+  enew | setl filetype=mpc buftype=nofile noswapfile
   let l:buf = bufnr()
   call prop_type_add(s:type, {'bufnr': l:buf})
   let l:i = 1
