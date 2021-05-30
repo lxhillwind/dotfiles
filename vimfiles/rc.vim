@@ -261,6 +261,8 @@ function! Sh(cmd, ...) abort
   else
     if get(opt, 'range') == 2
       let stdin = getline(opt.line1, opt.line2)
+    elseif get(opt, 'range') == 1
+      let stdin = getline(opt.line1)
     endif
   endif
   if type(stdin) == type('')
