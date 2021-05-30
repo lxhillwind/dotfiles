@@ -218,8 +218,8 @@ endif
 " run command (via :terminal), output to a separate window;
 " :Sh [cmd]... (new window) or :Terminal [cmd]... (curwin)
 " It also fixes quote for sh on win32 {{{
-command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-command! -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'newwin': 0})
+command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>, 'echo': 1})
+command! -bang -range -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>, 'tty': 1, 'newwin': 0})
 
 function! s:sh_echo_check(str, cond)
   if !empty(a:cond)
@@ -231,27 +231,44 @@ function! s:sh_echo_check(str, cond)
 endfunction
 
 function! Sh(cmd, ...) abort
-  " echo (-e) implies -T.
-  let opt = {'tty': 1, 'visual': 0, 'bang': 0, 'echo': 0, 'close': 0, 'newwin': 1}
+  let opt = {'visual': 0, 'bang': 0, 'echo': 0,
+        \ 'tty': 0, 'close': 0, 'newwin': 1,
+        \ 'stdin': 0,}
+  " -vtc
+  let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
+  let opt.visual = match(opt_string, 'v') >= 0
+  let opt.tty = match(opt_string, 't') >= 0
+  let opt.close = match(opt_string, 'c') >= 0
+
   let stdin = 0
   if a:0 > 0
     " a:1: string (stdin) or dict.
     if type(a:1) == type('')
-      let stdin = split(a:1, "\n")
+      let stdin = a:1
     else
       let opt = extend(opt, a:1)
+      if type(opt.stdin) == type('')
+        let stdin = opt.stdin
+      endif
     endif
   endif
+  if opt.visual
+    let tmp = @"
+    silent normal gvy
+    let stdin = @"
+    let @" = tmp
+    unlet tmp
+  else
+    if get(opt, 'range') == 2
+      let stdin = getline(opt.line1, opt.line2)
+    endif
+  endif
+  if type(stdin) == type('')
+    let stdin = split(stdin, "\n")
+  endif
 
-  " -vTec
-  let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
-  let opt.visual = match(opt_string, 'v') >= 0
-  let opt.tty = match(opt_string, 'T') < 0
-  let opt.echo = match(opt_string, 'e') >= 0
-  let opt.close = match(opt_string, 'c') >= 0
-
-  if opt.echo
-    let opt.tty = 0
+  if opt.tty
+    let opt.echo = 0
   endif
 
   let cmd = a:cmd[len(opt_string):]
@@ -268,27 +285,19 @@ function! Sh(cmd, ...) abort
   " remove trailing whitespace
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if opt.visual
-    let tmp = @"
-    silent normal gvy
-    let stdin = split(@", "\n")
-    let @" = tmp
-    unlet tmp
-  else
-    if get(opt, 'range') == 2
-      let stdin = getline(opt.line1, opt.line2)
-    endif
-  endif
-
   if empty(cmd) && stdin isnot# 0
     call s:echoerr('pipe to empty cmd is not allowed!') | return
+  endif
+
+  if empty(cmd) && !opt.tty
+    call s:echoerr('empty cmd (without tty) is not allowed!') | return
   endif
 
   if !opt.tty && s:is_unix
     if stdin is# 0
       return s:sh_echo_check(system(cmd), opt.echo)
     else
-      " add final [''] to add final newline; (required for nvim?)
+      " add final [''] to add final newline
       return s:sh_echo_check(system(cmd, stdin + ['']), opt.echo)
     endif
   endif
@@ -382,31 +391,6 @@ function! Sh(cmd, ...) abort
         \)
 endfunction
 
-" }}}
-
-" vim's *filter*, char level; {VISUAL}:Filter {cmd} {{{
-command! -nargs=+ -range -complete=shellcmd Filter call <SID>filter(<q-args>)
-
-function! s:filter(cmd) abort
-  let previous = @"
-  try
-    call s:filter_impl(a:cmd)
-  finally
-    let @" = previous
-  endtry
-endfunction
-
-function! s:filter_impl(cmd) abort
-  sil normal gvy
-  let code = @"
-  if a:cmd ==# 'vim'
-    let output = execute(code)
-  else
-    let output = Sh('-T ' . a:cmd, code)
-  endif
-  let @" = trim(output, "\n")
-  normal gvp
-endfunction
 " }}}
 
 " run vim command; :KvimRun {vim_command}... {{{
@@ -897,7 +881,7 @@ endif
 function! s:shell_replace()
   let cmd = getcmdline()
   if match(cmd, '\v^!') >= 0
-    let cmd = 'Sh -e ' . cmd[1:]
+    let cmd = 'Sh ' . cmd[1:]
   elseif match(cmd, printf('\v%s\<,%s\>\!', "'", "'")) >= 0
     let cmd = "'<,'>FilterV " . cmd[6:]
   endif
@@ -907,7 +891,7 @@ endfunction
 function! s:filterV(cmd, range, line1, line2)
   let previous = @"
   try
-    let @" = trim(Sh('-T ' . a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2}), "\n")
+    let @" = trim(Sh(a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2}), "\n")
     let first = 1 == a:line1
     let last = line('$') == a:line2
     execute 'normal' a:line1 . 'gg'
