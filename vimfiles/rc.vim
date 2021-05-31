@@ -652,7 +652,7 @@ function! s:choose_filelist() abort
   call reverse(l:list)
   call append(0, l:list)
   call append(0, '')
-  call append(0, filter(v:oldfiles, 'stridx(expand(v:val), $VIMRUNTIME) != 0'))
+  call append(0, filter(v:oldfiles, 'stridx(expand(v:val), fnamemodify($VIMRUNTIME, ":h")) != 0'))
   norm gg
 endfunction
 
