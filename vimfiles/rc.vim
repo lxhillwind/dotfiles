@@ -888,18 +888,6 @@ function! s:filterV(cmd, range, line1, line2)
 endfunction
 " }}}
 
-" qutebrowser edit-cmd; :KqutebrowserEditCmd {{{
-command! KqutebrowserEditCmd call s:qutebrowser_edit_cmd()
-
-function! s:qutebrowser_edit_cmd()
-  setl buftype=nofile noswapfile
-  call setline(1, $QUTE_COMMANDLINE_TEXT[1:])
-  call setline(2, '')
-  call setline(3, 'hit `;q` to save cmd (first line) and quit')
-  nnoremap <buffer> ;q :call writefile(['set-cmd-text -s :' . getline(1)], $QUTE_FIFO) \| q<CR>
-endfunction
-" }}}
-
 " edit selected line / column; :Kjump {{{
 command! -nargs=+ Kjump call <SID>jump_line_col(<f-args>)
 function! s:jump_line_col(line, ...) abort
