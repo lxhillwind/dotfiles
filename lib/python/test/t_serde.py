@@ -89,9 +89,9 @@ class TestParse(unittest.TestCase):
                 Foo,
                 {
                     'name': 'Alice', 'age': 233,
-                    'school': {'region': '??', 'country': {2: [], 3: ['???', None]}, 'created': 1585670400}
+                    'school': {'region': '??', 'country': {2: [], 3: ['???', None]}, 'created': 1585699200}
                 },
-                type_table={datetime.datetime: datetime.datetime.fromtimestamp}
+                type_table={datetime.datetime: datetime.datetime.utcfromtimestamp}
                 )
         self.assertEqual(s.school.created, datetime.datetime(2020, 4, 1))
         self.assertEqual(s.school.country[3].count('???'), 1)
@@ -144,14 +144,14 @@ class TestDumps(unittest.TestCase):
 
         s2 = {
                 'name': 'Alice', 'age': 233,
-                'school': {'region': '??', 'country': {2: [], 3: ['???', None]}, 'created': 1585670400}
+                'school': {'region': '??', 'country': {2: [], 3: ['???', None]}, 'created': 1585699200}
                 }
         self.assertEqual(
                 dumps(
                     parse(
                         Foo,
                         s2,
-                        type_table={datetime.datetime: datetime.datetime.fromtimestamp}
+                        type_table={datetime.datetime: datetime.datetime.utcfromtimestamp}
                         ),
                     type_table={datetime.datetime: lambda i: int(i.strftime('%s'))}
                     ),

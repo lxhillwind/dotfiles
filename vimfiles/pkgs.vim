@@ -49,10 +49,8 @@ if s:enable('coc', 0)
   "   CocInstall coc-go
   "   CocInstall coc-html
   "   CocInstall coc-pyright
-  "   CocInstall coc-tsserver
-  "   CocInstall coc-vetur
 
-  au FileType go,html,javascript,python,typescript,vim,vue call <SID>init_coc_lang()
+  au FileType go,html,python,vim call <SID>init_coc_lang()
 
   " coc keymap {{{
   function! s:init_coc_lang()
@@ -61,6 +59,9 @@ if s:enable('coc', 0)
     nmap <silent> <buffer> <LocalLeader>y <Plug>(coc-type-definition)
     nmap <silent> <buffer> <LocalLeader>i <Plug>(coc-implementation)
     nmap <silent> <buffer> <LocalLeader>r <Plug>(coc-references)
+
+    " completion
+    inoremap <silent> <buffer> <expr> <C-Space> coc#refresh()
 
     " Use K to show documentation in preview window.
     nnoremap <silent> <buffer> K :call <SID>show_documentation()<CR>
