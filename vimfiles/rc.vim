@@ -88,6 +88,16 @@ let s:has_gui = has('gui_running')
       \ || (has('unix') && system('uname -s') =~? 'Darwin')
       \ || (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY)))
 
+" disable default plugin {{{
+let g:loaded_getscriptPlugin = 1
+let g:loaded_gzip = 1
+let g:loaded_logiPat = 1
+let g:loaded_netrwPlugin = 1
+let g:loaded_tarPlugin = 1
+let g:loaded_vimballPlugin = 1
+let g:loaded_zipPlugin = 1
+" }}}
+
 " common func {{{
 " :echoerr will raise exception (?)
 function! s:echoerr(msg)
@@ -731,8 +741,6 @@ endfunction
 " gx related (NOTE: key `gx` overwritten) {{{
 nnoremap <silent> gx :call <SID>gx('n')<CR>
 vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
-" vim72 (linux) bundled netrw will map `gx` anyway, so skip loading it.
-let g:loaded_netrwPlugin = 1
 
 " TODO fix quote / escape
 function! s:gx_open_cmd(s)
