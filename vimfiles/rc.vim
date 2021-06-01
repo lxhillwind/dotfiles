@@ -215,8 +215,7 @@ if s:is_win32
 endif
 " }}}
 
-" run command (via :terminal), output to a separate window;
-" :Sh [cmd]... (new window) or :Terminal [cmd]... (curwin)
+" run shell cmd, output to a separate window; :Sh [cmd]... or :Terminal [cmd]...
 " It also fixes quote for sh on win32 {{{
 command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>, 'echo': 1})
 command! -range -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'range': <range>, 'line1': <line1>, 'line2': <line2>, 'tty': 1, 'newwin': 0})
@@ -351,21 +350,19 @@ function! Sh(cmd, ...) abort
       for buf in buffers
         let buf_idx = index(buflist, buf)
         if buf_idx >= 0
-          " TODO check previous job running
           exe buf_idx + 1 . 'wincmd w'
           break
         endif
       endfor
     endif
     if opt.newwin && buf_idx < 0
-      Ksnippet
+      execute 'bot' &cmdwinheight . 'split'
     endif
     let job_opt = extend(job_opt, {'curwin': 1})
     if opt.close
       let job_opt = extend(job_opt, {'term_finish': 'close'})
     endif
     let job = term_start(cmd, job_opt)
-    setl bufhidden=wipe
     if !empty(opt.bang)
       let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
       call filter(s:sh_buf_cache, 'bufexists(v:val)')
@@ -422,29 +419,6 @@ function! s:vim_expr(args)
   Ksnippet!
   normal p
   let @" = buf
-endfunction
-" }}}
-
-" open a new tmux window (with current directory); :Tmux c/s/v {{{
-command! -nargs=1 -bar Tmux call <SID>open_tmux_window(<q-args>)
-
-function! s:open_tmux_window(args)
-  let options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
-  let ch = match(a:args, '\s')
-  if ch == -1
-    let [option, args] = [a:args, '']
-  else
-    let [option, args] = [a:args[:ch], a:args[ch:]]
-  endif
-  let option = get(options, trim(option))
-  if empty(option)
-    call s:echoerr('unknown option: ' . a:args . '; valid: ' . join(keys(options), ' / ')) | return
-  endif
-  if exists("$TMUX")
-    call system("tmux " . option . " -c " . shellescape(getcwd()) . args)
-  else
-    call s:echoerr('not in tmux session!')
-  endif
 endfunction
 " }}}
 
@@ -620,7 +594,7 @@ function! s:get_project_dir()
 endfunction
 " }}}
 
-" open file from list (order by opened times) (see keymap) {{{
+" open file from filelist (order by opened times) (see keymap) {{{
 augroup vimrc_filelist
   au!
   au BufNewFile,BufRead,BufWritePost * call s:save_filelist()
@@ -647,7 +621,7 @@ endfunction
 function! s:choose_filelist() abort
   enew
   " a special filetype
-  setl ft=filelist
+  setl ft=filelist buftype=nofile noswapfile nobuflisted
   let l:list = map(s:load_filelist(), 'v:val[1]')
   call reverse(l:list)
   call append(0, l:list)
@@ -1002,6 +976,9 @@ augroup vimrc_filetype
   au FileType zig setl fp=zig\ fmt\ --stdin
   au FileType markdown setl tw=120
 
+  " open plugin directory
+  au FileType vim nnoremap <buffer> <LocalLeader>e <cmd>e ~/vimfiles/plugin<CR>
+
   " quickfix window
   au FileType qf nnoremap <buffer> <silent>
         \ <CR> <CR>:setl nofoldenable<CR>zz<C-w>p
@@ -1036,7 +1013,6 @@ augroup vimrc_filetype
 
   " simple filelist
   function! s:filelist_init()
-    setl buftype=nofile noswapfile
     nnoremap <buffer> <LocalLeader><CR> :call <SID>cd_cur_line()<CR>
     nnoremap <buffer> <CR> :call <SID>edit_cur_line()<CR>
   endfunction
@@ -1052,9 +1028,6 @@ augroup vimrc_filetype
     nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
     nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
     nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
-    nnoremap <buffer> <LocalLeader>tc :call <SID>gx_vim('Cd', '', ' :Tmux c \| close')<CR>
-    nnoremap <buffer> <LocalLeader>ts :call <SID>gx_vim('Cd', '', ' :Tmux s \| close')<CR>
-    nnoremap <buffer> <LocalLeader>tv :call <SID>gx_vim('Cd', '', ' :Tmux v \| close')<CR>
   endfunction
   au FileType gx call <SID>gx_init()
 augroup END
