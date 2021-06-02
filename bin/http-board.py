@@ -69,6 +69,11 @@ def ping():
     return flask.jsonify({'ok': 1})
 
 
+@app.route('/raw')
+def raw():
+    return clipboard['content']
+
+
 @app.route('/api', methods=['POST', 'GET'])
 def api():
     print(clipboard['content'])
