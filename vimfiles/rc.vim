@@ -440,29 +440,18 @@ endfunction
 " run vim command; :KvimRun {vim_command}... {{{
 command! -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>)
 
-function! s:vim_run(args)
-  let buf = @"
-  sil! let @" = execute(a:args)
-  Ksnippet!
-  normal p
-  let @" = buf
+function! s:vim_run(args) abort
+  Scratch
+  put =execute(a:args)
 endfunction
 " }}}
 
 " vim expr; :KvimExpr {vim_expr}... {{{
 command! -nargs=+ -complete=expression KvimExpr call <SID>vim_expr(<q-args>)
 
-function! s:vim_expr(args)
-  let buf = @"
-  let result = eval(a:args)
-  if type(result) == type('')
-    let @" = result
-  else
-    let @" = string(result)
-  endif
-  Ksnippet!
-  normal p
-  let @" = buf
+function! s:vim_expr(args) abort
+  Scratch
+  put =eval(a:args)
 endfunction
 " }}}
 
