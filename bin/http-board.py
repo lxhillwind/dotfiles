@@ -64,16 +64,27 @@ def root():
     return jinja2.Template(index).render(content=clipboard.get('content'))
 
 
+@app.route('/http-board-ping')
+def ping():
+    return flask.jsonify({'ok': 1})
+
+
 @app.route('/api', methods=['POST', 'GET'])
 def api():
     print(clipboard['content'])
     if flask.request.method == 'POST':
+
         data = flask.request.get_json()
         if data:
             clipboard['content'] = data.get('text')
             return 'ok'
-        else:
-            return 'err'
+
+        data = flask.request.form
+        if data:
+            clipboard['content'] = data.get('text')
+            return 'ok'
+
+        return 'err'
     else:
         return flask.jsonify({'text': clipboard['content']})
 

@@ -9,6 +9,8 @@ else
         exec xsel -ob
     elif [ -n "$TMUX" ]; then
         exec tmux saveb -
+    elif [ -n "$SSH_CLIENT" ] && timeout 1 curl -s -f 10.0.2.2:8000/http-board-ping >/dev/null 2>&1; then
+        curl -s 10.0.2.2:8000/api | jq -j .text
     else
         :
     fi

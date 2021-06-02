@@ -9,6 +9,8 @@ else
         exec xsel -ib
     elif [ -n "$TMUX" ]; then
         exec tmux loadb -
+    elif [ -n "$SSH_CLIENT" ] && timeout 1 curl -s -f 10.0.2.2:8000/http-board-ping >/dev/null 2>&1; then
+        exec curl -s 10.0.2.2:8000/api -X POST -F text='<-' -o /dev/null
     else
         :
     fi
