@@ -1,0 +1,28 @@
+{
+    "files.insertFinalNewline": true,
+    "editor.lineNumbers": "relative",
+    "editor.tabSize": 8,
+    "terminal.integrated.copyOnSelection": true,
+    "vim.foldfix": true,
+    "vim.leader": " ",
+    "vim.normalModeKeyBindings": [
+        {
+            "before": ["K"],
+            "commands": [
+                "editor.action.showHover"
+            ]
+        },
+        {
+            "before": ["]", "e"],
+            "commands": [
+                "editor.action.marker.next"
+            ]
+        },
+        {
+            "before": ["[", "e"],
+            "commands": [
+                "editor.action.marker.prev"
+            ]
+        }
+    ]
+}

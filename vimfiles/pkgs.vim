@@ -63,6 +63,10 @@ if s:enable('coc', 0)
     " completion
     inoremap <silent> <buffer> <expr> <C-Space> coc#refresh()
 
+    " diagnostic
+    nmap <buffer> ]e <cmd>call CocAction('diagnosticNext')<CR>
+    nmap <buffer> [e <cmd>call CocAction('diagnosticPrevious')<CR>
+
     " Use K to show documentation in preview window.
     nnoremap <silent> <buffer> K :call <SID>show_documentation()<CR>
 
