@@ -123,9 +123,15 @@ config.bind('<ctrl-k>', 'fake-key <shift-end> ;; fake-key <delete>', mode='inser
 config.bind('<ctrl-n>', 'fake-key <down>', mode='insert')
 config.bind('<ctrl-p>', 'fake-key <up>', mode='insert')
 config.bind('<ctrl-u>', 'fake-key <shift-home> ;; fake-key <delete>', mode='insert')
+
 if sys.platform.startswith('darwin'):
+    # TODO verify meta / alt on macos
+    config.bind('ca', 'mode-enter passthrough ;; fake-key <meta-a> ;; fake-key <meta-c> ;; mode-enter normal')
+
     config.bind('<ctrl-w>', 'fake-key <alt-backspace>', mode='insert')
 else:
+    config.bind('ca', 'mode-enter passthrough ;; fake-key <ctrl-a> ;; fake-key <ctrl-c> ;; mode-enter normal')
+
     config.bind('<ctrl-/>', 'fake-key <ctrl-a>', mode='insert')
     config.bind('<ctrl-w>', 'fake-key <ctrl-backspace>', mode='insert')
 
