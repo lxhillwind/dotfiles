@@ -178,16 +178,19 @@ function! s:complete_edit_map(A, L, P)
 endfunction
 " }}}
 
-" snippet; :Ksnippet [filetype] {{{
-if v:version > 702
-  command! -bang -nargs=? -complete=filetype
-        \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
-else
-  command! -bang -nargs=?
-        \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
-endif
+" snippet; :Scratch [filetype] / :Ksnippet [filetype] (with new window) {{{
+command -nargs=? -complete=filetype Scratch call <SID>scratch(<q-args>)
+command! -bang -nargs=? -complete=filetype
+      \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
 
-function! s:snippet_in_new_window(bang, ft)
+function! s:scratch(ft) abort
+  enew | setl buftype=nofile noswapfile bufhidden=hide
+  if !empty(a:ft)
+    exe 'setl ft=' . a:ft
+  endif
+endfunction
+
+function! s:snippet_in_new_window(bang, ft) abort
   let name = '[Snippet]'
   " :Ksnippet! may use existing buffer.
   let create_buffer = 1
