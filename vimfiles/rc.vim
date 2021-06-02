@@ -88,6 +88,35 @@ let s:has_gui = has('gui_running')
       \ || (has('unix') && system('uname -s') =~? 'Darwin')
       \ || (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY)))
 
+" various tmpfile {{{
+" copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
+" backup files
+set backup
+set backupdir   =$HOME/.vim/files/backup/
+set backupext   =-vimbackup
+set backupskip  =
+" swap files
+set directory   =$HOME/.vim/files/swap//
+" use default value
+"set updatecount =100
+" undo files
+set undofile
+set undodir     =$HOME/.vim/files/undo/
+" viminfo files
+set viminfofile =$HOME/.vim/files/viminfo
+
+" create directory if needed
+for s:t_dir in [&backupdir, &directory, &undodir]
+  if !isdirectory(s:t_dir)
+    call mkdir(s:t_dir, 'p')
+  endif
+endfor
+
+" disable some feature
+set nobackup
+set noundofile
+" }}}
+
 " disable default plugin {{{
 let g:loaded_getscriptPlugin = 1
 let g:loaded_gzip = 1
@@ -643,7 +672,9 @@ endfunction
 function! s:filelist_path()
   return get(g:, 'filelist_path', s:filelist_path_default)
 endfunction
-let s:filelist_path_default = expand('<sfile>:p:h') . '/filelist_path.cache'
+let s:filelist_path_default =
+      \ ( empty(&viminfofile) ? expand('<sfile>:p:h') : fnamemodify(&viminfofile, ':h') )
+      \ . '/filelist_path.cache'
 
 function! s:load_filelist()
   try
