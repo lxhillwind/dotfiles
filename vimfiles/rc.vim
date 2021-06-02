@@ -62,6 +62,8 @@ set wmnu
 set cot-=preview
 " shortmess; show search count message (default in neovim)
 set shm-=S
+" sessionoptions; better :mksession option.
+set ssop=blank,curdir,folds,tabpages,winsize
 
 "
 " encoding
@@ -989,9 +991,6 @@ vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 " terminal escape
 tnoremap <C-Space> <C-\><C-n>
 tnoremap <C-w> <C-w>.
-
-nnoremap <Leader>e :Cdbuffer e <cfile><CR>
-nnoremap <Leader>E :e#<CR>
 " }}}
 
 " filetype setting {{{
@@ -1053,7 +1052,6 @@ augroup vimrc_filetype
       nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
     endif
     nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
-    nnoremap <buffer> <LocalLeader>e :call <SID>gx_vim('e', 'fnameescape')<CR>
     nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
   endfunction
   au FileType gx call <SID>gx_init()
