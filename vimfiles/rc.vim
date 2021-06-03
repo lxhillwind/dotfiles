@@ -8,6 +8,10 @@ let maplocalleader = ' ;'
 noremap <Space> <Nop>
 
 " default {{{
+" if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
+if &compatible
+  set nocompatible
+endif
 
 set nomodeline
 
@@ -94,18 +98,18 @@ let s:has_gui = has('gui_running')
 " copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
 " backup files
 set backup
-set backupdir   =$HOME/.vim/files/backup/
-set backupext   =-vimbackup
-set backupskip  =
+let &backupdir = expand('~/.vim/files/backup/')
+set backupext=-vimbackup
+set backupskip=
 " swap files
-set directory   =$HOME/.vim/files/swap//
+let &directory = expand('~/.vim/files/swap' . '//')
 " use default value
 "set updatecount =100
 " undo files
 set undofile
-set undodir     =$HOME/.vim/files/undo/
+let &undodir = expand('~/.vim/files/undo/')
 " viminfo files
-set viminfofile =$HOME/.vim/files/viminfo
+let &viminfofile = expand('~/.vim/files/viminfo')
 
 " create directory if needed
 for s:t_dir in [&backupdir, &directory, &undodir]

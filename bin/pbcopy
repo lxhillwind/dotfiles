@@ -7,11 +7,12 @@ else
         exec wl-copy
     elif [ -n "$DISPLAY" ]; then
         exec xsel -ib
-    elif [ -n "$TMUX" ]; then
-        exec tmux loadb -
     elif [ -n "$SSH_CLIENT" ] && \
+        [ "$CLIPBOARD_SSH" != '0' ] && \
         timeout 1 curl -s -f "${CLIPBOARD_SSH:-10.0.2.2:8000}"/http-board-ping >/dev/null 2>&1; then
         exec curl -s "${CLIPBOARD_SSH:-10.0.2.2:8000}"/api -X POST -F text='<-' -o /dev/null
+    elif [ -n "$TMUX" ]; then
+        exec tmux loadb -
     else
         :
     fi
