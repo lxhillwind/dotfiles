@@ -85,6 +85,16 @@ set enc=utf-8
 " See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
 set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 
+" disable default plugin
+let g:loaded_2html_plugin = 1
+let g:loaded_getscriptPlugin = 1
+let g:loaded_gzip = 1
+let g:loaded_logiPat = 1
+let g:loaded_netrwPlugin = 1
+let g:loaded_tarPlugin = 1
+let g:loaded_vimballPlugin = 1
+let g:loaded_zipPlugin = 1
+
 " }}}
 
 " common platform detection
@@ -121,16 +131,6 @@ endfor
 " disable some feature
 set nobackup
 set noundofile
-" }}}
-
-" disable default plugin {{{
-let g:loaded_getscriptPlugin = 1
-let g:loaded_gzip = 1
-let g:loaded_logiPat = 1
-let g:loaded_netrwPlugin = 1
-let g:loaded_tarPlugin = 1
-let g:loaded_vimballPlugin = 1
-let g:loaded_zipPlugin = 1
 " }}}
 
 " common func {{{
