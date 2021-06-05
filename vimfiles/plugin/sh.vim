@@ -40,6 +40,21 @@ if s:is_win32
     let &shellquote = s:shell_opt_cmd.shellquote
     silent! let &shellxquote = ''
   endif
+
+  function! s:win32_quote(arg)
+    " To make quote work reliably, it is worth reading:
+    " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+    let cmd = a:arg
+    " double all \ before "
+    let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+    " double trailing \
+    let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
+    " escape " with \
+    let cmd = escape(cmd, '"')
+    " quote it
+    let cmd = '"' . cmd . '"'
+    return cmd
+  endfunction
 endif
 " }}}
 

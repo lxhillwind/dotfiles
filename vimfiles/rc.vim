@@ -140,21 +140,6 @@ function! s:echoerr(msg)
   echon a:msg
   echohl None
 endfunction
-
-function! s:win32_quote(arg)
-  " To make quote work reliably, it is worth reading:
-  " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
-  let cmd = a:arg
-  " double all \ before "
-  let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
-  " double trailing \
-  let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
-  " escape " with \
-  let cmd = escape(cmd, '"')
-  " quote it
-  let cmd = '"' . cmd . '"'
-  return cmd
-endfunction
 " }}}
 
 " quick edit (with completion); :Ke {shortcut} {{{
