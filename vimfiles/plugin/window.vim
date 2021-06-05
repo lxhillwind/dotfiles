@@ -4,8 +4,10 @@ if exists("$TMUX")
   command! -nargs=1 -bar Tmux call <SID>open_tmux_window(<q-args>)
 endif
 
-function! s:echoerr(arg)
-  return call("\<SNR>" . g:vimrc_sid . '_echoerr', [a:arg])
+function! s:echoerr(msg)
+  echohl ErrorMsg
+  echon a:msg
+  echohl None
 endfunction
 
 function! s:open_tmux_window(args)
