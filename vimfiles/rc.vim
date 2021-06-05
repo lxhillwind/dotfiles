@@ -29,8 +29,14 @@ if !get(g:, 'vimrc#loaded')
   set rnu
   augroup vimrc_terminal
     au!
-    " NOTE: keymap defined here (terminal [p]aste).
-    au TerminalOpen * setl nonu | setl nornu | nnoremap <buffer> p i<C-w>""<C-\><C-n>
+    function! s:terminal_init()
+      " NOTE: keymap defined here (terminal [p]aste).
+      if &buftype ==# 'terminal'
+        setl nonu | setl nornu
+      endif
+      nnoremap <buffer> p i<C-w>""<C-\><C-n>
+    endfunction
+    au TerminalOpen * call s:terminal_init()
   augroup END
   " hlsearch
   set hls
