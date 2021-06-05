@@ -794,7 +794,7 @@ function! s:gx_open(...)
   if empty(a:0)
     let open_cmd = s:gx_open_cmd(text)
   else
-    let open_cmd = a:1 . ' ' . shellescape(text)
+    let open_cmd = [a:1, text]
   endif
   if empty(open_cmd)
     return
