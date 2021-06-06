@@ -151,6 +151,7 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
+  let job_opt = {}
   let [tmpfile, tmpbuf] = ['', '']
   if stdin isnot# 0
     if opt.window
@@ -166,7 +167,6 @@ function! Sh(cmd, ...) abort
       endfor
       unlet l:idx
     endif
-    let job_opt = {}
     if !empty(tmpbuf)
       let job_opt = extend(job_opt, {'in_io': 'buffer', 'in_buf': tmpbuf})
       if s:is_win32 && opt.tty

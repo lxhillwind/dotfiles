@@ -3,6 +3,9 @@
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
 
+runtime plugin/vimserver.vim
+call vimserver#main()
+
 let mapleader = ' '  " assign before use
 let maplocalleader = ' ;'
 noremap <Space> <Nop>
@@ -106,9 +109,8 @@ let g:loaded_zipPlugin = 1
 " common platform detection
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
-let s:has_gui = has('gui_running')
-      \ || (has('unix') && system('uname -s') =~? 'Darwin')
-      \ || (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY)))
+let s:has_gui = has('gui_running') || has('mac')
+      \ || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 
 " various tmpfile {{{
 " copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
