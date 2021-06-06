@@ -657,7 +657,7 @@ else
   endtry
 endif
 
-if s:is_unix && $TERM ==? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
+if s:is_unix && $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
   " fix vim start in replace mode;
   " Refer: https://superuser.com/a/1525060
   set t_u7=
