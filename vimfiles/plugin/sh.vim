@@ -55,6 +55,11 @@ if s:is_win32
     let cmd = '"' . cmd . '"'
     return cmd
   endfunction
+
+  function! s:win32_cmd_exe_quote(arg)
+    " escape for cmd.exe
+    return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
+  endfunction
 endif
 " }}}
 
@@ -73,13 +78,14 @@ endfunction
 
 function! Sh(cmd, ...) abort
   let opt = {'visual': 0, 'bang': 0, 'echo': 0,
-        \ 'tty': 0, 'close': 0, 'newwin': 1,
+        \ 'tty': 0, 'close': 0, 'newwin': 1, 'window': 0,
         \ 'stdin': 0,}
-  " -vtc
+  " -vtcw
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
   let opt.visual = match(opt_string, 'v') >= 0
   let opt.tty = match(opt_string, 't') >= 0
   let opt.close = match(opt_string, 'c') >= 0
+  let opt.window = match(opt_string, 'w') >= 0
 
   let stdin = 0
   if a:0 > 0
@@ -132,11 +138,11 @@ function! Sh(cmd, ...) abort
     call s:echoerr('pipe to empty cmd is not allowed!') | return
   endif
 
-  if empty(cmd) && !opt.tty
+  if empty(cmd) && !opt.tty && !opt.window
     call s:echoerr('empty cmd (without tty) is not allowed!') | return
   endif
 
-  if !opt.tty && s:is_unix
+  if !opt.tty && !opt.window && s:is_unix
     if stdin is# 0
       return s:sh_echo_check(system(cmd), opt.echo)
     else
@@ -145,10 +151,45 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
-  if s:is_win32
+  let [tmpfile, tmpbuf] = ['', '']
+  if stdin isnot# 0
+    if opt.window
+      let tmpfile = tempname()
+      call writefile(stdin, tmpfile)
+    else
+      let tmpbuf = bufadd('')
+      call bufload(tmpbuf)
+      let l:idx = 1
+      for l:line in stdin
+        call setbufline(tmpbuf, l:idx, l:line)
+        let l:idx += 1
+      endfor
+      unlet l:idx
+    endif
+    let job_opt = {}
+    if !empty(tmpbuf)
+      let job_opt = extend(job_opt, {'in_io': 'buffer', 'in_buf': tmpbuf})
+      if s:is_win32 && opt.tty
+        " <C-z>
+        let job_opt = extend(job_opt, {'eof_chars': "\x1a"})
+      endif
+    endif
+  endif
+
+  if s:is_unix
+    if empty(cmd)
+      let cmd = split(&shell)
+    else
+      if empty(tmpfile)
+        let cmd = ['sh', '-c', cmd]
+      else
+        let cmd = ['sh', '-c', printf('sh -c %s < %s',
+              \ shellescape(cmd), shellescape(tmpfile))]
+      endif
+    endif
+  else
     let shell = s:shell_opt_sh.shell
     let shellcmdflag = s:shell_opt_sh.shellcmdflag
-
     if empty(cmd)
       let cmd = shell
     else
@@ -157,33 +198,26 @@ function! Sh(cmd, ...) abort
     endif
   endif
 
-  let tmpbuf = ''
-  if stdin isnot# 0
-    let tmpbuf = bufadd('')
-    call bufload(tmpbuf)
-    let l:idx = 1
-    for l:line in stdin
-      call setbufline(tmpbuf, l:idx, l:line)
-      let l:idx += 1
-    endfor
-    unlet l:idx
-  endif
-  let job_opt = {}
-  if !empty(tmpbuf)
-    let job_opt = extend(job_opt, {'in_io': 'buffer', 'in_buf': tmpbuf})
-    if s:is_win32 && opt.tty
-      " <C-z>
-      let job_opt = extend(job_opt, {'eof_chars': "\x1a"})
+  if opt.window
+    if s:is_win32
+      let cmd = s:win32_cmd_exe_quote(cmd)
+      let suffix = opt.close ? '' : ' & pause'
+      if empty(tmpfile)
+        let cmd = printf('cmd /c %s%s', cmd, suffix)
+      else
+        let cmd = printf('cmd /c %s < %s%s', cmd, shellescape(tmpfile), suffix)
+      endif
+      silent execute '!start' cmd
+    elseif executable('urxvt')
+      call job_start(['urxvt', '-e'] + cmd)
+    elseif executable('alacritty')
+      call job_start(['alacritty', '-e'] + cmd)
+    else
+      call s:echoerr('Sh: -w (window) option not supported!')
     endif
+    return
   endif
 
-  if s:is_unix
-    if empty(cmd)
-      let cmd = split(&shell)
-    else
-      let cmd =  ['sh', '-c', cmd]
-    endif
-  endif
   if opt.tty
     let buf_idx = -1
     if !empty(opt.bang)
