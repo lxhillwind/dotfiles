@@ -630,7 +630,7 @@ function! s:gx(mode) abort
 endfunction
 " }}}
 
-" colorscheme {{{
+" colorscheme, term setting {{{
 if !s:is_unix && !has('gui_running')  " win32 cmd
   set nocursorcolumn
   color pablo
@@ -656,9 +656,15 @@ else
     endif
   endtry
 endif
+
+if s:is_unix && $TERM ==? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
+  " fix vim start in replace mode;
+  " Refer: https://superuser.com/a/1525060
+  set t_u7=
+endif
 " }}}
 
-" gui init {{{
+" gvimrc {{{
 function! s:gui_init()
   if get(g:, 'vimrc#loaded_gui')
     return
