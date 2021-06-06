@@ -1,6 +1,6 @@
-" TODO impl for non-linux: /proc/xxx/fd/0, cat;
+" TODO impl for win32 (socat is not available).
 
-if !has('linux')
+if !executable('socat')
   finish
 endif
 
@@ -16,7 +16,9 @@ function! vimserver#main() abort
   if empty($VIMSERVER_ID)
     call s:server()
   else
-    call s:client($VIMSERVER_ID)
+    if v:argv[0] ==# 'vim'
+      call s:client($VIMSERVER_ID)
+    endif
   endif
 endfunction
 
@@ -36,14 +38,15 @@ function! s:server_handler(channel, msg) abort
   if len(argv) > 0
     execute 'e' fnameescape(argv[0])
     let argv = argv[1:]
+  else
+    enew
   endif
   " requied to make BufHidden match it.
   setl bufhidden=hide
   let b:vimserver_post_func = { ->
         \ system(
-        \ printf('printf %%s"\n" %s > /proc/%s/fd/0',
-        \ shellescape(json_encode({'CLIENT_ID': client})),
-        \ shellescape(client)))
+        \ printf('socat stdin unix-connect:%s', shellescape(client)),
+        \ json_encode({'CLIENT_ID': client}) . "\n")
         \ }
   if !empty(argv)
     echoerr 'open multiple files is not supported!'
@@ -51,8 +54,10 @@ function! s:server_handler(channel, msg) abort
 endfunction
 
 function! s:server() abort
-  let job = job_start(['cat'], #{callback: function('s:server_handler')})
-  let $VIMSERVER_ID = string(job_info(job).process)
+  let bind_name = tempname()
+  let job = job_start(['socat', printf('unix-l:%s,fork', bind_name), 'stdout'],
+        \ #{callback: function('s:server_handler')})
+  let $VIMSERVER_ID = bind_name
 
   augroup vimserver_bufhidden_client
     au!
@@ -66,24 +71,25 @@ function! s:server() abort
 endfunction
 
 function! s:client_handler(channel, msg) abort
-  let data = json_decode(a:msg)
   let job = ch_getjob(a:channel)
-  if string(job_info(job).process) ==# data.CLIENT_ID
-    call job_stop(job)
-  endif
+  call job_stop(job)
 endfunction
 
 function! s:client(server_id) abort
-  let job = job_start(['cat'], #{callback: function('s:client_handler')})
-  let client = string(job_info(job).process)
+  let bind_name = tempname()
+  let job = job_start(['socat', printf('unix-l:%s,fork', bind_name), 'stdout'],
+        \ #{callback: function('s:client_handler')})
+  let client = bind_name
   call system(
-        \ printf('printf %%s"\n" %s > /proc/%s/fd/0',
-        \ shellescape(json_encode({'CLIENT_ID': client, 'ARGV': v:argv})),
-        \ shellescape(a:server_id)))
-  while job_status(job) ==# 'run'
-    sleep 1m
-  endwhile
-  qall
+        \ printf('socat stdin unix-connect:%s', shellescape(a:server_id)),
+        \ json_encode({'CLIENT_ID': client, 'ARGV': v:argv}) . "\n")
+  try
+    while job_status(job) ==# 'run'
+      sleep 1m
+    endwhile
+  finally
+    qall
+  endtry
 endfunction
 
 " vim:fdm=marker
