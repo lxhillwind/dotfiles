@@ -1,9 +1,5 @@
 " TODO impl for win32 (socat is not available).
 
-if !executable('socat')
-  finish
-endif
-
 " common func {{{
 function! s:echoerr(msg)
   echohl ErrorMsg
@@ -13,10 +9,13 @@ endfunction
 " }}}
 
 function! vimserver#main() abort
+  if !executable('socat')
+    return
+  endif
   if empty($VIMSERVER_ID)
     call s:server()
   else
-    if v:argv[0] ==# 'vim'
+    if !&diff
       call s:client($VIMSERVER_ID)
     endif
   endif
