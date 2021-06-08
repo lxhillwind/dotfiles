@@ -35,7 +35,6 @@ if s:enable('base', 1)
 
   " dirvish
   let g:loaded_netrwPlugin = 1
-  au FileType dirvish nmap <buffer> H <Plug>(dirvish_up) | nmap <buffer> L i
 endif
 
 if s:enable('coc', 0)
