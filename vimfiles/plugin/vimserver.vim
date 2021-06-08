@@ -29,6 +29,7 @@ function! s:server_handler(channel, msg) abort
   let client = data.CLIENT_ID
   " TODO handle vimdiff
   let argv = data.ARGV[1:]
+  let cwd = data.CWD
   if len(argv) > 0 && index(['+vs', '+sp', '+tabe'], argv[0]) >= 0
     execute argv[0][1:]
     let argv = argv[1:]
@@ -36,6 +37,7 @@ function! s:server_handler(channel, msg) abort
     " split by default
     sp
   endif
+  execute 'lcd' fnameescape(cwd)
 
   if len(argv) > 0
     execute 'e' fnameescape(argv[0])
@@ -84,7 +86,7 @@ function! s:client(server_id) abort
   let client = bind_name
   call system(
         \ printf('socat stdin unix-connect:%s', shellescape(a:server_id)),
-        \ json_encode({'CLIENT_ID': client, 'ARGV': v:argv}) . "\n")
+        \ json_encode({'CLIENT_ID': client, 'ARGV': v:argv, 'CWD': getcwd()}) . "\n")
   try
     while job_status(job) ==# 'run'
       sleep 1m
