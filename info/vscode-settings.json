@@ -3,6 +3,7 @@
     "editor.lineNumbers": "relative",
     "editor.tabSize": 8,
     "terminal.integrated.copyOnSelection": true,
+    "terminal.integrated.allowChords": false,
     "vim.foldfix": true,
     "vim.leader": " ",
     "vim.normalModeKeyBindings": [
