@@ -19,7 +19,7 @@ endif
 set nomodeline
 
 " options which should not be reloaded
-if !get(g:, 'vimrc#loaded')
+if has('vim_starting')
   syntax on
   " backspace
   set bs=2
@@ -36,6 +36,7 @@ if !get(g:, 'vimrc#loaded')
       " NOTE: keymap defined here (terminal [p]aste).
       if &buftype ==# 'terminal'
         setl nonu | setl nornu
+        let &l:stl = '[%{winnr()},%{mode()}] %<%F %=<%B> %p%%'
       endif
       nnoremap <buffer> p i<C-w>""<C-\><C-n>
     endfunction
@@ -43,8 +44,6 @@ if !get(g:, 'vimrc#loaded')
   augroup END
   " hlsearch
   set hls
-  let g:vimrc#loaded = 1
-  let g:vimrc#loaded_gui = 0
 endif
 
 " filetype / syntax
@@ -65,7 +64,7 @@ set cul
 " laststatus
 set ls=2
 " statusline
-let &stl = '[%{winnr()},%{mode()}] [%{&ft}%M%R] %<%F %=<%B> %p%%'
+let &stl = '[%{winnr()},%{mode()}] [%{&ft}%M%R] %<%F %=<%B> [%p%% %{charcol(".")}c]'
 " showcmd
 set sc
 " wildmenu
@@ -670,14 +669,12 @@ hi! link StatusLineTermNC StatusLineNC
 
 " gvimrc {{{
 function! s:gui_init()
-  if get(g:, 'vimrc#loaded_gui')
+  if !has('vim_starting')
     return
   endif
   set guioptions=
   set lines=32
   set columns=128
-
-  let g:vimrc#loaded_gui = 1
 endfunction
 
 if has('gui_running')

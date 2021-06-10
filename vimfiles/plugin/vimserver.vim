@@ -1,7 +1,8 @@
 " TODO impl for win32 (socat is not available).
 
-let s:cp = &cp
-set nocp
+if &cp
+  finish
+endif
 
 " common func {{{
 function! s:echoerr(msg)
@@ -95,8 +96,5 @@ function! s:client(server_id) abort
     qall
   endtry
 endfunction
-
-let &cp = s:cp
-unlet s:cp
 
 " vim:fdm=marker

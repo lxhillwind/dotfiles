@@ -121,6 +121,7 @@ function! Sh(cmd, ...) abort
   endif
 
   let cmd = a:cmd[len(opt_string):]
+  let l:term_name = cmd
   " expand %
   let slash = &shellslash
   try
@@ -234,7 +235,7 @@ function! Sh(cmd, ...) abort
     if opt.newwin && buf_idx < 0
       execute 'bot' &cmdwinheight . 'split'
     endif
-    let job_opt = extend(job_opt, {'curwin': 1})
+    let job_opt = extend(job_opt, {'curwin': 1, 'term_name': l:term_name})
     if opt.close
       let job_opt = extend(job_opt, {'term_finish': 'close'})
     endif
