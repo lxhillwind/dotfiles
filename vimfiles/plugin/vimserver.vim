@@ -13,6 +13,9 @@ endfunction
 " }}}
 
 function! vimserver#main() abort
+  if !has('vim_starting')
+    return
+  endif
   if !executable('socat')
     return
   endif
