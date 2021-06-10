@@ -65,8 +65,7 @@ set cul
 " laststatus
 set ls=2
 " statusline
-let &stl = '[%{mode()}%M%R] [%{&ft},%{&ff},%{&fenc}] %<%F ' .
-      \'%=<%B> [%p%%~%lL,%cC]'
+let &stl = '[%{winnr()},%{mode()}] [%{&ft}%M%R] %<%F %=<%B> %p%%'
 " showcmd
 set sc
 " wildmenu
@@ -664,6 +663,9 @@ if s:is_unix && $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
   " Refer: https://superuser.com/a/1525060
   set t_u7=
 endif
+
+" terminal statusline tweak
+hi! link StatusLineTermNC StatusLineNC
 " }}}
 
 " gvimrc {{{
@@ -760,9 +762,9 @@ augroup vimrc_filetype
   au FileType vim nnoremap <buffer> <LocalLeader>e <cmd>e ~/vimfiles/plugin<CR>
 
   " quickfix window
-  au FileType qf nnoremap <buffer> <silent>
-        \ <CR> <CR>:setl nofoldenable<CR>zz<C-w>p
-        \| nnoremap <buffer> <leader><CR> <CR>
+  " prepend [n,i] to stl.
+  au FileType qf let &l:stl = "[%{winnr()},%{mode()}] "
+        \ . "%t%{exists('w:quickfix_title')? ' '.w:quickfix_title : ''} %=%-15(%l,%c%V%) %P"
 
   " viml completion
   au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
