@@ -36,7 +36,7 @@ if has('vim_starting')
       " NOTE: keymap defined here (terminal [p]aste).
       if &buftype ==# 'terminal'
         setl nonu | setl nornu
-        let &l:stl = '[%{winnr()},%{mode()}] %<%F %=<%B> %p%%'
+        let &l:stl = '[%{winnr()},%{mode()}] %<%F %=<%B>'
       endif
       nnoremap <buffer> p i<C-w>""<C-\><C-n>
     endfunction
@@ -64,7 +64,7 @@ set cul
 " laststatus
 set ls=2
 " statusline
-let &stl = '[%{winnr()},%{mode()}] [%{&ft}%M%R] %<%F %=<%B> [%p%% %{charcol(".")}c]'
+let &stl = '[%{winnr()},%{mode()}] [%{&ft}%M%R] %<%F %=<%B> [%p%% %lL,%{charcol(".")}C]'
 " showcmd
 set sc
 " wildmenu
