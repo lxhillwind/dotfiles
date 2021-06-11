@@ -67,7 +67,7 @@ let &stl = '[%{winnr()},%{mode()}' . '%{% empty(&buftype) ? "%M%R" : "" %}]'
       \ . '%{ empty(&ft) ? "" : " [".&ft."]" }'
       \ . ' %<%F'
       \ . ' %=<%B>'
-      \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%c')
+      \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%cb')
       \ . '%{% &buftype == "terminal" ? "" : "/%L" %}' . ']'
 " showcmd
 set sc

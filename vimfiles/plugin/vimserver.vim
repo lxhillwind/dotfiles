@@ -1,7 +1,7 @@
 " TODO impl for win32 (socat is not available).
 
 if &cp
-  finish
+  set nocp
 endif
 
 " common func {{{
