@@ -33,6 +33,18 @@ function! s:escape(name)
   return substitute(fnameescape(a:name), '\v^\~(/|$)', '\\&', '')
 endfunction
 
+" handle reloading
+let s:clients = get(s:, 'clients', {})
+
+function! s:server_clients_cleaner(...)
+  for key in keys(s:clients)
+    if winbufnr(key) == -1
+      call s:clients[key]()
+      call remove(s:clients, key)
+    endif
+  endfor
+endfunction
+
 function! s:server_handler(channel, msg) abort
   let data = json_decode(a:msg)
   let client = data.CLIENT_ID
@@ -54,9 +66,7 @@ function! s:server_handler(channel, msg) abort
     enew
   endif
 
-  " requied to make BufHidden match it; TODO handle multiple files.
-  setl bufhidden=hide
-  let b:vimserver_post_func = { ->
+  let s:clients[win_getid()] = { ->
         \ system(
         \ printf('socat stdin unix-connect:%s', shellescape(client)),
         \ json_encode({'CLIENT_ID': client}) . "\n")
@@ -68,15 +78,9 @@ function! s:server() abort
   let job = job_start(['socat', printf('unix-l:%s,fork', bind_name), 'stdout'],
         \ #{callback: function('s:server_handler')})
   let $VIMSERVER_ID = bind_name
-
-  augroup vimserver_bufhidden_client
+  augroup vimserver_clients_cleaner
     au!
-    function! s:post_action()
-      if exists('b:vimserver_post_func')
-        call b:vimserver_post_func()
-      endif
-    endfunction
-    au BufHidden * call s:post_action()
+    au WinEnter * call s:server_clients_cleaner()
   augroup END
 endfunction
 
