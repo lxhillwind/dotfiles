@@ -395,7 +395,7 @@ endfunction
 augroup vimrc_cd
   au!
   au BufEnter * call s:cd_reset()
-augroup end
+augroup END
 
 function! s:get_buf_dir()
   let path = expand('%:p:h')
@@ -424,7 +424,7 @@ endfunction
 augroup vimrc_filelist
   au!
   au BufNewFile,BufRead,BufWritePost * call s:save_filelist()
-augroup end
+augroup END
 
 function! s:cd_cur_line()
   let name = getline('.')
@@ -631,6 +631,14 @@ endfunction
 " }}}
 
 " colorscheme, term setting {{{
+" terminal statusline tweak
+hi! link StatusLineTermNC StatusLineNC
+augroup vimrc_statuslinetermnc
+  au!
+  " colorscheme may not change at startup.
+  au ColorScheme * hi! link StatusLineTermNC StatusLineNC
+augroup END
+
 if !s:is_unix && !has('gui_running')  " win32 cmd
   set nocursorcolumn
   color pablo
@@ -662,9 +670,6 @@ if s:is_unix && $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
   " Refer: https://superuser.com/a/1525060
   set t_u7=
 endif
-
-" terminal statusline tweak
-hi! link StatusLineTermNC StatusLineNC
 " }}}
 
 " gvimrc {{{
