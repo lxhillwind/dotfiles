@@ -36,7 +36,6 @@ if has('vim_starting')
       " NOTE: keymap defined here (terminal [p]aste).
       if &buftype ==# 'terminal'
         setl nonu | setl nornu
-        let &l:stl = '[%{winnr()},%{mode()}] %<%F %=<%B>'
       endif
       nnoremap <buffer> p i<C-w>""<C-\><C-n>
     endfunction
@@ -64,7 +63,12 @@ set cul
 " laststatus
 set ls=2
 " statusline
-let &stl = '[%{winnr()},%{mode()}] [%{&ft}%M%R] %<%F %=<%B> [%p%% %lL,%{charcol(".")}C]'
+let &stl = '[%{winnr()},%{mode()}' . '%{% empty(&buftype) ? "%M%R" : "" %}]'
+      \ . '%{ empty(&ft) ? "" : " [".&ft."]" }'
+      \ . ' %<%F'
+      \ . ' %=<%B>'
+      \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%c')
+      \ . '%{% &buftype == "terminal" ? "" : "/%L" %}' . ']'
 " showcmd
 set sc
 " wildmenu
@@ -769,9 +773,7 @@ augroup vimrc_filetype
   au FileType vim nnoremap <buffer> <LocalLeader>e <cmd>e ~/vimfiles/plugin<CR>
 
   " quickfix window
-  " prepend [n,i] to stl.
-  au FileType qf let &l:stl = "[%{winnr()},%{mode()}] "
-        \ . "%t%{exists('w:quickfix_title')? ' '.w:quickfix_title : ''} %=%-15(%l,%c%V%) %P"
+  au FileType qf let &l:stl = &g:stl
 
   " viml completion
   au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
