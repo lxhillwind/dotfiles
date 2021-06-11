@@ -64,6 +64,7 @@ function! s:server_handler(channel, msg) abort
     execute 'arglocal' join(map(argu, {_, val -> s:escape(val)}), ' ')
   else
     enew
+    arglocal | %argdelete
   endif
 
   let s:clients[win_getid()] = { ->
