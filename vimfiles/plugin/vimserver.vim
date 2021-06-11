@@ -28,6 +28,11 @@ function! vimserver#main() abort
   endif
 endfunction
 
+function! s:escape(name)
+  " fnameescape and escape ~
+  return substitute(fnameescape(a:name), '\v^\~(/|$)', '\\&', '')
+endfunction
+
 function! s:server_handler(channel, msg) abort
   let data = json_decode(a:msg)
   let client = data.CLIENT_ID
@@ -44,7 +49,7 @@ function! s:server_handler(channel, msg) abort
   execute 'lcd' fnameescape(cwd)
   let argu = data.ARGU
   if !empty(argu)
-    execute 'arglocal' join(map(argu, {_, val -> escape(val, " ")}), " ")
+    execute 'arglocal' join(map(argu, {_, val -> s:escape(val)}), ' ')
   else
     enew
   endif
