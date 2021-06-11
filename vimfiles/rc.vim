@@ -631,6 +631,9 @@ endfunction
 " }}}
 
 " colorscheme, term setting {{{
+"  only set colorscheme on start
+if has('vim_starting')
+
 " terminal statusline tweak
 hi! link StatusLineTermNC StatusLineNC
 augroup vimrc_statuslinetermnc
@@ -669,6 +672,8 @@ if s:is_unix && $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
   " fix vim start in replace mode;
   " Refer: https://superuser.com/a/1525060
   set t_u7=
+endif
+
 endif
 " }}}
 
