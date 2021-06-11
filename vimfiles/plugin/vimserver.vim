@@ -42,23 +42,20 @@ function! s:server_handler(channel, msg) abort
     sp
   endif
   execute 'lcd' fnameescape(cwd)
-
-  if len(argv) > 0
-    execute 'e' fnameescape(argv[0])
-    let argv = argv[1:]
+  let argu = data.ARGU
+  if !empty(argu)
+    execute 'arglocal' join(map(argu, {_, val -> escape(val, " ")}), " ")
   else
     enew
   endif
-  " requied to make BufHidden match it.
+
+  " requied to make BufHidden match it; TODO handle multiple files.
   setl bufhidden=hide
   let b:vimserver_post_func = { ->
         \ system(
         \ printf('socat stdin unix-connect:%s', shellescape(client)),
         \ json_encode({'CLIENT_ID': client}) . "\n")
         \ }
-  if !empty(argv)
-    echoerr 'open multiple files is not supported!'
-  endif
 endfunction
 
 function! s:server() abort
@@ -90,7 +87,10 @@ function! s:client(server_id) abort
   let client = bind_name
   call system(
         \ printf('socat stdin unix-connect:%s', shellescape(a:server_id)),
-        \ json_encode({'CLIENT_ID': client, 'ARGV': v:argv, 'CWD': getcwd()}) . "\n")
+        \ json_encode({
+        \  'CLIENT_ID': client, 'ARGV': v:argv, 'CWD': getcwd(),
+        \  'ARGU': argv(),
+        \ }) . "\n")
   try
     while job_status(job) ==# 'run'
       sleep 1m
