@@ -48,5 +48,10 @@
     {
         "key": "ctrl+j",
         "command": "-workbench.action.togglePanel"
+    },
+    {
+        "key": "ctrl+f",
+        "command": "-workbench.action.terminal.focusFind",
+        "when": "terminalFindFocused && terminalProcessSupported || terminalFocus && terminalProcessSupported"
     }
 ]
