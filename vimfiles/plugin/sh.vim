@@ -277,10 +277,40 @@ endif
 
 function! s:shell_replace()
   let cmd = getcmdline()
+  if match(cmd, '\v^\s+') >= 0
+    " keep if begin with space
+    return cmd
+  endif
+
   if match(cmd, '\v^!') >= 0
     let cmd = 'Sh ' . cmd[1:]
-  elseif match(cmd, printf('\v%s\<,%s\>\!', "'", "'")) >= 0
-    let cmd = "'<,'>FilterV " . cmd[6:]
+  else
+    " /{pattern}[/] and ?{pattern}[?] are not matched since they are too
+    " complex.
+    let range_str = '('
+          \ . '('
+          "\ number
+          \ . '[0-9]+'
+          "\ . $ %
+          \ . '|\.|\$|\%'
+          "\ 't 'T
+          \ . "|'[a-zA-Z<>]"
+          "\ \/ \? \&
+          \ . '|\\\/|\\\?|\\\&'
+          "\ empty (as .)
+          \ . '|'
+          \ . ')'
+          "\ optional [+-][num]* after range above.
+          \ . '([+-][0-9]*)?'
+          \ . ')'
+    let l:range = matchstr(cmd,
+          \ '\v^\s*' . range_str
+          "\ (optional,(optional range))
+          \ . '(,(' . range_str . '|))?'
+          \ . '\!')
+    if !empty(l:range)
+      let cmd = l:range[:-2] . 'FilterV ' . cmd[len(l:range):]
+    endif
   endif
   return cmd
 endfunction
