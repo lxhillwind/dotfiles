@@ -63,12 +63,22 @@ set cul
 " laststatus
 set ls=2
 " statusline
-let &stl = '[%{winnr()},%{mode()}' . '%{% empty(&buftype) ? "%M%R" : "" %}]'
-      \ . '%{ empty(&ft) ? "" : " [".&ft."]" }'
-      \ . ' %<%F'
-      \ . ' %=<%B>'
-      \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%cb')
-      \ . '%{% &buftype == "terminal" ? "" : "/%L" %}' . ']'
+if has('patch-8.2.2854')
+  " %{% expr %}
+  let &stl = '[%{winnr()},%{mode()}' . '%{% empty(&buftype) ? "%M%R" : "" %}]'
+        \ . '%{ empty(&ft) ? "" : " [".&ft."]" }'
+        \ . ' %<%F'
+        \ . ' %=<%B>'
+        \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%cb')
+        \ . '%{% &buftype == "terminal" ? "" : "/%L" %}' . ']'
+else
+  let &stl = '[%{winnr()},%{mode()}%M%R]'
+        \ . '%{ empty(&ft) ? "" : " [".&ft."]" }'
+        \ . ' %<%F'
+        \ . ' %=<%B>'
+        \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%cb')
+        \ . '/%L]'
+endif
 " showcmd
 set sc
 " wildmenu

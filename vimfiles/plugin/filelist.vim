@@ -14,9 +14,9 @@
 " filelist path priority:
 " g:filelist_path -> &viminfofile dir -> script dir
 
-nnoremap <Plug>(filelist_show) <cmd>call <SID>choose_filelist()<CR>
-nnoremap <Plug>(filelist_cd) <cmd>call <SID>cd_cur_line()<CR>
-nnoremap <Plug>(filelist_edit) <cmd>call <SID>edit_cur_line()<CR>
+nnoremap <Plug>(filelist_show) :<C-u>call <SID>choose_filelist()<CR>
+nnoremap <Plug>(filelist_cd) :<C-u>call <SID>cd_cur_line()<CR>
+nnoremap <Plug>(filelist_edit) :<C-u>call <SID>edit_cur_line()<CR>
 
 " {{{
 augroup filelist
