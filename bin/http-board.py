@@ -9,9 +9,13 @@ refresh to get updated text; modify text to update text on the server.
 
 
 import argparse
+import subprocess
 
 import flask
 import jinja2
+
+
+GLOBAL_OPTION = {}
 
 
 index = '''
@@ -59,8 +63,22 @@ clipboard = {'content': ''}
 app = flask.Flask(__name__)
 
 
+def pbcopy():
+    if not GLOBAL_OPTION['clipboard']:
+        return
+    s = clipboard['content']
+    subprocess.run(['pbcopy'], input=s, text=True, check=True, capture_output=True).stdout
+
+
+def pbpaste():
+    if not GLOBAL_OPTION['clipboard']:
+        return
+    clipboard['content'] = subprocess.check_output(['pbpaste'], text=True)
+
+
 @app.route('/')
 def root():
+    pbpaste()
     return jinja2.Template(index).render(content=clipboard.get('content'))
 
 
@@ -71,6 +89,7 @@ def ping():
 
 @app.route('/raw')
 def raw():
+    pbpaste()
     return clipboard['content']
 
 
@@ -82,22 +101,27 @@ def api():
         data = flask.request.get_json()
         if data:
             clipboard['content'] = data.get('text')
+            pbcopy()
             return 'ok'
 
         data = flask.request.form
         if data:
             clipboard['content'] = data.get('text')
+            pbcopy()
             return 'ok'
 
         return 'err'
     else:
+        pbpaste()
         return flask.jsonify({'text': clipboard['content']})
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', type=int, default=8000, nargs='?')
+    parser.add_argument('--clipboard', action='store_true', help='using system clipboard')
     args = parser.parse_args()
+    GLOBAL_OPTION['clipboard'] = args.clipboard
     app.run(host='localhost', port=args.port)
 
 
