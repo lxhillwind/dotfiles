@@ -19,50 +19,6 @@ function! s:echoerr(msg)
 endfunction
 " }}}
 
-" win32 shell helper {{{
-if s:is_win32
-  let s:shell_opt_cmd = {
-        \ 'shell': 'cmd.exe',
-        \ 'shellcmdflag': '/s /c',
-        \ 'shellquote': '',
-        \ }
-
-  let s:shell_opt_sh = {
-        \ 'shell': 'busybox sh',
-        \ 'shellcmdflag': '-c',
-        \ 'shellquote': '',
-        \ }
-
-  " win32 vim from unix shell will set &shell incorrectly, so restore it
-  if match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
-    let &shell = s:shell_opt_cmd.shell
-    let &shellcmdflag = s:shell_opt_cmd.shellcmdflag
-    let &shellquote = s:shell_opt_cmd.shellquote
-    silent! let &shellxquote = ''
-  endif
-
-  function! s:win32_quote(arg)
-    " To make quote work reliably, it is worth reading:
-    " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
-    let cmd = a:arg
-    " double all \ before "
-    let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
-    " double trailing \
-    let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
-    " escape " with \
-    let cmd = escape(cmd, '"')
-    " quote it
-    let cmd = '"' . cmd . '"'
-    return cmd
-  endfunction
-
-  function! s:win32_cmd_exe_quote(arg)
-    " escape for cmd.exe
-    return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
-  endfunction
-endif
-" }}}
-
 command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>, 'echo': 1})
 command! -range -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'range': <range>, 'line1': <line1>, 'line2': <line2>, 'tty': 1, 'newwin': 0})
 
@@ -269,11 +225,50 @@ function! Sh(cmd, ...) abort
 endfunction
 " }}}
 
-" win32: replace :! && :'<,'>! with busybox shell {{{
-if s:is_win32
-  cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
-  command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
+" win32: Sh() helper function; replace :! && :'<,'>! with busybox shell {{{
+if !s:is_win32 | finish | endif
+cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
+command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
+
+let s:shell_opt_cmd = {
+      \ 'shell': 'cmd.exe',
+      \ 'shellcmdflag': '/s /c',
+      \ 'shellquote': '',
+      \ }
+
+let s:shell_opt_sh = {
+      \ 'shell': 'busybox sh',
+      \ 'shellcmdflag': '-c',
+      \ 'shellquote': '',
+      \ }
+
+" win32 vim from unix shell will set &shell incorrectly, so restore it
+if match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
+  let &shell = s:shell_opt_cmd.shell
+  let &shellcmdflag = s:shell_opt_cmd.shellcmdflag
+  let &shellquote = s:shell_opt_cmd.shellquote
+  silent! let &shellxquote = ''
 endif
+
+function! s:win32_quote(arg)
+  " To make quote work reliably, it is worth reading:
+  " <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+  let cmd = a:arg
+  " double all \ before "
+  let cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+  " double trailing \
+  let cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
+  " escape " with \
+  let cmd = escape(cmd, '"')
+  " quote it
+  let cmd = '"' . cmd . '"'
+  return cmd
+endfunction
+
+function! s:win32_cmd_exe_quote(arg)
+  " escape for cmd.exe
+  return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
+endfunction
 
 function! s:shell_replace()
   let cmd = getcmdline()
