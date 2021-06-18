@@ -1,14 +1,68 @@
-" TODO impl for win32 (socat is not available).
+" Intro: inside terminal, open vim buffer in outside vim.
+"
+" Requirement:
+"   vim 8 (job feature);
+"   for UNIX, "socat";
+"   for Windows, see vimserver-helper/README.md
+"
+" Usage: none. It just works (once requiments meet).
+"
+" TODO warning if vimserver_exe not found
 
 if &cp
   set nocp
 endif
 
 " common func {{{
+let s:is_win32 = has('win32')
+
+if s:is_win32
+  let s:vimserver_exe = expand('<sfile>:p:h') . '\vimserver-helper\vimserver-helper.exe'
+  " fallback to vimserver-helper in $PATH if not found in sfile
+  if !executable(s:vimserver_exe)
+    let s:vimserver_exe = 'vimserver-helper'
+  endif
+else
+  let s:vimserver_exe = 'socat'
+endif
+
+function! s:cmd_server(id)
+  if s:is_win32
+    return [s:vimserver_exe, 'server', a:id]
+  else
+    return ['socat', printf('unix-l:%s,fork', a:id), 'stdout']
+  endif
+endfunction
+
+function! s:cmd_client(id)
+  if s:is_win32
+    return [s:vimserver_exe, 'client', a:id]
+  else
+    return ['socat', 'stdin', 'unix-connect:' . a:id]
+  endif
+endfunction
+
 function! s:echoerr(msg)
   echohl ErrorMsg
   echon a:msg
   echohl None
+endfunction
+
+function! s:system(cmd, stdin)
+  " use job instead of system(), since the latter does not work on Windows.
+  let tmpbuf = bufadd('')
+  call bufload(tmpbuf)
+  let l:idx = 1
+  for l:line in split(a:stdin, "\n")
+    call setbufline(tmpbuf, l:idx, l:line)
+    let l:idx += 1
+  endfor
+  unlet l:idx
+  call job_start(a:cmd, {'in_io': 'buffer', 'in_buf': tmpbuf})
+  if s:is_win32
+    sleep 1m
+  endif
+  silent execute tmpbuf . 'bd!'
 endfunction
 " }}}
 
@@ -16,7 +70,7 @@ function! vimserver#main() abort
   if !has('vim_starting')
     return
   endif
-  if !executable('socat')
+  if !executable(s:vimserver_exe)
     return
   endif
   if empty($VIMSERVER_ID)
@@ -68,15 +122,15 @@ function! s:server_handler(channel, msg) abort
   endif
 
   let s:clients[win_getid()] = { ->
-        \ system(
-        \ printf('socat stdin unix-connect:%s', shellescape(client)),
+        \ s:system(
+        \ s:cmd_client(client),
         \ json_encode({'CLIENT_ID': client}) . "\n")
         \ }
 endfunction
 
 function! s:server() abort
   let bind_name = tempname()
-  let job = job_start(['socat', printf('unix-l:%s,fork', bind_name), 'stdout'],
+  let job = job_start(s:cmd_server(bind_name),
         \ #{callback: function('s:server_handler')})
   let $VIMSERVER_ID = bind_name
   augroup vimserver_clients_cleaner
@@ -92,11 +146,11 @@ endfunction
 
 function! s:client(server_id) abort
   let bind_name = tempname()
-  let job = job_start(['socat', printf('unix-l:%s,fork', bind_name), 'stdout'],
+  let job = job_start(s:cmd_server(bind_name),
         \ #{callback: function('s:client_handler')})
   let client = bind_name
-  call system(
-        \ printf('socat stdin unix-connect:%s', shellescape(a:server_id)),
+  call s:system(
+        \ s:cmd_client(a:server_id),
         \ json_encode({
         \  'CLIENT_ID': client, 'ARGV': v:argv, 'CWD': getcwd(),
         \  'ARGU': argv(),
