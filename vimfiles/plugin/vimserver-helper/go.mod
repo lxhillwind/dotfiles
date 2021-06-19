@@ -1,4 +1,4 @@
-module vimserver
+module vimserver-helper
 
 go 1.15
 
