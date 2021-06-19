@@ -36,6 +36,7 @@ if has('vim_starting')
       " NOTE: keymap defined here (terminal [p]aste).
       if &buftype ==# 'terminal'
         setl nonu | setl nornu
+        nmap <buffer> <CR> <Plug>(jump_to_file)
       endif
       nnoremap <buffer> p i<C-w>""<C-\><C-n>
     endfunction

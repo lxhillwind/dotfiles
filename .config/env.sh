@@ -38,11 +38,22 @@ esac
 
 # rc {{{
 
+if command -v jq >/dev/null && [ -n "$VIM" ]; then
+    _f_cd_vim()
+    {
+        \cd "$@" && printf '\x1b]51;%s\x07' "$(jq --indent 0 -n --arg cwd "$PWD" '["call", "Tapi_cd", $cwd]')"
+    }
+else
+    # dummy
+    _f_cd_vim() { \cd "$@"; }
+fi
+alias cd=_f_cd_vim
+
 if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
     _f_cd()
     {
         if [ $# -eq 0 ]; then
-            \cd
+            _f_cd_vim ~
             return
         fi
         if [ $# -eq 1 ]; then
@@ -53,7 +64,7 @@ if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
         if [ -e "$p" ] && ! [ -d "$p" ]; then
             p=${p%/*}
         fi
-        \cd "$p"
+        _f_cd_vim "$p"
     }
     alias cd=_f_cd
 fi
