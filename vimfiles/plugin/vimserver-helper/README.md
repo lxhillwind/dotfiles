@@ -1,9 +1,13 @@
 # vimserver-helper
 binary to be used in Vim session (plugin: [../vimserver.vim](../vimserver.vim)).
 
-**win32 only**.
-
-## build step
+## usage
 ```sh
-GOOS=windows GOARCH=386 go build
+# server
+$0 {server_filename} listen
+
+# client
+$0 {funcname} [args...]
+# client (use stdin)
+$0 {funcname}
 ```

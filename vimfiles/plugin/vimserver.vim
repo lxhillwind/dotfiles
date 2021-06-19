@@ -7,7 +7,9 @@
 "
 " Usage: none. It just works (once requiments meet).
 "
-" TODO warning if vimserver_exe not found
+" TODO
+" - warning if vimserver_exe not found.
+" - allow passing non-string argument in terminal-api mode.
 
 if &cp
   set nocp
@@ -23,20 +25,23 @@ if s:is_win32
     let s:vimserver_exe = 'vimserver-helper'
   endif
 else
-  let s:vimserver_exe = 'socat'
+  let s:vimserver_exe = expand('<sfile>:p:h') . '/vimserver-helper/vimserver-helper'
+  if !executable(s:vimserver_exe)
+    let s:vimserver_exe = 'socat'
+  endif
 endif
 
 function! s:cmd_server(id)
-  if s:is_win32
-    return [s:vimserver_exe, 'server', a:id]
+  if s:vimserver_exe != 'socat'
+    return [s:vimserver_exe, a:id, 'listen']
   else
     return ['socat', printf('unix-l:%s,fork', a:id), 'stdout']
   endif
 endfunction
 
 function! s:cmd_client(id)
-  if s:is_win32
-    return [s:vimserver_exe, 'client', a:id]
+  if s:vimserver_exe != 'socat'
+    return [s:vimserver_exe, a:id]
   else
     return ['socat', 'stdin', 'unix-connect:' . a:id]
   endif
@@ -73,6 +78,7 @@ function! vimserver#main() abort
   if !executable(s:vimserver_exe)
     return
   endif
+  let $VIMSERVER_BIN = s:vimserver_exe
   if empty($VIMSERVER_ID)
     call s:server()
   else
@@ -101,6 +107,21 @@ endfunction
 
 function! s:server_handler(channel, msg) abort
   let data = json_decode(a:msg)
+
+  " terminal-api
+  if type(data) == type([])
+    if len(data) != 3 || data[0] != 'call' || type(data[2]) != type([])
+      echoerr 'vimserver: invalid format!' | return
+    endif
+    if match(data[1], '^Tapi_') < 0
+      echoerr 'vimserver: function not in whitelist!' | return
+    endif
+    " data: ['call', funcname, argument]
+    " but we don't know bufnr, so give -1.
+    call call(data[1], [-1, data[2]])
+    return
+  endif
+
   let client = data.CLIENT_ID
   " TODO handle vimdiff
   let argv = data.ARGV[1:]
