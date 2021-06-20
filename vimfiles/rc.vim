@@ -374,7 +374,7 @@ function! s:cd(flag, args)
     let path = s:get_buf_dir()
   else
     if a:args =~ '^:'
-      call s:echoerr('path argument is required!')
+      call s:echoerr('path argument is required!') | return
     endif
     " Cd: split argument as path & cmd
     let path = substitute(a:args, '\v^(.{}) :.+$', '\1', '')
