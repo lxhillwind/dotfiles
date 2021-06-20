@@ -19,8 +19,21 @@ function! s:echoerr(msg)
 endfunction
 " }}}
 
-command! -bang -range -nargs=* -complete=shellcmd Sh call Sh(<q-args>, {'bang': <bang>0, 'range': <range>, 'line1': <line1>, 'line2': <line2>, 'echo': 1})
-command! -range -nargs=* -complete=shellcmd Terminal call Sh(<q-args>, {'range': <range>, 'line1': <line1>, 'line2': <line2>, 'tty': 1, 'newwin': 0})
+if s:is_win32
+  command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
+        \ call Sh(<q-args>, {'bang': <bang>0, 'echo': 1,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
+        \ call Sh(<q-args>, { 'tty': 1, 'newwin': 0,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+else
+  command! -bang -range -nargs=* -complete=shellcmd Sh
+        \ call Sh(<q-args>, {'bang': <bang>0, 'echo': 1,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  command! -range -nargs=* -complete=shellcmd Terminal
+        \ call Sh(<q-args>, { 'tty': 1, 'newwin': 0,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+endif
 
 " Sh() impl {{{
 function! s:sh_echo_check(str, cond)
@@ -229,6 +242,14 @@ endfunction
 if !s:is_win32 | finish | endif
 cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
 command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
+
+let s:busybox_cmdlist = expand('<sfile>:p:h') . '/asset/busybox-cmdlist.txt'
+function! s:win32_cmd_list(A, L, P)
+  if !get(s:, 'win32_cmd_list_data', 0)
+    let s:win32_cmd_list_data = join(readfile(s:busybox_cmdlist), "\n")
+  endif
+  return s:win32_cmd_list_data
+endfunction
 
 let s:shell_opt_cmd = {
       \ 'shell': 'cmd.exe',
