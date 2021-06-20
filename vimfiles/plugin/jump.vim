@@ -50,9 +50,19 @@ function! s:open_file(name) abort
   endif
 
   echo printf('[%s] file not listed.', name)
-  echo 'open it? [s/v/t/N] '
+  let job_finished = match(term_getstatus(bufnr()), 'finished') >= 0
+  if job_finished
+    echo 'open it? [s/v/t/N] r[e]use '
+  else
+    echo 'open it? [s/v/t/N] '
+  endif
   let action = tolower(nr2char(getchar()))
-  let cmd = get({'v': 'vs', 's': 'sp', 't': 'tabe'}, action, '')
+  let actions = {'v': 'vs', 's': 'sp', 't': 'tabe'}
+  if job_finished
+    " 'e' -> dummy
+    let actions = extend(actions, {'e': ':'})
+  endif
+  let cmd = get(actions, action, '')
   if empty(cmd)
     redraws | echon 'cancelled.'
     return 0
