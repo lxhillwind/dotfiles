@@ -1,14 +1,18 @@
-" Intro: inside terminal, open vim buffer in outside vim.
+" Intro:
+"   - inside terminal, open vim buffer in outside vim.
+"   - communicate with vim from terminal inside vim.
 "
 " Requirement:
-"   vim 8 (job feature);
-"   for UNIX, "socat";
-"   for Windows, see vimserver-helper/README.md
+"   - vim 8 (job feature);
 "
-" Usage: none. It just works (once requiments meet).
+"   - vimserver-helper binary;
+"   see vimserver-helper/README.md for build instruction.
+"   - socat is also supported as fallback
+"   (jq may be useful for json serialization).
+"
+" Usage: none. It just works (once requirements meet).
 "
 " TODO
-" - warning if vimserver_exe not found.
 " - allow passing non-string argument in terminal-api mode.
 
 if &cp
@@ -80,6 +84,7 @@ function! vimserver#main() abort
     return
   endif
   if !executable(s:vimserver_exe)
+    echoerr 'vimserver executable not found!'
     return
   endif
   if empty($VIMSERVER_ID)
