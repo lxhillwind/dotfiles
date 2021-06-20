@@ -43,19 +43,29 @@ if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ]; then
         if [ -z "$VIMSERVER_CLIENT_PID" ]; then
             export VIMSERVER_CLIENT_PID=$$
         fi
-        _f_cd_vim()
+        vimserver()
         {
-            \cd "$@" && "$VIMSERVER_BIN" "$VIMSERVER_ID" Tapi_cd "$PWD"
+            "$VIMSERVER_BIN" "$VIMSERVER_ID" "$@"
         }
     elif command -v jq >/dev/null && [ "$(uname -s)" != 'Windows_NT' ]; then
-        _f_cd_vim()
+        vimserver()
         {
-            \cd "$@" && printf '\x1b]51;%s\x07' \
-                "$(jq --indent 0 -n --arg cwd "$PWD" '["call", "Tapi_cd", [$cwd]]')"
+            funcname="$1"
+            shift
+            printf '\x1b]51;%s\x07' \
+                "$(jq --indent 0 -n \
+                --arg func "$funcname" --args \
+                '["call", $func, $ARGS.positional]' \
+                "$@")"
         }
     else
-        _f_cd_vim() { \cd "$@"; }
+        vimserver() { :; }
     fi
+
+    _f_cd_vim()
+    {
+        \cd "$@" && vimserver Tapi_cd "$PWD"
+    }
 else
     # dummy
     _f_cd_vim() { \cd "$@"; }
