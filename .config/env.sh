@@ -38,20 +38,20 @@ esac
 
 # rc {{{
 
-if [ -n "$VIM" ]; then
-    if command -v jq >/dev/null && [ "$(uname -s)" != 'Windows_NT' ]; then
-        _f_cd_vim()
-        {
-            \cd "$@" && printf '\x1b]51;%s\x07' \
-                "$(jq --indent 0 -n --arg cwd "$PWD" '["call", "Tapi_cd", [$cwd]]')"
-        }
-    elif [ -x "$VIMSERVER_BIN" ] && [ -n "$VIMSERVER_ID" ]; then
+if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ]; then
+    if [ -x "$VIMSERVER_BIN" ]; then
         if [ -z "$VIMSERVER_CLIENT_PID" ]; then
             export VIMSERVER_CLIENT_PID=$$
         fi
         _f_cd_vim()
         {
             \cd "$@" && "$VIMSERVER_BIN" "$VIMSERVER_ID" Tapi_cd "$PWD"
+        }
+    elif command -v jq >/dev/null && [ "$(uname -s)" != 'Windows_NT' ]; then
+        _f_cd_vim()
+        {
+            \cd "$@" && printf '\x1b]51;%s\x07' \
+                "$(jq --indent 0 -n --arg cwd "$PWD" '["call", "Tapi_cd", [$cwd]]')"
         }
     else
         _f_cd_vim() { \cd "$@"; }

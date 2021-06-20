@@ -31,6 +31,10 @@ else
   endif
 endif
 
+if s:vimserver_exe != 'socat'
+  let $VIMSERVER_BIN = s:vimserver_exe
+endif
+
 function! s:cmd_server(id)
   if s:vimserver_exe != 'socat'
     return [s:vimserver_exe, a:id, 'listen']
@@ -78,7 +82,6 @@ function! vimserver#main() abort
   if !executable(s:vimserver_exe)
     return
   endif
-  let $VIMSERVER_BIN = s:vimserver_exe
   if empty($VIMSERVER_ID)
     call s:server()
   else
