@@ -34,6 +34,11 @@ if has('vim_starting')
     au!
     function! s:terminal_paste()
       echo @"
+      if @"[-1:] == "\n"
+        echohl WarningMsg
+        echo '<Newline> at end!'
+        echohl NONE
+      endif
       echo 'paste in terminal? [y/N] '
       if tolower(nr2char(getchar())) == 'y'
         call term_sendkeys(bufnr(), @")
