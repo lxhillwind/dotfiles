@@ -32,13 +32,23 @@ if has('vim_starting')
   set rnu
   augroup vimrc_terminal
     au!
+    function! s:terminal_paste()
+      echo @"
+      echo 'paste in terminal? [y/N] '
+      if tolower(nr2char(getchar())) == 'y'
+        call term_sendkeys(bufnr(), @")
+        redraws | echon 'pasted.'
+      else
+        redraws | echon 'cancelled.'
+      endif
+    endfunction
     function! s:terminal_init()
       " NOTE: keymap defined here (terminal [p]aste).
       if &buftype ==# 'terminal'
         setl nonu | setl nornu
         nmap <buffer> <CR> <Plug>(jump_to_file)
       endif
-      nnoremap <buffer> p i<C-w>""<C-\><C-n>
+      nnoremap <buffer> p :<C-u>call <SID>terminal_paste()<CR>
     endfunction
     au TerminalOpen * call s:terminal_init()
   augroup END
