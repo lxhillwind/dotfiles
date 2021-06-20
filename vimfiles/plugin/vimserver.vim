@@ -110,15 +110,23 @@ function! s:server_handler(channel, msg) abort
 
   " terminal-api
   if type(data) == type([])
-    if len(data) != 3 || data[0] != 'call' || type(data[2]) != type([])
+    if len(data) < 3 || data[0] != 'call' || type(data[2]) != type([])
       echoerr 'vimserver: invalid format!' | return
     endif
     if match(data[1], '^Tapi_') < 0
       echoerr 'vimserver: function not in whitelist!' | return
     endif
-    " data: ['call', funcname, argument]
-    " but we don't know bufnr, so give -1.
-    call call(data[1], [-1, data[2]])
+    " data: ['call', funcname, argument, optional-pid]
+    " pid SHOULD NOT be trusted!
+    let pid = len(data) == 4 ? str2nr(data[3]) : -1
+    let buffer = -1
+    for l:i in term_list()
+      if job_info(term_getjob(l:i)).process == pid
+        let buffer = l:i
+        break
+      endif
+    endfor
+    call call(data[1], [buffer, data[2]])
     return
   endif
 

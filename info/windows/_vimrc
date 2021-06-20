@@ -1,0 +1,22 @@
+if !executable('busybox')
+  let $PATH = expand('<sfile>:p:h') . '/extern/bin' . ';' . $PATH
+endif
+if !executable('less')
+  let $PATH = expand('<sfile>:p:h') . '/extern/less' . ';' . $PATH
+endif
+
+if str2float(windowsversion()) >= 6
+  if !executable('git')
+    let $PATH = expand('<sfile>:p:h') . '/extern/MinGit/cmd' . ';' . $PATH
+  endif
+  if !executable('ssh')
+    let $PATH = expand('<sfile>:p:h') . '/extern/MinGit/usr/bin' . ';' . $PATH
+  endif
+endif
+
+let $HOME = expand('<sfile>:p:h') . '/home'
+let $ENV = $HOME . '/.config/env.sh'
+source ~/vimfiles/rc.vim
+silent! call plug#begin('~/vimfiles/bundle')
+source ~/vimfiles/pkgs.vim
+call plug#end()

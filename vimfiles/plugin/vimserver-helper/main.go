@@ -41,6 +41,9 @@ func main() {
                 argument = append(argument, s)
             }
             finalArg := []interface{}{"call", funcname, argument}
+            if s, ok := os.LookupEnv("VIMSERVER_CLIENT_PID"); ok {
+                finalArg = append(finalArg, s)
+            }
             data, err := json.Marshal(finalArg)
             if err != nil {
                 log.Fatalln(err)
