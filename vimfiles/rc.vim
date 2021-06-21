@@ -52,6 +52,7 @@ if has('vim_starting')
       if &buftype ==# 'terminal'
         setl nonu | setl nornu
         nmap <buffer> <CR> <Plug>(jump_to_file)
+        vmap <buffer> <CR> <Plug>(jump_to_file)
       endif
       nnoremap <buffer> p :<C-u>call <SID>terminal_paste()<CR>
     endfunction

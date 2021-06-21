@@ -16,6 +16,7 @@ func main() {
         if err != nil {
             log.Fatalln(err)
         }
+        defer ln.Close()
         for {
             conn, err := ln.Accept()
             if err != nil {
@@ -25,6 +26,7 @@ func main() {
             if _, err := io.Copy(os.Stdout, conn); err != nil {
                 log.Println(err)
             }
+            conn.Close()
         }
     } else {
         // client
@@ -32,6 +34,7 @@ func main() {
         if err != nil {
             log.Fatalln(err)
         }
+        defer conn.Close()
 
         if len(os.Args) >= 3 {
             // terminal-api style

@@ -6,18 +6,42 @@
 "   \ | endif
 
 nnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file()<CR>
+vnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file('v')<CR>
 
 " impl {{{
-function! s:jump_to_file() abort
-  let chunk = matchstr(getline('.'), '\v\s*.+\:[0-9]+\:[0-9]+\:')
+function! s:jump_to_file(...) abort
+  if a:0 > 0
+    try
+      let p = @"
+      silent normal gvy
+      let line = @"
+    finally
+      let @" = p
+    endtry
+  else
+    let line = getline('.')
+  endif
+
+  let chunk = matchstr(line, '\v\s*.+\:[0-9]+\:[0-9]+\:')
   if !empty(chunk)
     call s:jump_flc(chunk)
     return
   endif
 
-  let chunk = matchstr(getline('.'), '\v^\d+:')
+  let chunk = matchstr(line, '\v\s*.+\:[0-9]+\:')
+  if !empty(chunk)
+    call s:jump_fl(chunk)
+    return
+  endif
+
+  let chunk = matchstr(line, '\v^\d+:')
   if !empty(chunk)
     call s:jump_rg(chunk)
+    return
+  endif
+
+  if a:0 > 0
+    redraws | echon 'file not readable / not found.'
     return
   endif
 
@@ -46,6 +70,7 @@ function! s:open_file(name) abort
 
   " file not found in open windows
   if !filereadable(name)
+    redraws | echon 'file not readable / not found.'
     return 0
   endif
 
@@ -84,6 +109,16 @@ function! s:jump_flc(chunk) abort
     if col > 1
       execute 'normal' col-1 . 'l'
     endif
+  endif
+endfunction
+
+" file, line (f:l:)
+function! s:jump_fl(chunk) abort
+  let chunk = a:chunk
+  let l:i = match(chunk, '\v[0-9]+\:$')
+  let [name, line] = [chunk[0:l:i-2], chunk[l:i:-2]]
+  if s:open_file(name)
+    execute 'normal' line . 'G0'
   endif
 endfunction
 
