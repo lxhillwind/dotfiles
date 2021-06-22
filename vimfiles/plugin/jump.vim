@@ -3,13 +3,14 @@
 " Example:
 "   au TerminalOpen * if &buftype ==# 'terminal'
 "   \ | nmap <buffer> <CR> <Plug>(jump_to_file)
+"   \ | vmap <buffer> <CR> <Plug>(jump_to_file)
 "   \ | endif
 
-nnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file()<CR>
-vnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file('v')<CR>
+nnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file(v:count)<CR>
+vnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file(v:count, 'v')<CR>
 
 " impl {{{
-function! s:jump_to_file(...) abort
+function! s:jump_to_file(nr, ...) abort
   if a:0 > 0
     try
       let p = @"
@@ -20,6 +21,22 @@ function! s:jump_to_file(...) abort
     endtry
   else
     let line = getline('.')
+  endif
+
+  if a:nr != 0
+    if s:jump_lc_or_l(line, 1)
+      let nr = a:nr
+      if nr <= len(tabpagebuflist())
+        execute nr . 'wincmd w'
+      else
+        wincmd p
+      endif
+      call s:jump_lc_or_l(line, 0)
+    else
+      redraws | echon 'line / col not found.'
+    endif
+
+    return
   endif
 
   let chunk = matchstr(line, '\v\s*.+\:[0-9]+\:[0-9]+\:')
@@ -98,6 +115,38 @@ function! s:open_file(name) abort
   return 1
 endfunction
 
+" line, column or line (l:c: or l:); used in no-file; return 1 if matched.
+function! s:jump_lc_or_l(chunk, dryrun) abort
+  let chunk = a:chunk
+  let lc = matchstr(chunk, '\v[0-9]+\:[0-9]+\:')
+  if !empty(lc)
+    let line = matchstr(lc, '\v[0-9]+')
+    let col = matchstr(lc[len(line):], '\v[0-9]+')
+  else
+    let col = ''
+    let line = matchstr(chunk, '\v[0-9]+\:')
+    if !empty(line)
+      let line = line[:-2]
+    endif
+  endif
+  if a:dryrun
+    return !empty(line)
+  endif
+  if !empty(line)
+    if line > 0
+      execute 'normal' line . 'G0'
+    else
+      return 1
+    endif
+    if col > 1
+      execute 'normal' col-1 . 'l'
+    endif
+    return 1
+  else
+    return 0
+  endif
+endfunction
+
 " file, line, column (f:l:c:)
 function! s:jump_flc(chunk) abort
   let chunk = a:chunk
@@ -105,7 +154,11 @@ function! s:jump_flc(chunk) abort
   let l:j = match(chunk, '\v[0-9]+\:$')
   let [name, line, col] = [chunk[0:l:i-2], chunk[l:i:l:j-2], chunk[l:j:-2]]
   if s:open_file(name)
-    execute 'normal' line . 'G0'
+    if line > 0
+      execute 'normal' line . 'G0'
+    else
+      return
+    endif
     if col > 1
       execute 'normal' col-1 . 'l'
     endif
@@ -118,7 +171,11 @@ function! s:jump_fl(chunk) abort
   let l:i = match(chunk, '\v[0-9]+\:$')
   let [name, line] = [chunk[0:l:i-2], chunk[l:i:-2]]
   if s:open_file(name)
-    execute 'normal' line . 'G0'
+    if line > 0
+      execute 'normal' line . 'G0'
+    else
+      return
+    endif
   endif
 endfunction
 
@@ -139,7 +196,11 @@ function! s:jump_rg(chunk) abort
       " xxx
       " 3:xxx
       if s:open_file(line)
-        execute 'normal' line_in_file . 'G0'
+        if line > 0
+          execute 'normal' line . 'G0'
+        else
+          return
+        endif
       endif
       " break even file not found.
       break
