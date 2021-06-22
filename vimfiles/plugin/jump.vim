@@ -26,12 +26,12 @@ function! s:jump_to_file(nr, ...) abort
   let [file, line, col] = ['', '', '']
 
   if a:nr != 0
-    let group = matchlist('\v^([0-9]+)\:([0-9]+)\:')
-    if group
+    let group = matchlist(chunk, '\v^([0-9]+)\:([0-9]+)\:')
+    if !empty(group)
       let [line, col] = [group[1], group[2]]
     else
-      let group = matchlist('\v^([0-9]+)\:')
-      if group
+      let group = matchlist(chunk, '\v^([0-9]+)\:')
+      if !empty(group)
         let line = group[1]
       endif
     endif
