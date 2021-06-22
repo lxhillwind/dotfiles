@@ -15,23 +15,35 @@ function! s:jump_to_file(nr, ...) abort
     try
       let p = @"
       silent normal gvy
-      let line = @"
+      let chunk = @"
     finally
       let @" = p
     endtry
   else
-    let line = getline('.')
+    let chunk = getline('.')
   endif
 
+  let [file, line, col] = ['', '', '']
+
   if a:nr != 0
-    if s:jump_lc_or_l(line, 1)
+    let group = matchlist('\v^([0-9]+)\:([0-9]+)\:')
+    if group
+      let [line, col] = [group[1], group[2]]
+    else
+      let group = matchlist('\v^([0-9]+)\:')
+      if group
+        let line = group[1]
+      endif
+    endif
+
+    if !empty(line)
       let nr = a:nr
       if nr <= len(tabpagebuflist())
         execute nr . 'wincmd w'
       else
         wincmd p
       endif
-      call s:jump_lc_or_l(line, 0)
+      call s:jump_lc(line, col)
     else
       redraws | echon 'line / col not found.'
     endif
@@ -39,21 +51,36 @@ function! s:jump_to_file(nr, ...) abort
     return
   endif
 
-  let chunk = matchstr(line, '\v\s*.+\:[0-9]+\:[0-9]+\:')
-  if !empty(chunk)
-    call s:jump_flc(chunk)
+  let group = matchlist(chunk, '\v^\s*(..{-})\:([0-9]+)\:([0-9]+)\:')
+  if !empty(group)
+    let [file, line, col] = [group[1], group[2], group[3]]
+    call s:jump_flc(file, line, col)
     return
   endif
 
-  let chunk = matchstr(line, '\v\s*.+\:[0-9]+\:')
-  if !empty(chunk)
-    call s:jump_fl(chunk)
+  " it also matches line:col:, so need to check if it is file or linenr.
+  let group = matchlist(chunk, '\v^\s*(..{-})\:([0-9]+)\:')
+  if !empty(group)
+    let [file, line] = [group[1], group[2]]
+    if filereadable(file)
+      call s:jump_flc(file, line, col)
+      return
+    endif
+  endif
+
+  let group = matchlist(chunk, '\v^(\d+)\:(\d+)\:')
+  if !empty(group)
+    let [line, col] = [group[1], group[2]]
+    let file = s:find_filename_above()
+    call s:jump_flc(file, line, col)
     return
   endif
 
-  let chunk = matchstr(line, '\v^\d+:')
-  if !empty(chunk)
-    call s:jump_rg(chunk)
+  let group = matchlist(chunk, '\v^(\d+)\:')
+  if !empty(group)
+    let line = group[1]
+    let file = s:find_filename_above()
+    call s:jump_flc(file, line, col)
     return
   endif
 
@@ -62,9 +89,8 @@ function! s:jump_to_file(nr, ...) abort
     return
   endif
 
-  if s:open_file(expand('<cfile>'))
-    return
-  endif
+  let file = expand('<cfile>')
+  call s:jump_flc(file, line, col)
 endfunction
 
 " return 1 if opened; 0 else.
@@ -115,79 +141,33 @@ function! s:open_file(name) abort
   return 1
 endfunction
 
-" line, column or line (l:c: or l:); used in no-file; return 1 if matched.
-function! s:jump_lc_or_l(chunk, dryrun) abort
-  let chunk = a:chunk
-  let lc = matchstr(chunk, '\v[0-9]+\:[0-9]+\:')
-  if !empty(lc)
-    let line = matchstr(lc, '\v[0-9]+')
-    let col = matchstr(lc[len(line):], '\v[0-9]+')
+" line, column
+function! s:jump_lc(line, col) abort
+  if a:line > 0
+    execute 'normal' a:line . 'G0'
   else
-    let col = ''
-    let line = matchstr(chunk, '\v[0-9]+\:')
-    if !empty(line)
-      let line = line[:-2]
-    endif
+    return
   endif
-  if a:dryrun
-    return !empty(line)
-  endif
-  if !empty(line)
-    if line > 0
-      execute 'normal' line . 'G0'
-    else
-      return 1
-    endif
-    if col > 1
-      execute 'normal' col-1 . 'l'
-    endif
-    return 1
-  else
-    return 0
+  if a:col > 1
+    execute 'normal' a:col-1 . 'l'
   endif
 endfunction
 
-" file, line, column (f:l:c:)
-function! s:jump_flc(chunk) abort
-  let chunk = a:chunk
-  let l:i = match(chunk, '\v[0-9]+\:[0-9]+\:$')
-  let l:j = match(chunk, '\v[0-9]+\:$')
-  let [name, line, col] = [chunk[0:l:i-2], chunk[l:i:l:j-2], chunk[l:j:-2]]
-  if s:open_file(name)
-    if line > 0
-      execute 'normal' line . 'G0'
-    else
-      return
-    endif
-    if col > 1
-      execute 'normal' col-1 . 'l'
-    endif
+" file, line, column
+function! s:jump_flc(file, line, col) abort
+  if s:open_file(a:file)
+    call s:jump_lc(a:line, a:col)
   endif
 endfunction
 
-" file, line (f:l:)
-function! s:jump_fl(chunk) abort
-  let chunk = a:chunk
-  let l:i = match(chunk, '\v[0-9]+\:$')
-  let [name, line] = [chunk[0:l:i-2], chunk[l:i:-2]]
-  if s:open_file(name)
-    if line > 0
-      execute 'normal' line . 'G0'
-    else
-      return
-    endif
-  endif
-endfunction
-
-" rg: line (l:)
-function! s:jump_rg(chunk) abort
+" rg: find filename
+function! s:find_filename_above() abort
   let linenr = line('.')
-  let line_in_file = matchstr(getline('.'), '\v^[0-9]+:')[:-2]
   let l:i = 0
   while l:i <= 1000
     let l:i = l:i + 1
-    let line = getline(linenr - l:i)
-    if match(line, '^\v[0-9]+:') < 0 && filereadable(line)
+    let filename = getline(linenr - l:i)
+    if match(filename, '^\v[0-9]+:') < 0 && filereadable(filename)
       " check if filereadable() to avoid breaking on long line;
       " example (first line above 3:xxx should be skipped):
       " filename
@@ -195,17 +175,10 @@ function! s:jump_rg(chunk) abort
       " 2:xxxxxx-
       " xxx
       " 3:xxx
-      if s:open_file(line)
-        if line > 0
-          execute 'normal' line . 'G0'
-        else
-          return
-        endif
-      endif
-      " break even file not found.
-      break
+      return filename
     endif
   endwhile
+  return ''
 endfunction
 
 " }}}
