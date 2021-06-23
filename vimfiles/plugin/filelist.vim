@@ -42,6 +42,16 @@ function! s:edit_cur_line()
   exe 'e' fnameescape(name)
 endfunction
 
+function! s:match_any(patterns, file) abort
+  let file = substitute(a:file, '^\~', $HOME, '')
+  for patt in a:patterns
+    if match(file, patt) >= 0
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
 function! s:choose_filelist() abort
   enew
   " a special filetype
@@ -50,7 +60,9 @@ function! s:choose_filelist() abort
   call reverse(l:list)
   call append(0, l:list)
   call append(0, '')
-  call append(0, filter(v:oldfiles, 'stridx(expand(v:val), fnamemodify($VIMRUNTIME, ":h")) != 0'))
+  let doc_pattern = map(globpath(&rtp, 'doc', 0, 1),
+        \ 'glob2regpat(resolve(v:val) . "/*.txt")')
+  call append(0, filter(copy(v:oldfiles), '!s:match_any(doc_pattern, v:val)'))
   norm gg
 endfunction
 
