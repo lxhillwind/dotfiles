@@ -177,6 +177,19 @@ function! s:echoerr(msg)
   echon a:msg
   echohl None
 endfunction
+
+function! s:show_output(data, reuse) abort
+  if a:reuse
+    Scratch
+    put =a:data
+  else
+    Ksnippet
+    for line in split(a:data, "\n")
+      call append('$', line)
+    endfor
+  endif
+  norm gg"_dd
+endfunction
 " }}}
 
 " quick edit (with completion); :Ke {shortcut} {{{
@@ -262,20 +275,18 @@ endfunction
 " }}}
 
 " run vim command; :KvimRun {vim_command}... {{{
-command! -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>)
+command! -bang -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>, <bang>0)
 
-function! s:vim_run(args) abort
-  Scratch
-  put =execute(a:args)
+function! s:vim_run(args, reuse) abort
+  call s:show_output(execute(a:args), a:reuse)
 endfunction
 " }}}
 
 " vim expr; :KvimExpr {vim_expr}... {{{
-command! -nargs=+ -complete=expression KvimExpr call <SID>vim_expr(<q-args>)
+command! -bang -nargs=+ -complete=expression KvimExpr call <SID>vim_expr(<q-args>, <bang>0)
 
-function! s:vim_expr(args) abort
-  Scratch
-  put =eval(a:args)
+function! s:vim_expr(args, reuse) abort
+  call s:show_output(eval(a:args), a:reuse)
 endfunction
 " }}}
 
