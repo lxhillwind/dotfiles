@@ -202,7 +202,7 @@ function! Sh(cmd, ...) abort
       endfor
     endif
     if opt.newwin && buf_idx < 0
-      execute 'bot' &cmdwinheight . 'split'
+      execute 'bel' &cmdwinheight . 'split'
     endif
     let job_opt = extend(job_opt, {'curwin': 1, 'term_name': l:term_name})
     if opt.close
