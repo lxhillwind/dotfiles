@@ -1,4 +1,4 @@
-" :Sh / :Terminal / Sh()
+" :Sh / :Terminal
 "
 " Run shell cmd;
 " It also fixes quote for sh on win32.
@@ -21,21 +21,21 @@ endfunction
 
 if s:is_win32
   command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
-        \ call Sh(<q-args>, {'bang': <bang>0, 'echo': 1,
+        \ call s:sh(<q-args>, {'bang': <bang>0, 'echo': 1,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
   command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
-        \ call Sh(<q-args>, { 'tty': 1, 'newwin': 0,
+        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 else
   command! -bang -range -nargs=* -complete=shellcmd Sh
-        \ call Sh(<q-args>, {'bang': <bang>0, 'echo': 1,
+        \ call s:sh(<q-args>, {'bang': <bang>0, 'echo': 1,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
   command! -range -nargs=* -complete=shellcmd Terminal
-        \ call Sh(<q-args>, { 'tty': 1, 'newwin': 0,
+        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 endif
 
-" Sh() impl {{{
+" s:sh() impl {{{
 function! s:sh_echo_check(str, cond)
   if !empty(a:cond)
     redraws | echon trim(a:str, "\n")
@@ -45,7 +45,7 @@ function! s:sh_echo_check(str, cond)
   endif
 endfunction
 
-function! Sh(cmd, ...) abort
+function! s:sh(cmd, ...) abort
   let opt = {'visual': 0, 'bang': 0, 'echo': 0,
         \ 'tty': 0, 'close': 0, 'newwin': 1, 'window': 0,
         \ 'stdin': 0,}
@@ -238,7 +238,7 @@ function! Sh(cmd, ...) abort
 endfunction
 " }}}
 
-" win32: Sh() helper function; replace :! && :'<,'>! with busybox shell {{{
+" win32: s:sh() helper function; replace :! && :'<,'>! with busybox shell {{{
 if !s:is_win32 | finish | endif
 cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
 command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
@@ -334,7 +334,7 @@ endfunction
 function! s:filterV(cmd, range, line1, line2)
   let previous = @"
   try
-    let @" = trim(Sh(a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2}), "\n")
+    let @" = trim(s:sh(a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2}), "\n")
     let first = 1 == a:line1
     let last = line('$') == a:line2
     execute 'normal' a:line1 . 'gg'

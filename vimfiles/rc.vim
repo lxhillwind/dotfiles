@@ -39,7 +39,7 @@ if has('vim_starting')
         echo '<Newline> at end!'
         echohl NONE
       endif
-      echo 'paste in terminal? [y/N] '
+      echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
       if tolower(nr2char(getchar())) == 'y'
         call term_sendkeys(bufnr(), @")
         redraws | echon 'pasted.'
@@ -55,6 +55,7 @@ if has('vim_starting')
         vmap <buffer> <CR> <Plug>(jump_to_file)
       endif
       nnoremap <buffer> p :<C-u>call <SID>terminal_paste()<CR>
+      nnoremap <buffer> P :<C-u>call <SID>terminal_paste()<CR>
     endfunction
     au TerminalOpen * call s:terminal_init()
   augroup END
