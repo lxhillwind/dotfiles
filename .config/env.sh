@@ -111,6 +111,11 @@ alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
 # }}}
 
+# busybox can only set rc by $ENV, so source local config if exists.
+if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
+    source "$SH_RC_LOCAL"
+fi
+
 # Following code may cause syntax error in strict POSIX shell
 # (like array construction), so return early.
 if ! command -v zstyle >/dev/null; then

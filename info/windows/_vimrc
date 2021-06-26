@@ -1,21 +1,24 @@
-if !executable('busybox')
+if !executable('busybox') || !executable('less')
   let $PATH = expand('<sfile>:p:h') . '/extern/bin' . ';' . $PATH
-endif
-if !executable('less')
-  let $PATH = expand('<sfile>:p:h') . '/extern/less' . ';' . $PATH
 endif
 
 if str2float(windowsversion()) >= 6
-  if !executable('git')
-    let $PATH = expand('<sfile>:p:h') . '/extern/MinGit/cmd' . ';' . $PATH
-  endif
-  if !executable('ssh')
-    let $PATH = expand('<sfile>:p:h') . '/extern/MinGit/usr/bin' . ';' . $PATH
-  endif
+  let s:git_dir = 'MinGit'
+else
+  let s:git_dir = 'MinGit-2.10.0'
 endif
+
+if !executable('git')
+  let $PATH = expand('<sfile>:p:h') . printf('/extern/%s/cmd', s:git_dir) . ';' . $PATH
+endif
+if !executable('ssh')
+  let $PATH = expand('<sfile>:p:h') . printf('/extern/%s/usr/bin', s:git_dir) . ';' . $PATH
+endif
+unlet s:git_dir
 
 let $HOME = expand('<sfile>:p:h') . '/home'
 let $ENV = $HOME . '/.config/env.sh'
+let $SH_RC_LOCAL = $HOME . '/.config/local.sh'
 source ~/vimfiles/rc.vim
 silent! call plug#begin('~/vimfiles/bundle')
 source ~/vimfiles/pkgs.vim

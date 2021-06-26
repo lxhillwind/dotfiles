@@ -11,8 +11,9 @@ vim/home/vimfiles/
 vim/extern/
 vim/extern/MinGit/
 vim/extern/MinGit/cmd/git.exe
-vim/extern/less/
-vim/extern/less/less.exe
+vim/extern/MinGit-2.10.0/
+vim/extern/MinGit-2.10.0/cmd/git.exe
 vim/extern/bin/
 vim/extern/bin/busybox.exe
+vim/extern/bin/less.exe
 ```
