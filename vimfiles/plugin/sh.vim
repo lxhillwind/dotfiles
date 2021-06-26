@@ -243,7 +243,7 @@ if !s:is_win32 | finish | endif
 cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
 command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
 
-let s:busybox_cmdlist = expand('<sfile>:p:h') . '/asset/busybox-cmdlist.txt'
+let s:busybox_cmdlist = expand('<sfile>:p:h') . '/sh-asset/busybox-cmdlist.txt'
 function! s:win32_cmd_list(A, L, P)
   if !get(s:, 'win32_cmd_list_data', 0)
     let s:win32_cmd_list_data = join(readfile(s:busybox_cmdlist), "\n")
