@@ -7,8 +7,8 @@
 "
 "   - vimserver-helper binary;
 "   see vimserver-helper/README.md for build instruction.
-"   - socat is also supported as fallback
-"   (jq may be useful for json serialization).
+"   - bundled shell script (vimserver-helper.sh) is also supported as fallback
+"   (socat / jq are required).
 "
 " Usage: none. It just works (once requirements meet).
 "
@@ -19,46 +19,35 @@ if &cp
   set nocp
 endif
 
-" common func {{{
 let s:is_win32 = has('win32')
 
+" common func and env prepare {{{
 if s:is_win32
   let s:vimserver_exe = expand('<sfile>:p:h') . '\vimserver-helper\vimserver-helper.exe'
-  " fallback to vimserver-helper in $PATH if not found in sfile
+  " fallback to vimserver-helper in $PATH
   if !executable(s:vimserver_exe)
     let s:vimserver_exe = 'vimserver-helper'
   endif
 else
   let s:vimserver_exe = expand('<sfile>:p:h') . '/vimserver-helper/vimserver-helper'
+  " fallback to vimserver-helper in $PATH
   if !executable(s:vimserver_exe)
-    let s:vimserver_exe = 'socat'
+    let s:vimserver_exe = 'vimserver-helper'
+  endif
+  " fallback to vimserver-helper.sh
+  if !executable(s:vimserver_exe)
+    let s:vimserver_exe = expand('<sfile>:p:h') . '/vimserver-helper/vimserver-helper.sh'
   endif
 endif
 
-if s:vimserver_exe != 'socat'
-  let $VIMSERVER_BIN = s:vimserver_exe
-endif
+let $VIMSERVER_BIN = s:vimserver_exe
 
 function! s:cmd_server(id)
-  if s:vimserver_exe != 'socat'
-    return [s:vimserver_exe, a:id, 'listen']
-  else
-    return ['socat', printf('unix-l:%s,fork', a:id), 'stdout']
-  endif
+  return [s:vimserver_exe, a:id, 'listen']
 endfunction
 
 function! s:cmd_client(id)
-  if s:vimserver_exe != 'socat'
-    return [s:vimserver_exe, a:id]
-  else
-    return ['socat', 'stdin', 'unix-connect:' . a:id]
-  endif
-endfunction
-
-function! s:echoerr(msg)
-  echohl ErrorMsg
-  echon a:msg
-  echohl None
+  return [s:vimserver_exe, a:id]
 endfunction
 
 function! s:system(cmd, stdin)

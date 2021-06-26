@@ -37,31 +37,15 @@ case "$-" in
 esac
 
 # rc {{{
-
-if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ]; then
-    if [ -x "$VIMSERVER_BIN" ]; then
-        if [ -z "$VIMSERVER_CLIENT_PID" ]; then
-            export VIMSERVER_CLIENT_PID=$$
-        fi
-        vimserver()
-        {
-            "$VIMSERVER_BIN" "$VIMSERVER_ID" "$@"
-        }
-    elif command -v jq >/dev/null && [ "$(uname -s)" != 'Windows_NT' ]; then
-        vimserver()
-        {
-            funcname="$1"
-            shift
-            printf '\x1b]51;%s\x07' \
-                "$(jq --indent 0 -n \
-                --arg func "$funcname" --args \
-                '["call", $func, $ARGS.positional]' \
-                "$@")"
-        }
-    else
-        vimserver() { :; }
+# terminal inside vim
+if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ] && [ -x "$VIMSERVER_BIN" ]; then
+    if [ -z "$VIMSERVER_CLIENT_PID" ]; then
+        export VIMSERVER_CLIENT_PID=$$
     fi
-
+    vimserver()
+    {
+        "$VIMSERVER_BIN" "$VIMSERVER_ID" "$@"
+    }
     _f_cd_vim()
     {
         \cd "$@" && vimserver Tapi_cd "$PWD"
@@ -72,6 +56,7 @@ else
 fi
 alias cd=_f_cd_vim
 
+# fzf and cd
 if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
     _f_cd()
     {
@@ -92,6 +77,7 @@ if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
     alias cd=_f_cd
 fi
 
+# colorful man
 man() {
     PAGER="sh -c 'sed -E \"s/[—−‐]/-/g\" | less'" \
     LESS_TERMCAP_md=$'\e[01;31m' \

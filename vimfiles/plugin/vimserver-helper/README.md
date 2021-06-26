@@ -1,6 +1,9 @@
 # vimserver-helper
 binary to be used in Vim session (plugin: [../vimserver.vim](../vimserver.vim)).
 
+On unix-like system (requires socat / jq), [./vimserver-helper.sh](./vimserver-helper.sh)
+is available as fallback.
+
 ## usage
 ```sh
 # server
