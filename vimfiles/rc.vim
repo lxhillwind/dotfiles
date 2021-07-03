@@ -256,7 +256,7 @@ function! s:snippet_in_new_window(bang, ft) abort
     endif
   endif
   if create_window
-    exe printf('bo %dnew', &cwh)
+    exe printf('bel %dnew', &cwh)
     if create_buffer
       setl buftype=nofile noswapfile
       setl bufhidden=hide
