@@ -23,7 +23,7 @@ if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/qemu/config.yml ]; then
 else
     case "$basename" in
         vm-list)
-            exec grep -E ':$' ~/qemu/config.yml ;;
+            exec grep -Ewo '^[a-zA-Z0-9_-][^: ]*' ~/qemu/config.yml ;;
         vm-start)
             exec launch-qemu.py "$@" ;;
         *)
