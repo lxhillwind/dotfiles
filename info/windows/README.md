@@ -40,3 +40,6 @@ mkisofs -o cd.iso cd_dir
 
 Launch WePE ISO, extract data from archive inside another ISO to an empty drive (formatted as ntfs);
 then use bootice to re-create MBR (select the correct NT version). (`dism++` may not work)
+
+## thinpc 乱码 fix
+控制面板-更该显示语言-管理: 非Unicode程序的语言选择简体中文.
