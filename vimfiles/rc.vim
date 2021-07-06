@@ -454,6 +454,10 @@ function! s:get_project_dir()
     if isdirectory(path . '/.git')
       return path
     endif
+    if filereadable(path . '/.git')
+      " git submodule
+      return path
+    endif
     let parent = fnamemodify(path, ':h')
     if path == parent
       return ''
@@ -537,6 +541,13 @@ function! s:gx_open(...)
     return
   endif
   call job_start(open_cmd, {'stoponexit': ''})
+endfunction
+
+function! s:gx_open_gx()
+  call s:gx_open()
+  let winnr = winnr()
+  wincmd p
+  execute winnr . 'wincmd c'
 endfunction
 
 function! s:gx_vim(...)
@@ -760,6 +771,7 @@ augroup vimrc_filetype
     if executable('qutebrowser')
       nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
     endif
+    nnoremap <buffer> gx :call <SID>gx_open_gx()<CR>
     nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
     nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
   endfunction
