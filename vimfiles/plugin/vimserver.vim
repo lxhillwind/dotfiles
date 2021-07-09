@@ -40,8 +40,6 @@ else
   endif
 endif
 
-let $VIMSERVER_BIN = s:vimserver_exe
-
 function! s:cmd_server(id)
   return [s:vimserver_exe, a:id, 'listen']
 endfunction
@@ -75,6 +73,12 @@ function! vimserver#main() abort
   if !executable(s:vimserver_exe)
     echoerr 'vimserver executable not found!'
     return
+  endif
+  " gvim always starts a vimserver.
+  if has('gui_running')
+    unlet $VIMSERVER_ID
+    unlet $VIMSERVER_BIN
+    unlet $VIMSERVER_CLIENT_PID
   endif
   if empty($VIMSERVER_ID)
     call s:server()
@@ -159,6 +163,7 @@ function! s:server() abort
   let job = job_start(s:cmd_server(bind_name),
         \ #{callback: function('s:server_handler')})
   let $VIMSERVER_ID = bind_name
+  let $VIMSERVER_BIN = s:vimserver_exe
   augroup vimserver_clients_cleaner
     au!
     au WinEnter * call s:server_clients_cleaner()

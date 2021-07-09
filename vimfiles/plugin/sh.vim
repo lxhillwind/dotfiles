@@ -36,6 +36,17 @@ else
 endif
 
 " s:sh() impl {{{
+
+" store vimserver.vim related environment variable, and delete them from env;
+" so that ":!" / "system()" / "job_start()" will not be affected by vimserver.
+let s:vimserver_envs = get(s:, 'vimserver_envs', {})
+for s:i in ['VIMSERVER_ID', 'VIMSERVER_BIN', 'VIMSERVER_CLIENT_PID']
+  if exists('$'.s:i)
+    let s:vimserver_envs[s:i] = getenv(s:i)
+    execute 'unlet' '$'.s:i
+  endif
+endfor
+
 function! s:sh_echo_check(str, cond)
   if !empty(a:cond)
     redraws | echon trim(a:str, "\n")
@@ -208,6 +219,7 @@ function! s:sh(cmd, ...) abort
     if opt.close
       let job_opt = extend(job_opt, {'term_finish': 'close'})
     endif
+    let job_opt = extend(job_opt, {'env': s:vimserver_envs})
     let job = term_start(cmd, job_opt)
     if !empty(opt.bang)
       let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
