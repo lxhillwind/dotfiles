@@ -543,8 +543,12 @@ function! s:gx_open(...)
   call job_start(open_cmd, {'stoponexit': ''})
 endfunction
 
-function! s:gx_open_gx()
-  call s:gx_open()
+function! s:gx_open_gx(...)
+  if a:0 == 1
+    call s:gx_open(a:1)
+  else
+    call s:gx_open()
+  endif
   let winnr = winnr()
   wincmd p
   execute winnr . 'wincmd c'
@@ -772,6 +776,9 @@ augroup vimrc_filetype
       nnoremap <buffer> <LocalLeader>s :call <SID>gx_open('qutebrowser')<CR>
     endif
     nnoremap <buffer> gx :call <SID>gx_open_gx()<CR>
+    if executable('qutebrowser') && s:has_gui
+      nnoremap <buffer> gs :call <SID>gx_open_gx('qutebrowser')<CR>
+    endif
     nnoremap <buffer> <LocalLeader>f :call <SID>gx_open()<CR>
     nnoremap <buffer> <LocalLeader>v :call <SID>gx_vim('wincmd p \|')<CR>
   endfunction
