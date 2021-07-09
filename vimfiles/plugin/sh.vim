@@ -135,7 +135,9 @@ function! s:sh(cmd, ...) abort
   let job_opt = {}
   let [tmpfile, tmpbuf] = ['', '']
   if stdin isnot# 0
-    if opt.window
+    " unix always uses tmpfile, since buf has size limit;
+    " win32 doesn't use tmpfile, since cmdline construction is too tricky.
+    if opt.window || s:is_unix
       let tmpfile = tempname()
       call writefile(stdin, tmpfile)
     else
