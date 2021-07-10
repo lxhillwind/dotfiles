@@ -121,7 +121,7 @@ zstyle ':completion:*' menu select
 export DIRSTACKSIZE=16
 setopt auto_pushd pushd_ignore_dups pushd_minus
 
-# vi insert mode
+# vi insert mode {{{2
 bindkey -v \^A beginning-of-line
 bindkey -v \^E end-of-line
 bindkey -v \^F forward-char
@@ -149,6 +149,7 @@ _fix_cursor()
 {
     print -n '\e[1 q'
 }
+# }}}2
 
 # readline keybindings
 bindkey -e
@@ -159,6 +160,11 @@ setopt interactivecomments
 
 # simple PS1
 PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
+
+# edit command line
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey \^x\^e edit-command-line
 
 compinit
 
