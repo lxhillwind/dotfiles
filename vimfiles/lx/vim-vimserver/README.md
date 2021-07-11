@@ -48,7 +48,7 @@ go build
 
 <details>
 <summary>
-### vimserver-helper internal Usage (`:help terminal-api`)
+vimserver-helper internal Usage (`:help terminal-api`)
 </summary>
 
 ```sh
@@ -66,7 +66,6 @@ Since vimserver sets `VIMSERVER_BIN` environment variable, you can replace
 
 Replace `{server_filename}` with `$VIMSERVER_ID`.
 
-## TODO
-- allow passing non-string argument in terminal-api mode.
+TODO: allow passing non-string argument in terminal-api mode.
 
 </details>
