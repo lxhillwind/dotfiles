@@ -128,41 +128,21 @@ function! s:sh(cmd, ...) abort
   endif
 
   let job_opt = {}
-  let [tmpfile, tmpbuf] = ['', '']
+  let tmpfile = ''
   if stdin isnot# 0
-    " unix always uses tmpfile, since buf has size limit;
-    " win32 doesn't use tmpfile, since cmdline construction is too tricky.
-    if opt.window || s:is_unix
-      let tmpfile = tempname()
-      call writefile(stdin, tmpfile)
-    else
-      let tmpbuf = bufadd('')
-      call bufload(tmpbuf)
-      let l:idx = 1
-      for l:line in stdin
-        call setbufline(tmpbuf, l:idx, l:line)
-        let l:idx += 1
-      endfor
-      unlet l:idx
-    endif
-    if !empty(tmpbuf)
-      let job_opt = extend(job_opt, {'in_io': 'buffer', 'in_buf': tmpbuf})
-      if s:is_win32 && opt.tty
-        " <C-z>
-        let job_opt = extend(job_opt, {'eof_chars': "\x1a"})
-      endif
-    endif
+    let tmpfile = tempname()
+    call writefile(stdin, tmpfile)
   endif
 
   if s:is_unix
     if empty(cmd)
       let cmd = split(&shell)
     else
-      if empty(tmpfile)
-        let cmd = ['sh', '-c', cmd]
-      else
+      if !empty(tmpfile)
         let cmd = ['sh', '-c', printf('sh -c %s < %s',
               \ shellescape(cmd), shellescape(tmpfile))]
+      else
+        let cmd = ['sh', '-c', cmd]
       endif
     endif
   else
@@ -173,6 +153,10 @@ function! s:sh(cmd, ...) abort
     else
       let cmd = s:win32_quote(cmd)
       let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
+      if !opt.window && !empty(tmpfile)
+        let cmd = s:win32_cmd_exe_quote(cmd)
+        let cmd = printf('cmd /c %s < %s', cmd, shellescape(tmpfile))
+      endif
     endif
   endif
 
@@ -226,12 +210,6 @@ function! s:sh(cmd, ...) abort
     " TODO handle non-tty stderr
     let job_opt = extend(job_opt, {'out_io': 'buffer', 'out_msg': 0})
     let job = job_start(cmd, job_opt)
-  endif
-  if !empty(tmpbuf)
-    if s:is_win32
-      sleep 1m
-    endif
-    silent execute tmpbuf . 'bd!'
   endif
   if opt.tty
     return job
