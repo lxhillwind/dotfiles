@@ -371,15 +371,18 @@ function! s:clipboard_paste(cmd)
 endfunction
 " }}}
 
-" cd; :Cd <path> / :Cdhome / :Cdbuffer / :Cdproject [:]cmd... {{{
+" Cd <path> / :Cdalternate / :Cdhome / :Cdbuffer / :Cdproject [:]cmd... {{{
 command! -nargs=1 -complete=dir Cd call <SID>cd('', <q-args>)
+command! -nargs=* -complete=command Cdalternate call <SID>cd('alternate', <q-args>)
 command! -nargs=* -complete=command Cdhome call <SID>cd('home', <q-args>)
 command! -nargs=* -complete=command Cdbuffer call <SID>cd('buffer', <q-args>)
 command! -nargs=* -complete=command Cdproject call <SID>cd('project', <q-args>)
 
 function! s:cd(flag, args)
   let cmd = a:args
-  if a:flag ==# 'home'
+  if a:flag ==# 'alternate'
+    let path = fnamemodify(bufname('#'), '%:p:h')
+  elseif a:flag ==# 'home'
     let path = expand('~')
   elseif a:flag ==# 'project'
     let path = s:get_project_dir()
@@ -422,6 +425,9 @@ function! s:cd(flag, args)
     endtry
   else
     exe 'lcd' path
+    if &buftype == 'terminal'
+      call term_sendkeys(bufnr(), 'cd ' . shellescape(path))
+    endif
   endif
 endfunction
 
