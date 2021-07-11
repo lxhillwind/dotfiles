@@ -3,9 +3,6 @@
 ## Feature
 - inside terminal, open vim buffer in outside vim.
 
-- communicate with vim from terminal inside vim. (`:help terminal-api`
-  replacement, works on Windows OS)
-
 ## Requirement
 - vim 8 (job feature);
 
@@ -37,10 +34,10 @@ If no filename argument is provided, vim will just open a new empty window.
 If multiple filename arguments are provided, only the first one will be shown,
 other files can be accessed with `:next` / `:prev` (`:help arglist` for help).
 
-## vimserver-helper
+## vimserver-helper binary
 It should work on all major platforms, including at least Windows, Linux, Mac.
 
-### Installation (binary)
+### Installation
 
 ```sh
 cd vimserver-helper/
@@ -50,20 +47,17 @@ go build
 ```
 
 <details>
-
 <summary>
-
-### vimserver-helper advanced Usage
-
+### vimserver-helper internal Usage (`:help terminal-api`)
 </summary>
 
 ```sh
-# server (internal)
+# server
 $0 {server_filename} listen
 
 # client (terminal-api style)
 $0 {server_filename} {funcname} [args...]
-# client (use stdin as raw params; internal)
+# client (use stdin as raw params)
 $0 {server_filename}
 ```
 
