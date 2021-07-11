@@ -726,7 +726,7 @@ augroup vimrc_filetype
   au FileType vim setl sw=2
   au FileType yaml setl sw=2 indentkeys-=0#
   au FileType zig setl fp=zig\ fmt\ --stdin
-  au FileType markdown setl tw=120
+  au FileType markdown setl tw=78
 
   " open plugin directory
   au FileType vim nnoremap <buffer> <LocalLeader>e <cmd>e ~/vimfiles/plugin<CR>
