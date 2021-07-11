@@ -9,7 +9,7 @@
 - vimserver-helper binary (*optional*; required for Windows OS; see below for
   installation method);
 
-- `socat` and `jq` (*optional*; required for bundled shell script
+- `socat` (*optional*; required for bundled shell script
   [bin/vimserver-helper.sh](bin/vimserver-helper.sh) if vimserver-helper
 binary is not available).
 
@@ -61,10 +61,12 @@ $0 {server_filename} {funcname} [args...]
 $0 {server_filename}
 ```
 
-Since vimserver sets `VIMSERVER_BIN` environment variable, you can replace
-`$0` above with `"$VIMSERVER_BIN"`;
+- Since vimserver sets `VIMSERVER_BIN` environment variable, you can replace
+  `$0` above with `"$VIMSERVER_BIN"`.
 
-Replace `{server_filename}` with `$VIMSERVER_ID`.
+- Replace `{server_filename}` with `$VIMSERVER_ID`.
+
+- For terminal-api style client (bundled shell script), `jq` is required.
 
 TODO: allow passing non-string argument in terminal-api mode.
 
