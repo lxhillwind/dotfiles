@@ -1,19 +1,3 @@
-" Example:
-"   nmap <Leader>f <Plug>(filelist_show)
-"
-"   function! s:filelist_init()
-"     nmap <buffer> <LocalLeader><CR> <Plug>(filelist_cd)
-"     nmap <buffer> <CR> <Plug>(filelist_edit)
-"   endfunction
-"   au FileType filelist call <SID>filelist_init()
-"
-" Config:
-" set g:filelist_path (filename) to override filelist save path.
-" Directory will NOT be created.
-"
-" filelist path priority:
-" g:filelist_path -> &viminfofile dir -> script dir
-
 if get(g:, 'loaded_filelist')
   finish
 endif
@@ -75,7 +59,9 @@ function! s:filelist_path()
   return get(g:, 'filelist_path', s:filelist_path_default)
 endfunction
 let s:filelist_path_default =
-      \ ( empty(&viminfofile) ? expand('<sfile>:p:h') : fnamemodify(&viminfofile, ':h') )
+      \ ( empty(&viminfofile) ?
+      \   ( expand('<sfile>:p:h:h') . '/cache' ) :
+      \   fnamemodify(&viminfofile, ':h') )
       \ . '/filelist_path.cache'
 
 function! s:load_filelist()

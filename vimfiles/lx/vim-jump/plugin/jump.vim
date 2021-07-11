@@ -1,11 +1,3 @@
-" simulate click in terminal.
-"
-" Example:
-"   au TerminalOpen * if &buftype ==# 'terminal'
-"   \ | nmap <buffer> <CR> <Plug>(jump_to_file)
-"   \ | vmap <buffer> <CR> <Plug>(jump_to_file)
-"   \ | endif
-
 if get(g:, 'loaded_jump')
   finish
 endif
