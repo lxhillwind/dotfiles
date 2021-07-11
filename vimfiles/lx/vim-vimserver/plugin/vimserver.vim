@@ -15,6 +15,11 @@
 " TODO
 " - allow passing non-string argument in terminal-api mode.
 
+if get(g:, 'loaded_vimserver')
+  finish
+endif
+let g:loaded_vimserver = 1
+
 if &cp
   set nocp
 endif

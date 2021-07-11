@@ -6,6 +6,11 @@
 "   \ | vmap <buffer> <CR> <Plug>(jump_to_file)
 "   \ | endif
 
+if get(g:, 'loaded_jump')
+  finish
+endif
+let g:loaded_jump = 1
+
 nnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file(v:count)<CR>
 vnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file(v:count, 'v')<CR>
 

@@ -8,6 +8,11 @@
 "
 " win32 only: replace ':!' &shell with busybox sh.
 
+if get(g:, 'loaded_sh')
+  finish
+endif
+let g:loaded_sh = 1
+
 " common {{{
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')

@@ -30,6 +30,15 @@ function! s:enable(pkg, ...)  " {{{
 endfunction
 " }}}
 
+if s:enable('lx', 1)
+  for s:i in globpath(expand('<sfile>:p:h'), 'lx/*', 0, 1)
+    if isdirectory(s:i) && match(s:i, "'") < 0
+      " ensure "'" is not in path.
+      execute printf("Plug '%s'", s:i)
+    endif
+  endfor
+endif
+
 if s:enable('base', 1)
   Plug 'https://github.com/justinmk/vim-dirvish'
 

@@ -3,8 +3,8 @@
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
 
-runtime plugin/vimserver.vim
-call vimserver#main()
+runtime lx/vim-vimserver/plugin/vimserver.vim
+silent! call vimserver#main()
 
 let mapleader = ' '  " assign before use
 let maplocalleader = ' ;'
