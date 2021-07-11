@@ -1,20 +1,3 @@
-" Intro:
-"   - inside terminal, open vim buffer in outside vim.
-"   - communicate with vim from terminal inside vim.
-"
-" Requirement:
-"   - vim 8 (job feature);
-"
-"   - vimserver-helper binary;
-"   see vimserver-helper/README.md for build instruction.
-"   - bundled shell script (vimserver-helper.sh) is also supported as fallback
-"   (socat / jq are required).
-"
-" Usage: none. It just works (once requirements meet).
-"
-" TODO
-" - allow passing non-string argument in terminal-api mode.
-
 if get(g:, 'loaded_vimserver')
   finish
 endif
@@ -28,20 +11,20 @@ let s:is_win32 = has('win32')
 
 " common func and env prepare {{{
 if s:is_win32
-  let s:vimserver_exe = expand('<sfile>:p:h') . '\vimserver-helper\vimserver-helper.exe'
+  let s:vimserver_exe = expand('<sfile>:p:h:h') . '\vimserver-helper\vimserver-helper.exe'
   " fallback to vimserver-helper in $PATH
   if !executable(s:vimserver_exe)
     let s:vimserver_exe = 'vimserver-helper'
   endif
 else
-  let s:vimserver_exe = expand('<sfile>:p:h') . '/vimserver-helper/vimserver-helper'
+  let s:vimserver_exe = expand('<sfile>:p:h:h') . '/vimserver-helper/vimserver-helper'
   " fallback to vimserver-helper in $PATH
   if !executable(s:vimserver_exe)
     let s:vimserver_exe = 'vimserver-helper'
   endif
   " fallback to vimserver-helper.sh
   if !executable(s:vimserver_exe)
-    let s:vimserver_exe = expand('<sfile>:p:h') . '/vimserver-helper/vimserver-helper.sh'
+    let s:vimserver_exe = expand('<sfile>:p:h:h') . '/bin/vimserver-helper.sh'
   endif
 endif
 
