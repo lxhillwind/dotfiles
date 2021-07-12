@@ -38,7 +38,8 @@ esac
 
 # rc {{{
 # terminal inside vim
-if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ] && [ -x "$VIMSERVER_BIN" ]; then
+if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ] && { \
+    [ -x "$VIMSERVER_BIN" ] || command -v "$VIMSERVER_BIN" >/dev/null; }; then
     if [ -z "$VIMSERVER_CLIENT_PID" ]; then
         export VIMSERVER_CLIENT_PID=$$
     fi
