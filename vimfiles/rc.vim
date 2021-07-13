@@ -1,5 +1,3 @@
-" Always require latest vim. (not neovim!)
-
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
 
