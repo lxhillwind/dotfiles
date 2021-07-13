@@ -6,24 +6,28 @@ let g:loaded_sh = 1
 " common {{{
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
+let s:is_nvim = has('nvim')
 
 function! s:echoerr(msg)
   echohl ErrorMsg
   echon a:msg
   echohl None
 endfunction
+
+let s:job_start = s:is_nvim ? 'jobstart' : 'job_start'
+let s:term_start = s:is_nvim ? 'termopen' : 'term_start'
 " }}}
 
 if s:is_win32
   command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
-        \ call s:sh(<q-args>, {'bang': <bang>0, 'echo': 1,
+        \ call s:sh(<q-args>, {'bang': <bang>0,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
   command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
         \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 else
   command! -bang -range -nargs=* -complete=shellcmd Sh
-        \ call s:sh(<q-args>, {'bang': <bang>0, 'echo': 1,
+        \ call s:sh(<q-args>, {'bang': <bang>0,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
   command! -range -nargs=* -complete=shellcmd Terminal
         \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
@@ -42,19 +46,21 @@ for s:i in ['VIMSERVER_ID', 'VIMSERVER_BIN', 'VIMSERVER_CLIENT_PID']
   endif
 endfor
 
-function! s:sh_echo_check(str, cond)
-  if !empty(a:cond)
-    redraws | echon trim(a:str, "\n")
-    return 0
-  else
-    return a:str
+function! s:echo(str) abort
+  redraws | echon trim(a:str, "\n")
+  return 0
+endfunction
+
+function! s:nvim_exit_cb(...) dict
+  if self.buffer_nr == winbufnr(0) && mode() == 't'
+    " vim 8 behavior: exit to normal mode after TermClose.
+    call feedkeys("\<C-\>\<C-n>", 'n')
   endif
 endfunction
 
-function! s:sh(cmd, ...) abort
-  let opt = {'visual': 0, 'bang': 0, 'echo': 0,
-        \ 'tty': 0, 'close': 0, 'newwin': 1, 'window': 0,
-        \ 'stdin': 0,}
+function! s:sh(cmd, opt) abort
+  let opt = {'visual': 0, 'bang': 0,
+        \ 'tty': 0, 'close': 0, 'newwin': 1, 'window': 0,}
   " -vtcw
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
   let opt.visual = match(opt_string, 'v') >= 0
@@ -62,18 +68,9 @@ function! s:sh(cmd, ...) abort
   let opt.close = match(opt_string, 'c') >= 0
   let opt.window = match(opt_string, 'w') >= 0
 
+  let opt = extend(opt, a:opt)
+
   let stdin = 0
-  if a:0 > 0
-    " a:1: string (stdin) or dict.
-    if type(a:1) == type('')
-      let stdin = a:1
-    else
-      let opt = extend(opt, a:1)
-      if type(opt.stdin) == type('')
-        let stdin = opt.stdin
-      endif
-    endif
-  endif
   if opt.visual
     let tmp = @"
     silent normal gvy
@@ -89,10 +86,6 @@ function! s:sh(cmd, ...) abort
   endif
   if type(stdin) == type('')
     let stdin = split(stdin, "\n")
-  endif
-
-  if opt.tty
-    let opt.echo = 0
   endif
 
   let cmd = a:cmd[len(opt_string):]
@@ -118,12 +111,20 @@ function! s:sh(cmd, ...) abort
     call s:echoerr('empty cmd (without tty) is not allowed!') | return
   endif
 
-  if !opt.tty && !opt.window && s:is_unix
+  if !opt.tty && !opt.window && (s:is_unix || s:is_nvim)
+    if s:is_win32
+      let shell = s:shell_opt_sh.shell
+      let shellcmdflag = s:shell_opt_sh.shellcmdflag
+      let cmd = s:win32_quote(cmd)
+      let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
+      let cmd = s:win32_cmd_exe_quote(cmd)
+    endif
+
     if stdin is# 0
-      return s:sh_echo_check(system(cmd), opt.echo)
+      return s:echo(system(cmd))
     else
       " add final [''] to add final newline
-      return s:sh_echo_check(system(cmd, stdin + ['']), opt.echo)
+      return s:echo(system(cmd, stdin + ['']))
     endif
   endif
 
@@ -171,9 +172,9 @@ function! s:sh(cmd, ...) abort
       endif
       silent execute '!start' cmd
     elseif executable('urxvt')
-      call job_start(['urxvt', '-e'] + cmd)
+      call function(s:job_start)(['urxvt', '-e'] + cmd)
     elseif executable('alacritty')
-      call job_start(['alacritty', '-e'] + cmd)
+      call function(s:job_start)(['alacritty', '-e'] + cmd)
     else
       call s:echoerr('Sh: -w (window) option not supported!')
     endif
@@ -201,7 +202,15 @@ function! s:sh(cmd, ...) abort
       let job_opt = extend(job_opt, {'term_finish': 'close'})
     endif
     let job_opt = extend(job_opt, {'env': s:vimserver_envs})
-    let job = term_start(cmd, job_opt)
+    if s:is_nvim
+      enew
+      let job_opt = extend(job_opt,
+            \{'buffer_nr': winbufnr(0), 'on_exit': function('s:nvim_exit_cb')})
+    endif
+    let job = function(s:term_start)(cmd, job_opt)
+    if s:is_nvim
+      startinsert " post comment to fix syntax hl
+    endif
     if !empty(opt.bang)
       let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
       call filter(s:sh_buf_cache, 'bufexists(v:val)')
@@ -218,9 +227,8 @@ function! s:sh(cmd, ...) abort
   while job_status(job) ==# 'run'
     sleep 1m
   endwhile
-  return s:sh_echo_check(
-        \join(getbufline(ch_getbufnr(job, 'out'), 1, '$'), "\n"),
-        \opt.echo
+  return s:echo(
+        \join(getbufline(ch_getbufnr(job, 'out'), 1, '$'), "\n")
         \)
 endfunction
 " }}}
