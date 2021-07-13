@@ -115,15 +115,17 @@ function! s:open_file(name) abort
   endif
 
   echo printf('[%s] file not listed.', name)
-  let job_finished = match(term_getstatus(bufnr()), 'finished') >= 0
-  if job_finished
-    echo 'open it? [s/v/t/N] r[e]use '
-  else
+  let job_running = has('nvim') ?
+        \ ( jobwait([&channel], 0)[0] == -1 ) :
+        \ ( match(term_getstatus(bufnr()), 'running') >= 0 )
+  if job_running
     echo 'open it? [s/v/t/N] '
+  else
+    echo 'open it? [s/v/t/N] r[e]use '
   endif
   let action = tolower(nr2char(getchar()))
   let actions = {'v': 'vs', 's': 'sp', 't': 'tabe'}
-  if job_finished
+  if !job_running
     " 'e' -> dummy
     let actions = extend(actions, {'e': ':'})
   endif

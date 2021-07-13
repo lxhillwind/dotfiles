@@ -1,4 +1,4 @@
-if get(g:, 'loaded_vimserver')
+if get(g:, 'loaded_vimserver') || has('nvim')
   finish
 endif
 let g:loaded_vimserver = 1
