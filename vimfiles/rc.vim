@@ -41,7 +41,11 @@ if has('vim_starting')
       endif
       echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
       if tolower(nr2char(getchar())) == 'y'
-        call term_sendkeys(bufnr(), @")
+        if has('nvim')
+          call feedkeys('p', 'n')
+        else
+          call feedkeys("i\<C-w>" . '""' . "\<C-\>\<C-n>", 'n')
+        endif
         redraws | echon 'pasted.'
       else
         redraws | echon 'cancelled.'
@@ -57,7 +61,11 @@ if has('vim_starting')
       nnoremap <buffer> p :<C-u>call <SID>terminal_paste()<CR>
       nnoremap <buffer> P :<C-u>call <SID>terminal_paste()<CR>
     endfunction
-    au TerminalOpen * call s:terminal_init()
+    if exists('##TerminalOpen')
+      au TerminalOpen * call s:terminal_init()
+    elseif exists('##TermOpen')
+      au TermOpen * call s:terminal_init()
+    endif
   augroup END
   " hlsearch
   set hls
