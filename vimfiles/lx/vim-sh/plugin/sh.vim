@@ -16,6 +16,8 @@ endfunction
 
 let s:job_start = s:is_nvim ? 'jobstart' : 'job_start'
 let s:term_start = s:is_nvim ? 'termopen' : 'term_start'
+
+let s:file = expand('<sfile>')
 " }}}
 
 if s:is_win32
@@ -183,8 +185,12 @@ function! s:sh(cmd, opt) abort
       endif
       silent execute '!start' cmd
     elseif executable('urxvt')
+      let cmd = opt.close ? cmd :
+            \ [fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'] + cmd
       call function(s:job_start)(['urxvt', '-e'] + cmd)
     elseif executable('alacritty')
+      let cmd = opt.close ? cmd :
+            \ [fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'] + cmd
       call function(s:job_start)(['alacritty', '-e'] + cmd)
     else
       call s:echoerr('Sh: -w (window) option not supported!')
