@@ -94,7 +94,8 @@ endfunction
 function! s:open_file(name) abort
   let name = a:name
   let name = simplify(fnamemodify(name, ':p'))
-  if isdirectory(name)
+  let l:is_dir = isdirectory(name)
+  if l:is_dir
     " trim final (back)slash since dir buffer name does not contain it.
     let name = substitute(name, has('win32') ? '\v\\$' : '\v/$', '', '')
   endif
@@ -113,12 +114,12 @@ function! s:open_file(name) abort
   endfor
 
   " file not found in open windows
-  if !filereadable(name) && !isdirectory(name)
+  if !filereadable(name) && !l:is_dir
     redraws | echon 'file not readable / not found.'
     return 0
   endif
 
-  echo printf('[%s] file not listed.', name)
+  echo printf('[%s] %s not listed.', name, l:is_dir ? 'dir' : 'file')
   let job_running = has('nvim') ?
         \ ( jobwait([&channel], 0)[0] == -1 ) :
         \ ( match(term_getstatus(bufnr()), 'running') >= 0 )
@@ -141,8 +142,7 @@ function! s:open_file(name) abort
     redraws | execute cmd
   endif
   execute 'e' fnameescape(name)
-  " return 0 if isdirectory
-  return file_readable(name)
+  return 1
 endfunction
 
 " line, column
