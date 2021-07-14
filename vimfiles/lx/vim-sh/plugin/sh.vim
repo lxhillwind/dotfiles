@@ -56,6 +56,17 @@ function! s:nvim_exit_cb(...) dict
     " vim 8 behavior: exit to normal mode after TermClose.
     call feedkeys("\<C-\>\<C-n>", 'n')
   endif
+  if self.close
+    let buffers = tabpagebuflist()
+    let idx = index(buffers, self.buffer_nr)
+    if idx >= 0
+      if len(buffers) == 1 && tabpagenr('$') == 1
+        quit
+      else
+        execute idx+1 'wincmd c'
+      endif
+    endif
+  endif
 endfunction
 
 function! s:sh(cmd, opt) abort
@@ -205,7 +216,9 @@ function! s:sh(cmd, opt) abort
     if s:is_nvim
       enew
       let job_opt = extend(job_opt,
-            \{'buffer_nr': winbufnr(0), 'on_exit': function('s:nvim_exit_cb')})
+            \{'buffer_nr': winbufnr(0),
+            \'close': opt.close,
+            \'on_exit': function('s:nvim_exit_cb')})
     endif
     let job = function(s:term_start)(cmd, job_opt)
     if s:is_nvim
