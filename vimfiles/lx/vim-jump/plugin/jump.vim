@@ -94,6 +94,10 @@ endfunction
 function! s:open_file(name) abort
   let name = a:name
   let name = simplify(fnamemodify(name, ':p'))
+  if isdirectory(name)
+    " trim final (back)slash since dir buffer name does not contain it.
+    let name = substitute(name, has('win32') ? '\v\\$' : '\v/$', '', '')
+  endif
 
   let bufnrs = tabpagebuflist()
   for buffer in getbufinfo()
@@ -109,7 +113,7 @@ function! s:open_file(name) abort
   endfor
 
   " file not found in open windows
-  if !filereadable(name)
+  if !filereadable(name) && !isdirectory(name)
     redraws | echon 'file not readable / not found.'
     return 0
   endif
@@ -137,7 +141,8 @@ function! s:open_file(name) abort
     redraws | execute cmd
   endif
   execute 'e' fnameescape(name)
-  return 1
+  " return 0 if isdirectory
+  return file_readable(name)
 endfunction
 
 " line, column
