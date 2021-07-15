@@ -4,7 +4,7 @@
 - inside terminal, open vim buffer in outside vim.
 
 ## Requirement
-- vim 8 (job feature);
+- vim 8 (job feature); neovim is NOT supported;
 
 - vimserver-helper binary (*optional*; required for Windows OS; see below for
   installation method);
