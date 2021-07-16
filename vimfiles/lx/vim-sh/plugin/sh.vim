@@ -107,8 +107,8 @@ function! s:sh(cmd, opt) abort
   let slash = &shellslash
   try
     if s:is_win32 | set shellslash | endif
-    let cmd = substitute(cmd, '\v(^|\s)@<=(\%(\:[phtre])*)',
-          \'\=shellescape(expand(submatch(2)))', 'g')
+    let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtre])*)\ze%($|\s)',
+          \'\=shellescape(expand(submatch(1)))', 'g')
   finally
     if s:is_win32 | let &shellslash = slash | endif
   endtry
