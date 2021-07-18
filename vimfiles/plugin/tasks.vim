@@ -55,6 +55,12 @@
 " profile inherit:
 " profile `x:y:z` will inherit keys from `x:y`, which inherit keys from `x`;
 " if `x:y:z` is matched, then `x:y`, `x` will be skipped.
+"
+" INI SPEC:
+" '#' / ';' starts comment (prefix spaces are allowed);
+" section name are inside '[' and ']';
+" key / value is delimited by the first ':' or '=' character;
+" key_without_value is NOT allowed; use `key =` instead.
 
 function! s:raise(msg, line) abort
   throw printf('%s %s', a:msg, a:line)
@@ -69,8 +75,8 @@ function! s:parse(lines) abort
 
   for l:line in a:lines
     let l:i += 1
-    " comment starts with #; empty line is also ignored.
-    if match(l:line, '\v^\s*((#.+)|)$') >= 0
+    " comment starts with '#' or ';'; empty line is also ignored.
+    if match(l:line, '\v^\s*(([#;].+)|)$') >= 0
       continue
     endif
     let p_section = matchlist(l:line, '\v^\[(.+)\]\s*%($|#.+)$')
@@ -90,7 +96,9 @@ function! s:parse(lines) abort
     if empty(l:section)
       call s:raise('find line before section:', l:i)
     endif
-    let p_kv = matchlist(l:line, '\v^([^=]{-})\s*\=\s*(.*)$')
+    " k / v is delimited using '=' or ';';
+    " spaces around the delimiter is ignored.
+    let p_kv = matchlist(l:line, '\v^([^:=]{-})\s*[:=]\s*(.*)$')
     if !len(p_kv) || !len(p_kv[1])
       call s:raise('parse "k = v" error at line:', l:i)
     endif
