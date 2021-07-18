@@ -2,33 +2,11 @@
 "   g:tasks_config_paths (default: [<sfile>:h/tasks.ini])
 "
 " available command:
+"   " trigger tasks selection with this keymap:
 "   <Plug>(tasks-select) (support normal mode and visual mode)
-
-" TASKS SPEC:
 "
-" file format: dosini
-"
-" section: defines a profile.
-"
-" profile: key is &ft, value is corresponding ex cmd to execute; empty value
-" will be ignored; key '*' will match all other filetype.
-"
-" profile special key:
-" @key: required; assign key to this profile (if this profile is used).
-" @glob: required; ',' delimited; if does not match %, then skip this profile.
-" @mode: default 'n', skip if not in normal mode; 'v' matches visual mode.
-" @marker: define project_dir; ',' delimited; '/' in it is allowed;
-"   if defined, skip if not match.
-" @workdir: ex cmd will be executed in this dir; default cwd; special value:
-"   '@project' means project dir defined by @marker;
-"   '@buffer' means buffer's parent dir;
-"   others will be expanded using `expand()`.
-"
-" profile inherit:
-" profile `x:y:z` will inherit keys from `x:y`, which inherit keys from `x`;
-" if `x:y:z` is matched, then `x:y`, `x` will be skipped.
-"
-" EXAMPLE:
+" EXAMPLE CONFIG:
+" # vim:ft=dosini
 " [run]
 " # press r to trigger this task
 " @key = r
@@ -53,6 +31,30 @@
 " # visual selection must be done in provided ex cmd, which is a lot of work.
 " # so here is an example using cmd from external plugin.
 " sh = Sh -v cat
+"
+" TASKS SPEC:
+"
+" file format: dosini
+"
+" section: defines a profile.
+"
+" profile: key is &ft, value is corresponding ex cmd to execute; empty value
+" will be ignored; key '*' will match all other filetype.
+"
+" profile special key:
+" @key: required; assign key to this profile (if this profile is used).
+" @glob: required; ',' delimited; if does not match %, then skip this profile.
+" @mode: default 'n', skip if not in normal mode; 'v' matches visual mode.
+" @marker: define project_dir; ',' delimited; '/' in it is allowed;
+"   if defined, skip if not match.
+" @workdir: ex cmd will be executed in this dir; default cwd; special value:
+"   '@project' means project dir defined by @marker;
+"   '@buffer' means buffer's parent dir;
+"   others will be expanded using `expand()`.
+"
+" profile inherit:
+" profile `x:y:z` will inherit keys from `x:y`, which inherit keys from `x`;
+" if `x:y:z` is matched, then `x:y`, `x` will be skipped.
 
 function! s:raise(msg, line) abort
   throw printf('%s %s', a:msg, a:line)
@@ -153,7 +155,7 @@ function! s:read_config() abort
   for item in s:config_paths
     let result = extend(result, s:parse(readfile(expand(item))))
   endfor
-  return  result
+  return result
 endfunction
 
 function! s:find_key(cfg, section, key) abort

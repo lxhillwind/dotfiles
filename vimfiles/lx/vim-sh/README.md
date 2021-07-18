@@ -65,6 +65,16 @@ NOTE: `:Sh -w -v [cmd]...` will not work!
 - Content after command will be passed to shell. (this is like builtin
   `:terminal` with `++shell` option)
 
+### proper % expand
+
+- `%` with optional modifiers (`:p` / `:h` / `:t` / `:r` / `:e`) is expanded
+  only when passed as a standalone argument; and it is shell-escaped (like
+  `:%S` modifier is always used).
+
+This means that command like `Sh printf %s %:t:e` will print file basename
+(`%s` is not expanded; `%:t:e` should NOT be quoted, as it is escaped
+automatically).
+
 ### unix shell support in native Windows vim (`has('win32') == 1`)
 
 This requires [busybox-w32](https://frippery.org/busybox/) binary in `$PATH`.
