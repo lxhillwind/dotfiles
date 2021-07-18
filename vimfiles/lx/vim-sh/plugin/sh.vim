@@ -71,17 +71,54 @@ function! s:nvim_exit_cb(...) dict
   endif
 endfunction
 
+function! s:get_fin_term_buffer() abort
+  let result = []
+  if has('nvim')
+    for buffer in getbufinfo()
+      let jid = get(buffer.variables, 'terminal_job_id', 0)
+      if jid > 0 && jobwait([jid], 0)[0] != -1
+        let result = add(result, buffer.bufnr)
+      endif
+    endfor
+  else
+    for bufnr in term_list()
+      if match(term_getstatus(bufnr), 'finished') >= 0
+        let result = add(result, bufnr)
+      endif
+    endfor
+  endif
+  return result
+endfunction
+
 function! s:sh(cmd, opt) abort
-  let opt = {'visual': 0, 'bang': 0,
-        \ 'tty': 0, 'close': 0, 'newwin': 1, 'window': 0,}
-  " -vtcw
+  let opt = {'bang': 0, 'newwin': 1}
+  " -vtwcb
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
+
+  " visual mode (char level)
   let opt.visual = match(opt_string, 'v') >= 0
+
+  " use builtin terminal
   let opt.tty = match(opt_string, 't') >= 0
-  let opt.close = match(opt_string, 'c') >= 0
+
+  " use external terminal
   let opt.window = match(opt_string, 'w') >= 0
 
+  " close terminal after execution
+  let opt.close = match(opt_string, 'c') >= 0
+
+  " focus on current buffer (implies opt.tty)
+  let opt.background = match(opt_string, 'b') >= 0
+
   let opt = extend(opt, a:opt)
+
+  if opt.background
+    let opt.tty = 1
+  endif
+
+  if opt.bang
+    let opt.tty = 1
+  endif
 
   let stdin = 0
   if opt.visual
@@ -200,10 +237,10 @@ function! s:sh(cmd, opt) abort
 
   if opt.tty
     let buf_idx = -1
-    if !empty(opt.bang)
-      let buffers = get(s:, 'sh_buf_cache', [])
+    if opt.bang
+      let term_buffers = s:get_fin_term_buffer()
       let buflist = tabpagebuflist()
-      for buf in buffers
+      for buf in term_buffers
         let buf_idx = index(buflist, buf)
         if buf_idx >= 0
           exe buf_idx + 1 . 'wincmd w'
@@ -214,6 +251,7 @@ function! s:sh(cmd, opt) abort
     if opt.newwin && buf_idx < 0
       execute 'bel' &cmdwinheight . 'split'
     endif
+
     let job_opt = extend(job_opt, {'curwin': 1, 'term_name': l:term_name})
     if opt.close
       let job_opt = extend(job_opt, {'term_finish': 'close'})
@@ -228,11 +266,15 @@ function! s:sh(cmd, opt) abort
     endif
     let job = function(s:term_start)(cmd, job_opt)
     if s:is_nvim
-      startinsert " post comment to fix syntax hl
+      if opt.background
+        " use au to trigger entering insert mode.
+        let b:sh_enter_insert_mode = 1
+      else
+        startinsert " comment to fix hl
+      endif
     endif
-    if !empty(opt.bang)
-      let s:sh_buf_cache = add(get(s:, 'sh_buf_cache', []), bufnr())
-      call filter(s:sh_buf_cache, 'bufexists(v:val)')
+    if opt.background
+      wincmd p
     endif
   else
     " TODO handle non-tty stderr
@@ -250,6 +292,20 @@ function! s:sh(cmd, opt) abort
         \join(getbufline(ch_getbufnr(job, 'out'), 1, '$'), "\n")
         \)
 endfunction
+
+if s:is_nvim
+  augroup sh_insert_mode_patch
+    function! s:insert_mode_patch()
+      if exists('b:sh_enter_insert_mode')
+        unlet b:sh_enter_insert_mode
+        startinsert
+      endif
+    endfunction
+
+    au!
+    au BufEnter term://* call s:insert_mode_patch()
+  augroup END
+endif
 " }}}
 
 " win32: s:sh() helper function; replace :! && :'<,'>! with busybox shell {{{

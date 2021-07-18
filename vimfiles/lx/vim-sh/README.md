@@ -38,6 +38,18 @@ Pass option as follows:
 :Sh -c [cmd]...
 ```
 
+- do not lose focus on current buffer, run in background (implies -t option)
+
+```vim
+:Sh -b [cmd]...
+```
+
+- try to reuse existing builtin tty window (implies -t option)
+
+```vim
+:Sh! [cmd]...
+```
+
 - mix these options: (order does not matter)
 
 ```vim

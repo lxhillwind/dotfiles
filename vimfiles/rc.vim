@@ -53,6 +53,7 @@ if has('vim_starting')
       " NOTE: keymap defined here (terminal [p]aste).
       if &buftype ==# 'terminal'
         setl nonu | setl nornu
+        " vim-jump
         nmap <buffer> <CR> <Plug>(jump_to_file)
         vmap <buffer> <CR> <Plug>(jump_to_file)
       endif
@@ -695,6 +696,15 @@ endfunction
 silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
 " }}}
 
+" switch number / relativenumber {{{
+function! s:switch_nu_rnu() abort
+  " no [0, 1]
+  let presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
+  let idx = index(presents, [&l:nu, &l:rnu])
+  let [&l:nu, &l:rnu] = presents[idx+1]
+endfunction
+" }}}
+
 " keymap {{{
 " terminal <C-Space>
 map <Nul> <C-Space>
@@ -719,8 +729,12 @@ onoremap il :<C-u>normal! ^vg_<CR>
 nnoremap <Leader>y :call <SID>clipboard_copy("")<CR>
 nnoremap <Leader>p :call <SID>clipboard_paste("")<CR>
 
-" filelist buffer
+" filelist buffer; vim-filelist
 nmap <Leader>f <Plug>(filelist_show)
+
+" simple tasks: tasks.vim
+nmap <Leader>r <Plug>(tasks-select)
+vmap <Leader>r <Plug>(tasks-select)
 
 " execute current line
 nnoremap <Leader><CR> :call <SID>execute_lines('n')<CR>
@@ -729,6 +743,9 @@ vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 " terminal escape
 tnoremap <C-Space> <C-\><C-n>
 tnoremap <C-w> <C-w>.
+
+" switch nu / rnu
+nnoremap <silent> <Leader>n :call <SID>switch_nu_rnu()<CR>
 " }}}
 
 " filetype setting {{{
@@ -773,7 +790,7 @@ augroup vimrc_filetype
   au FileType markdown call s:markdown_checkbox() | nnoremap <buffer>
         \ <LocalLeader>c :call <SID>markdown_toggle_task_status()<CR>
 
-  " simple filelist
+  " simple filelist (vim-filelist)
   function! s:filelist_init()
     nmap <buffer> <LocalLeader><CR> <Plug>(filelist_cd)
     nmap <buffer> <CR> <Plug>(filelist_edit)
