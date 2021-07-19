@@ -55,6 +55,8 @@
 " profile inherit:
 " profile `x:y:z` will inherit keys from `x:y`, which inherit keys from `x`;
 " if `x:y:z` is matched, then `x:y`, `x` will be skipped.
+" But '*' defined cmd has higher priority than matched filetype cmd defined in
+" its parents.
 "
 " empty value:
 " set @marker / @workdir / @mode to empty value is like unset them, without
@@ -229,11 +231,19 @@ function! s:check(mode) abort
     endif
     " check &ft
     let [sec, cmd] = s:find_key(config, k, ctx.filetype)
-    if cmd is# 0
-      let [sec, cmd] = s:find_key(config, k, '*')
+    let [sec_glob, cmd_glob] = s:find_key(config, k, '*')
+    if cmd is# 0 && cmd_glob is# 0
+      continue
     endif
     if cmd is# 0
-      continue
+      let cmd = cmd_glob
+    elseif cmd_glob is# 0
+      :
+    else
+      " glob in longer section wins.
+      if len(sec_glob) > len(sec)
+        let cmd = cmd_glob
+      endif
     endif
     " check @workdir
     let [_, workdir] = s:find_key(config, k, '@workdir')
