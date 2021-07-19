@@ -56,6 +56,12 @@
 " profile `x:y:z` will inherit keys from `x:y`, which inherit keys from `x`;
 " if `x:y:z` is matched, then `x:y`, `x` will be skipped.
 "
+" empty value:
+" set @marker / @workdir / @mode to empty value is like unset them, without
+" inheriting from its parent.
+" set @glob / @key to empty value will cause error.
+" set value of &ft key to empty value is like disable cmd for it.
+"
 " INI SPEC:
 " '#' / ';' starts comment (prefix spaces are allowed);
 " section name are inside '[' and ']';
@@ -198,7 +204,7 @@ function! s:check(mode) abort
     endif
     " check key
     let [key_sec, key] = s:find_key(config, k, '@key')
-    if key is# 0
+    if empty(key)
       echoerr '@key not defined! section:' k
       continue
     endif
@@ -213,7 +219,7 @@ function! s:check(mode) abort
     endif
     " check marker
     let [_, marker] = s:find_key(config, k, '@marker')
-    if marker isnot# 0
+    if !empty(marker)
       let project_dir = s:check_marker(ctx.filename, marker)
       if empty(project_dir)
         continue
@@ -235,7 +241,7 @@ function! s:check(mode) abort
       let workdir = project_dir
     elseif workdir == '@buffer'
       let workdir = fnamemodify(ctx.filename, ':p:h')
-    elseif workdir isnot# 0
+    elseif !empty(workdir)
       let workdir = expand(workdir)
     endif
 
@@ -325,6 +331,12 @@ function! s:ui(mode) abort
   endif
   let result = result[tolower(choice)]
   if len(result) > 1
+    redrawstatus
+    let idx = 0
+    for item in result
+      let idx += 1
+      echon idx . ')' "\t" item.cmd "\t" item.section "\n"
+    endfor
     echo "select task by its index (1-based): "
     let choice = nr2char(getchar())
     if choice !~ '[1-9]'
@@ -340,7 +352,7 @@ function! s:ui(mode) abort
   endif
   redrawstatus
   let workdir = get(result, 'workdir', 0)
-  if workdir isnot# 0
+  if !empty(workdir)
     call s:cd_exe(workdir, result.cmd)
   else
     execute result.cmd
