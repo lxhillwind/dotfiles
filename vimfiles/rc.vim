@@ -143,12 +143,6 @@ let g:loaded_zipPlugin = 1
 
 " }}}
 
-" common platform detection
-let s:is_unix = has('unix')
-let s:is_win32 = has('win32')
-let s:has_gui = has('gui_running') || has('mac')
-      \ || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
-
 " various tmpfile {{{
 " copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
 " backup files
@@ -178,6 +172,75 @@ set nobackup
 set noundofile
 " }}}
 
+" colorscheme, term setting {{{
+"  only set colorscheme on start
+if has('vim_starting')
+
+" terminal statusline tweak
+hi! link StatusLineTermNC StatusLineNC
+augroup vimrc_statuslinetermnc
+  au!
+  " colorscheme may not change at startup.
+  au ColorScheme * hi! link StatusLineTermNC StatusLineNC
+augroup END
+
+let s:is_unix = has('unix')
+if !s:is_unix && !has('gui_running')  " win32 cmd
+  set nocursorcolumn
+  color pablo
+elseif (s:is_unix && $TERM ==? 'linux')  " linux tty
+  set bg=dark
+else
+  if !has('gui_running') && exists('&tgc') && $TERM !~ 'xterm'
+    " make tgc work; :help xterm-true-color
+    let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+    let &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+  endif
+  silent! set termguicolors
+  if $BAT_THEME =~? 'light'
+    set bg=light
+  else
+    set bg=dark
+  endif
+  try
+    color base16-dynamic
+  catch
+    if has('gui_running') || exists('&tgc')
+      color desert
+    endif
+  endtry
+endif
+
+if s:is_unix && $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
+  " fix vim start in replace mode;
+  " Refer: https://superuser.com/a/1525060
+  set t_u7=
+endif
+
+endif
+" }}}
+
+" gvimrc {{{
+function! s:gui_init()
+  if !has('vim_starting')
+    return
+  endif
+  set guioptions=
+  set lines=32
+  set columns=128
+endfunction
+
+if has('gui_running')
+  call s:gui_init()
+endif
+" }}}
+
+" common platform detection
+let s:is_unix = has('unix')
+let s:is_win32 = has('win32')
+let s:has_gui = has('gui_running') || has('mac')
+      \ || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
+
 " common func {{{
 " :echoerr will raise exception (?)
 function! s:echoerr(msg)
@@ -197,31 +260,6 @@ function! s:show_output(data, reuse) abort
     endfor
   endif
   norm gg"_dd
-endfunction
-" }}}
-
-" quick edit (with completion); :Ke {shortcut} {{{
-command! -nargs=1 -complete=custom,<SID>complete_edit_map
-      \ Ke call <SID>f_edit_map(<q-args>)
-
-let g:vimrc#edit_map = {
-      \'vim': [$MYVIMRC, '~/.vimrc'],
-      \ }
-
-function! s:f_edit_map(arg) abort
-  let arr = get(g:vimrc#edit_map, a:arg)
-  if empty(arr)
-    call s:echoerr(printf('edit_map: "%s" not found', a:arg)) | return
-  endif
-  if filereadable(expand(arr[-1]))
-    exe 'e' arr[-1]
-  else
-    exe 'e' arr[0]
-  endif
-endfunction
-
-function! s:complete_edit_map(A, L, P)
-  return join(keys(g:vimrc#edit_map), "\n")
 endfunction
 " }}}
 
@@ -604,68 +642,6 @@ function! s:gx(mode) abort
   endfor
   norm gg"_dd
 endfunction
-" }}}
-
-" colorscheme, term setting {{{
-"  only set colorscheme on start
-if has('vim_starting')
-
-" terminal statusline tweak
-hi! link StatusLineTermNC StatusLineNC
-augroup vimrc_statuslinetermnc
-  au!
-  " colorscheme may not change at startup.
-  au ColorScheme * hi! link StatusLineTermNC StatusLineNC
-augroup END
-
-if !s:is_unix && !has('gui_running')  " win32 cmd
-  set nocursorcolumn
-  color pablo
-elseif (s:is_unix && $TERM ==? 'linux')  " linux tty
-  set bg=dark
-else
-  if !has('gui_running') && exists('&tgc') && $TERM !~ 'xterm'
-    " make tgc work; :help xterm-true-color
-    let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
-    let &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
-  endif
-  silent! set termguicolors
-  if $BAT_THEME =~? 'light'
-    set bg=light
-  else
-    set bg=dark
-  endif
-  try
-    color base16-dynamic
-  catch
-    if has('gui_running') || exists('&tgc')
-      color desert
-    endif
-  endtry
-endif
-
-if s:is_unix && $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
-  " fix vim start in replace mode;
-  " Refer: https://superuser.com/a/1525060
-  set t_u7=
-endif
-
-endif
-" }}}
-
-" gvimrc {{{
-function! s:gui_init()
-  if !has('vim_starting')
-    return
-  endif
-  set guioptions=
-  set lines=32
-  set columns=128
-endfunction
-
-if has('gui_running')
-  call s:gui_init()
-endif
 " }}}
 
 " edit selected line / column; :Kjump {{{
