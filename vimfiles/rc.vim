@@ -718,7 +718,9 @@ vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 
 " terminal escape
 tnoremap <C-Space> <C-\><C-n>
-tnoremap <C-w> <C-w>.
+if !has('nvim')
+  tnoremap <C-w> <C-w>.
+endif
 
 " switch nu / rnu
 nnoremap <silent> <Leader>n :call <SID>switch_nu_rnu()<CR>
