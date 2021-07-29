@@ -1,4 +1,4 @@
-if get(g:, 'loaded_vimserver') || has('nvim')
+if get(g:, 'loaded_vimserver')
   finish
 endif
 let g:loaded_vimserver = 1
@@ -7,9 +7,13 @@ if &cp
   set nocp
 endif
 
+" common func and env prepare {{{
+let s:is_nvim = has('nvim')
 let s:is_win32 = has('win32')
 
-" common func and env prepare {{{
+let s:job_start = function(s:is_nvim ? 'jobstart': 'job_start')
+let s:job_stop = function(s:is_nvim ? 'jobstop': 'job_stop')
+
 if s:is_win32
   let s:vimserver_exe = expand('<sfile>:p:h:h') . '\vimserver-helper\vimserver-helper.exe'
   " fallback to vimserver-helper in $PATH
@@ -37,6 +41,10 @@ function! s:cmd_client(id)
 endfunction
 
 function! s:system(cmd, stdin)
+  if s:is_nvim
+    return system(a:cmd, a:stdin)
+  endif
+
   " use job instead of system(), since the latter does not work on Windows.
   let tmpbuf = bufadd('')
   call bufload(tmpbuf)
@@ -54,19 +62,27 @@ function! s:system(cmd, stdin)
 endfunction
 " }}}
 
+function! s:reset_vimserver_env()
+  unlet $VIMSERVER_ID
+  unlet $VIMSERVER_BIN
+  unlet $VIMSERVER_CLIENT_PID
+endfunction
+
 function! vimserver#main() abort
-  if !has('vim_starting')
+  " has('vim_starting') check doesn't work for nvim. bug?
+  if get(s:, 'called_main', 0)
     return
   endif
+  let s:called_main = 1
+
   if !executable(s:vimserver_exe)
     echoerr 'vimserver executable not found!'
     return
   endif
   " gvim always starts a vimserver.
   if has('gui_running')
-    unlet $VIMSERVER_ID
-    unlet $VIMSERVER_BIN
-    unlet $VIMSERVER_CLIENT_PID
+    " unlet env here will execute unconditionally for nvim. bug?
+    call s:reset_vimserver_env()
   endif
   if empty($VIMSERVER_ID)
     call s:server()
@@ -94,7 +110,7 @@ function! s:server_clients_cleaner(...)
   endfor
 endfunction
 
-function! s:server_handler(channel, msg) abort
+function! s:server_handler(channel, msg, ...) abort
   let data = json_decode(a:msg)
 
   " terminal-api
@@ -109,12 +125,21 @@ function! s:server_handler(channel, msg) abort
     " pid SHOULD NOT be trusted!
     let pid = len(data) == 4 ? str2nr(data[3]) : -1
     let buffer = -1
-    for l:i in term_list()
-      if job_info(term_getjob(l:i)).process == pid
-        let buffer = l:i
-        break
-      endif
-    endfor
+    if s:is_nvim
+      for l:i in getbufinfo()
+        if get(l:i.variables, 'terminal_job_pid', 0) == pid
+          let buffer = l:i.bufnr
+          break
+        endif
+      endfor
+    else
+      for l:i in term_list()
+        if job_info(term_getjob(l:i)).process == pid
+          let buffer = l:i
+          break
+        endif
+      endfor
+    endif
     call call(data[1], [buffer, data[2]])
     return
   endif
@@ -148,39 +173,78 @@ endfunction
 
 function! s:server() abort
   let bind_name = tempname()
-  let job = job_start(s:cmd_server(bind_name),
-        \ #{callback: function('s:server_handler')})
+  let job = s:job_start(s:cmd_server(bind_name),
+        \ {(s:is_nvim ? 'on_stdout' : 'callback'):
+        \ function('s:server_handler')})
   let $VIMSERVER_ID = bind_name
   let $VIMSERVER_BIN = s:vimserver_exe
   augroup vimserver_clients_cleaner
     au!
     au WinEnter * call s:server_clients_cleaner()
   augroup END
+  if s:is_nvim
+    let s:vimserver_id = $VIMSERVER_ID
+    let s:vimserver_bin = $VIMSERVER_BIN
+    augroup vimserver_init
+      au!
+      au VimEnter * call s:nvim_env_set()
+    augroup END
+  endif
 endfunction
 
-function! s:client_handler(channel, msg) abort
-  let job = ch_getjob(a:channel)
-  call job_stop(job)
+function! s:client_handler(channel, msg, ...) abort
+  let job = s:is_nvim ? a:channel : ch_getjob(a:channel)
+  call s:job_stop(job)
 endfunction
 
 function! s:client(server_id) abort
   let bind_name = tempname()
-  let job = job_start(s:cmd_server(bind_name),
-        \ #{callback: function('s:client_handler')})
+  let job = s:job_start(s:cmd_server(bind_name),
+        \ {(s:is_nvim ? 'on_stdout' : 'callback'):
+        \ function('s:client_handler')})
   let client = bind_name
+  let l:argv = s:is_nvim ? s:nvim_get_argv() : v:argv
   call s:system(
         \ s:cmd_client(a:server_id),
         \ json_encode({
-        \  'CLIENT_ID': client, 'ARGV': v:argv, 'CWD': getcwd(),
+        \  'CLIENT_ID': client, 'ARGV': l:argv, 'CWD': getcwd(),
         \  'ARGU': argv(),
         \ }) . "\n")
   try
-    while job_status(job) ==# 'run'
-      sleep 1m
-    endwhile
+    if s:is_nvim
+      while jobwait([job], 0)[0] == -1
+        sleep 1m
+      endwhile
+    else
+      while job_status(job) ==# 'run'
+        sleep 1m
+      endwhile
+    endif
   finally
     qall
   endtry
 endfunction
+
+" nvim polyfill {{{
+if !s:is_nvim | finish | endif
+
+function! s:nvim_env_set()
+  let $VIMSERVER_ID = s:vimserver_id
+  let $VIMSERVER_BIN = s:vimserver_bin
+endfunction
+
+function! s:nvim_get_argv() abort
+  let prog_pid = getpid()
+  for l:i in split(system('ps -o pid= -o args='), "\n")
+    let [pid, args] = split(l:i, '\v^\s*\d+\zs\s+\ze')
+    let pid = trim(pid)
+    if pid == string(prog_pid)
+      return split(args, '\v\s+')
+    endif
+  endfor
+  echoerr 'get nvim argv failed!'
+endfunction
+
+" }}}
 
 " vim:fdm=marker
