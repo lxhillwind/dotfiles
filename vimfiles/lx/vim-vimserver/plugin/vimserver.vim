@@ -203,11 +203,10 @@ function! s:client(server_id) abort
         \ {(s:is_nvim ? 'on_stdout' : 'callback'):
         \ function('s:client_handler')})
   let client = bind_name
-  let l:argv = s:is_nvim ? s:nvim_get_argv() : v:argv
   call s:system(
         \ s:cmd_client(a:server_id),
         \ json_encode({
-        \  'CLIENT_ID': client, 'ARGV': l:argv, 'CWD': getcwd(),
+        \  'CLIENT_ID': client, 'ARGV': v:argv, 'CWD': getcwd(),
         \  'ARGU': argv(),
         \ }) . "\n")
   try
@@ -232,19 +231,6 @@ function! s:nvim_env_set()
   let $VIMSERVER_ID = s:vimserver_id
   let $VIMSERVER_BIN = s:vimserver_bin
 endfunction
-
-function! s:nvim_get_argv() abort
-  let prog_pid = getpid()
-  for l:i in split(system('ps -o pid= -o args='), "\n")
-    let [pid, args] = split(l:i, '\v^\s*\d+\zs\s+\ze')
-    let pid = trim(pid)
-    if pid == string(prog_pid)
-      return split(args, '\v\s+')
-    endif
-  endfor
-  echoerr 'get nvim argv failed!'
-endfunction
-
 " }}}
 
 " vim:fdm=marker
