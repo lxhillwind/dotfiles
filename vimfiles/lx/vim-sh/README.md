@@ -69,7 +69,7 @@ NOTE: `:Sh -w -v [cmd]...` will not work!
 
 - `%` with optional modifiers (`:p` / `:h` / `:t` / `:r` / `:e`) is expanded
   only when passed as a standalone argument; and it is shell-escaped (like
-  `:%S` modifier is always used).
+  `:S` modifier is always used).
 
 This means that command like `Sh printf %s %:t:e` will print file basename
 (`%s` is not expanded; `%:t:e` should NOT be quoted, as it is escaped

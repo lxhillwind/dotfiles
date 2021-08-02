@@ -4,7 +4,7 @@
 - inside terminal, open vim buffer in outside vim.
 
 ## Requirement
-- vim 8 (job feature); neovim is NOT supported;
+- vim 8.1.2233+ (job feature) or neovim 0.5.0+; (`v:argv`)
 
 - vimserver-helper binary (*optional*; required for Windows OS; see below for
   installation method);
@@ -29,6 +29,8 @@ call vimserver#main()
 - `vim +sp [filename]...` will split window horizontally.
 - `vim +tabe [filename]...` will open window in new tab.
 
+(replace vim with nvim if using neovim)
+
 If no filename argument is provided, vim will just open a new empty window.
 
 If multiple filename arguments are provided, only the first one will be shown,
@@ -36,6 +38,8 @@ other files can be accessed with `:next` / `:prev` (`:help arglist` for help).
 
 ## vimserver-helper binary
 It should work on all major platforms, including at least Windows, Linux, Mac.
+
+(to produce a binary targeting at Windows XP, Go compiler 1.10- is required.)
 
 ### Installation
 
