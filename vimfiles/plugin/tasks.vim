@@ -47,6 +47,7 @@
 "   '*' matches char sequence longer than 0 (except '/');
 "   '**' matches char sequence with any length (include '/');
 "   '*' standalone matches anything.
+"   use '/' as pathsep even on Windows.
 " @mode: default 'n', skip if not in normal mode; 'v' matches visual mode.
 " @marker: define project_dir; ',' delimited; '/' in it is allowed;
 "   if defined, skip if not match.
@@ -129,8 +130,12 @@ function! s:ctx(mode) abort
     let l:filename = getcwd()
     if !empty(l:filename)
       " add suffix to match glob.
-      let l:filename = l:filename .. (has('win32') ? '\' : '/')
+      let l:filename = l:filename .. '/'
     endif
+  endif
+  if has('win32')
+    " use / as pathsep even on Windows.
+    let l:filename = substitute(l:filename, '\', '/', 'g')
   endif
   let result = #{
         \ filetype: &ft,
