@@ -120,9 +120,13 @@ function! s:open_file(name) abort
   endif
 
   echo printf('[%s] %s not listed.', name, l:is_dir ? 'dir' : 'file')
-  let job_running = has('nvim') ?
-        \ ( jobwait([&channel], 0)[0] == -1 ) :
-        \ ( match(term_getstatus(bufnr()), 'running') >= 0 )
+  if exists('*jobwait')
+    let job_running = ( jobwait([&channel], 0)[0] == -1 )
+  elseif exists('*term_getstatus')
+    let job_running = ( match(term_getstatus(bufnr()), 'running') >= 0 )
+  else
+    let job_running = 0
+  endif
   if job_running
     echo 'open it? [s/v/t/N] '
   else

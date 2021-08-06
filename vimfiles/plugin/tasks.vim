@@ -44,6 +44,9 @@
 " profile special key:
 " @key: required; assign key to this profile (if this profile is used).
 " @glob: required; ',' delimited; if does not match %, then skip this profile.
+"   '*' matches char sequence longer than 0 (except '/');
+"   '**' matches char sequence with any length (include '/');
+"   '*' standalone matches anything.
 " @mode: default 'n', skip if not in normal mode; 'v' matches visual mode.
 " @marker: define project_dir; ',' delimited; '/' in it is allowed;
 "   if defined, skip if not match.
@@ -121,9 +124,17 @@ function! s:parse(lines) abort
 endfunction
 
 function! s:ctx(mode) abort
+  let l:filename = expand('%:p')
+  if empty(l:filename) || &buftype == 'terminal'
+    let l:filename = getcwd()
+    if !empty(l:filename)
+      " add suffix to match glob.
+      let l:filename = l:filename .. (has('win32') ? '\' : '/')
+    endif
+  endif
   let result = #{
         \ filetype: &ft,
-        \ filename: expand('%:p'),
+        \ filename: l:filename,
         \ mode: a:mode,
         \ }
   return result
@@ -136,8 +147,8 @@ function! s:file_matched(path, pattern) abort
   for pattern in split(a:pattern, ',')
     let pattern = substitute(pattern, '\v^\~\ze(/|$)', expand('~'), '')
     let pattern = substitute(pattern, '\v[+=?{@>!<^$.\\]', '\\&', 'g')
-    let pattern = substitute(pattern, '\v\*\*', '.+', 'g')
-    let pattern = substitute(pattern, '\v\*', '[^/]*', 'g')
+    let pattern = substitute(pattern, '\v[^*]\zs\*\ze[^*]', '[^/]*', 'g')
+    let pattern = substitute(pattern, '\v\*\*', '.*', 'g')
     if match(a:path, '\v^' . pattern . '$') >= 0
       return 1
     endif
