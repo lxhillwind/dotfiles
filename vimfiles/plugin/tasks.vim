@@ -45,7 +45,7 @@
 " @key: required; assign key to this profile (if this profile is used).
 " @glob: required; ',' delimited; if does not match %, then skip this profile.
 "   '*' matches char sequence longer than 0 (except '/');
-"   '**' matches char sequence with any length (include '/');
+"   '**' behaves like in gitignore;
 "   '*' standalone matches anything.
 "   use '/' as pathsep even on Windows.
 " @mode: default 'n', skip if not in normal mode; 'v' matches visual mode.
@@ -152,8 +152,15 @@ function! s:file_matched(path, pattern) abort
   for pattern in split(a:pattern, ',')
     let pattern = substitute(pattern, '\v^\~\ze(/|$)', expand('~'), '')
     let pattern = substitute(pattern, '\v[+=?{@>!<^$.\\]', '\\&', 'g')
+
+    " '*'
     let pattern = substitute(pattern, '\v[^*]\zs\*\ze[^*]', '[^/]*', 'g')
-    let pattern = substitute(pattern, '\v\*\*', '.*', 'g')
+
+    " gitignore like '**'
+    let pattern = substitute(pattern, '\v/\*\*/', '/(|.*/)', 'g')
+    let pattern = substitute(pattern, '\v^\*\*/', '.*/', 'g')
+    let pattern = substitute(pattern, '\v/\*\*$', '/.*', 'g')
+
     if match(a:path, '\v^' . pattern . '$') >= 0
       return 1
     endif
