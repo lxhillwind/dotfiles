@@ -51,3 +51,10 @@ Directory will NOT be created.
 filelist path priority:
 
 `g:filelist_path` -> `&viminfofile` dir -> [cache/](cache/) in repo dir.
+
+## impl
+
+When filelist contains too many records (`>=10000`), every record's count will
+be multiplied by 0.1, then record with count less than 1 will be throw away.
+
+In this way, the filelist will be shrunk quickly.

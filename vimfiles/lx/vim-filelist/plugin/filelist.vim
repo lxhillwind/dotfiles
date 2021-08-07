@@ -104,15 +104,26 @@ function! s:save_filelist() abort
     let result[current] = 0
   endif
   let result[current] += 1
+
+  " shrink list if too long.
+  if len(result) >= 10000
+    let l:fact = 0.1
+  else
+    let l:fact = 1
+  endif
+
   let f_list = []
   for [name, n] in items(result)
-    let f_list = add(f_list, [n, name])
+    let l:count = float2nr(n * l:fact)
+    if l:count > 0
+      let f_list = add(f_list, [l:count, name])
+    endif
   endfor
   " `{a, b -> a[0] < b[0]}` is not correct! `:help sort()` for details
   let f_list = sort(f_list, {a, b -> a[0] < b[0] ? 1 : -1})
   let f_list = map(f_list, 'json_encode(v:val)')
   " file record limit
-  call writefile(f_list[:10000], s:filelist_path())
+  call writefile(f_list, s:filelist_path())
 endfunction
 " }}}
 
