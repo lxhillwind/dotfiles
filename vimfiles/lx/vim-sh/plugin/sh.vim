@@ -276,21 +276,25 @@ function! s:sh(cmd, opt) abort
     if opt.background
       wincmd p
     endif
-  else
-    " TODO handle non-tty stderr
-    let job_opt = extend(job_opt, {'out_io': 'buffer', 'out_msg': 0})
-    let job = job_start(cmd, job_opt)
-  endif
-  if opt.tty
+
     return job
   endif
+
+  " no tty
+  let bufnr = bufadd('')
+  call bufload(bufnr)
+  let job_opt = extend(job_opt, {
+        \'out_io': 'buffer', 'out_msg': 0, 'out_buf': bufnr,
+        \'err_io': 'buffer', 'err_msg': 0, 'err_buf': bufnr,
+        \})
+  let job = job_start(cmd, job_opt)
 
   while job_status(job) ==# 'run'
     sleep 1m
   endwhile
-  return s:echo(
-        \join(getbufline(ch_getbufnr(job, 'out'), 1, '$'), "\n")
-        \)
+  let result = join(getbufline(bufnr, 1, '$'), "\n")
+  execute bufnr . 'bwipeout!'
+  return s:echo(result)
 endfunction
 
 if s:is_nvim
