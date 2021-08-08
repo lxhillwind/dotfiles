@@ -370,6 +370,12 @@ function! s:shell_replace()
 
   if match(cmd, '\v^!') >= 0
     let cmd = 'Sh ' . cmd[1:]
+  elseif match(cmd, '\v^(r|re|rea|read) !') >= 0
+    let idx = matchend(cmd, '\v^(r|re|rea|read) !')
+    let cmd = printf('put =execute(\"%s\")',
+          \ escape(
+          \   escape('Sh ' . cmd[idx:], '"\'),
+          \ '|"'))
   else
     " /{pattern}[/] and ?{pattern}[?] are not matched since they are too
     " complex.
