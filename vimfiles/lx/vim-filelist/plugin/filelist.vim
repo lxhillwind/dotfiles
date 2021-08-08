@@ -51,7 +51,9 @@ function! s:choose_filelist() abort
   call append(0, '')
   let doc_pattern = map(globpath(&rtp, 'doc', 0, 1),
         \ 'glob2regpat(resolve(v:val) . "/*.txt")')
-  call append(0, filter(copy(v:oldfiles), '!s:match_any(doc_pattern, v:val)'))
+  call append(0, filter(
+        \ map(copy(v:oldfiles), 's:filename_tweak(v:val)'),
+        \   '!s:match_any(doc_pattern, v:val)'))
   norm gg
 endfunction
 
@@ -63,6 +65,11 @@ let s:filelist_path_default =
       \   ( expand('<sfile>:p:h:h') . '/cache' ) :
       \   fnamemodify(&viminfofile, ':h') )
       \ . '/filelist_path.cache'
+
+let s:is_win32 = has('win32')
+function! s:filename_tweak(filename) abort
+  return s:is_win32 ? substitute(a:filename, '\', '/', 'g') : a:filename
+endfunction
 
 function! s:load_filelist()
   try
@@ -79,6 +86,7 @@ function! s:load_filelist()
       " json decode err
       continue
     endtry
+    let record = [record[0], s:filename_tweak(record[1])]
     let result = add(result, record)
   endfor
   return result
