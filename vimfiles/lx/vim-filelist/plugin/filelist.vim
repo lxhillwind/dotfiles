@@ -103,7 +103,7 @@ function! s:save_filelist() abort
     return
   endif
 
-  let current = expand('%:p')
+  let current = s:filename_tweak(expand('%:p'))
   let result = {}
   for i in s:load_filelist()
     let result[i[1]] = i[0]
