@@ -319,10 +319,12 @@ command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <
 
 let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
 function! s:win32_cmd_list(A, L, P)
-  if !get(s:, 'win32_cmd_list_data', 0)
-    let s:win32_cmd_list_data = join(readfile(s:busybox_cmdlist), "\n")
+  if empty(get(s:, 'win32_cmd_list_data', 0))
+    let s:win32_cmd_list_data = readfile(s:busybox_cmdlist)
   endif
-  return s:win32_cmd_list_data
+  let exe = globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
+  call map(exe, 'substitute(v:val, ".*\\", "", "")')
+  return join(sort(extend(exe, s:win32_cmd_list_data)), "\n")
 endfunction
 
 let s:shell_opt_cmd = {
