@@ -10,8 +10,8 @@
 " [run]
 " # press r to trigger this task
 " @key = r
-" # match all files.
-" @glob = *
+" # match all files, but not directory.
+" @glob = *,!**/
 " # execute ex cmd '!python %:S' if &ft is python
 " python = !python %:S
 "
@@ -22,6 +22,12 @@
 " @workdir = @project
 " # execute '!cargo run' for any file in this directory (and nested sub directory).
 " * = !cargo run
+"
+" [run:rust:disable]
+" @glob = /a/special/dir
+" # this profile will overwrite run:rust, so excmd defined here is used;
+" # but since it is empty, it is not shown finally.
+" rust =
 "
 " [cat:selection]
 " @key = c
@@ -44,9 +50,10 @@
 " profile special key:
 " @key: required; assign key to this profile (if this profile is used).
 " @glob: required; ',' delimited; if does not match %, then skip this profile.
-"   '*' matches char sequence longer than 0 (except '/');
+"   '*' matches any char sequence (excludes '/');
 "   '**' behaves like in gitignore;
-"   '*' standalone matches anything.
+"   '*' standalone matches anything;
+"   if any pattern starting with '!' matches, then skip this profile.
 "   use '/' as pathsep even on Windows.
 " @mode: default 'n', skip if not in normal mode; 'v' matches visual mode.
 " @marker: define project_dir; ',' delimited; '/' in it is allowed;
@@ -126,7 +133,7 @@ endfunction
 
 function! s:ctx(mode) abort
   let l:filename = expand('%:p')
-  if empty(l:filename) || &buftype == 'terminal'
+  if empty(l:filename) || index(['terminal', 'nofile'], &buftype) >= 0
     let l:filename = getcwd()
     if !empty(l:filename)
       " add suffix to match glob.
@@ -146,26 +153,37 @@ function! s:ctx(mode) abort
 endfunction
 
 function! s:file_matched(path, pattern) abort
-  if a:pattern == '*'
-    return 1
-  endif
+  let matched = 0
   for pattern in split(a:pattern, ',')
-    let pattern = substitute(pattern, '\v^\~\ze(/|$)', expand('~'), '')
-    let pattern = substitute(pattern, '\v[+=?{@>!<^$.\\]', '\\&', 'g')
+    if pattern[0] == '!'
+      let reverse = 1
+      let pattern = pattern[1:]
+    else
+      let reverse = 0
+    endif
 
-    " '*'
-    let pattern = substitute(pattern, '\v[^*]\zs\*\ze[^*]', '[^/]*', 'g')
+    if pattern != '*'
+      " expand ~
+      let pattern = substitute(pattern, '\v^\~\ze(/|$)', expand('~'), '')
+      " escape special char
+      let pattern = substitute(pattern, '\v[+=?{@>!<^$.\\]', '\\&', 'g')
+      " '*'
+      let pattern = substitute(pattern, '\v[^*]\zs\*\ze[^*]', '[^/]*', 'g')
+      " gitignore like '**'
+      let pattern = substitute(pattern, '\v/\*\*/', '/(|.*/)', 'g')
+      let pattern = substitute(pattern, '\v^\*\*/', '.*/', 'g')
+      let pattern = substitute(pattern, '\v/\*\*$', '/.*', 'g')
+    endif
 
-    " gitignore like '**'
-    let pattern = substitute(pattern, '\v/\*\*/', '/(|.*/)', 'g')
-    let pattern = substitute(pattern, '\v^\*\*/', '.*/', 'g')
-    let pattern = substitute(pattern, '\v/\*\*$', '/.*', 'g')
-
-    if match(a:path, '\v^' . pattern . '$') >= 0
-      return 1
+    if pattern == '*' || match(a:path, '\v^' . pattern . '$') >= 0
+      if reverse
+        return 0
+      else
+        let matched = 1
+      endif
     endif
   endfor
-  return 0
+  return matched
 endfunction
 
 function! s:check_marker(path, marker) abort
