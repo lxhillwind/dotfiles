@@ -78,7 +78,7 @@
 " INI SPEC:
 " '#' / ';' starts comment (prefix spaces are allowed);
 " section name are inside '[' and ']';
-" key / value is delimited by the first ':' or '=' character;
+" key / value is delimited by the first '=' character;
 " key_without_value is NOT allowed; use `key =` instead.
 
 function! s:raise(msg, line) abort
@@ -115,9 +115,9 @@ function! s:parse(lines) abort
     if empty(l:section)
       call s:raise('find line before section:', l:i)
     endif
-    " k / v is delimited using '=' or ';';
+    " k / v is delimited using '=';
     " spaces around the delimiter is ignored.
-    let p_kv = matchlist(l:line, '\v^([^:=]{-})\s*[:=]\s*(.*)$')
+    let p_kv = matchlist(l:line, '\v^([^=]{-})\s*[=]\s*(.*)$')
     if !len(p_kv) || !len(p_kv[1])
       call s:raise('parse "k = v" error at line:', l:i)
     endif
