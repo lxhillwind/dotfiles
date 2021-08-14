@@ -22,11 +22,11 @@ index = '''
 <!DOCTYPE html>
 <html>
 <head>
-<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 </head>
 <body>
 <textarea readonly rows=32 cols=128 id='main' v-model='content' v-on:input='text'>{{ content }}</textarea>
 {% raw %}
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script>
 fetch('/api').then(s => s.json()).then(s => {
     let el = document.querySelector('#main');
