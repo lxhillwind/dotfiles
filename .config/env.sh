@@ -21,6 +21,11 @@
 export EDITOR=vim
 
 case "$PATH" in
+    /usr/bin:*|*:/usr/bin:*) ;;
+    *) export PATH=/usr/bin:$PATH ;;
+esac
+
+case "$PATH" in
     ~/bin:*|*:~/bin:*) ;;
     *) export PATH=~/bin:$PATH ;;
 esac
@@ -42,6 +47,12 @@ if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ] && { \
     [ -x "$VIMSERVER_BIN" ] || command -v "$VIMSERVER_BIN" >/dev/null; }; then
     if [ -z "$VIMSERVER_CLIENT_PID" ]; then
         export VIMSERVER_CLIENT_PID=$$
+
+        # msys2: get WINPID from ps output.
+        # `/` will be translated to `C:/msys64` correctly, don't know why.
+        if [ -f /msys2.exe ]; then
+            export VIMSERVER_CLIENT_PID=$(ps -p $$ | awk '{ print $4 }' | tail -n 1)
+        fi
     fi
     vimserver()
     {
