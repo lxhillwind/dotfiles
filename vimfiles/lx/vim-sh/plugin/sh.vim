@@ -170,8 +170,8 @@ function! s:sh(cmd, opt) abort
 
   if !opt.tty && !opt.window && (s:is_unix || s:is_nvim)
     if s:is_win32
-      let shell = s:shell_opt_sh.shell
-      let shellcmdflag = s:shell_opt_sh.shellcmdflag
+      let shell = s:shell_opt_sh().shell
+      let shellcmdflag = s:shell_opt_sh().shellcmdflag
       let cmd = s:win32_quote(cmd)
       let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
       let cmd = s:win32_cmd_exe_quote(cmd)
@@ -204,8 +204,8 @@ function! s:sh(cmd, opt) abort
       endif
     endif
   else
-    let shell = s:shell_opt_sh.shell
-    let shellcmdflag = s:shell_opt_sh.shellcmdflag
+    let shell = s:shell_opt_sh().shell
+    let shellcmdflag = s:shell_opt_sh().shellcmdflag
     if empty(cmd)
       let cmd = shell
     else
@@ -326,12 +326,13 @@ command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <
 
 let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
 function! s:win32_cmd_list(A, L, P)
+  let using_busybox = match(s:shell_opt_sh().shell, 'busybox') >= 0
   if empty(get(s:, 'win32_cmd_list_data', 0))
     let s:win32_cmd_list_data = readfile(s:busybox_cmdlist)
   endif
   let exe = globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
   call map(exe, 'substitute(v:val, ".*\\", "", "")')
-  return join(sort(extend(exe, s:win32_cmd_list_data)), "\n")
+  return join(sort(extend(exe, using_busybox ? s:win32_cmd_list_data: [])), "\n")
 endfunction
 
 let s:shell_opt_cmd = {
@@ -340,11 +341,13 @@ let s:shell_opt_cmd = {
       \ 'shellquote': '',
       \ }
 
-let s:shell_opt_sh = {
-      \ 'shell': 'busybox sh',
-      \ 'shellcmdflag': '-c',
-      \ 'shellquote': '',
-      \ }
+function! s:shell_opt_sh() abort
+  return {
+        \ 'shell': get(g:, 'win32_unix_sh_path', 'busybox sh'),
+        \ 'shellcmdflag': '-c',
+        \ 'shellquote': '',
+        \ }
+endfunction
 
 " win32 vim from unix shell will set &shell incorrectly, so restore it
 if s:is_win32 && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0

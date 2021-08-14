@@ -77,8 +77,17 @@ automatically).
 
 ### unix shell support in native Windows vim (`has('win32') == 1`)
 
-This requires [busybox-w32](https://frippery.org/busybox/) binary in `$PATH`.
+By default, this requires [busybox-w32](https://frippery.org/busybox/) binary
+in `$PATH`.
 
-- `:terminal ++shell` with busybox shell syntax.
+You can also use other shell by setting variable `g:win32_unix_sh_path`. (take
+effect at runtime)
 
-- Replace `:!` and `!` (filter) with busybox sh (by `cmap <CR>`).
+```vim
+" msys2 shell default path (x64)
+let g:win32_unix_sh_path = 'C:/msys64/usr/bin/bash.exe'
+```
+
+- `:terminal ++shell` with unix shell syntax.
+
+- Replace `:!` and `!` (filter) with unix shell (by `cmap <CR>`).
