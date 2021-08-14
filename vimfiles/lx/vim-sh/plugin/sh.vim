@@ -206,28 +206,74 @@ function! s:sh(cmd, opt) abort
   else
     let shell = s:shell_opt_sh().shell
     let shellcmdflag = s:shell_opt_sh().shellcmdflag
-    if empty(cmd)
-      let cmd = shell
+
+    " add /bin, /usr/bin to $PATH if necessary.
+    let env_patch = {}
+    if match($PATH, '\v([;:]|^)/usr/bin/?([;:]|$)') < 0
+      let env_patch['PATH'] = $PATH . ';' . '/usr/bin'
+    endif
+    if match($PATH, '\v([;:]|^)/bin/?([;:]|$)') < 0
+      let env_patch['PATH'] = $PATH . ';' . '/bin'
+    endif
+
+    let using_mintty = 0
+    if opt.window
+      let mintty_path = substitute(shell, '\v([\/]|^)\zs(zsh|bash)\ze(\.exe|"?$)', 'mintty', '')
+      let using_mintty = ( match(mintty_path, 'mintty') >= 0 && executable(mintty_path) )
+    endif
+
+    if using_mintty
+      if !empty(cmd)
+        let cmd = printf("sh -c %s", s:shellescape(cmd))
+        if !empty(tmpfile)
+          let cmd = printf("%s < %s", cmd, s:shellescape(substitute(tmpfile, '\', '/', 'g')))
+        endif
+        let cmd = s:win32_quote(cmd)
+      endif
+      let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
+
+      " TODO verify neovim
+      if s:is_nvim
+        " not termopen
+        call jobstart([mintty_path] + (opt.close ? [] : [keep_window_path])
+              \ + [shell, shellcmdflag, cmd], {'env': env_patch})
+        " return early
+        return
+      endif
     else
-      let cmd = s:win32_quote(cmd)
-      let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
-      if !opt.window && !empty(tmpfile)
-        let cmd = s:win32_cmd_exe_quote(cmd)
-        let cmd = printf('cmd /c %s < %s', cmd, shellescape(tmpfile))
+      if empty(cmd)
+        let cmd = shell
+      else
+        let cmd = s:win32_quote(cmd)
+        let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
+        if !opt.window && !empty(tmpfile)
+          let cmd = s:win32_cmd_exe_quote(cmd)
+          let cmd = printf('cmd /c %s < %s', cmd, shellescape(tmpfile))
+        endif
       endif
     endif
   endif
 
   if opt.window
     if s:is_win32
-      let cmd = s:win32_cmd_exe_quote(cmd)
-      let suffix = opt.close ? '' : ' & pause'
-      if empty(tmpfile)
-        let cmd = printf('cmd /c %s%s', cmd, suffix)
+      if using_mintty
+        call term_start(printf('%s %s %s',
+              \ s:win32_quote(mintty_path),
+              \ opt.close ? '' : s:win32_quote(keep_window_path),
+              \ empty(cmd) ? shell : printf('%s %s %s', shell, shellcmdflag, cmd)
+              \ ),
+              \ {'hidden': 1, 'env': env_patch}
+              \ )
       else
-        let cmd = printf('cmd /c %s < %s%s', cmd, shellescape(tmpfile), suffix)
+        let cmd = s:win32_cmd_exe_quote(cmd)
+        let suffix = opt.close ? '' : ' & pause'
+        if empty(tmpfile)
+          let cmd = printf('cmd /c %s%s', cmd, suffix)
+        else
+          let cmd = printf('cmd /c %s < %s%s', cmd, shellescape(tmpfile), suffix)
+        endif
+        silent execute '!start' cmd
       endif
-      silent execute '!start' cmd
     elseif executable('urxvt')
       let cmd = opt.close ? cmd :
             \ [fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'] + cmd
@@ -294,6 +340,9 @@ function! s:sh(cmd, opt) abort
         \'out_io': 'buffer', 'out_msg': 0, 'out_buf': bufnr,
         \'err_io': 'buffer', 'err_msg': 0, 'err_buf': bufnr,
         \})
+  if s:is_win32
+    let job_opt = extend(job_opt, {'env': env_patch})
+  endif
   let job = job_start(cmd, job_opt)
 
   while job_status(job) ==# 'run'
@@ -323,6 +372,10 @@ endif
 if !s:is_win32 | finish | endif
 cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
 command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
+
+function! s:shellescape(cmd) abort
+  return "'" . substitute(a:cmd, "'", "'\"'\"'", 'g') . "'"
+endfunction
 
 let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
 function! s:win32_cmd_list(A, L, P)

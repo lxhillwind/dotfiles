@@ -56,9 +56,9 @@ if has('vim_starting')
         " vim-jump
         nmap <buffer> <CR> <Plug>(jump_to_file)
         vmap <buffer> <CR> <Plug>(jump_to_file)
+        nnoremap <buffer> p :<C-u>call <SID>terminal_paste()<CR>
+        nnoremap <buffer> P :<C-u>call <SID>terminal_paste()<CR>
       endif
-      nnoremap <buffer> p :<C-u>call <SID>terminal_paste()<CR>
-      nnoremap <buffer> P :<C-u>call <SID>terminal_paste()<CR>
     endfunction
     if exists('##TerminalOpen')
       au TerminalOpen * call s:terminal_init()
