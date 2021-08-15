@@ -379,13 +379,14 @@ endfunction
 
 let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
 function! s:win32_cmd_list(A, L, P)
-  let using_busybox = match(s:shell_opt_sh().shell, 'busybox') >= 0
+  " use busybox cmd list even when the shell is not busybox,
+  " since $PATH may not contain /usr/bin before invoking shell.
   if empty(get(s:, 'win32_cmd_list_data', 0))
     let s:win32_cmd_list_data = readfile(s:busybox_cmdlist)
   endif
   let exe = globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
   call map(exe, 'substitute(v:val, ".*\\", "", "")')
-  return join(sort(extend(exe, using_busybox ? s:win32_cmd_list_data: [])), "\n")
+  return join(sort(extend(exe, s:win32_cmd_list_data)), "\n")
 endfunction
 
 let s:shell_opt_cmd = {
