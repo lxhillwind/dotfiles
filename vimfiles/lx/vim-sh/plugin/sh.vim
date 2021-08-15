@@ -222,7 +222,7 @@ function! s:sh(cmd, opt) abort
       let using_mintty = ( match(mintty_path, 'mintty') >= 0 && executable(mintty_path) )
     endif
 
-    if using_mintty
+    if using_mintty || !opt.window
       if !empty(cmd)
         let cmd = printf("sh -c %s", s:shellescape(cmd))
         if !empty(tmpfile)
@@ -233,23 +233,30 @@ function! s:sh(cmd, opt) abort
       let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
 
       " TODO verify neovim
-      if s:is_nvim
+      if using_mintty && s:is_nvim
         " not termopen
         call jobstart([mintty_path] + (opt.close ? [] : [keep_window_path])
               \ + [shell, shellcmdflag, cmd], {'env': env_patch})
         " return early
         return
       endif
+
+      if !using_mintty
+        if executable(shell)
+          let shell = s:win32_quote(shell)
+        endif
+        let cmd = empty(cmd) ? shell : printf('%s %s %s', shell, shellcmdflag, cmd)
+      endif
     else
+      " git sh / msys2 sh: quote it; busybox sh: unchange.
+      if executable(shell)
+        let shell = s:win32_quote(shell)
+      endif
       if empty(cmd)
         let cmd = shell
       else
         let cmd = s:win32_quote(cmd)
         let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
-        if !opt.window && !empty(tmpfile)
-          let cmd = s:win32_cmd_exe_quote(cmd)
-          let cmd = printf('cmd /c %s < %s', cmd, shellescape(tmpfile))
-        endif
       endif
     endif
   endif
@@ -257,6 +264,9 @@ function! s:sh(cmd, opt) abort
   if opt.window
     if s:is_win32
       if using_mintty
+        if executable(shell)
+          let shell = s:win32_quote(shell)
+        endif
         call term_start(printf('%s %s %s',
               \ s:win32_quote(mintty_path),
               \ opt.close ? '' : s:win32_quote(keep_window_path),
