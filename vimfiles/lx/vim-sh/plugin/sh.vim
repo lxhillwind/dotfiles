@@ -222,65 +222,43 @@ function! s:sh(cmd, opt) abort
       let using_mintty = ( match(mintty_path, 'mintty') >= 0 && executable(mintty_path) )
     endif
 
-    if using_mintty || !opt.window
-      if !empty(cmd)
-        let cmd = printf("sh -c %s", s:shellescape(cmd))
-        if !empty(tmpfile)
-          let cmd = printf("%s < %s", cmd, s:shellescape(substitute(tmpfile, '\', '/', 'g')))
-        endif
-        let cmd = s:win32_quote(cmd)
+    if !empty(cmd)
+      let cmd = printf("sh -c %s", s:shellescape(cmd))
+      if !empty(tmpfile)
+        let cmd = printf("%s < %s", cmd, s:shellescape(substitute(tmpfile, '\', '/', 'g')))
       endif
-      let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
-
-      " TODO verify neovim
-      if using_mintty && s:is_nvim
-        " not termopen
-        call jobstart([mintty_path] + (opt.close ? [] : [keep_window_path])
-              \ + [shell, shellcmdflag, cmd], {'env': env_patch})
-        " return early
-        return
-      endif
-
-      if !using_mintty
-        if executable(shell)
-          let shell = s:win32_quote(shell)
-        endif
-        let cmd = empty(cmd) ? shell : printf('%s %s %s', shell, shellcmdflag, cmd)
-      endif
-    else
-      " git sh / msys2 sh: quote it; busybox sh: unchange.
-      if executable(shell)
-        let shell = s:win32_quote(shell)
-      endif
-      if empty(cmd)
-        let cmd = shell
-      else
-        let cmd = s:win32_quote(cmd)
-        let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
-      endif
+      let cmd = s:win32_quote(cmd)
     endif
+    let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
+
+    " TODO verify neovim
+    if using_mintty && s:is_nvim
+      " not termopen
+      call jobstart([mintty_path] + (opt.close ? [] : [keep_window_path])
+            \ + [shell, shellcmdflag, cmd], {'env': env_patch})
+      " return early
+      return
+    endif
+
+    if executable(shell)
+      let shell = s:win32_quote(shell)
+    endif
+    let cmd = empty(cmd) ? shell : printf('%s %s %s', shell, shellcmdflag, cmd)
   endif
 
   if opt.window
     if s:is_win32
       if using_mintty
-        if executable(shell)
-          let shell = s:win32_quote(shell)
-        endif
         call term_start(printf('%s %s %s',
               \ s:win32_quote(mintty_path),
               \ opt.close ? '' : s:win32_quote(keep_window_path),
-              \ empty(cmd) ? shell : printf('%s %s %s', shell, shellcmdflag, cmd)
+              \ cmd
               \ ),
               \ {'hidden': 1, 'env': env_patch}
               \ )
       else
-        let cmd = s:win32_cmd_exe_quote(cmd)
-        let suffix = opt.close ? '' : ' & pause'
-        if empty(tmpfile)
-          let cmd = printf('cmd /c %s%s', cmd, suffix)
-        else
-          let cmd = printf('cmd /c %s < %s%s', cmd, shellescape(tmpfile), suffix)
+        if !opt.close
+          let cmd = printf('%s %s %s', shell, s:win32_quote(keep_window_path), cmd)
         endif
         silent execute '!start' cmd
       endif
@@ -443,6 +421,11 @@ endfunction
 
 function! s:shell_replace()
   let cmd = getcmdline()
+
+  if getcmdtype() != ':'
+    return cmd
+  endif
+
   if match(cmd, '\v^\s+') >= 0
     " keep if begin with space
     return cmd
