@@ -44,6 +44,8 @@
 "
 " section: defines a profile.
 "
+" section can be re-defined.
+"
 " profile: key is &ft, value is corresponding ex cmd to execute; empty value
 " will be ignored; key '*' will match all other filetype.
 "
@@ -86,7 +88,7 @@ function! s:raise(msg, line) abort
 endfunction
 
 function! s:parse(lines) abort
-  let result = {}
+  let result = []
 
   let l:section = ''
   let l:kv = {}
@@ -102,13 +104,10 @@ function! s:parse(lines) abort
     if len(p_section) && len(p_section[1])
       " store last section
       if !empty(l:section)
-        let result[l:section] = l:kv
+        let result = add(result, [l:section, l:kv])
       endif
 
       let l:section = p_section[1]
-      if has_key(result, l:section)
-        call s:raise('found duplicate section:', l:i)
-      endif
       let l:kv = {}
       continue
     endif
@@ -125,7 +124,7 @@ function! s:parse(lines) abort
   endfor
 
   if !empty(l:section)
-    let result[l:section] = l:kv
+    let result = add(result, [l:section, l:kv])
   endif
 
   return result
@@ -208,7 +207,7 @@ let s:config_paths = get(g:, 'tasks_config_paths',
       \ [fnamemodify(s:file, ':p:h') . '/tasks.ini'])
 
 function! s:read_config() abort
-  let result = {}
+  let result = []
   for item in s:config_paths
     let result = extend(result, s:parse(readfile(expand(item))))
   endfor
@@ -235,8 +234,13 @@ endfunction
 function! s:check(mode) abort
   let result = {}
   let ctx = s:ctx(a:mode)
-  let config = s:read_config()
-  for [k, v] in items(config)
+  let config_list = s:read_config()
+  let config = {}
+  for [k, v] in config_list
+    let config[k] = v
+  endfor
+
+  for [k, v] in config_list
     " check mode
     let [_, mode] = s:find_key(config, k, '@mode')
     if empty(mode)
@@ -372,7 +376,7 @@ function! s:ui(mode) abort
   endif
   for [key, list] in items(result)
     for item in list
-      echo key "\t" item.cmd "\t" item.section
+      echo key "\t" item.section "\t" item.cmd
     endfor
   endfor
   echo "select task by its key: "
@@ -386,7 +390,7 @@ function! s:ui(mode) abort
     let idx = 0
     for item in result
       let idx += 1
-      echon idx . ')' "\t" item.cmd "\t" item.section "\n"
+      echon idx . ')' "\t" item.section "\t" item.cmd "\n"
     endfor
     echo "select task by its index (1-based): "
     let choice = nr2char(getchar())
