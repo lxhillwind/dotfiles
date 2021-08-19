@@ -9,6 +9,11 @@ if str2float(windowsversion()) >= 6
   if !executable('ssh')
     let $PATH = expand('<sfile>:p:h') . '/extern/MinGit/usr/bin' . ';' . $PATH
   endif
+  let s:i = expand('<sfile>:p:h') . '/extern/msys-i686/usr/bin/zsh'
+  if executable(s:i)
+    let g:win32_unix_sh_path = s:i
+    let $PATH = $VIMRUNTIME . ';/usr/bin;/bin;' . $PATH
+  endif
 endif
 
 for s:i in [

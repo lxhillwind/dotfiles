@@ -1,3 +1,9 @@
+## zsh (grep, coreutils, findutils, ...)
+- <https://packages.msys2.org/base/zsh>: find all of zsh's dependencies
+  recursively, and download / extract them (i686 variant for 32-bit system).
+- cp zsh.exe sh.exe (so /bin/sh is provided, and bash is not required)
+- create an archive of `/etc` / `/usr`, if desired.
+
 ## vim
 [\_vimrc](_vimrc) should be put in vim/ directory (same level with vim82).
 
@@ -11,6 +17,8 @@ vim/home/vimfiles/
 vim/extern/
 vim/extern/MinGit/
 vim/extern/MinGit/cmd/git.exe
+vim/extern/msys-i686/
+vim/extern/msys-i686/usr/bin/zsh.exe
 vim/extern/bin/
 vim/extern/bin/busybox.exe
 vim/extern/bin/less.exe
