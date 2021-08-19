@@ -232,6 +232,7 @@ function! s:find_key(cfg, section, key) abort
 endfunction
 
 function! s:check(mode) abort
+  let order = []
   let result = {}
   let ctx = s:ctx(a:mode)
   let config_list = s:read_config()
@@ -318,6 +319,9 @@ function! s:check(mode) abort
     if used
       continue
     endif
+    if index(order, key) < 0
+      let order = add(order, key)
+    endif
     let result[key] = add(new_list, #{
           \ origin: key_sec, section: k, cmd: cmd,
           \ workdir: workdir})
@@ -331,7 +335,7 @@ function! s:check(mode) abort
       let filtered[key] = list
     endif
   endfor
-  return filtered
+  return [order, filtered]
 endfunction
 
 " execute cmd with different dir {{{
@@ -370,12 +374,12 @@ augroup END
 " }}}
 
 function! s:ui(mode) abort
-  let result = s:check(a:mode)
+  let [order, result] = s:check(a:mode)
   if empty(result)
     redrawstatus | echon 'task not found.' | return
   endif
-  for [key, list] in items(result)
-    for item in list
+  for key in order
+    for item in get(result, key, [])
       echo key "\t" item.section "\t" item.cmd
     endfor
   endfor
