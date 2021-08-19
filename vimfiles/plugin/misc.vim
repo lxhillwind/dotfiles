@@ -1,5 +1,56 @@
 " vim:fdm=marker
 
+" snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{
+command -nargs=? -complete=filetype Scratch call <SID>scratch(<q-args>)
+command! -nargs=? -complete=filetype
+      \ ScratchNew call <SID>snippet_in_new_window(<q-args>)
+
+function! s:scratch(ft) abort
+  enew | setl buftype=nofile noswapfile bufhidden=hide
+  if !empty(a:ft)
+    exe 'setl ft=' . a:ft
+  endif
+endfunction
+
+function! s:snippet_in_new_window(ft) abort
+  exe printf('bel %dnew', &cwh)
+  setl buftype=nofile noswapfile
+  setl bufhidden=hide
+  if !empty(a:ft)
+    exe 'setl ft=' . a:ft
+  endif
+endfunction
+" }}}
+
+" run vim command; :KvimRun {vim_command}... {{{
+command! -bang -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>, <bang>0)
+
+function! s:vim_run(args, reuse) abort
+  call s:show_output(execute(a:args), a:reuse)
+endfunction
+" }}}
+
+" vim expr; :KvimExpr {vim_expr}... {{{
+command! -bang -nargs=+ -complete=expression KvimExpr call <SID>vim_expr(<q-args>, <bang>0)
+
+function! s:vim_expr(args, reuse) abort
+  call s:show_output(eval(a:args), a:reuse)
+endfunction
+
+function! s:show_output(data, reuse) abort
+  if a:reuse
+    Scratch
+    put =a:data
+  else
+    ScratchNew
+    for line in split(a:data, "\n")
+      call append('$', line)
+    endfor
+  endif
+  norm gg"_dd
+endfunction
+" }}}
+
 " insert shebang based on filetype; :KshebangInsert [content after "#!/usr/bin/env "] {{{
 command! -nargs=* -complete=shellcmd KshebangInsert
       \ call <SID>shebang_insert(<q-args>)
@@ -52,6 +103,19 @@ function! s:join_line(sep)
   finally
     let @" = buf
   endtry
+endfunction
+" }}}
+
+" edit selected line / column; :Kjump {{{
+command! -nargs=+ Kjump call <SID>jump_line_col(<f-args>)
+function! s:jump_line_col(line, ...) abort
+  execute 'normal' a:line . 'gg'
+  if a:0 > 0
+    let col = a:1
+    if col > 1
+      execute 'normal 0' . (col-1) . 'l'
+    endif
+  endif
 endfunction
 " }}}
 

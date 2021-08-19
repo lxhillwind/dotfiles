@@ -262,100 +262,12 @@ let s:is_win32 = has('win32')
 let s:has_gui = has('gui_running') || has('mac')
       \ || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 
-" common func {{{
 " :echoerr will raise exception (?)
 function! s:echoerr(msg)
   echohl ErrorMsg
   echon a:msg
   echohl None
 endfunction
-
-function! s:show_output(data, reuse) abort
-  if a:reuse
-    Scratch
-    put =a:data
-  else
-    Ksnippet
-    for line in split(a:data, "\n")
-      call append('$', line)
-    endfor
-  endif
-  norm gg"_dd
-endfunction
-" }}}
-
-" snippet; :Scratch [filetype] / :Ksnippet [filetype] (with new window) {{{
-command -nargs=? -complete=filetype Scratch call <SID>scratch(<q-args>)
-command! -bang -nargs=? -complete=filetype
-      \ Ksnippet call <SID>snippet_in_new_window('<bang>', <q-args>)
-
-function! s:scratch(ft) abort
-  enew | setl buftype=nofile noswapfile bufhidden=hide
-  if !empty(a:ft)
-    exe 'setl ft=' . a:ft
-  endif
-endfunction
-
-function! s:snippet_in_new_window(bang, ft) abort
-  let name = '[Snippet]'
-  " :Ksnippet! may use existing buffer.
-  let create_buffer = 1
-  let create_window = 1
-  if empty(a:bang)
-    let idx = 1
-    let raw_name = name
-    let name = printf('%s (%d)', raw_name, idx)
-    while bufexists(name)
-      let idx += 1
-      let name = printf('%s (%d)', raw_name, idx)
-    endwhile
-  else
-    let s:ksnippet_bufnr = get(s:, 'ksnippet_bufnr', -1)
-    if bufexists(s:ksnippet_bufnr) && bufname(s:ksnippet_bufnr) ==# name
-      let create_buffer = 0
-      let buflist = tabpagebuflist()
-      let buf_idx = index(buflist, s:ksnippet_bufnr)
-      if buf_idx >= 0
-        exe buf_idx + 1 . 'wincmd w'
-        let create_window = 0
-      endif
-    endif
-  endif
-  if create_window
-    exe printf('bel %dnew', &cwh)
-    if create_buffer
-      setl buftype=nofile noswapfile
-      setl bufhidden=hide
-      silent! exe 'f' fnameescape(name)
-    else
-      exe s:ksnippet_bufnr . 'b'
-    endif
-  endif
-  if !empty(a:bang)
-    sil normal gg"_dG
-    let s:ksnippet_bufnr = winbufnr(0)
-  endif
-  if !empty(a:ft)
-    exe 'setl ft=' . a:ft
-  endif
-endfunction
-" }}}
-
-" run vim command; :KvimRun {vim_command}... {{{
-command! -bang -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>, <bang>0)
-
-function! s:vim_run(args, reuse) abort
-  call s:show_output(execute(a:args), a:reuse)
-endfunction
-" }}}
-
-" vim expr; :KvimExpr {vim_expr}... {{{
-command! -bang -nargs=+ -complete=expression KvimExpr call <SID>vim_expr(<q-args>, <bang>0)
-
-function! s:vim_expr(args, reuse) abort
-  call s:show_output(eval(a:args), a:reuse)
-endfunction
-" }}}
 
 " clipboard (see keymap) {{{
 " use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
@@ -600,26 +512,13 @@ function! s:gx(mode) abort
   else
     let text = expand(get(g:, 'netrw_gx', '<cfile>'))
   endif
-  Ksnippet!
+  exe printf('bel %dnew', &cwh)
   " a special filetype
   setl ft=gx
   for line in split(text, "\n")
     call append('$', line)
   endfor
   norm gg"_dd
-endfunction
-" }}}
-
-" edit selected line / column; :Kjump {{{
-command! -nargs=+ Kjump call <SID>jump_line_col(<f-args>)
-function! s:jump_line_col(line, ...) abort
-  execute 'normal' a:line . 'gg'
-  if a:0 > 0
-    let col = a:1
-    if col > 1
-      execute 'normal 0' . (col-1) . 'l'
-    endif
-  endif
 endfunction
 " }}}
 
