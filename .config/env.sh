@@ -54,7 +54,7 @@ if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ] && { \
         # git-bash (g:win32_unix_sh_path):
         # use <gitdir>/usr/bin/bash instead of <gitdir>/bin/bash,
         # so that child pid of vim will be set in bash correctly.
-        if [ -f /msys2.exe ] || [ -f /git-bash.exe ]; then
+        if [ -f /msys2.exe ] || [ -f /git-bash.exe ] || [ -d /cygdrive ]; then
             export VIMSERVER_CLIENT_PID=$(ps -p $$ | awk '{ print $4 }' | tail -n 1)
         fi
     fi
