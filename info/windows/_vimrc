@@ -11,6 +11,20 @@ if str2float(windowsversion()) >= 6
   endif
 endif
 
+for s:i in [
+      \ 'C:/msys64/usr/bin/zsh', 'C:/msys64/usr/bin/bash',
+      \ 'C:/msys32/usr/bin/zsh', 'C:/msys32/usr/bin/bash',
+      \ 'C:/Program Files/Git/usr/bin/bash',
+      \ 'C:/Program Files (x86)/Git/usr/bin/bash',
+      \ ]
+  if executable(s:i)
+    let g:win32_unix_sh_path = s:i
+    let $PATH = $VIMRUNTIME . ';/usr/bin;/bin;' . $PATH
+    break
+  endif
+endfor
+unlet s:i
+
 let $HOME = expand('<sfile>:p:h') . '/home'
 let $ENV = $HOME . '/.config/env.sh'
 let $SH_RC_LOCAL = $HOME . '/.config/local.sh'
