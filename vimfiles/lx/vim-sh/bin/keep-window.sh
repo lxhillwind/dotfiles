@@ -2,7 +2,9 @@
 
 "$@"
 
-stty sane
+if command -v stty >/dev/null; then
+    stty sane
+fi
 echo
 echo 'Press any key to continue...'
 

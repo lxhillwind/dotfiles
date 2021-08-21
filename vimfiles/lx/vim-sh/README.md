@@ -58,6 +58,15 @@ Sh -wv [cmd]...
 
 NOTE: `:Sh -w -v [cmd]...` will not work!
 
+## Config
+
+set variable `g:sh_path` to override default shell:
+
+- win32 default shell: busybox
+- unix-like default shell: `&shell`
+
+*If g:sh_path contains `busybox`, then sh is appended, like `busybox sh`.*
+
 ## Feature
 
 ### always use shell
@@ -80,12 +89,15 @@ automatically).
 By default, this requires [busybox-w32](https://frippery.org/busybox/) binary
 in `$PATH`.
 
-You can also use other shell by setting variable `g:win32_unix_sh_path`. (take
+You can also use other shell by setting variable `g:sh_path`. (take
 effect at runtime)
 
 ```vim
 " msys2 shell default path (x64)
-let g:win32_unix_sh_path = 'C:/msys64/usr/bin/bash.exe'
+let g:sh_path = 'C:/msys64/usr/bin/bash.exe'
+
+" 32-bit git for windows (x64 system)
+let g:sh_path = 'C:/Program Files (x86)/Git/usr/bin/bash'
 ```
 
 - `:terminal ++shell` with unix shell syntax.

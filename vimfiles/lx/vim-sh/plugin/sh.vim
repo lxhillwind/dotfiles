@@ -168,13 +168,15 @@ function! s:sh(cmd, opt) abort
     call s:echoerr('empty cmd (without tty) is not allowed!') | return
   endif
 
+  let shell = exists('g:sh_path') ? g:sh_path :
+        \ (s:is_win32 ? 'busybox' : &shell)
+
+  " if set shell to busybox, then call sh with `busybox sh`
+  let shell_arg_patch = (match(shell, '\vbusybox(.exe|)$') >= 0) ? ['sh'] : []
+
   if !opt.tty && !opt.window && (s:is_unix || s:is_nvim)
     if s:is_win32
-      let shell = s:shell_opt_sh().shell
-      let shellcmdflag = s:shell_opt_sh().shellcmdflag
-      let cmd = s:win32_quote(cmd)
-      let cmd = printf('%s %s %s', shell, shellcmdflag, cmd)
-      let cmd = s:win32_cmd_exe_quote(cmd)
+      let cmd = [shell] + shell_arg_patch + ['-c', cmd]
     endif
 
     if stdin is# 0
@@ -192,21 +194,25 @@ function! s:sh(cmd, opt) abort
     call writefile(stdin, tmpfile)
   endif
 
-  if s:is_unix
-    if empty(cmd)
-      let cmd = split(&shell)
-    else
-      if !empty(tmpfile)
-        let cmd = ['sh', '-c', printf('sh -c %s < %s',
+  let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
+
+  if empty(cmd)
+    let cmd = [shell] + shell_arg_patch
+  else
+    if !empty(tmpfile)
+      if s:is_unix
+        let cmd = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
               \ shellescape(cmd), shellescape(tmpfile))]
       else
-        let cmd = ['sh', '-c', cmd]
+        let cmd = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
+              \ s:shellescape(cmd), s:shellescape(substitute(tmpfile, '\', '/', 'g')))]
       endif
+    else
+      let cmd = [shell] + shell_arg_patch + ['-c', cmd]
     endif
-  else
-    let shell = s:shell_opt_sh().shell
-    let shellcmdflag = s:shell_opt_sh().shellcmdflag
+  endif
 
+  if s:is_win32
     " add /bin, /usr/bin to $PATH if necessary.
     let env_patch = {}
     if match($PATH, '\v([;:]|^)/usr/bin/?([;:]|$)') < 0
@@ -222,53 +228,39 @@ function! s:sh(cmd, opt) abort
       let using_mintty = ( match(mintty_path, 'mintty') >= 0 && executable(mintty_path) )
     endif
 
-    if !empty(cmd)
-      let cmd = printf("sh -c %s", s:shellescape(cmd))
-      if !empty(tmpfile)
-        let cmd = printf("%s < %s", cmd, s:shellescape(substitute(tmpfile, '\', '/', 'g')))
-      endif
-      let cmd = s:win32_quote(cmd)
+    if using_mintty
+      let cmd = [mintty_path] + (opt.close ? [] : [keep_window_path]) + cmd
+    elseif opt.window && !opt.close && !s:is_nvim
+      let cmd = [shell] + shell_arg_patch + [keep_window_path] + cmd
     endif
-    let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
 
     " TODO verify neovim
     if using_mintty && s:is_nvim
       " not termopen
-      call jobstart([mintty_path] + (opt.close ? [] : [keep_window_path])
-            \ + [shell, shellcmdflag, cmd], {'env': env_patch})
+      call jobstart(cmd, {'env': env_patch})
       " return early
       return
     endif
+  endif
 
-    if executable(shell)
-      let shell = s:win32_quote(shell)
-    endif
-    let cmd = empty(cmd) ? shell : printf('%s %s %s', shell, shellcmdflag, cmd)
+  if s:is_win32 && !s:is_nvim
+    let cmd = s:win32_cmd_list_to_str(cmd)
   endif
 
   if opt.window
     if s:is_win32
       if using_mintty
-        call term_start(printf('%s %s %s',
-              \ s:win32_quote(mintty_path),
-              \ opt.close ? '' : s:win32_quote(keep_window_path),
-              \ cmd
-              \ ),
-              \ {'hidden': 1, 'env': env_patch}
-              \ )
+        call term_start(cmd, {'hidden': 1, 'env': env_patch})
       else
-        if !opt.close
-          let cmd = printf('%s %s %s', shell, s:win32_quote(keep_window_path), cmd)
-        endif
         silent execute '!start' cmd
       endif
     elseif executable('urxvt')
       let cmd = opt.close ? cmd :
-            \ [fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'] + cmd
+            \ [keep_window_path] + cmd
       call function(s:job_start)(['urxvt', '-e'] + cmd)
     elseif executable('alacritty')
       let cmd = opt.close ? cmd :
-            \ [fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'] + cmd
+            \ [keep_window_path] + cmd
       call function(s:job_start)(['alacritty', '-e'] + cmd)
     else
       call s:echoerr('Sh: -w (window) option not supported!')
@@ -377,27 +369,17 @@ function! s:win32_cmd_list(A, L, P)
   return join(sort(extend(exe, s:win32_cmd_list_data)), "\n")
 endfunction
 
-let s:shell_opt_cmd = {
-      \ 'shell': 'cmd.exe',
-      \ 'shellcmdflag': '/s /c',
-      \ 'shellquote': '',
-      \ }
-
-function! s:shell_opt_sh() abort
-  return {
-        \ 'shell': get(g:, 'win32_unix_sh_path', 'busybox sh'),
-        \ 'shellcmdflag': '-c',
-        \ 'shellquote': '',
-        \ }
-endfunction
-
 " win32 vim from unix shell will set &shell incorrectly, so restore it
 if s:is_win32 && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
-  let &shell = s:shell_opt_cmd.shell
-  let &shellcmdflag = s:shell_opt_cmd.shellcmdflag
-  let &shellquote = s:shell_opt_cmd.shellquote
+  let &shell = 'cmd.exe'
+  let &shellcmdflag = '/s /c'
+  let &shellquote = ''
   silent! let &shellxquote = ''
 endif
+
+function! s:win32_cmd_list_to_str(arg)
+  return join(map(copy(a:arg), 's:win32_quote(v:val)'), ' ')
+endfunction
 
 function! s:win32_quote(arg)
   " To make quote work reliably, it is worth reading:
