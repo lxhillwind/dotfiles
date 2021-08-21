@@ -67,6 +67,8 @@ set variable `g:sh_path` to override default shell:
 - win32 default shell: busybox
 - unix-like default shell: `&shell`
 
+*If g:sh_path contains `busybox`, then sh is appended, like `busybox sh`.*
+
 ### `g:sh_programs`
 
 set variable `g:sh_programs` to override default `-w` program detection order:
@@ -82,7 +84,7 @@ element of `g:sh_programs` can be function, like this:
 let g:sh_programs = [{x -> !empty(job_start(['alacritty', '-e'] + x.cmd))}]
 ```
 
-*If g:sh_path contains `busybox`, then sh is appended, like `busybox sh`.*
+If the function returns 0, then try the next element.
 
 ## Feature
 
