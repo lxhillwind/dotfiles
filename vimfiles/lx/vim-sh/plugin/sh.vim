@@ -230,29 +230,25 @@ function! s:sh(cmd, opt) abort
 
     if using_mintty
       let cmd = [mintty_path] + (opt.close ? [] : [keep_window_path]) + cmd
-    elseif opt.window && !opt.close && !s:is_nvim
+    elseif opt.window && !opt.close
       let cmd = [shell] + shell_arg_patch + [keep_window_path] + cmd
-    endif
-
-    " TODO verify neovim
-    if using_mintty && s:is_nvim
-      " not termopen
-      call jobstart(cmd, {'env': env_patch})
-      " return early
-      return
     endif
   endif
 
-  if s:is_win32 && !s:is_nvim
+  if s:is_win32 && (!s:is_nvim || opt.window)
     let cmd = s:win32_cmd_list_to_str(cmd)
   endif
 
   if opt.window
     if s:is_win32
-      if using_mintty
-        call term_start(cmd, {'hidden': 1, 'env': env_patch})
+      if s:is_nvim
+        call system(printf('start "" %s', cmd))
       else
-        silent execute '!start' cmd
+        if using_mintty
+          call term_start(cmd, {'hidden': 1, 'env': env_patch})
+        else
+          silent execute '!start' cmd
+        endif
       endif
     elseif executable('urxvt')
       let cmd = opt.close ? cmd :
