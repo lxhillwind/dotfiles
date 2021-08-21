@@ -212,56 +212,26 @@ function! s:sh(cmd, opt) abort
     endif
   endif
 
-  if s:is_win32
-    " add /bin, /usr/bin to $PATH if necessary.
-    let env_patch = {}
-    if match($PATH, '\v([;:]|^)/usr/bin/?([;:]|$)') < 0
-      let env_patch['PATH'] = $PATH . ';' . '/usr/bin'
-    endif
-    if match($PATH, '\v([;:]|^)/bin/?([;:]|$)') < 0
-      let env_patch['PATH'] = $PATH . ';' . '/bin'
-    endif
-
-    let using_mintty = 0
-    if opt.window
-      let mintty_path = substitute(shell, '\v([\/]|^)\zs(zsh|bash)\ze(\.exe|"?$)', 'mintty', '')
-      let using_mintty = ( match(mintty_path, 'mintty') >= 0 && executable(mintty_path) )
-    endif
-
-    if using_mintty
-      let cmd = [mintty_path] + (opt.close ? [] : [keep_window_path]) + cmd
-    elseif opt.window && !opt.close
-      let cmd = [shell] + shell_arg_patch + [keep_window_path] + cmd
-    endif
-  endif
-
-  if s:is_win32 && (!s:is_nvim || opt.window)
-    let cmd = s:win32_cmd_list_to_str(cmd)
-  endif
-
   if opt.window
-    if s:is_win32
-      if s:is_nvim
-        call system(printf('start "" %s', cmd))
-      else
-        if using_mintty
-          call term_start(cmd, {'hidden': 1, 'env': env_patch})
-        else
-          silent execute '!start' cmd
-        endif
+    let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
+          \ 'cmd': cmd, 'close': opt.close,
+          \ 'keep_window_path': keep_window_path}
+
+    for l:program in (exists('g:sh_programs') ? g:sh_programs :
+          \ ['alacritty', 'urxvt', 'mintty', 'cmd',]
+          \ )
+      let l:func = 's:program_' .. l:program
+      if exists('*' .. l:func) && call(l:func, [context])
+        return
       endif
-    elseif executable('urxvt')
-      let cmd = opt.close ? cmd :
-            \ [keep_window_path] + cmd
-      call function(s:job_start)(['urxvt', '-e'] + cmd)
-    elseif executable('alacritty')
-      let cmd = opt.close ? cmd :
-            \ [keep_window_path] + cmd
-      call function(s:job_start)(['alacritty', '-e'] + cmd)
-    else
-      call s:echoerr('Sh: -w (window) option not supported!')
-    endif
+    endfor
+
+    call s:echoerr('Sh: -w option not supported! wrong `g:sh_programs`?')
     return
+  endif
+
+  if s:is_win32 && !s:is_nvim
+    let cmd = s:win32_cmd_list_to_str(cmd)
   endif
 
   if opt.tty
@@ -317,7 +287,7 @@ function! s:sh(cmd, opt) abort
         \'err_io': 'buffer', 'err_msg': 0, 'err_buf': bufnr,
         \})
   if s:is_win32
-    let job_opt = extend(job_opt, {'env': env_patch})
+    let job_opt = extend(job_opt)
   endif
   let job = job_start(cmd, job_opt)
 
@@ -327,6 +297,53 @@ function! s:sh(cmd, opt) abort
   let result = join(getbufline(bufnr, 1, '$'), "\n")
   execute bufnr . 'bwipeout!'
   return s:echo(result, opt.echo)
+endfunction
+
+function! s:program_alacritty(context) abort
+  let [cmd, close, keep_window_path] = [a:context.cmd, a:context.close, a:context.keep_window_path]
+  if executable('alacritty')
+    let cmd = close ? cmd : [keep_window_path] + cmd
+    call function(s:job_start)(['alacritty', '-e'] + cmd)
+    return 1
+  endif
+endfunction
+
+function! s:program_urxvt(context) abort
+  let [cmd, close, keep_window_path] = [a:context.cmd, a:context.close, a:context.keep_window_path]
+  if executable('urxvt')
+    let cmd = close ? cmd : [keep_window_path] + cmd
+    call function(s:job_start)(['urxvt', '-e'] + cmd)
+    return 1
+  endif
+endfunction
+
+function! s:program_cmd(context) abort
+  if s:is_unix | return 0 | endif
+
+  let [shell, shell_arg_patch, cmd, close, keep_window_path] = [a:context.shell, a:context.shell_arg_patch, a:context.cmd, a:context.close, a:context.keep_window_path]
+  if !close
+    let cmd = [shell] + shell_arg_patch + [keep_window_path] + cmd
+  endif
+  let cmd = s:win32_cmd_list_to_str(cmd)
+  call system(printf('start "" %s', cmd))
+  return 1
+endfunction
+
+function! s:program_mintty(context) abort
+  if s:is_unix | return 0 | endif
+
+  let [shell, cmd, close, keep_window_path] = [a:context.shell, a:context.cmd, a:context.close, a:context.keep_window_path]
+  let mintty_path = substitute(shell, '\v([\/]|^)\zs(zsh|bash)\ze(\.exe|"?$)', 'mintty', '')
+  if ( match(mintty_path, 'mintty') >= 0 && executable(mintty_path) )
+    let cmd = [mintty_path] + (close ? [] : [keep_window_path]) + cmd
+    let cmd = s:win32_cmd_list_to_str(cmd)
+    if s:is_nvim
+      call system(printf('start "" %s', cmd))
+    else
+      call term_start(cmd, {'hidden': 1})
+    endif
+    return 1
+  endif
 endfunction
 
 if s:is_nvim
