@@ -295,9 +295,6 @@ function! s:sh(cmd, opt) abort
         \'out_io': 'buffer', 'out_msg': 0, 'out_buf': bufnr,
         \'err_io': 'buffer', 'err_msg': 0, 'err_buf': bufnr,
         \})
-  if s:is_win32
-    let job_opt = extend(job_opt)
-  endif
   let job = job_start(cmd, job_opt)
 
   while job_status(job) ==# 'run'
@@ -416,11 +413,6 @@ function! s:win32_quote(arg)
   " quote it
   let cmd = '"' . cmd . '"'
   return cmd
-endfunction
-
-function! s:win32_cmd_exe_quote(arg)
-  " escape for cmd.exe
-  return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
 endfunction
 
 function! s:shell_replace()
