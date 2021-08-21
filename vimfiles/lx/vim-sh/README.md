@@ -73,6 +73,15 @@ set variable `g:sh_programs` to override default `-w` program detection order:
 
 default: `['alacritty', 'urxvt', 'mintty', 'cmd',]`
 
+#### experimental
+
+element of `g:sh_programs` can be function, like this:
+
+```vim
+" use !empty() to turn job object into number
+let g:sh_programs = [{x -> !empty(job_start(['alacritty', '-e'] + x.cmd))}]
+```
+
 *If g:sh_path contains `busybox`, then sh is appended, like `busybox sh`.*
 
 ## Feature

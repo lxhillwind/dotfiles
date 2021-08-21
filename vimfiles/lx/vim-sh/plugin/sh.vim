@@ -217,11 +217,20 @@ function! s:sh(cmd, opt) abort
           \ 'cmd': cmd, 'close': opt.close,
           \ 'keep_window_path': keep_window_path}
 
-    for l:program in (exists('g:sh_programs') ? g:sh_programs :
+    for s:program in (exists('g:sh_programs') ? g:sh_programs :
           \ ['alacritty', 'urxvt', 'mintty', 'cmd',]
           \ )
-      let l:func = 's:program_' .. l:program
-      if exists('*' .. l:func) && call(l:func, [context])
+      if type(s:program) == v:t_func
+        :
+      elseif type(s:program) == v:t_string
+        let s:program = 's:program_' .. s:program
+        if !exists('*' .. s:program)
+          continue
+        endif
+      else
+        continue
+      endif
+      if call(s:program, [context])
         return
       endif
     endfor
