@@ -25,8 +25,8 @@ Pass option as follows:
 :<','>Sh -v [cmd]...
 ```
 
-- execute shell command in new application window. On Windows, it is cmd.exe;
-  on other OS, urxvt / alacritty is supported now.
+- execute shell command in new application window. On Windows, it is
+  mintty.exe or cmd.exe; on other OS, urxvt / alacritty is supported now.
 
 ```vim
 :Sh -w [cmd]...
