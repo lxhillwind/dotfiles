@@ -197,6 +197,7 @@ function! s:sh(cmd, opt) abort
   let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
 
   if empty(cmd)
+    let l:term_name = shell
     let cmd = [shell] + shell_arg_patch
   else
     if !empty(tmpfile)
@@ -215,6 +216,7 @@ function! s:sh(cmd, opt) abort
   if opt.window
     let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
           \ 'cmd': cmd, 'close': opt.close,
+          \ 'term_name': l:term_name,
           \ 'keep_window_path': keep_window_path}
 
     for s:program in (exists('g:sh_programs') ? g:sh_programs :
@@ -327,11 +329,17 @@ function! s:program_cmd(context) abort
   if s:is_unix | return 0 | endif
 
   let [shell, shell_arg_patch, cmd, close, keep_window_path] = [a:context.shell, a:context.shell_arg_patch, a:context.cmd, a:context.close, a:context.keep_window_path]
+  let term_name = a:context.term_name
+  " cmd.exe start <title> <program>: quote in <title> seems buggy, so just
+  " remove " from it.
+  let term_name = substitute(term_name, '"', '', 'g')
+  let term_name = s:win32_quote(term_name)
   if !close
     let cmd = [shell] + shell_arg_patch + [keep_window_path] + cmd
   endif
+  " cmd.exe quote is required for neovim.
   let cmd = s:win32_cmd_list_to_str(cmd)
-  call system(printf('start "" %s', cmd))
+  call system(printf('start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
   return 1
 endfunction
 
@@ -339,12 +347,21 @@ function! s:program_mintty(context) abort
   if s:is_unix | return 0 | endif
 
   let [shell, cmd, close, keep_window_path] = [a:context.shell, a:context.cmd, a:context.close, a:context.keep_window_path]
+  let term_name = a:context.term_name
+  let term_name = substitute(term_name, '"', '', 'g')
+  let term_name = s:win32_quote(term_name)
+
+  " prefer mintty in the same dir of shell.
   let mintty_path = substitute(shell, '\v([\/]|^)\zs(zsh|bash)\ze(\.exe|"?$)', 'mintty', '')
-  if ( match(mintty_path, 'mintty') >= 0 && executable(mintty_path) )
+  if mintty_path ==# shell || !executable(mintty_path)
+    let mintty_path = 'mintty'
+  endif
+
+  if executable(mintty_path)
     let cmd = [mintty_path] + (close ? [] : [keep_window_path]) + cmd
     let cmd = s:win32_cmd_list_to_str(cmd)
     if s:is_nvim
-      call system(printf('start "" %s', cmd))
+      call system(printf('start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
     else
       call term_start(cmd, {'hidden': 1})
     endif
@@ -413,6 +430,11 @@ function! s:win32_quote(arg)
   " quote it
   let cmd = '"' . cmd . '"'
   return cmd
+endfunction
+
+function! s:win32_cmd_exe_quote(arg)
+  " escape for cmd.exe
+  return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
 endfunction
 
 function! s:shell_replace()
