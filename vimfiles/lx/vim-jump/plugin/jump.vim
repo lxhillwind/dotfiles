@@ -81,12 +81,7 @@ function! s:jump_to_file(nr, ...) abort
     return
   endif
 
-  if a:0 > 0
-    redraws | echon 'file not readable / not found.'
-    return
-  endif
-
-  let file = expand('<cfile>')
+  let file = a:0 > 0 ? chunk : expand('<cfile>')
   call s:jump_flc(file, line, col)
 endfunction
 
