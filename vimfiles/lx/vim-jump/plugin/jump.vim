@@ -81,7 +81,7 @@ function! s:jump_to_file(nr, ...) abort
     return
   endif
 
-  let file = a:0 > 0 ? chunk : expand('<cfile>')
+  let file = a:0 > 0 ? substitute(chunk, '\v\n+$', '', '') : expand('<cfile>')
   call s:jump_flc(file, line, col)
 endfunction
 
