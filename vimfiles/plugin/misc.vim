@@ -23,30 +23,17 @@ endfunction
 " }}}
 
 " run vim command; :KvimRun {vim_command}... {{{
-command! -bang -nargs=+ -complete=command KvimRun call <SID>vim_run(<q-args>, <bang>0)
-
-function! s:vim_run(args, reuse) abort
-  call s:show_output(execute(a:args), a:reuse)
-endfunction
+command! -nargs=+ -complete=command KvimRun call s:show_output(execute(<q-args>))
 " }}}
 
 " vim expr; :KvimExpr {vim_expr}... {{{
-command! -bang -nargs=+ -complete=expression KvimExpr call <SID>vim_expr(<q-args>, <bang>0)
+command! -nargs=+ -complete=expression KvimExpr call s:show_output(eval(<q-args>))
 
-function! s:vim_expr(args, reuse) abort
-  call s:show_output(eval(a:args), a:reuse)
-endfunction
-
-function! s:show_output(data, reuse) abort
-  if a:reuse
-    Scratch
-    put =a:data
-  else
-    ScratchNew
-    for line in split(a:data, "\n")
-      call append('$', line)
-    endfor
-  endif
+function! s:show_output(data) abort
+  ScratchNew
+  for line in split(a:data, "\n")
+    call append('$', line)
+  endfor
   norm gg"_dd
 endfunction
 " }}}
@@ -137,4 +124,9 @@ function! SetCmdText(text) abort
 endfunction
 
 command! -nargs=+ SetCmdText call SetCmdText(<q-args>)
+" }}}
+
+" `*` / `#` in visual mode (like `g*` / `g#`); dep: Selection() {{{
+vnoremap * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
+vnoremap # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 " }}}
