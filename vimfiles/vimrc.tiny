@@ -51,12 +51,8 @@ set shm-=S
 " sessionoptions; better :mksession option.
 set ssop=blank,curdir,folds,tabpages,winsize
 
-" set locale
-if has('unix')
-  lang en_US.UTF-8
-else
-  let $LANG = 'en'
-endif
+" set locale in vimrc.vim, since vim tiny doesn't support :if.
+
 " menu
 set enc=utf-8
 " fileencodings

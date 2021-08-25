@@ -70,10 +70,6 @@ else
         \ . '/%L]'
 endif
 
-"
-" encoding
-"
-
 " set locale
 if has('unix')
   lang en_US.UTF-8
