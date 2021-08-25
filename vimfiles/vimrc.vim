@@ -9,25 +9,9 @@ let maplocalleader = ' ;'
 noremap <Space> <Nop>
 
 " default {{{
-" if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
-if &compatible
-  set nocompatible
-endif
-
-set nomodeline
-
-" options which should not be reloaded
 if has('vim_starting')
   syntax on
-  " backspace
-  set bs=2
-  " expandtab
-  set et
-  " shiftwidth
-  set sw=4
-  " (relative)number
-  set nu
-  set rnu
+
   augroup vimrc_terminal
     au!
     function! s:terminal_paste()
@@ -66,27 +50,8 @@ if has('vim_starting')
       au TermOpen * call s:terminal_init()
     endif
   augroup END
-  " hlsearch
-  set hls
 endif
 
-" filetype / syntax
-filetype on
-filetype plugin on
-filetype indent on
-" belloff
-set bo=all
-" incsearch
-set is
-" timeoutlen
-set tm=5000
-" ttimeoutlen
-set ttm=0
-" cursorcolumn & cursorline
-set cuc
-set cul
-" laststatus
-set ls=2
 " statusline
 if has('patch-8.2.2854')
   " %{% expr %}
@@ -104,16 +69,6 @@ else
         \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%cb')
         \ . '/%L]'
 endif
-" showcmd
-set sc
-" wildmenu
-set wmnu
-" completeopt
-set cot-=preview
-" shortmess; show search count message (default in neovim)
-set shm-=S
-" sessionoptions; better :mksession option.
-set ssop=blank,curdir,folds,tabpages,winsize
 
 "
 " encoding
@@ -125,11 +80,6 @@ if has('unix')
 else
   let $LANG = 'en'
 endif
-" menu
-set enc=utf-8
-" fileencodings
-" See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
-set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 
 " disable default plugin
 let g:loaded_2html_plugin = 1
@@ -140,7 +90,6 @@ let g:loaded_netrwPlugin = 1
 let g:loaded_tarPlugin = 1
 let g:loaded_vimballPlugin = 1
 let g:loaded_zipPlugin = 1
-
 " }}}
 
 " various tmpfile {{{

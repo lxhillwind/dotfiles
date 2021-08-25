@@ -1,0 +1,64 @@
+" vim config compatible with tiny version.
+
+if !has('vim_starting')
+  finish
+endif
+
+" if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
+if &compatible
+  set nocompatible
+endif
+
+set nomodeline
+
+" backspace
+set bs=2
+" expandtab
+set et
+" shiftwidth
+set sw=4
+" (relative)number
+set nu
+set rnu
+" hlsearch
+set hls
+
+" filetype / syntax
+filetype on
+filetype plugin on
+filetype indent on
+" belloff
+set bo=all
+" incsearch
+set is
+" timeoutlen
+set tm=5000
+" ttimeoutlen
+set ttm=0
+" cursorcolumn & cursorline
+set cuc
+set cul
+" laststatus
+set ls=2
+" showcmd
+set sc
+" wildmenu
+set wmnu
+" completeopt
+set cot-=preview
+" shortmess; show search count message (default in neovim)
+set shm-=S
+" sessionoptions; better :mksession option.
+set ssop=blank,curdir,folds,tabpages,winsize
+
+" set locale
+if has('unix')
+  lang en_US.UTF-8
+else
+  let $LANG = 'en'
+endif
+" menu
+set enc=utf-8
+" fileencodings
+" See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
+set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1

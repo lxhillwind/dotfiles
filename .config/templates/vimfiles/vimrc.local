@@ -1,5 +1,3 @@
-source ~/vimfiles/rc.vim
-
 call plug#begin('~/vimfiles/bundle')
-source ~/vimfiles/pkgs.vim
+source ~/vimfiles/vimrc.pkgs
 call plug#end()
