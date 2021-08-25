@@ -58,3 +58,15 @@ set enc=utf-8
 " fileencodings
 " See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
 set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+
+" vim with +eval will stop here.
+" `if 1 | finish | endif` won't work though (vim tiny would also finish).
+if 1
+  finish
+endif
+
+" runtimepath
+set rtp=
+
+" swap (dir should be created manually.)
+set directory=~/vimswap//
