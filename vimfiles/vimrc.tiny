@@ -5,6 +5,7 @@ if !has('vim_starting')
 endif
 
 " if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
+" lines between `:if` and `:endif` will be ignored by vim tiny.
 if &compatible
   set nocompatible
 endif
@@ -60,7 +61,8 @@ set enc=utf-8
 set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 
 " vim with +eval will stop here.
-" `if 1 | finish | endif` won't work though (vim tiny would also finish).
+" `if 1 | finish | endif` won't work though
+" (vim tiny would skip till line beginning with :endif).
 if 1
   finish
 endif
