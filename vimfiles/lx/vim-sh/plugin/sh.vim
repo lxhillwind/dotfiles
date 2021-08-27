@@ -148,14 +148,11 @@ function! s:sh(cmd, opt) abort
   let cmd = a:cmd[len(opt_string):]
   let l:term_name = cmd
   " expand %
-  let slash = &shellslash
-  try
-    if s:is_win32 | set shellslash | endif
-    let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtre])*)\ze%($|\s)',
-          \'\=shellescape(expand(submatch(1)))', 'g')
-  finally
-    if s:is_win32 | let &shellslash = slash | endif
-  endtry
+  let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtre])*)\ze%($|\s)',
+        \ s:is_win32 ?
+        \'\=s:shellescape(s:tr_slash(expand(submatch(1))))' :
+        \'\=shellescape(expand(submatch(1)))',
+        \ 'g')
   let cmd = substitute(cmd, '\v^\s+', '', '')
   " remove trailing whitespace
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
@@ -206,7 +203,7 @@ function! s:sh(cmd, opt) abort
               \ shellescape(cmd), shellescape(tmpfile))]
       else
         let cmd = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
-              \ s:shellescape(cmd), s:shellescape(substitute(tmpfile, '\', '/', 'g')))]
+              \ s:shellescape(cmd), s:shellescape(s:tr_slash(tmpfile)))]
       endif
     else
       let cmd = [shell] + shell_arg_patch + ['-c', cmd]
@@ -391,6 +388,10 @@ command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <
 
 function! s:shellescape(cmd) abort
   return "'" . substitute(a:cmd, "'", "'\"'\"'", 'g') . "'"
+endfunction
+
+function! s:tr_slash(text) abort
+  return substitute(a:text, '\', '/', 'g')
 endfunction
 
 let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
