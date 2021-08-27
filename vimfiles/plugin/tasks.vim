@@ -203,12 +203,14 @@ function! s:check_marker(path, marker) abort
 endfunction
 
 let s:file = expand('<sfile>')
-let s:config_paths = get(g:, 'tasks_config_paths',
+function! s:config_paths() abort
+  return get(g:, 'tasks_config_paths',
       \ [fnamemodify(s:file, ':p:h') . '/tasks.ini'])
+endfunction
 
 function! s:read_config() abort
   let result = []
-  for item in s:config_paths
+  for item in s:config_paths()
     let result = extend(result, s:parse(readfile(expand(item))))
   endfor
   return result
