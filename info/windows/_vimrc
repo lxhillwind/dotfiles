@@ -1,15 +1,22 @@
-if !executable('busybox') || !executable('less')
-  let $PATH = expand('<sfile>:p:h') . '/extern/bin' . ';' . $PATH
-endif
+let g:app_dir = get(g:, 'app_dir', $USERPROFILE . '/app')
 
-if str2float(windowsversion()) >= 6
-  if !executable('git')
-    let $PATH = expand('<sfile>:p:h') . '/extern/MinGit/cmd' . ';' . $PATH
+function! s:tr_slash(s)
+  return substitute(a:s, '\', '/', 'g')
+endfunction
+let g:app_dir = s:tr_slash(g:app_dir)
+
+let s:path = map(split($PATH, ';'), 's:tr_slash(v:val)')
+for s:i in [
+      \ g:app_dir . '/vimfiles/bin',
+      \ g:app_dir . '/MinGit/cmd',
+      \ g:app_dir . '/MinGit/usr/bin',
+      \ ]
+  if index(s:path, s:i) < 0 && isdirectory(s:i)
+    let $PATH = s:i . ';' . $PATH
   endif
-  if !executable('ssh')
-    let $PATH = expand('<sfile>:p:h') . '/extern/MinGit/usr/bin' . ';' . $PATH
-  endif
-endif
+endfor
+unlet s:path
+unlet s:i
 
 for s:i in [
       \ 'C:/msys64/usr/bin/zsh', 'C:/msys64/usr/bin/bash',
@@ -25,10 +32,15 @@ for s:i in [
 endfor
 unlet s:i
 
-let $HOME = expand('<sfile>:p:h') . '/home'
-let $ENV = $HOME . '/.config/env.sh'
-let $SH_RC_LOCAL = $HOME . '/.config/local.sh'
-source ~/vimfiles/rc.vim
+if !exists('g:sh_path')
+  let $PATH =  g:app_dir . '/bin' . ';' . $PATH
+endif
+
+let $HOME = g:app_dir
+let $ENV = expand('~/vimfiles/shrc/env.sh')
+let $SH_RC_LOCAL = expand('~/vimfiles/shrc/local.sh')
+source ~/vimfiles/vimrc.tiny
+source ~/vimfiles/vimrc.vim
 silent! call plug#begin('~/vimfiles/bundle')
-source ~/vimfiles/pkgs.vim
+source ~/vimfiles/vimrc.pkgs
 call plug#end()
