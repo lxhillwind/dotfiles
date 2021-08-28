@@ -118,6 +118,9 @@ if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
     source "$SH_RC_LOCAL"
 fi
 
+# simple PS1 (zsh re-defines it)
+PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date +%Y-%m-%d\ %H:%M:%S)] \[\e[33m\]\w'$'\n''\[\e[32m\]\$\[\e[0m\] '
+
 # Following code may cause syntax error in strict POSIX shell
 # (like array construction), so return early.
 if ! command -v zstyle >/dev/null; then
