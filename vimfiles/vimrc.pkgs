@@ -46,7 +46,33 @@ if s:enable('base', 1)
   let g:loaded_netrwPlugin = 1
 endif
 
+if s:enable('basic-comp', 1)
+  Plug 'https://github.com/skywind3000/vim-auto-popmenu'
+  " enable this plugin for filetypes, '*' for all files.
+  "let g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
+  let g:apc_enable_ft = {'*': 1}
+
+  " source for dictionary, current or other loaded buffers, see ':help cpt'
+  set cpt=.,k,w,b
+
+  " don't select the first item.
+  set completeopt=menu,menuone,noselect
+
+  " suppress annoy messages.
+  set shortmess+=c
+
+  Plug 'https://github.com/skywind3000/vim-dict'
+  " File type override
+  "let g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
+  let g:vim_dict_config = {'markdown':'text'}
+
+  " Disable certain types
+  "let g:vim_dict_config = {'text': ''}
+endif
+
 if s:enable('coc', 0)
+  let g:apc_enable_ft = {}
+
   Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
   " vim completion
@@ -111,3 +137,5 @@ endif
 
 " from vim-plug :PlugSnapshot
 silent! let g:plugs['vim-dirvish'].commit = '9c0dc32af9235d42715751b30cf04fa0584c1798'
+silent! let g:plugs['vim-auto-popmenu'].commit = 'ea64a79b23401f48e95b9bce65ba39c6c020a291'
+silent! let g:plugs['vim-dict'].commit = 'c97d404977edb3d5197c025ffaa12b685ac5963c'
