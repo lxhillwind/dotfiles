@@ -346,7 +346,7 @@ function! s:program_mintty(context) abort
 
   if executable(mintty_path)
     let cmd = [mintty_path] + (close ? [] : [keep_window_path]) + cmd
-    call a:context.start_fn(cmd, {'gui': 1})
+    call a:context.start_fn(cmd)
     return 1
   endif
 endfunction
@@ -381,17 +381,12 @@ endfunction
 
 function! s:win32_start(cmdlist, ...) abort
   let cmd = s:win32_cmd_list_to_str(a:cmdlist)
-  let gui = a:0 > 0 ? get(a:1, 'gui', 0) : 0
-  if s:is_nvim || !gui
-    let term_name = a:0 > 0 ? get(a:1, 'term_name', '') : ''
-    " cmd.exe start <title> <program>: quote in <title> seems buggy, so just
-    " remove " from it.
-    let term_name = substitute(term_name, '"', '', 'g')
-    let term_name = s:win32_quote(term_name)
-    call system(printf('start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
-  else
-    call term_start(cmd, {'hidden': 1})
-  endif
+  let term_name = a:0 > 0 ? get(a:1, 'term_name', '') : ''
+  " cmd.exe start <title> <program>: quote in <title> seems buggy, so just
+  " remove " from it.
+  let term_name = substitute(term_name, '"', '', 'g')
+  let term_name = s:win32_quote(term_name)
+  call system(printf('start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
 endfunction
 
 let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
