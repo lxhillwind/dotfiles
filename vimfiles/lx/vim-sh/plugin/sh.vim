@@ -187,7 +187,11 @@ function! s:sh(cmd, opt) abort
     endif
   endif
 
-  if !opt.visual && !opt.window && !s:is_nvim
+  " opt.visual: yank text by `norm gv`;
+  " opt.window: communicate stdin by file;
+  " s:is_nvim: no in_buf job-option;
+  " opt.tty && !opt.newwin: buffer would be destroyed before using;
+  if !opt.visual && !opt.window && !s:is_nvim && !(opt.tty && !opt.newwin)
     let stdin = get(opt, 'range') != 0
   endif
   let job_opt = {}
