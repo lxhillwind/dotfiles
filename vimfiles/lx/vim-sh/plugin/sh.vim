@@ -171,7 +171,10 @@ function! s:sh(cmd, opt) abort
   " if set shell to busybox, then call sh with `busybox sh`
   let shell_arg_patch = (match(shell, '\vbusybox(.exe|)$') >= 0) ? ['sh'] : []
 
-  if !opt.tty && !opt.window && (s:is_unix || s:is_nvim)
+  " using system() in vim with stdin will cause writing temp file.
+  " on win32, system() will open a new cmd window.
+  " so do not use system() if possible.
+  if !opt.tty && !opt.window && s:is_nvim
     if s:is_win32
       let cmd = [shell] + shell_arg_patch + ['-c', cmd]
     endif
@@ -184,9 +187,21 @@ function! s:sh(cmd, opt) abort
     endif
   endif
 
+  if !opt.visual && !opt.window && !s:is_nvim
+    let stdin = get(opt, 'range') != 0
+  endif
   let job_opt = {}
+  if stdin is# 1
+    let job_opt = extend(job_opt, #{
+          \ in_io: 'buffer',
+          \ in_buf: bufnr(),
+          \ in_top: opt.line1,
+          \ in_bot: opt.line2,
+          \ })
+  endif
+
   let tmpfile = ''
-  if stdin isnot# 0
+  if stdin isnot# 0 && stdin isnot# 1
     let tmpfile = tempname()
     call writefile(stdin, tmpfile)
   endif
@@ -297,12 +312,40 @@ function! s:sh(cmd, opt) abort
         \})
   let job = job_start(cmd, job_opt)
 
-  while job_status(job) ==# 'run'
-    sleep 1m
-  endwhile
+  try
+    while job_status(job) ==# 'run'
+      sleep 1m
+    endwhile
+  catch /^Vim:Interrupt$/
+    call s:stop_job(job)
+  endtry
+  if job_status(job) ==# 'run'
+    sleep 50m
+    if job_status(job) ==# 'run'
+      echo 'job is still running. press <C-c> again to force kill it.'
+      try
+        while job_status(job) ==# 'run'
+          sleep 1m
+        endwhile
+        redrawstatus | echon ' job finished.'
+      catch /^Vim:Interrupt$/
+        call s:stop_job(job, 1)
+        redrawstatus | echon ' job force killed.'
+      endtry
+    endif
+  endif
+
   let result = join(getbufline(bufnr, 1, '$'), "\n")
   execute bufnr . 'bwipeout!'
   return s:echo(result, opt.echo)
+endfunction
+
+function! s:stop_job(job, ...) abort
+  if a:0 > 0 && a:1 == 1
+    call job_stop(a:job, 'kill')
+  else
+    call job_stop(a:job, 'int')
+  endif
 endfunction
 
 function! s:program_alacritty(context) abort
