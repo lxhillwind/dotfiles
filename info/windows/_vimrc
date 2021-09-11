@@ -1,23 +1,26 @@
-let g:app_dir = get(g:, 'app_dir', $USERPROFILE . '/app')
+let g:nix_dir = get(g:, 'nix_dir', $USERPROFILE . '/nix')
 
 function! s:tr_slash(s)
   return substitute(a:s, '\', '/', 'g')
 endfunction
-let g:app_dir = s:tr_slash(g:app_dir)
+let g:nix_dir = s:tr_slash(g:nix_dir)
 
 let s:path = map(split($PATH, ';'), 's:tr_slash(v:val)')
 for s:i in [
-      \ g:app_dir . '/vimfiles/bin',
-      \ g:app_dir . '/MinGit/cmd',
-      \ g:app_dir . '/MinGit/usr/bin',
+      \ g:nix_dir . '/vimfiles/bin',
+      \ g:nix_dir . '/MinGit/usr/bin',
+      \ g:nix_dir . '/MinGit/cmd',
+      \ g:nix_dir . '/bin',
       \ ]
   if index(s:path, s:i) < 0 && isdirectory(s:i)
     let $PATH = s:i . ';' . $PATH
   endif
 endfor
+let $PATH = $VIMRUNTIME . ';/usr/bin;/bin;' . $PATH
 unlet s:path
 unlet s:i
 
+" vim-sh config
 for s:i in [
       \ 'C:/msys64/usr/bin/zsh', 'C:/msys64/usr/bin/bash',
       \ 'C:/msys32/usr/bin/zsh', 'C:/msys32/usr/bin/bash',
@@ -26,21 +29,22 @@ for s:i in [
       \ ]
   if executable(s:i)
     let g:sh_path = s:i
-    let $PATH = $VIMRUNTIME . ';/usr/bin;/bin;' . $PATH
     break
   endif
 endfor
 unlet s:i
 
 if !exists('g:sh_path')
-  let $PATH =  g:app_dir . '/bin' . ';' . $PATH
+  let g:sh_path = s:tr_slash(expand('~\nix\msys2\usr\bin\zsh'))
 endif
 
-let $HOME = g:app_dir
-let $ENV = expand('~/vimfiles/shrc/env.sh')
-let $SH_RC_LOCAL = expand('~/vimfiles/shrc/local.sh')
-source ~/vimfiles/vimrc.tiny
-source ~/vimfiles/vimrc.vim
-silent! call plug#begin('~/vimfiles/bundle')
-source ~/vimfiles/vimrc.pkgs
+" busybox sh rc
+let $ENV = expand(g:nix_dir . '/.config/env.sh')
+let $SH_RC_LOCAL = expand(g:nix_dir . '/local.sh')
+
+" vimrc
+exe 'source' g:nix_dir . '/vimfiles/vimrc.tiny'
+exe 'source' g:nix_dir . '/vimfiles/vimrc.vim'
+call plug#begin(g:nix_dir . '/vimfiles/bundle')
+exe 'source' g:nix_dir . '/vimfiles/vimrc.pkgs'
 call plug#end()
