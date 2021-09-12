@@ -22,8 +22,11 @@ unlet s:i
 
 " vim-sh config
 for s:i in [
-      \ 'C:/msys64/usr/bin/zsh', 'C:/msys64/usr/bin/bash',
-      \ 'C:/msys32/usr/bin/zsh', 'C:/msys32/usr/bin/bash',
+      \ s:tr_slash(expand('~\nix\msys2\usr\bin\zsh')),
+      \ 'C:/msys64/usr/bin/zsh',
+      \ 'C:/msys64/usr/bin/bash',
+      \ 'C:/msys32/usr/bin/zsh',
+      \ 'C:/msys32/usr/bin/bash',
       \ 'C:/Program Files/Git/usr/bin/bash',
       \ 'C:/Program Files (x86)/Git/usr/bin/bash',
       \ ]
@@ -34,17 +37,14 @@ for s:i in [
 endfor
 unlet s:i
 
-if !exists('g:sh_path')
-  let g:sh_path = s:tr_slash(expand('~\nix\msys2\usr\bin\zsh'))
-endif
-
 " busybox sh rc
 let $ENV = expand(g:nix_dir . '/.config/env.sh')
 let $SH_RC_LOCAL = expand(g:nix_dir . '/local.sh')
 
 " vimrc
-exe 'source' g:nix_dir . '/vimfiles/vimrc.tiny'
-exe 'source' g:nix_dir . '/vimfiles/vimrc.vim'
+exe 'source' fnameescape(g:nix_dir . '/vimfiles/vimrc.tiny')
+let g:vimserver_ignore = 1
+exe 'source' fnameescape(g:nix_dir . '/vimfiles/vimrc.vim')
 call plug#begin(g:nix_dir . '/vimfiles/bundle')
-exe 'source' g:nix_dir . '/vimfiles/vimrc.pkgs'
+exe 'source' fnameescape(g:nix_dir . '/vimfiles/vimrc.pkgs')
 call plug#end()
