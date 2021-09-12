@@ -151,10 +151,10 @@ function! s:sh(cmd, opt) abort
   let cmd = a:cmd[len(opt_string):]
   let l:term_name = cmd
   " expand %
-  let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtre])*)\ze%($|\s)',
+  let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtreS])*)\ze%($|\s)',
         \ s:is_win32 ?
-        \'\=s:shellescape(s:tr_slash(expand(submatch(1))))' :
-        \'\=shellescape(expand(submatch(1)))',
+        \'\=s:shellescape(s:tr_slash(expand(s:trim_S(submatch(1)))))' :
+        \'\=shellescape(expand(s:trim_S(submatch(1))))',
         \ 'g')
   let cmd = substitute(cmd, '\v^\s+', '', '')
   " remove trailing whitespace
@@ -345,6 +345,10 @@ function! s:sh(cmd, opt) abort
   let result = join(getbufline(bufnr, 1, '$'), "\n")
   execute bufnr . 'bwipeout!'
   return s:echo(result, opt.echo)
+endfunction
+
+function! s:trim_S(modifier) abort
+  return substitute(a:modifier, ':S$', '', '')
 endfunction
 
 function! s:stop_job(job, ...) abort

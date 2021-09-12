@@ -97,11 +97,16 @@ If the function returns 0, then try the next element.
 
 - `%` with optional modifiers (`:p` / `:h` / `:t` / `:r` / `:e`) is expanded
   only when passed as a standalone argument; and it is shell-escaped (like
-  `:S` modifier is always used).
+  `:S` modifier is always used; use unix shellescape rule even on win32).
+
+- to make it compatible with `:!` command, `:S` modifier can be passed, and it
+  will be trimmed (use custom `shellescape` instead).
 
 This means that command like `Sh printf %s %:t:e` will print file basename
 (`%s` is not expanded; `%:t:e` should NOT be quoted, as it is escaped
 automatically).
+
+`Sh printf %s %:t:e:S` also works.
 
 ### unix shell support in native Windows vim (`has('win32') == 1`)
 
