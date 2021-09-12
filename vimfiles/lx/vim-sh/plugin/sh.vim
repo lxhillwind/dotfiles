@@ -43,7 +43,9 @@ endif
 let s:vimserver_envs = get(s:, 'vimserver_envs', {})
 for s:i in ['VIMSERVER_ID', 'VIMSERVER_BIN', 'VIMSERVER_CLIENT_PID']
   if exists('$'.s:i)
-    let s:vimserver_envs[s:i] = getenv(s:i)
+    if exists('*getenv')
+      let s:vimserver_envs[s:i] = getenv(s:i)
+    endif
     execute 'unlet' '$'.s:i
   endif
 endfor

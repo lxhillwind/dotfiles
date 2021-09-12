@@ -103,7 +103,9 @@ let &directory = expand('~/.vim/files/swap' . '//')
 set undofile
 let &undodir = expand('~/.vim/files/undo/')
 " viminfo files
-let &viminfofile = expand('~/.vim/files/viminfo')
+if exists('&viminfofile')
+  let &viminfofile = expand('~/.vim/files/viminfo')
+endif
 
 " create directory if needed
 for s:t_dir in [&backupdir, &directory, &undodir]
@@ -479,7 +481,9 @@ function! s:get_sid(filename)
   return 0
 endfunction
 " hide execute output.
-silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
+if exists('*execute')
+  silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
+endif
 " }}}
 
 " switch number / relativenumber {{{
@@ -495,7 +499,9 @@ endfunction
 " terminal <C-Space>
 map <Nul> <C-Space>
 map! <Nul> <C-Space>
-tmap <Nul> <C-Space>
+if exists(':tmap') == 2
+  tmap <Nul> <C-Space>
+endif
 
 " completion
 inoremap <C-Space> <C-x><C-o>
@@ -527,9 +533,11 @@ nnoremap <Leader><CR> :call <SID>execute_lines('n')<CR>
 vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 
 " terminal escape
-tnoremap <C-Space> <C-\><C-n>
-if !has('nvim')
-  tnoremap <C-w> <C-w>.
+if exists(':tnoremap')
+  tnoremap <C-Space> <C-\><C-n>
+  if !has('nvim')
+    tnoremap <C-w> <C-w>.
+  endif
 endif
 
 " switch nu / rnu

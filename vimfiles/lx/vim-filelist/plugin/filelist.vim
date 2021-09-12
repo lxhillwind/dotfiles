@@ -1,4 +1,5 @@
-if get(g:, 'loaded_filelist')
+if get(g:, 'loaded_filelist') || !exists('&viminfofile')
+  " &viminfofile is introduced after *json_encode, so checking it is enough.
   finish
 endif
 let g:loaded_filelist = 1

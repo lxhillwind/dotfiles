@@ -7,6 +7,14 @@ if &cp
   set nocp
 endif
 
+" dummy impl for old version vim. {{{
+if !exists('v:argv')
+  function! vimserver#main() abort
+  endfunction
+  finish
+endif
+" }}}
+
 " common func and env prepare {{{
 let s:is_nvim = has('nvim')
 let s:is_win32 = has('win32')
@@ -76,7 +84,9 @@ function! vimserver#main() abort
   let s:called_main = 1
 
   if !executable(s:vimserver_exe)
-    echoerr 'vimserver executable not found!'
+    if !exists('g:vimserver_ignore') || empty(g:vimserver_ignore)
+      echoerr 'vimserver executable not found!'
+    endif
     return
   endif
   " gvim always starts a vimserver.

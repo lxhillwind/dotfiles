@@ -22,6 +22,13 @@ runtime vim-vimserver/plugin/vimserver.vim
 call vimserver#main()
 ```
 
+To ignore startup error (`vimserver executable not found!`), set variable like
+this:
+
+```vim
+let g:vimserver_ignore = 1
+```
+
 ## Usage
 - Inside terminal session, call `vim [filename]...` to open buffer in outside
   vim.
