@@ -1,4 +1,5 @@
-if get(g:, 'loaded_sh')
+" patch-8.0.1089: <range> support.
+if get(g:, 'loaded_sh') || (!has('nvim') && !has('patch-8.0.1089'))
   finish
 endif
 let g:loaded_sh = 1
