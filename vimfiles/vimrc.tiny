@@ -29,7 +29,9 @@ filetype on
 filetype plugin on
 filetype indent on
 " belloff
-set bo=all
+if exists('&bo')
+  set bo=all
+endif
 " incsearch
 set is
 " timeoutlen

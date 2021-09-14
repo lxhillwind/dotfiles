@@ -30,8 +30,18 @@ function! s:enable(pkg, ...)  " {{{
 endfunction
 " }}}
 
+" globpath() polyfill {{{
+function! s:globpath(a, b, c, d) abort
+  if has('patch-7.4.654')
+    return globpath(a:a, a:b, a:c, a:d)
+  else
+    return split(globpath(a:a, a:b), "\n")
+  endif
+endfunction
+" }}}
+
 if s:enable('lx', 1)
-  for s:i in globpath(expand('<sfile>:p:h'), 'lx/*', 0, 1)
+  for s:i in s:globpath(expand('<sfile>:p:h'), 'lx/*', 0, 1)
     if isdirectory(s:i) && match(s:i, "'") < 0
       " ensure "'" is not in path.
       execute printf("Plug '%s'", s:i)
@@ -46,7 +56,7 @@ if s:enable('base', 1)
   let g:loaded_netrwPlugin = 1
 endif
 
-if s:enable('basic-comp', 1)
+if s:enable('basic-comp', 1) && v:version >= 800
   Plug 'https://github.com/skywind3000/vim-auto-popmenu'
   " enable this plugin for filetypes, '*' for all files.
   "let g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
@@ -70,7 +80,7 @@ if s:enable('basic-comp', 1)
   "let g:vim_dict_config = {'text': ''}
 endif
 
-if s:enable('coc', 0)
+if s:enable('coc', 0) && v:version >= 800
   let g:apc_enable_ft = {}
 
   Plug 'neoclide/coc.nvim', {'branch': 'release'}
