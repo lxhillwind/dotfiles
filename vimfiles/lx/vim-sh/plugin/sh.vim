@@ -170,6 +170,7 @@ function! s:sh(cmd, opt) abort
           \ : match(@:, '\v\S+(S|T)') >= 0 ? 1 : 0
   endif
 
+  " use different variable name for different type; see vim tag 7.4.1546
   let stdin_flag = 0
   if opt.visual
     let tmp = @"
@@ -236,7 +237,6 @@ function! s:sh(cmd, opt) abort
       unlet cmd_new
     endif
 
-    " use different variable name for different type; see vim tag 7.4.1546
     if stdin_flag is# 0
       return s:echo(system(cmd), opt.echo)
     else
