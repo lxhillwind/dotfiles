@@ -165,9 +165,10 @@ function! s:sh(cmd, opt) abort
   endif
 
   if !s:range_native
+    " TODO differ no range / online range.
     let opt.range = opt.line1 != opt.line2 ?
           \ 2
-          \ : match(@:, '\v\S+(S|T)') >= 0 ? 1 : 0
+          \ : 0
   endif
 
   " use different variable name for different type; see vim tag 7.4.1546
@@ -186,7 +187,7 @@ function! s:sh(cmd, opt) abort
       let stdin = getline(opt.line1, opt.line2)
       let stdin_flag = 1
     elseif get(opt, 'range') == 1
-      let stdin = getline(opt.line1)
+      let stdin = [getline(opt.line1)]
       let stdin_flag = 1
     endif
   endif
@@ -241,7 +242,9 @@ function! s:sh(cmd, opt) abort
       return s:echo(system(cmd), opt.echo)
     else
       " add final [''] to add final newline
-      return s:echo(system(cmd, stdin + ['']), opt.echo)
+      return s:echo(system(cmd,
+            \ has('patch-7.4.247') ? stdin + [''] : join(stdin + [''], "\n")
+            \ ), opt.echo)
     endif
   endif
 
@@ -557,7 +560,7 @@ endfunction
 
 let s:has_execute = exists('*execute')
 if !s:has_execute
-  function! Execute(arg)
+  function! s:execute(arg)
     let l:res = ''
     try
       " exception message will be thrown away.
@@ -567,6 +570,18 @@ if !s:has_execute
       redir END
     endtry
     return l:res
+  endfunction
+
+  let s:sid = expand('<sfile>')
+  function! s:get_sid() abort
+    for i in split(s:execute('scriptnames'), "\n")
+      let id = substitute(i, '\v^\s*(\d+): .*$', '\1', '')
+      let file = substitute(i, '\v^\s*\d+: ', '', '')
+      if s:sid ==# expand(file)
+        return "<SNR>" . id
+      endif
+    endfor
+    throw "Can't get script id!"
   endfunction
 endif
 
@@ -589,7 +604,7 @@ function! s:shell_replace()
     " whitespace in "cmd[idx :]" is required for old version vim
     " (like 7.2.051)
     let cmd = printf(
-          \ s:has_execute ? 'put =execute(\"%s\")' : 'put =Execute(\"%s\")',
+          \ s:has_execute ? 'put =execute(\"%s\")' : 'silent put =' . s:get_sid() . '_execute(\"%s\")',
           \ escape(
           \   escape('Sh ' . cmd[idx :], '"\'),
           \ '|"'))
