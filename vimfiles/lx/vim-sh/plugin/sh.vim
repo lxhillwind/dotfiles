@@ -1,5 +1,6 @@
 " patch-8.0.1089: <range> support.
 " patch-8.0.1630: trim().
+" patch-8.1.1305: getenv().
 " patch-8.1.1610: bufadd().
 if get(g:, 'loaded_sh') || (!has('nvim') && !has('patch-8.1.1610'))
   finish
@@ -46,9 +47,7 @@ endif
 let s:vimserver_envs = get(s:, 'vimserver_envs', {})
 for s:i in ['VIMSERVER_ID', 'VIMSERVER_BIN', 'VIMSERVER_CLIENT_PID']
   if exists('$'.s:i)
-    if exists('*getenv')
-      let s:vimserver_envs[s:i] = getenv(s:i)
-    endif
+    let s:vimserver_envs[s:i] = getenv(s:i)
     execute 'unlet' '$'.s:i
   endif
 endfor
