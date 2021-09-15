@@ -165,7 +165,7 @@ function! s:sh(cmd, opt) abort
   endif
 
   if !s:range_native
-    " TODO differ no range / online range.
+    " TODO differ no range / oneline range.
     let opt.range = opt.line1 != opt.line2 ?
           \ 2
           \ : 0

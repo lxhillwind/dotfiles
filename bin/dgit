@@ -1,3 +1,13 @@
 #!/bin/sh
 
-exec git --git-dir ~/dotfiles/.git --work-tree ~ "$@"
+if [ "$OS" = Windows_NT ]; then
+    # busybox-w32, mingw64 (git for windows).
+    if [ -d ~/'My Documents/nix/dotfiles/.git' ]; then
+        # Windows XP
+        exec git --git-dir ~/'My Documents/nix/dotfiles/.git' --work-tree ~/'My Documents/nix' "$@"
+    else
+        exec git --git-dir ~/nix/dotfiles/.git --work-tree ~/nix "$@"
+    fi
+else
+    exec git --git-dir ~/dotfiles/.git --work-tree ~ "$@"
+fi
