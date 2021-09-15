@@ -7,7 +7,9 @@ let g:loaded_sh = 1
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
 let s:is_nvim = has('nvim')
-let s:has_job = exists('*jobstart') || exists('*job_start')
+let s:use_job = !s:is_nvim &&
+      \ (exists('*jobstart') || exists('*job_start')) &&
+      \ exists('*bufadd')
 
 function! s:echoerr(msg)
   echohl ErrorMsg
@@ -221,7 +223,7 @@ function! s:sh(cmd, opt) abort
   " using system() in vim with stdin will cause writing temp file.
   " on win32, system() will open a new cmd window.
   " so do not use system() if possible.
-  if !opt.tty && !opt.window && (s:is_nvim || !s:has_job)
+  if !opt.tty && !opt.window && !s:use_job
     if s:is_win32
       " use new variable is required for old version vim (like 7.2.051),
       " since it has strong type checking for variable redeclare.
