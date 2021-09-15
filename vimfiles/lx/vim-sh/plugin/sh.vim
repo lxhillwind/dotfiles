@@ -1,5 +1,7 @@
 " patch-8.0.1089: <range> support.
-if get(g:, 'loaded_sh') || (!has('nvim') && !has('patch-8.0.1089'))
+" patch-8.0.1630: trim().
+" patch-8.1.1610: bufadd().
+if get(g:, 'loaded_sh') || (!has('nvim') && !has('patch-8.1.1610'))
   finish
 endif
 let g:loaded_sh = 1
