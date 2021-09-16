@@ -515,8 +515,8 @@ function! s:filter(result, opt) abort " {{{2
     else
       let first = 1 == opt.line1
       let last = line('$') == opt.line2
-      execute 'normal' opt.line1 .. 'gg'
-      execute 'normal' opt.line2 - opt.line1 + 1 .. '"_dd'
+      execute 'normal' opt.line1 . 'gg'
+      execute 'normal' opt.line2 - opt.line1 + 1 . '"_dd'
       if last
         if first
           normal P
@@ -534,7 +534,6 @@ endfunction
 
 function! s:read_cmd(result, opt) abort " {{{2
   let opt = a:opt
-  echom opt
   let current = opt.range isnot# 0 ? opt.line2 : line('.')
   for line in a:result
     call append(current, line)
@@ -684,9 +683,12 @@ function! s:shell_replace()
     let l:range = matchstr(cmd,
           \ '\v^\s*' . range_str
           \ . '(,(' . range_str . '|))?'
-          \ . '\!')
+          \ . '\ze(r !|re !|rea !|read !|!)')
     if !empty(l:range)
-      let cmd = l:range[:-2] . 'Sh -f ' . cmd[len(l:range):]
+      let cmd = cmd[len(l:range):]
+      let flag = match(cmd, '!') == 0 ? '-f' : '-r'
+      let cmd = cmd[match(cmd, '!')+1 :]
+      let cmd = printf('%sSh %s %s', l:range, flag, cmd)
     endif
   endif
   return cmd
