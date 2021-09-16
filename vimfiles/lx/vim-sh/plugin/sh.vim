@@ -29,33 +29,33 @@ let s:range_native = has('nvim') || has('patch-8.0.1089')
 
 if s:range_native
   if s:is_win32
-    command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
+    command! -bang -range=0 -nargs=* -complete=custom,s:win32_cmd_list Sh
           \ call s:sh(<q-args>, {'bang': <bang>0,
           \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-    command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
+    command! -range=0 -nargs=* -complete=custom,s:win32_cmd_list Terminal
           \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
           \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
   else
-    command! -bang -range -nargs=* -complete=shellcmd Sh
+    command! -bang -range=0 -nargs=* -complete=shellcmd Sh
           \ call s:sh(<q-args>, {'bang': <bang>0,
           \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-    command! -range -nargs=* -complete=shellcmd Terminal
+    command! -range=0 -nargs=* -complete=shellcmd Terminal
           \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
           \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
   endif
 else
   if s:is_win32
-    command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
+    command! -bang -range=0 -nargs=* -complete=custom,s:win32_cmd_list Sh
           \ call s:sh(<q-args>, {'bang': <bang>0,
           \ 'line1': <line1>, 'line2': <line2>})
-    command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
+    command! -range=0 -nargs=* -complete=custom,s:win32_cmd_list Terminal
           \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
           \ 'line1': <line1>, 'line2': <line2>})
   else
-    command! -bang -range -nargs=* -complete=shellcmd Sh
+    command! -bang -range=0 -nargs=* -complete=shellcmd Sh
           \ call s:sh(<q-args>, {'bang': <bang>0,
           \ 'line1': <line1>, 'line2': <line2>})
-    command! -range -nargs=* -complete=shellcmd Terminal
+    command! -range=0 -nargs=* -complete=shellcmd Terminal
           \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
           \ 'line1': <line1>, 'line2': <line2>})
   endif
@@ -534,7 +534,7 @@ endfunction
 
 function! s:read_cmd(result, opt) abort " {{{2
   let opt = a:opt
-  let current = opt.range isnot# 0 ? opt.line2 : line('.')
+  let current = opt.line2
   for line in a:result
     call append(current, line)
     let current += 1
