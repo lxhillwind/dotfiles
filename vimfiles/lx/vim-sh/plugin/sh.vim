@@ -1,16 +1,16 @@
-" patch-8.0.1089: <range> support.
-" patch-8.0.1630: trim().
-" patch-8.1.1305: getenv().
-" patch-8.1.1610: bufadd().
-if get(g:, 'loaded_sh') || (!has('nvim') && !has('patch-8.1.1610'))
+if get(g:, 'loaded_sh')
   finish
 endif
 let g:loaded_sh = 1
 
-" common {{{
+" main {{{1
+" common var def {{{2
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
 let s:is_nvim = has('nvim')
+let s:use_job = !s:is_nvim &&
+      \ (exists('*jobstart') || exists('*job_start')) &&
+      \ exists('*bufadd')
 
 function! s:echoerr(msg)
   echohl ErrorMsg
@@ -22,42 +22,69 @@ let s:job_start = s:is_nvim ? 'jobstart' : 'job_start'
 let s:term_start = s:is_nvim ? 'termopen' : 'term_start'
 
 let s:file = expand('<sfile>')
-" }}}
 
-if s:is_win32
-  command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
-        \ call s:sh(<q-args>, {'bang': <bang>0,
-        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-  command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
-        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
-        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+" :command def {{{2
+" patch-8.0.1089: <range> support.
+let s:range_native = has('nvim') || has('patch-8.0.1089')
+
+if s:range_native
+  if s:is_win32
+    command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
+          \ call s:sh(<q-args>, {'bang': <bang>0,
+          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+    command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
+          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
+          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  else
+    command! -bang -range -nargs=* -complete=shellcmd Sh
+          \ call s:sh(<q-args>, {'bang': <bang>0,
+          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+    command! -range -nargs=* -complete=shellcmd Terminal
+          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
+          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  endif
 else
-  command! -bang -range -nargs=* -complete=shellcmd Sh
-        \ call s:sh(<q-args>, {'bang': <bang>0,
-        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-  command! -range -nargs=* -complete=shellcmd Terminal
-        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
-        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  if s:is_win32
+    command! -bang -range -nargs=* -complete=custom,s:win32_cmd_list Sh
+          \ call s:sh(<q-args>, {'bang': <bang>0,
+          \ 'line1': <line1>, 'line2': <line2>})
+    command! -range -nargs=* -complete=custom,s:win32_cmd_list Terminal
+          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
+          \ 'line1': <line1>, 'line2': <line2>})
+  else
+    command! -bang -range -nargs=* -complete=shellcmd Sh
+          \ call s:sh(<q-args>, {'bang': <bang>0,
+          \ 'line1': <line1>, 'line2': <line2>})
+    command! -range -nargs=* -complete=shellcmd Terminal
+          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
+          \ 'line1': <line1>, 'line2': <line2>})
+  endif
 endif
 
-" s:sh() impl {{{
-
+" vimserver tweak {{{2
 " store vimserver.vim related environment variable, and delete them from env;
 " so that ":!" / "system()" / "job_start()" will not be affected by vimserver.
 let s:vimserver_envs = get(s:, 'vimserver_envs', {})
 for s:i in ['VIMSERVER_ID', 'VIMSERVER_BIN', 'VIMSERVER_CLIENT_PID']
   if exists('$'.s:i)
-    let s:vimserver_envs[s:i] = getenv(s:i)
+    if exists('*getenv')
+      let s:vimserver_envs[s:i] = getenv(s:i)
+    endif
     execute 'unlet' '$'.s:i
   endif
 endfor
 
-function! s:echo(str, echo) abort
-  if a:echo
-    redraws | echon trim(a:str, "\n")
-    return 0
+" polyfill {{{2
+function! s:trim(s, p) abort
+  if exists('*trim')
+    return trim(a:s, a:p)
   else
-    return a:str
+    let end = match(a:s, '\V' . escape(a:p, '\/') . '\+\$')
+    if end >= 0
+      return a:s[0:end-1]
+    else
+      return a:s
+    endif
   endif
 endfunction
 
@@ -98,7 +125,8 @@ function! s:get_fin_term_buffer() abort
   return result
 endfunction
 
-function! s:sh(cmd, opt) abort
+function! s:sh(cmd, opt) abort " {{{2
+  " opt parse {{{
   let opt = {'bang': 0, 'newwin': 1}
   " -vtwcb
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
@@ -118,10 +146,13 @@ function! s:sh(cmd, opt) abort
   " focus on current buffer (implies opt.tty)
   let opt.background = match(opt_string, 'b') >= 0
 
-  let opt = extend(opt, a:opt)
+  " ":<range>!cmd"
+  let opt.filter = match(opt_string, 'f') >= 0
 
-  " used in win32 FilterV
-  let opt.echo = get(opt, 'echo', 1)
+  " ":read !cmd"
+  let opt.read_cmd = match(opt_string, 'r') >= 0
+
+  let opt = extend(opt, a:opt)
 
   if opt.background
     let opt.tty = 1
@@ -131,23 +162,40 @@ function! s:sh(cmd, opt) abort
     let opt.tty = 1
   endif
 
-  let stdin = 0
+  if !s:range_native
+    " TODO differ no range / oneline range.
+    let opt.range = opt.line1 != opt.line2 ?
+          \ 2
+          \ : 0
+  endif
+  " }}}
+
+  " use different variable name for different type; see vim tag 7.4.1546
+  let stdin_flag = 0 " {{{
   if opt.visual
     let tmp = @"
     silent normal gvy
-    let stdin = @"
+    let stdin_s = @"
     let @" = tmp
     unlet tmp
+    let stdin = split(stdin_s, "\n")
+    if stdin_s[-1:] == "\n"
+      let stdin = add(stdin, '')
+    endif
+    let stdin_flag = 1
+    unlet stdin_s
   else
     if get(opt, 'range') == 2
       let stdin = getline(opt.line1, opt.line2)
+      let stdin_flag = 1
+      let stdin = add(stdin, '')
     elseif get(opt, 'range') == 1
-      let stdin = getline(opt.line1)
+      let stdin = [getline(opt.line1)]
+      let stdin_flag = 1
+      let stdin = add(stdin, '')
     endif
   endif
-  if type(stdin) == type('')
-    let stdin = split(stdin, "\n")
-  endif
+  " }}}
 
   let cmd = a:cmd[len(opt_string):]
   let l:term_name = cmd
@@ -161,7 +209,7 @@ function! s:sh(cmd, opt) abort
   " remove trailing whitespace
   let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if empty(cmd) && stdin isnot# 0
+  if empty(cmd) && stdin_flag isnot# 0
     call s:echoerr('pipe to empty cmd is not allowed!') | return
   endif
 
@@ -178,16 +226,30 @@ function! s:sh(cmd, opt) abort
   " using system() in vim with stdin will cause writing temp file.
   " on win32, system() will open a new cmd window.
   " so do not use system() if possible.
-  if !opt.tty && !opt.window && s:is_nvim
+  if !opt.tty && !opt.window && !s:use_job
     if s:is_win32
-      let cmd = [shell] + shell_arg_patch + ['-c', cmd]
+      " use new variable is required for old version vim (like 7.2.051),
+      " since it has strong type checking for variable redeclare.
+      " see tag 7.4.1546
+      let cmd_new = [shell] + shell_arg_patch + ['-c', cmd]
+      if s:is_nvim
+        let cmd = cmd_new
+      else
+        " ^" is required for system().
+        " e.g. system('"busybox" "sh" "-c" "echo"') won't work,
+        " but system('^""busybox" "sh" "-c" "echo"') would.
+        let cmd = '^"' . s:win32_cmd_list_to_str(cmd_new)
+      endif
+      unlet cmd_new
     endif
 
-    if stdin is# 0
-      return s:echo(system(cmd), opt.echo)
+    if stdin_flag is# 0
+      return s:post_func(system(cmd), opt)
     else
       " add final [''] to add final newline
-      return s:echo(system(cmd, stdin + ['']), opt.echo)
+      return s:post_func(system(cmd,
+            \ has('patch-7.4.247') ? stdin : join(stdin, "\n")
+            \ ), opt)
     endif
   endif
 
@@ -196,10 +258,10 @@ function! s:sh(cmd, opt) abort
   " s:is_nvim: no in_buf job-option;
   " opt.tty && !opt.newwin: buffer would be destroyed before using;
   if !opt.visual && !opt.window && !s:is_nvim && !(opt.tty && !opt.newwin)
-    let stdin = get(opt, 'range') != 0
+    let stdin_flag = get(opt, 'range') != 0 ? 2 : stdin_flag
   endif
   let job_opt = {}
-  if stdin is# 1
+  if stdin_flag is# 2
     let job_opt = extend(job_opt, #{
           \ in_io: 'buffer',
           \ in_buf: bufnr(),
@@ -208,10 +270,10 @@ function! s:sh(cmd, opt) abort
           \ })
   endif
 
-  let tmpfile = ''
-  if stdin isnot# 0 && stdin isnot# 1
+  let tmpfile = '' " {{{
+  if stdin_flag is# 1
     let tmpfile = tempname()
-    call writefile(stdin, tmpfile)
+    call writefile(stdin, tmpfile, 'b')
   endif
 
   let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
@@ -232,8 +294,9 @@ function! s:sh(cmd, opt) abort
       let cmd = [shell] + shell_arg_patch + ['-c', cmd]
     endif
   endif
+  " }}}
 
-  if opt.window
+  if opt.window " {{{
     let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
           \ 'cmd': cmd, 'close': opt.close,
           \ 'start_fn': s:is_win32 ? function('s:win32_start') : function(s:job_start),
@@ -261,12 +324,13 @@ function! s:sh(cmd, opt) abort
     call s:echoerr('Sh: -w option not supported! wrong `g:sh_programs`?')
     return
   endif
+  " }}}
 
   if s:is_win32 && !s:is_nvim
     let cmd = s:win32_cmd_list_to_str(cmd)
   endif
 
-  if opt.tty
+  if opt.tty " {{{
     let buf_idx = -1
     if opt.bang
       let term_buffers = s:get_fin_term_buffer()
@@ -310,8 +374,9 @@ function! s:sh(cmd, opt) abort
 
     return job
   endif
+  " }}}
 
-  " no tty
+  " no tty {{{
   let bufnr = bufadd('')
   call bufload(bufnr)
   let job_opt = extend(job_opt, {
@@ -342,12 +407,14 @@ function! s:sh(cmd, opt) abort
       endtry
     endif
   endif
+  " }}}
 
-  let result = join(getbufline(bufnr, 1, '$'), "\n")
+  let result = getbufline(bufnr, 1, '$')
   execute bufnr . 'bwipeout!'
-  return s:echo(result, opt.echo)
+  return s:post_func(result, opt)
 endfunction
 
+" util func {{{2
 function! s:trim_S(modifier) abort
   return substitute(a:modifier, ':S$', '', '')
 endfunction
@@ -360,6 +427,23 @@ function! s:stop_job(job, ...) abort
   endif
 endfunction
 
+function! s:post_func(result, opt) abort
+  let opt = a:opt
+  if opt.filter || opt.read_cmd
+    let result = type(a:result) == type('') ? split(a:result, "\n") : a:result
+    if opt.filter
+      call s:filter(result, opt)
+    elseif opt.read_cmd
+      call s:read_cmd(result, opt)
+    endif
+  else
+    let result = type(a:result) == type([]) ? join(a:result, "\n") : a:result
+    redraws | echon s:trim(result, "\n")
+    return 0
+  endif
+endfunction
+
+" -w program {{{2
 function! s:program_alacritty(context) abort
   let [cmd, close, keep_window_path] = [a:context.cmd, a:context.close, a:context.keep_window_path]
   if executable('alacritty')
@@ -406,6 +490,7 @@ function! s:program_mintty(context) abort
   endif
 endfunction
 
+" nvim polyfill {{{2
 if s:is_nvim
   augroup sh_insert_mode_patch
     function! s:insert_mode_patch()
@@ -419,13 +504,49 @@ if s:is_nvim
     au BufEnter term://* call s:insert_mode_patch()
   augroup END
 endif
-" }}}
 
-" win32: s:sh() helper function; replace :! && :'<,'>! with busybox shell {{{
+function! s:filter(result, opt) abort " {{{2
+  let opt = a:opt
+  let previous = @"
+  try
+    let @" = join(a:result, "\n")
+    if opt.visual
+      normal gvP
+    else
+      let first = 1 == opt.line1
+      let last = line('$') == opt.line2
+      execute 'normal' opt.line1 .. 'gg'
+      execute 'normal' opt.line2 - opt.line1 + 1 .. '"_dd'
+      if last
+        if first
+          normal P
+        else
+          execute 'normal' "o\<Esc>P"
+        endif
+      else
+        execute 'normal' "O\<Esc>P"
+      endif
+    endif
+  finally
+    let @" = previous
+  endtry
+endfunction
+
+function! s:read_cmd(result, opt) abort " {{{2
+  let opt = a:opt
+  echom opt
+  let current = opt.range isnot# 0 ? opt.line2 : line('.')
+  for line in a:result
+    call append(current, line)
+    let current += 1
+  endfor
+endfunction
+
+" win32 polyfill {{{1
 if !s:is_win32 | finish | endif
 cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
-command! -nargs=+ -range FilterV call <SID>filterV(<q-args>, <range>, <line1>, <line2>)
 
+" win32 quote related {{{2
 function! s:shellescape(cmd) abort
   return "'" . substitute(a:cmd, "'", "'\"'\"'", 'g') . "'"
 endfunction
@@ -443,26 +564,6 @@ function! s:win32_start(cmdlist, ...) abort
   let term_name = s:win32_quote(term_name)
   call system(printf('start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
 endfunction
-
-let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
-function! s:win32_cmd_list(A, L, P)
-  " use busybox cmd list even when the shell is not busybox,
-  " since $PATH may not contain /usr/bin before invoking shell.
-  if empty(get(s:, 'win32_cmd_list_data', 0))
-    let s:win32_cmd_list_data = readfile(s:busybox_cmdlist)
-  endif
-  let exe = globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
-  call map(exe, 'substitute(v:val, ".*\\", "", "")')
-  return join(sort(extend(exe, s:win32_cmd_list_data)), "\n")
-endfunction
-
-" win32 vim from unix shell will set &shell incorrectly, so restore it
-if s:is_win32 && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
-  let &shell = 'cmd.exe'
-  let &shellcmdflag = '/s /c'
-  let &shellquote = ''
-  silent! let &shellxquote = ''
-endif
 
 function! s:win32_cmd_list_to_str(arg)
   return join(map(copy(a:arg), 's:win32_quote(v:val)'), ' ')
@@ -488,6 +589,36 @@ function! s:win32_cmd_exe_quote(arg)
   return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
 endfunction
 
+" win32 completion {{{2
+let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
+function! s:win32_cmd_list(A, L, P)
+  " use busybox cmd list even when the shell is not busybox,
+  " since $PATH may not contain /usr/bin before invoking shell.
+  if empty(get(s:, 'win32_cmd_list_data', 0))
+    let s:win32_cmd_list_data = readfile(s:busybox_cmdlist)
+  endif
+  let exe = s:globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
+  call map(exe, 'substitute(v:val, ".*\\", "", "")')
+  return join(sort(extend(exe, s:win32_cmd_list_data)), "\n")
+endfunction
+
+function! s:globpath(a, b, c, d) abort
+  if has('patch-7.4.654')
+    return globpath(a:a, a:b, a:c, a:d)
+  else
+    return split(globpath(a:a, a:b), "\n")
+  endif
+endfunction
+
+" win32 vim from unix shell will set &shell incorrectly, so restore it
+if s:is_win32 && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
+  let &shell = 'cmd.exe'
+  let &shellcmdflag = '/s /c'
+  let &shellquote = ''
+  silent! let &shellxquote = ''
+endif
+
+" cmdline shell_replace impl {{{2
 function! s:shell_replace()
   let cmd = getcmdline()
 
@@ -504,63 +635,61 @@ function! s:shell_replace()
     let cmd = 'Sh ' . cmd[1:]
   elseif match(cmd, '\v^(r|re|rea|read) !') >= 0
     let idx = matchend(cmd, '\v^(r|re|rea|read) !')
-    let cmd = printf('put =execute(\"%s\")',
-          \ escape(
-          \   escape('Sh ' . cmd[idx:], '"\'),
-          \ '|"'))
+    " whitespace in "cmd[idx :]" is required for old version vim
+    let cmd = 'Sh -r ' . cmd[idx :]
   else
     " /{pattern}[/] and ?{pattern}[?] are not always matched since they may be
     " too complex.
+    "
+    " old version vim (before v8.1.0369) does not support comment in cross line expr;
+    " so doc it in one place: {{{
+    "
+    " ```
+    " let range_str = '('
+    "       \ . '('
+    "       "\ number
+    "       \ . '[0-9]+'
+    "       "\ . $ %
+    "       \ . '|\.|\$|\%'
+    "       "\ 't 'T
+    "       \ . "|'[a-zA-Z<>]"
+    "       "\ \/ \? \&
+    "       \ . '|\\\/|\\\?|\\\&'
+    "       "\ /{pattern}/ / ?{pattern}?, simple case
+    "       \ . '|/.{-}[^\\]/|\?.{-}[^\\]\?'
+    "       "\ empty (as .)
+    "       \ . '|'
+    "       \ . ')'
+    "       "\ optional [+-][num]* after range above.
+    "       \ . '([+-][0-9]*)?'
+    "       \ . ')'
+    " let l:range = matchstr(cmd,
+    "       \ '\v^\s*' . range_str
+    "       "\ (optional,(optional range))
+    "       \ . '(,(' . range_str . '|))?'
+    "       \ . '\!')
+    " ```
+    " }}}
     let range_str = '('
           \ . '('
-          "\ number
           \ . '[0-9]+'
-          "\ . $ %
           \ . '|\.|\$|\%'
-          "\ 't 'T
           \ . "|'[a-zA-Z<>]"
-          "\ \/ \? \&
           \ . '|\\\/|\\\?|\\\&'
-          "\ /{pattern}/ / ?{pattern}?, simple case
           \ . '|/.{-}[^\\]/|\?.{-}[^\\]\?'
-          "\ empty (as .)
           \ . '|'
           \ . ')'
-          "\ optional [+-][num]* after range above.
           \ . '([+-][0-9]*)?'
           \ . ')'
     let l:range = matchstr(cmd,
           \ '\v^\s*' . range_str
-          "\ (optional,(optional range))
           \ . '(,(' . range_str . '|))?'
           \ . '\!')
     if !empty(l:range)
-      let cmd = l:range[:-2] . 'FilterV ' . cmd[len(l:range):]
+      let cmd = l:range[:-2] . 'Sh -f ' . cmd[len(l:range):]
     endif
   endif
   return cmd
-endfunction
-
-function! s:filterV(cmd, range, line1, line2)
-  let previous = @"
-  try
-    let @" = trim(s:sh(a:cmd, {'range': a:range, 'line1': a:line1, 'line2': a:line2, 'echo': 0}), "\n")
-    let first = 1 == a:line1
-    let last = line('$') == a:line2
-    execute 'normal' a:line1 . 'gg'
-    execute 'normal' a:line2 - a:line1 + 1 . '"_dd'
-    if last
-      if first
-        normal P
-      else
-        execute 'normal' "o\<Esc>P"
-      endif
-    else
-      execute 'normal' "O\<Esc>P"
-    endif
-  finally
-    let @" = previous
-  endtry
 endfunction
 " }}}
 
