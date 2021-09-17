@@ -480,9 +480,8 @@ function! s:get_sid(filename)
   endfor
   return 0
 endfunction
-" hide execute output.
 if exists('*execute')
-  silent let g:vimrc_sid = s:get_sid(expand('<sfile>'))
+  let g:vimrc_sid = s:get_sid(expand('<sfile>'))
 endif
 " }}}
 
