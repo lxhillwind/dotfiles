@@ -85,6 +85,48 @@ function! s:jump_to_file(nr, ...) abort
   call s:jump_flc(file, line, col)
 endfunction
 
+function! s:execute(cmd) abort
+  if exists('*execute')
+    return execute(a:cmd)
+  else
+    let l:res = ''
+    try
+      " exception message will be thrown away.
+      redir => l:res
+      silent exe a:cmd
+    finally
+      redir END
+    endtry
+    return l:res
+  endif
+endfunction
+
+let s:is_win32 = has('win32')
+
+function! s:norm_path(path) abort
+  if !s:is_win32 && match(a:path, '\v^\~[^/].*') >= 0
+    " e.g. ~~foo can't be expanded correctly.
+    let path = getcwd() . '/' . a:path
+  else
+    let path = a:path
+  endif
+  return simplify(fnamemodify(path, ':p'))
+endfunction
+
+function! s:getbufinfo() abort
+  if exists('*getbufinfo')
+    return getbufinfo()
+  else
+    let result = []
+    for line in split(s:execute('ls'), "\n")
+      let item = matchlist(line, '\v^\s*(\d+).{-}"(.+)".+$')
+      let result = add(result,
+            \ {'bufnr': str2nr(item[1]), 'name': s:norm_path(item[2])})
+    endfor
+    return result
+  endif
+endfunction
+
 " return 1 if opened; 0 else.
 function! s:open_file(name) abort
   let name = a:name
@@ -92,11 +134,11 @@ function! s:open_file(name) abort
   let l:is_dir = isdirectory(name)
   if l:is_dir
     " trim final (back)slash since dir buffer name does not contain it.
-    let name = substitute(name, has('win32') ? '\v\\$' : '\v/$', '', '')
+    let name = substitute(name, s:is_win32 ? '\v\\$' : '\v/$', '', '')
   endif
 
   let bufnrs = tabpagebuflist()
-  for buffer in getbufinfo()
+  for buffer in s:getbufinfo()
     if buffer.name !=# name
       continue
     endif
