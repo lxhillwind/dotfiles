@@ -280,20 +280,23 @@ function! s:sh(cmd, opt) abort " {{{2
 
   if empty(cmd)
     let l:term_name = shell
-    let cmd = [shell] + shell_arg_patch
+    let cmd_new = [shell] + shell_arg_patch
   else
     if !empty(tmpfile)
       if s:is_unix
-        let cmd = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
+        let cmd_new = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
               \ shellescape(cmd), shellescape(tmpfile))]
       else
-        let cmd = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
+        let cmd_new = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
               \ s:shellescape(cmd), s:shellescape(s:tr_slash(tmpfile)))]
       endif
     else
-      let cmd = [shell] + shell_arg_patch + ['-c', cmd]
+      let cmd_new = [shell] + shell_arg_patch + ['-c', cmd]
     endif
   endif
+  unlet cmd
+  let cmd = cmd_new
+  unlet cmd_new
   " }}}
 
   if opt.window " {{{
@@ -306,11 +309,11 @@ function! s:sh(cmd, opt) abort " {{{2
     for s:program in (exists('g:sh_programs') ? g:sh_programs :
           \ ['alacritty', 'urxvt', 'mintty', 'cmd',]
           \ )
-      if type(s:program) == v:t_func
+      if type(s:program) == type(function('tr'))
         :
-      elseif type(s:program) == v:t_string
-        let s:program = 's:program_' .. s:program
-        if !exists('*' .. s:program)
+      elseif type(s:program) == type('')
+        let s:program = 's:program_' . s:program
+        if !exists('*' . s:program)
           continue
         endif
       else
@@ -327,7 +330,10 @@ function! s:sh(cmd, opt) abort " {{{2
   " }}}
 
   if s:is_win32 && !s:is_nvim
-    let cmd = s:win32_cmd_list_to_str(cmd)
+    let cmd_new = s:win32_cmd_list_to_str(cmd)
+    unlet cmd
+    let cmd = cmd_new
+    unlet cmd_new
   endif
 
   if opt.tty " {{{
@@ -561,7 +567,9 @@ function! s:win32_start(cmdlist, ...) abort
   " remove " from it.
   let term_name = substitute(term_name, '"', '', 'g')
   let term_name = s:win32_quote(term_name)
-  call system(printf('start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
+  " use " start" since "start" does not work for old version vim, like 7.3.
+  " "start" is handled by vim internally.
+  call system(printf(' start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
 endfunction
 
 function! s:win32_cmd_list_to_str(arg)
