@@ -164,9 +164,11 @@ function! s:sh(cmd, opt) abort " {{{2
 
   if !s:range_native
     " TODO differ no range / current-line range.
-    let opt.range = opt.line1 != opt.line2 ?
+    " use opt.line1 < opt.line2 (instead of !=) since in some version of vim,
+    " <line2> is 1 (or 0) unless specified.
+    let opt.range = opt.line1 < opt.line2 ?
           \ 2
-          \ : (opt.line2 != line('.') ? 1 : 0)
+          \ : (opt.line1 != line('.') ? 1 : 0)
   endif
   " }}}
 
