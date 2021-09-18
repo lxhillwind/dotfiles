@@ -1,4 +1,4 @@
-if get(g:, 'loaded_jump')
+if get(g:, 'loaded_jump') || v:version < 703
   finish
 endif
 let g:loaded_jump = 1
