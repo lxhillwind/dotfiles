@@ -487,6 +487,18 @@ endif
 
 " switch number / relativenumber {{{
 function! s:switch_nu_rnu() abort
+  " patch-7.3.1115: set one of nu / rnu will affect another.
+  if v:version < 704
+    " [1, 0] -> [0, 0] -> [0, 1] -> [1, 0]
+    if &nu
+      setl nonu
+    elseif &rnu
+      setl nu
+    else
+      setl rnu
+    endif
+    return
+  endif
   " no [0, 1]
   let presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
   let idx = index(presents, [&l:nu, &l:rnu])
