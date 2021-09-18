@@ -1,4 +1,4 @@
-if get(g:, 'loaded_sh')
+if get(g:, 'loaded_sh') || v:version < 703
   finish
 endif
 let g:loaded_sh = 1
@@ -163,10 +163,10 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
 
   if !s:range_native
-    " TODO differ no range / oneline range.
+    " TODO differ no range / current-line range.
     let opt.range = opt.line1 != opt.line2 ?
           \ 2
-          \ : 0
+          \ : (opt.line2 != line('.') ? 1 : 0)
   endif
   " }}}
 
