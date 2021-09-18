@@ -417,6 +417,11 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
+  " line buffer workaround.
+  " get 30m in this way:
+  "   " in an empty scratch buffer
+  "   call job_start(['printf', 'ok'], #{out_io: 'buffer', out_buf: bufnr()}) | sleep 30m | echo getbufline(bufnr(), 1, '$')
+  sleep 30m
   let result = getbufline(bufnr, 1, '$')
   execute bufnr . 'bwipeout!'
   return s:post_func(result, opt)
