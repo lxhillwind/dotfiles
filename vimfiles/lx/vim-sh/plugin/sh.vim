@@ -497,8 +497,6 @@ function! s:program_cmd(context) abort
 endfunction
 
 function! s:program_mintty(context) abort
-  if s:is_unix | return 0 | endif
-
   let [shell, cmd, close, keep_window_path] = [a:context.shell, a:context.cmd, a:context.close, a:context.keep_window_path]
   " prefer mintty in the same dir of shell.
   let mintty_path = substitute(shell, '\v([\/]|^)\zs(zsh|bash)\ze(\.exe|"?$)', 'mintty', '')
