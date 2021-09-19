@@ -574,7 +574,6 @@ endfunction
 
 " win32 polyfill {{{1
 if !s:is_win32 | finish | endif
-cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
 
 " win32 quote related {{{2
 function! s:shellescape(cmd) abort
@@ -648,6 +647,13 @@ if s:is_win32 && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
   let &shellcmdflag = '/s /c'
   let &shellquote = ''
   silent! let &shellxquote = ''
+endif
+
+" cmap <CR> {{{2
+if exists('g:sh_win32_cr') && !empty(g:sh_win32_cr)
+  cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
+else
+  finish
 endif
 
 " cmdline shell_replace impl {{{2

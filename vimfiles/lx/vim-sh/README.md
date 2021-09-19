@@ -7,44 +7,33 @@ Two commands are provided:
 
 - `:Terminal [cmd]...`; (like `:Sh`, but always open tty in current window)
 
-## Option
-Pass option as follows:
+## Usage
+```console
+Usage: [range]Sh [-flags] [cmd...]
 
-- show output in new buffer (tty) instead of ex command output area; without
-  this option, shell command will be executed without pty, and in block mode.
-  (like `system()`)
+Example:
+  Sh uname -o
 
-```vim
-:Sh -t [cmd]...
+Supported flags:
+  h: display this help
+  v: visual mode (char level)
+  t: use builtin terminal
+  w: use external terminal
+  c: close terminal after execution
+  b: focus on current buffer (implies -t flag)
+  f: filter, like ":{range}!cmd"
+  r: like ":[range]read !cmd"
 ```
 
-- selected text as stdin (this is different from filter, which is line level);
-  visual mode
+details:
 
-```vim
-:<','>Sh -v [cmd]...
-```
+- `-v`: selected text as stdin (this is different from filter, which is line
+  level); visual mode
 
-- execute shell command in new application window. On Windows, it is
+- `-w`: execute shell command in new application window. On Windows, it is
   mintty.exe or cmd.exe; on other OS, urxvt / alacritty is supported now.
 
-```vim
-:Sh -w [cmd]...
-```
-
-- close window after execution
-
-```vim
-:Sh -c [cmd]...
-```
-
-- do not lose focus on current buffer, run in background (implies -t option)
-
-```vim
-:Sh -b [cmd]...
-```
-
-- try to reuse existing builtin tty window (implies -t option)
+- `<bang>`: try to reuse existing builtin tty window (implies -t option)
 
 ```vim
 :Sh! [cmd]...
@@ -75,6 +64,17 @@ set variable `g:sh_programs` to override default `-w` program detection order:
 
 default: `['alacritty', 'urxvt', 'mintty', 'cmd',]`
 
+### `g:sh_win32_cr`
+
+win32 only (`has('win32') == 1`);
+
+remap `<CR>` in command line mode; then `:[range]!{cmd}` / `:read !{cmd}` will
+be rewritten as `Sh`.
+
+example: `:!ls -l` will be translated to `:Sh ls -l`.
+
+default: `0`; set to `1` to enable it.
+
 #### experimental
 
 element of `g:sh_programs` can be function, like this:
@@ -87,6 +87,18 @@ let g:sh_programs = [{x -> !empty(job_start(['alacritty', '-e'] + x.cmd))}]
 If the function returns 0, then try the next element.
 
 ## Feature
+
+### support vim (7.3+) / neovim
+
+- uniform experience in all mainstream vim distribution.
+
+NOTE: before `patch-8.0.1089`, there is no way to differ 'no range' / 'current
+line'. Since the former is used more frequently, this plugin will always
+prefer it.
+
+example: `:.Sh wc -l` is the same as `:Sh wc -l`;
+
+to use current line as stdin, try this: `<Shift-v>:Sh -v {cmd}`.
 
 ### always use shell
 
@@ -126,4 +138,4 @@ let g:sh_path = 'C:/Program Files (x86)/Git/usr/bin/bash'
 
 - `:terminal ++shell` with unix shell syntax.
 
-- Replace `:!` and `!` (filter) with unix shell (by `cmap <CR>`).
+- Replace `:!` and `!` (filter) with unix shell (see `g:sh_win32_cr` above).
