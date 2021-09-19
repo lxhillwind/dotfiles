@@ -128,28 +128,33 @@ endfunction
 function! s:sh(cmd, opt) abort " {{{2
   " opt parse {{{
   let opt = {'bang': 0, 'newwin': 1}
-  " -vtwcb
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
+  let help = ['Usage: [range]Sh [-flags] [cmd...]']
+  call extend(help, ['', 'Example:', '  Sh uname -o'])
+  call extend(help, ['', 'Supported flags:'])
 
-  " visual mode (char level)
+  call add(help, '  h: display this help')
+  let opt.help = match(opt_string, 'h') >= 0
+
+  call add(help, '  v: visual mode (char level)')
   let opt.visual = match(opt_string, 'v') >= 0
 
-  " use builtin terminal
+  call add(help, '  t: use builtin terminal')
   let opt.tty = match(opt_string, 't') >= 0
 
-  " use external terminal
+  call add(help, '  w: use external terminal')
   let opt.window = match(opt_string, 'w') >= 0
 
-  " close terminal after execution
+  call add(help, '  c: close terminal after execution')
   let opt.close = match(opt_string, 'c') >= 0
 
-  " focus on current buffer (implies opt.tty)
+  call add(help, '  b: focus on current buffer (implies -t flag)')
   let opt.background = match(opt_string, 'b') >= 0
 
-  " ":<range>!cmd"
+  call add(help, '  f: filter, like ":{range}!cmd"')
   let opt.filter = match(opt_string, 'f') >= 0
 
-  " ":read !cmd"
+  call add(help, '  r: like ":[range]read !cmd"')
   let opt.read_cmd = match(opt_string, 'r') >= 0
 
   let opt = extend(opt, a:opt)
@@ -160,6 +165,11 @@ function! s:sh(cmd, opt) abort " {{{2
 
   if opt.bang
     let opt.tty = 1
+  endif
+
+  if opt.help
+    echo join(help, "\n")
+    return
   endif
 
   if !s:range_native
