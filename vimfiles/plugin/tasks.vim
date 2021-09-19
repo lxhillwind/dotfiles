@@ -83,6 +83,10 @@
 " key / value is delimited by the first '=' character;
 " key_without_value is NOT allowed; use `key =` instead.
 
+if v:version < 703
+  finish
+endif
+
 function! s:raise(msg, line) abort
   throw printf('%s %s', a:msg, a:line)
 endfunction
@@ -136,17 +140,17 @@ function! s:ctx(mode) abort
     let l:filename = getcwd()
     if !empty(l:filename)
       " add suffix to match glob.
-      let l:filename = l:filename .. '/'
+      let l:filename = l:filename . '/'
     endif
   endif
   if has('win32')
     " use / as pathsep even on Windows.
     let l:filename = substitute(l:filename, '\', '/', 'g')
   endif
-  let result = #{
-        \ filetype: &ft,
-        \ filename: l:filename,
-        \ mode: a:mode,
+  let result = {
+        \ 'filetype': &ft,
+        \ 'filename': l:filename,
+        \ 'mode': a:mode,
         \ }
   return result
 endfunction
@@ -324,9 +328,9 @@ function! s:check(mode) abort
     if index(order, key) < 0
       let order = add(order, key)
     endif
-    let result[key] = add(new_list, #{
-          \ origin: key_sec, section: k, cmd: cmd,
-          \ workdir: workdir})
+    let result[key] = add(new_list, {
+          \ 'origin': key_sec, 'section': k, 'cmd': cmd,
+          \ 'workdir': workdir})
   endfor
 
   let filtered = {}
@@ -376,25 +380,25 @@ augroup END
 " }}}
 
 function! s:ui(mode) abort
-  let [order, result] = s:check(a:mode)
-  if empty(result)
+  let [order, result_d] = s:check(a:mode)
+  if empty(result_d)
     redrawstatus | echon 'task not found.' | return
   endif
   for key in order
-    for item in get(result, key, [])
+    for item in get(result_d, key, [])
       echo key "\t" item.section "\t" item.cmd
     endfor
   endfor
   echo "select task by its key: "
   let choice = nr2char(getchar())
-  if !has_key(result, tolower(choice))
+  if !has_key(result_d, tolower(choice))
     redrawstatus | echon 'task not selected.' | return
   endif
-  let result = result[tolower(choice)]
-  if len(result) > 1
+  let result_l = result_d[tolower(choice)]
+  if len(result_l) > 1
     redrawstatus
     let idx = 0
-    for item in result
+    for item in result_l
       let idx += 1
       echon idx . ')' "\t" item.section "\t" item.cmd "\n"
     endfor
@@ -404,12 +408,12 @@ function! s:ui(mode) abort
       redrawstatus | echon 'task not selected.' | return
     endif
     let choice = str2nr(choice)
-    if choice > len(result) || choice == 0
+    if choice > len(result_l) || choice == 0
       redrawstatus | echon 'task not selected.' | return
     endif
-    let result = result[choice-1]
+    let result = result_l[choice-1]
   else
-    let result = result[0]
+    let result = result_l[0]
   endif
   redrawstatus
   let workdir = get(result, 'workdir', 0)
