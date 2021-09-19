@@ -8,9 +8,9 @@ let g:loaded_sh = 1
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
 let s:is_nvim = has('nvim')
-let s:use_job = !s:is_nvim &&
-      \ (exists('*jobstart') || exists('*job_start')) &&
-      \ exists('*bufadd')
+let s:has_job = exists('*jobstart') || exists('*job_start')
+" use job instead of system()
+let s:use_job = !s:is_nvim && s:has_job && exists('*bufadd')
 
 function! s:echoerr(msg)
   echohl ErrorMsg
@@ -304,7 +304,7 @@ function! s:sh(cmd, opt) abort " {{{2
   if opt.window " {{{
     let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
           \ 'cmd': cmd, 'close': opt.close,
-          \ 'start_fn': s:is_win32 ? function('s:win32_start') : function(s:job_start),
+          \ 'start_fn': s:is_win32 ? function('s:win32_start') : function('s:unix_start'),
           \ 'term_name': l:term_name,
           \ 'keep_window_path': keep_window_path}
 
@@ -437,6 +437,16 @@ function! s:stop_job(job, ...) abort
     call job_stop(a:job, 'kill')
   else
     call job_stop(a:job, 'int')
+  endif
+endfunction
+
+function! s:unix_start(cmdlist, ...) abort
+  if s:has_job
+    call function(s:job_start)(a:cmdlist)
+  else
+    let bg_helper_path = fnamemodify(s:file, ':p:h:h') . '/bin/background.sh'
+    let cmdlist = [bg_helper_path] + a:cmdlist
+    call system(join(map(cmdlist, 'shellescape(v:val)'), ' '))
   endif
 endfunction
 
