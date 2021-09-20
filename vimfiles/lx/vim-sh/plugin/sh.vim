@@ -157,6 +157,26 @@ function! s:sh(cmd, opt) abort " {{{2
   call add(help, '  r: like ":[range]read !cmd"')
   let opt.read_cmd = match(opt_string, 'r') >= 0
 
+  call add(help, '  n: dry run (echo options passed to job_start / jobstart)')
+  let opt.dryrun = match(opt_string, 'n') >= 0
+  if opt.dryrun && !exists('*json_encode')
+    throw '-n flag is not supported: function json_encode is missing!'
+  endif
+
+  if (opt.tty || opt.window)
+    if opt.filter || opt.read_cmd || opt.dryrun
+      throw '-t / -w flag is conflict with -f / -r / -n!'
+    endif
+  endif
+
+  if !!opt.tty + !!opt.window >= 2
+    throw '-t / -w flag cannot be used together!'
+  endif
+
+  if !!opt.filter + !!opt.read_cmd + !!opt.dryrun >= 2
+    throw '-f / -r / -n flag cannot be used together!'
+  endif
+
   let opt = extend(opt, a:opt)
 
   if opt.background
@@ -238,7 +258,7 @@ function! s:sh(cmd, opt) abort " {{{2
   " using system() in vim with stdin will cause writing temp file.
   " on win32, system() will open a new cmd window.
   " so do not use system() if possible.
-  if !opt.tty && !opt.window && !s:use_job
+  if !opt.tty && !opt.window && !s:use_job && !opt.dryrun " {{{
     if s:is_win32
       " use new variable is required for old version vim (like 7.2.051),
       " since it has strong type checking for variable redeclare.
@@ -264,6 +284,7 @@ function! s:sh(cmd, opt) abort " {{{2
             \ ), opt)
     endif
   endif
+  " }}}
 
   " opt.visual: yank text by `norm gv`;
   " opt.window: communicate stdin by file;
@@ -394,6 +415,11 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
+  if opt.dryrun
+    echo json_encode(#{cmd: cmd, opt: job_opt})
+    return
+  endif
+
   " no tty {{{
   let bufnr = bufadd('')
   call bufload(bufnr)
@@ -401,6 +427,7 @@ function! s:sh(cmd, opt) abort " {{{2
         \'out_io': 'buffer', 'out_msg': 0, 'out_buf': bufnr,
         \'err_io': 'buffer', 'err_msg': 0, 'err_buf': bufnr,
         \})
+
   let job = job_start(cmd, job_opt)
 
   try
