@@ -121,7 +121,7 @@ command! -nargs=+ SetCmdText call SetCmdText(<q-args>)
 vnoremap * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 vnoremap # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 
-" :Jobstart / :Jobstop / :Joblist {{{1
+" :Jobrun / :Jobstop / :Joblist / :Jobclear {{{1
 if exists('*job_start')
   command! -range=0 -nargs=+ Jobrun call
         \ s:job_run(<q-args>, #{range: <range>, line1: <line1>, line2: <line2>})
@@ -132,6 +132,13 @@ if exists('*job_start')
 endif
 
 let s:job_dict = {}
+
+function! s:job_exit_cb(job, ret) dict abort
+  let buf = self.bufnr
+  call appendbufline(buf, '$', '')
+  call appendbufline(buf, '$', '===========================')
+  call appendbufline(buf, '$', 'command finished with code ' . a:ret)
+endfunction
 
 function! s:job_run(cmd, opt) abort " {{{2
   if exists(':Sh') != 2
@@ -157,6 +164,7 @@ function! s:job_run(cmd, opt) abort " {{{2
   let job_d = json_decode(execute(cmd))
   ScratchNew
   let bufnr = bufnr()
+  let d = #{bufnr: bufnr, func: function('s:job_exit_cb')}
   wincmd p
   call extend(s:job_dict, {
         \ bufnr: #{
@@ -164,6 +172,7 @@ function! s:job_run(cmd, opt) abort " {{{2
         \    job_d.cmd, extend(job_d.opt, #{
         \      out_io: 'buffer', err_io: 'buffer',
         \      out_buf: bufnr, err_buf: bufnr,
+        \      exit_cb: d.func,
         \    })
         \   ),
         \  cmd: cmd_short,
@@ -183,6 +192,7 @@ function! s:job_stop(id, sig) abort " {{{2
     throw 'job not found: buffer id ' . id
   endif
 endfunction
+" }}}
 
 function! s:job_stop_comp(A, L, P) abort
   let result = []
