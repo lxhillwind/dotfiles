@@ -1,9 +1,38 @@
-let g:nix_dir = get(g:, 'nix_dir', $USERPROFILE . '/nix')
+" vim: fdm=marker
+" platform setting.
 
+" skip if +eval is not available.
+if 0 | endif
+
+let s:nix_default = fnamemodify(expand('<sfile>'), ':p:h:h')
+let g:nix_dir = get(g:, 'nix_dir', s:nix_default)
+unlet s:nix_default
+" vimrc {{{1
+
+exe 'source' fnameescape(g:nix_dir . '/vimfiles/' . 'vimrc.tiny')
+let g:vimserver_ignore = 1
+exe 'source' fnameescape(g:nix_dir . '/vimfiles/' . 'vimrc.vim')
+
+if filereadable(g:nix_dir . '/vimfiles/' . 'vimrc.local')
+  " setup plugin in vimrc.local
+  exe 'source' fnameescape(g:nix_dir . '/vimfiles/' . 'vimrc.local')
+else
+  call plug#begin(g:nix_dir . '/vimfiles/' . 'bundle')
+  exe 'source' fnameescape(g:nix_dir . '/vimfiles/' . 'vimrc.pkgs')
+  call plug#end()
+endif
+" }}}
+
+if !has('win32') | finish | endif
+" set $HOME (for unix shell), $PATH {{{1
 function! s:tr_slash(s)
   return substitute(a:s, '\', '/', 'g')
 endfunction
 let g:nix_dir = s:tr_slash(g:nix_dir)
+
+if !exists('$HOME')
+  let $HOME = s:tr_slash($USERPROFILE)
+endif
 
 let s:path = map(split($PATH, ';'), 's:tr_slash(v:val)')
 for s:i in [
@@ -16,11 +45,12 @@ for s:i in [
     let $PATH = s:i . ';' . $PATH
   endif
 endfor
+" let vim bundled binary win.
 let $PATH = $VIMRUNTIME . ';/usr/bin;/bin;' . $PATH
 unlet s:path
 unlet s:i
 
-" vim-sh config
+" vim-sh config {{{1
 for s:i in [
       \ s:tr_slash(expand('~\nix\msys2\usr\bin\zsh')),
       \ 'C:/msys64/usr/bin/zsh',
@@ -40,11 +70,3 @@ unlet s:i
 " busybox sh rc
 let $ENV = expand(g:nix_dir . '/.config/env.sh')
 let $SH_RC_LOCAL = expand(g:nix_dir . '/local.sh')
-
-" vimrc
-exe 'source' fnameescape(g:nix_dir . '/vimfiles/vimrc.tiny')
-let g:vimserver_ignore = 1
-exe 'source' fnameescape(g:nix_dir . '/vimfiles/vimrc.vim')
-call plug#begin(g:nix_dir . '/vimfiles/bundle')
-exe 'source' fnameescape(g:nix_dir . '/vimfiles/vimrc.pkgs')
-call plug#end()

@@ -3,10 +3,9 @@
 Add in vimrc:
 
 ```vim
-source ~/vimfiles/vimrc.tiny
-source ~/vimfiles/vimrc.vim
-
-call plug#begin('~/vimfiles/bundle')
-source ~/vimfiles/vimrc.pkgs
-call plug#end()
+" change the path to the actual path, if this repo is not cloned in $HOME.
+source ~/vimfiles/vimrc.main
 ```
+
+To customize plugin installation, add a file named `vimrc.local` in this
+directory, and call `plug#` related function here.

@@ -1,3 +1,5 @@
+" vimrc for +eval.
+
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
 

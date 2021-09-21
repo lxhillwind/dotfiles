@@ -121,6 +121,9 @@ command! -nargs=+ SetCmdText call SetCmdText(<q-args>)
 vnoremap * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 vnoremap # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 
+" vim9 part {{{1 }}}
+if exists(':def') != 2 | finish | endif
+
 " :Jobrun / :Jobstop / :Joblist / :Jobclear {{{1
 if exists('*job_start')
   command! -range=0 -nargs=+ Jobrun call

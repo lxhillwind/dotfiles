@@ -1,4 +1,5 @@
 " vim:fdm=marker
+" pkg list.
 "
 " set g:vimrc#pkgs before source this file; example:
 "
