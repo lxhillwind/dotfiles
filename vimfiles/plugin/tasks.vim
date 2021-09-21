@@ -347,18 +347,18 @@ endfunction
 " execute cmd with different dir {{{
 function! s:cd_exe(workdir, cmd) abort
   let old_cwd = getcwd()
-  let buf = bufnr()
+  let buf = bufnr('')
   try
     " use buffer variable to store cwd if `exe` switch to new window
     let b:tasks_old_cwd = old_cwd
-    exe 'lcd' a:workdir
+    exe 'lcd' fnameescape(a:workdir)
     redrawstatus | exe a:cmd
   finally
-    if buf == bufnr()
+    if buf == bufnr('')
       if exists('b:tasks_old_cwd')
         unlet b:tasks_old_cwd
       endif
-      exe 'lcd' old_cwd
+      exe 'lcd' fnameescape(old_cwd)
     endif
   endtry
 endfunction
@@ -366,7 +366,7 @@ endfunction
 function! s:cd_reset()
   if exists('b:tasks_old_cwd')
     try
-      exe 'lcd' b:tasks_old_cwd
+      exe 'lcd' fnameescape(b:tasks_old_cwd)
     finally
       unlet b:tasks_old_cwd
     endtry
