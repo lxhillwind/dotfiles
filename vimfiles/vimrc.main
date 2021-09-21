@@ -307,24 +307,24 @@ function! s:cd(flag, args)
 
   if !empty(cmd)
     let old_cwd = getcwd()
-    let buf = bufnr()
+    let buf = bufnr('')
     try
       " use buffer variable to store cwd if `exe` switch to new window
       let b:vimrc_old_cwd = old_cwd
-      exe 'lcd' path
+      exe 'lcd' fnameescape(path)
       exe cmd
     finally
-      if buf == bufnr()
+      if buf == bufnr('')
         if exists('b:vimrc_old_cwd')
           unlet b:vimrc_old_cwd
         endif
-        exe 'lcd' old_cwd
+        exe 'lcd' fnameescape(old_cwd)
       endif
     endtry
   else
-    exe 'lcd' path
+    exe 'lcd' fnameescape(path)
     if &buftype == 'terminal'
-      call term_sendkeys(bufnr(), 'cd ' . shellescape(path))
+      call term_sendkeys(bufnr(''), 'cd ' . shellescape(path))
     endif
   endif
 endfunction
@@ -332,7 +332,7 @@ endfunction
 function! s:cd_reset()
   if exists('b:vimrc_old_cwd')
     try
-      exe 'lcd' b:vimrc_old_cwd
+      exe 'lcd' fnameescape(b:vimrc_old_cwd)
     finally
       unlet b:vimrc_old_cwd
     endtry
