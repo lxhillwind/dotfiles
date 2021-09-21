@@ -642,14 +642,21 @@ execute 'nnoremap <LocalLeader>' .
 
 " set $PATH before calling plug#.
 if has('win32')
-" set $HOME (for unix shell), $PATH {{{1
+" set $HOME (for unix shell), $PATH, $VIM ... {{{1
 function! s:tr_slash(s)
   return substitute(a:s, '\', '/', 'g')
 endfunction
 let s:nix_dir = s:tr_slash(s:nix_dir)
 
+" make it work in cygwin vim.
+let $VIM = s:tr_slash($VIM)
+let $VIMRUNTIME = s:tr_slash($VIMRUNTIME)
+let $MYVIMRC = s:tr_slash($MYVIMRC)
+
 if !exists('$HOME')
   let $HOME = s:tr_slash($USERPROFILE)
+else
+  let $HOME = s:tr_slash($HOME)
 endif
 
 let s:path = map(split($PATH, ';'), 's:tr_slash(v:val)')
@@ -663,8 +670,8 @@ for s:i in [
     let $PATH = s:i . ';' . $PATH
   endif
 endfor
-" let vim bundled binary win.
-let $PATH = $VIMRUNTIME . ';/usr/bin;/bin;' . $PATH
+" cygwin vim -> vim -> others.
+let $PATH = '/usr/bin;/bin;' . $VIMRUNTIME . ';' . $PATH
 unlet s:path
 unlet s:i
 
