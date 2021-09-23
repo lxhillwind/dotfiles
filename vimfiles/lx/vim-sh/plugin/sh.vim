@@ -513,7 +513,7 @@ function! s:program_alacritty(context) abort
   let [cmd, close] = [a:context.cmd, a:context.close]
   if executable('alacritty')
     let cmd = close ? cmd : s:cmdlist_keep_window(cmd)
-    call a:context.start_fn(['alacritty', '-e'] + cmd)
+    call a:context.start_fn(['alacritty', '-t', a:context.term_name, '-e'] + cmd)
     return 1
   endif
 endfunction
@@ -522,7 +522,7 @@ function! s:program_urxvt(context) abort
   let [cmd, close] = [a:context.cmd, a:context.close]
   if executable('urxvt')
     let cmd = close ? cmd : s:cmdlist_keep_window(cmd)
-    call a:context.start_fn(['urxvt', '-e'] + cmd)
+    call a:context.start_fn(['urxvt', '-title', a:context.term_name, '-e'] + cmd)
     return 1
   endif
 endfunction
@@ -547,7 +547,7 @@ function! s:program_mintty(context) abort
   endif
 
   if executable(mintty_path)
-    let cmd = [mintty_path] + (close ? cmd : s:cmdlist_keep_window(cmd))
+    let cmd = [mintty_path, '-t', a:context.term_name] + (close ? cmd : s:cmdlist_keep_window(cmd))
     call a:context.start_fn(cmd)
     return 1
   endif
