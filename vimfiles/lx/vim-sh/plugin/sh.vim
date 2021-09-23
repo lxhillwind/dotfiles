@@ -547,7 +547,7 @@ function! s:program_mintty(context) abort
   endif
 
   if executable(mintty_path)
-    let cmd = [mintty_path] + close ? cmd : s:cmdlist_keep_window(cmd)
+    let cmd = [mintty_path] + (close ? cmd : s:cmdlist_keep_window(cmd))
     call a:context.start_fn(cmd)
     return 1
   endif
