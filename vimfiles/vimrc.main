@@ -13,6 +13,9 @@ exe 'source' fnameescape(s:nix_dir . '/vimfiles/' . 'vimrc.tiny')
 " make plugin work
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
+if exists('&pp')
+  execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
+endif
 
 " map early
 let mapleader = ' '  " assign before use
@@ -23,7 +26,7 @@ noremap <Space> <Nop>
 if !exists('g:vimserver_ignore')
   let g:vimserver_ignore = 1
 endif
-runtime lx/vim-vimserver/plugin/vimserver.vim
+runtime pack/lx/opt/vim-vimserver/plugin/vimserver.vim
 call vimserver#main()
 
 
@@ -924,6 +927,57 @@ function! s:job_clear(num) abort
     endif
   endfor
 endfunction
+
+" :Pack / :PackClean; a simple plugin manager (for vim8). {{{2
+if exists(':packadd') == 2
+  " clear list on (re)loading vimrc.
+  let s:plugins = {}
+  command! -nargs=* Pack call s:pack(<args>)
+  command! -nargs=* PackClean call s:pack_clean(<args>)
+endif
+
+function! s:pack(...) abort
+  if a:0 > 0
+    let l:plugin = a:1
+    let l:url = s:pack_construct_url(l:plugin)
+    " simply ignore a:000[2:]
+    let l:opt = a:0 == 2 ? a:2 : {}
+    let l:dir = get(l:opt, 'dir', s:pack_extract_git_dir(l:url))
+    let l:opt.url = l:url
+    let l:opt.dir = l:dir
+    execute 'packadd!' l:dir
+    let s:plugins[l:plugin] = l:opt
+  else
+    echo s:plugins
+  endif
+endfunction
+
+function! s:pack_clean(...) abort
+endfunction
+
+" helper functions. {{{3
+function! s:pack_construct_url(name) abort
+  let name = a:name
+  if name =~ '\v^(https|http|git|ssh)\://.+'
+    return name
+  else
+    " TODO handle dirname as param, like vim-sh.
+    return printf('https://github.com/%s', name)
+  endif
+endfunction
+
+function! s:pack_extract_git_dir(url) abort
+  let result = matchstr(a:url, '\v[^/]+$')
+  let result = substitute(result, '\v\.git$', '', '')
+  return result
+endfunction
+
+" load plugin {{{1
+if exists(':Pack') == 2
+  Pack 'vim-filelist'
+  Pack 'vim-jump'
+  Pack 'vim-sh'
+endif
 
 " source local vimrc {{{1
 if filereadable(s:nix_dir . '/vimfiles/' . 'vimrc.local')

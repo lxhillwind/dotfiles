@@ -41,8 +41,8 @@ function! s:globpath(a, b, c, d) abort
 endfunction
 " }}}
 
-if s:enable('lx', 1)
-  for s:i in s:globpath(expand('<sfile>:p:h'), 'lx/*', 0, 1)
+if s:enable('lx', 1) && exists(':packadd') != 2
+  for s:i in s:globpath(expand('<sfile>:p:h'), 'pack/lx/opt/*', 0, 1)
     if isdirectory(s:i) && match(s:i, "'") < 0
       " ensure "'" is not in path.
       execute printf("Plug '%s'", s:i)
