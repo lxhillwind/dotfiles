@@ -309,8 +309,6 @@ function! s:sh(cmd, opt) abort " {{{2
     call writefile(stdin, tmpfile, 'b')
   endif
 
-  let keep_window_path = fnamemodify(s:file, ':p:h:h') . '/bin/keep-window.sh'
-
   if empty(cmd)
     let l:term_name = shell
     let cmd_new = [shell] + shell_arg_patch
@@ -336,8 +334,7 @@ function! s:sh(cmd, opt) abort " {{{2
     let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
           \ 'cmd': cmd, 'close': opt.close,
           \ 'start_fn': s:is_win32 ? function('s:win32_start') : function('s:unix_start'),
-          \ 'term_name': l:term_name,
-          \ 'keep_window_path': keep_window_path}
+          \ 'term_name': l:term_name}
 
     for s:program in (exists('g:sh_programs') ? g:sh_programs :
           \ ['alacritty', 'urxvt', 'mintty', 'cmd',]
@@ -481,8 +478,7 @@ function! s:unix_start(cmdlist, ...) abort
   if s:has_job
     call function(s:job_start)(a:cmdlist)
   else
-    let bg_helper_path = fnamemodify(s:file, ':p:h:h') . '/bin/background.sh'
-    let cmdlist = [bg_helper_path] + a:cmdlist
+    let cmdlist = ['sh', '-c', '"$@" >/dev/null 2>&1 &', ''] + a:cmdlist
     call system(join(map(cmdlist, 'shellescape(v:val)'), ' '))
   endif
 endfunction
@@ -503,20 +499,29 @@ function! s:post_func(result, opt) abort
   endif
 endfunction
 
+function! s:cmdlist_keep_window(cmd) abort
+  " NOTE `read` -n option is not in posix standard, but it works for at least
+  " zsh, bash, busybox ash.
+  return ['sh', '-c',
+        \ '"$@"; if command -v stty >/dev/null; then stty sane; fi; '
+        \ . 'echo; echo "Press any key to continue..."; read -n 1',
+        \ ''] + a:cmd
+endfunction
+
 " -w program {{{2
 function! s:program_alacritty(context) abort
-  let [cmd, close, keep_window_path] = [a:context.cmd, a:context.close, a:context.keep_window_path]
+  let [cmd, close] = [a:context.cmd, a:context.close]
   if executable('alacritty')
-    let cmd = close ? cmd : [keep_window_path] + cmd
+    let cmd = close ? cmd : s:cmdlist_keep_window(cmd)
     call a:context.start_fn(['alacritty', '-e'] + cmd)
     return 1
   endif
 endfunction
 
 function! s:program_urxvt(context) abort
-  let [cmd, close, keep_window_path] = [a:context.cmd, a:context.close, a:context.keep_window_path]
+  let [cmd, close] = [a:context.cmd, a:context.close]
   if executable('urxvt')
-    let cmd = close ? cmd : [keep_window_path] + cmd
+    let cmd = close ? cmd : s:cmdlist_keep_window(cmd)
     call a:context.start_fn(['urxvt', '-e'] + cmd)
     return 1
   endif
@@ -525,16 +530,16 @@ endfunction
 function! s:program_cmd(context) abort
   if s:is_unix | return 0 | endif
 
-  let [shell, shell_arg_patch, cmd, close, keep_window_path] = [a:context.shell, a:context.shell_arg_patch, a:context.cmd, a:context.close, a:context.keep_window_path]
+  let [shell, shell_arg_patch, cmd, close] = [a:context.shell, a:context.shell_arg_patch, a:context.cmd, a:context.close]
   if !close
-    let cmd = [shell] + shell_arg_patch + [keep_window_path] + cmd
+    let cmd = [shell] + shell_arg_patch + s:cmdlist_keep_window(cmd)
   endif
   call a:context.start_fn(cmd, {'term_name': a:context.term_name})
   return 1
 endfunction
 
 function! s:program_mintty(context) abort
-  let [shell, cmd, close, keep_window_path] = [a:context.shell, a:context.cmd, a:context.close, a:context.keep_window_path]
+  let [shell, cmd, close] = [a:context.shell, a:context.cmd, a:context.close]
   " prefer mintty in the same dir of shell.
   let mintty_path = substitute(shell, '\v([\/]|^)\zs(zsh|bash)\ze(\.exe|"?$)', 'mintty', '')
   if mintty_path ==# shell || !executable(mintty_path)
@@ -542,7 +547,7 @@ function! s:program_mintty(context) abort
   endif
 
   if executable(mintty_path)
-    let cmd = [mintty_path] + (close ? [] : [keep_window_path]) + cmd
+    let cmd = [mintty_path] + close ? cmd : s:cmdlist_keep_window(cmd)
     call a:context.start_fn(cmd)
     return 1
   endif
@@ -648,16 +653,17 @@ function! s:win32_cmd_exe_quote(arg)
 endfunction
 
 " win32 completion {{{2
-let s:busybox_cmdlist = expand('<sfile>:p:h:h') . '/asset/busybox-cmdlist.txt'
 function! s:win32_cmd_list(A, L, P)
-  " use busybox cmd list even when the shell is not busybox,
+  " use busybox cmd list even when the shell is not busybox, {{{
   " since $PATH may not contain /usr/bin before invoking shell.
-  if empty(get(s:, 'win32_cmd_list_data', 0))
-    let s:win32_cmd_list_data = readfile(s:busybox_cmdlist)
-  endif
+  "
+  " generate data with:
+  "   busybox | sed -n '/^Cur/,$ p' | tail +2 | tr -d '\n'
+  let data = '[, [[, acpid, addgroup, adduser, adjtimex, ar, arch, arp, arping, ash,	awk, base32, base64, basename, bbconfig, bc, beep, blkdiscard, blkid,	blockdev, bootchartd, brctl, bunzip2, busybox, bzcat, bzip2, cal, cat,	chat, chattr, chgrp, chmod, chown, chpasswd, chpst, chroot, chrt, chvt,	cksum, clear, cmp, comm, cp, cpio, crond, crontab, cryptpw, cttyhack,	cut, date, dc, dd, deallocvt, delgroup, deluser, depmod, df, dhcprelay,	diff, dirname, dmesg, dnsd, dnsdomainname, dos2unix, du, dumpkmap,	dumpleases, echo, ed, egrep, eject, env, envdir, envuidgid, ether-wake,	expand, expr, factor, fakeidentd, fallocate, false, fatattr, fbset,	fbsplash, fdflush, fdformat, fdisk, fgconsole, fgrep, find, findfs,	flock, fold, free, freeramdisk, fsck, fsck.minix, fsfreeze, fstrim,	fsync, ftpd, ftpget, ftpput, fuser, getopt, getty, grep, groups,	gunzip, gzip, halt, hd, hdparm, head, hexdump, hexedit, hostid,	hostname, httpd, hwclock, i2cdetect, i2cdump, i2cget, i2cset,	i2ctransfer, id, ifconfig, ifdown, ifenslave, ifplugd, ifup, inetd,	init, inotifyd, insmod, install, ionice, iostat, ip, ipaddr, ipcalc,	ipcrm, ipcs, iplink, ipneigh, iproute, iprule, iptunnel, kbd_mode,	kill, killall, killall5, klogd, less, link, linux32, linux64, linuxrc,	ln, loadfont, loadkmap, logger, login, logname, logread, losetup, lpd,	lpq, lpr, ls, lsattr, lsmod, lsof, lspci, lsscsi, lsusb, lzcat, lzma,	lzopcat, makedevs, makemime, man, md5sum, mdev, mesg, microcom, mkdir,	mkdosfs, mke2fs, mkfifo, mkfs.ext2, mkfs.minix, mkfs.vfat, mknod,	mkpasswd, mkswap, mktemp, modinfo, modprobe, more, mount, mountpoint,	mpstat, mt, mv, nameif, nbd-client, nc, netstat, nice, nl, nmeter,	nohup, nproc, nsenter, nslookup, ntpd, od, openvt, partprobe, passwd,	paste, patch, pgrep, pidof, ping, ping6, pipe_progress, pivot_root,	pkill, pmap, popmaildir, poweroff, powertop, printenv, printf, ps,	pscan, pstree, pwd, pwdx, raidautorun, rdate, rdev, readahead,	readlink, readprofile, realpath, reboot, reformime, renice, reset,	resize, resume, rev, rfkill, rm, rmdir, rmmod, route, rpm2cpio,	rtcwake, run-init, run-parts, runsv, runsvdir, rx, script,	scriptreplay, sed, sendmail, seq, setarch, setconsole, setfattr,	setfont, setkeycodes, setlogcons, setpriv, setserial, setsid,	setuidgid, sh, sha1sum, sha256sum, sha3sum, sha512sum, showkey, shred,	shuf, slattach, sleep, smemcap, softlimit, sort, split, ssl_client,	start-stop-daemon, stat, strings, stty, su, sulogin, sum, sv, svc,	svlogd, svok, swapoff, swapon, switch_root, sync, sysctl, syslogd, tac,	tail, tar, taskset, tc, tcpsvd, tee, telnet, telnetd, test, tftp,	tftpd, time, timeout, top, touch, tr, traceroute, traceroute6, true,	truncate, ts, tty, ttysize, tunctl, tune2fs, ubiattach, ubidetach,	ubimkvol, ubirename, ubirmvol, ubirsvol, ubiupdatevol, udhcpc, udhcpc6,	udhcpd, udpsvd, uevent, umount, uname, uncompress, unexpand, uniq,	unix2dos, unlink, unlzma, unlzop, unshare, unxz, unzip, uptime, usleep,	uudecode, uuencode, vconfig, vi, vlock, volname, watch, watchdog, wc,	wget, which, whoami, whois, xargs, xxd, xz, xzcat, yes, zcat, zcip'
+  " }}}
   let exe = s:globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
   call map(exe, 'substitute(v:val, ".*\\", "", "")')
-  return join(sort(extend(exe, s:win32_cmd_list_data)), "\n")
+  return join(sort(extend(exe, split(data, ',\s*'))), "\n")
 endfunction
 
 function! s:globpath(a, b, c, d) abort
