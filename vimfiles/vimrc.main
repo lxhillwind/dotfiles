@@ -929,30 +929,76 @@ function! s:job_clear(num) abort
 endfunction
 
 " :Pack / :PackClean; a simple plugin manager (for vim8). {{{2
+"
+" usage:
+"   Pack [url] [[opt=...]...]
+"   PackClean
+" example:
+"   Pack tpope/vim-sensible
+"   Pack https://github.com/Shougo/ddc.vim commit=v0.14.0
+"   Pack https://github.com/dracula/vim dir=dracula
+"   Pack  " install / update
+"   PackClean  " clean not `Pack`ed dir
 if exists(':packadd') == 2
   " clear list on (re)loading vimrc.
   let s:plugins = {}
-  command! -nargs=* Pack call s:pack(<args>)
-  command! -nargs=* PackClean call s:pack_clean(<args>)
+  let s:plugins_root = fnamemodify(expand('<sfile>'), ':p:h') . '/pack/rc/opt'
+  command! -nargs=* -bang Pack call s:pack(<bang>0, <f-args>)
+  command! PackClean call s:pack_clean()
 endif
 
-function! s:pack(...) abort
+function! s:pack(bang, ...) abort
   if a:0 > 0
+    " TODO check input.
     let l:plugin = a:1
     let l:url = s:pack_construct_url(l:plugin)
-    " simply ignore a:000[2:]
-    let l:opt = a:0 == 2 ? a:2 : {}
+    let l:opt = {}
+    for l:i in a:000[1:]
+      let l:parse = matchlist(l:i, '\v^([a-zA-Z]+)\=(.*)$')
+      if len(l:parse) >= 3 && !empty(l:parse[1]) && !empty(l:parse[2]) &&
+            \ index(['dir', 'commit'], l:parse[1]) >= 0
+        let l:opt[l:parse[1]] = l:parse[2]
+      endif
+    endfor
     let l:dir = get(l:opt, 'dir', s:pack_extract_git_dir(l:url))
-    let l:opt.url = l:url
+    let l:opt.commit = get(l:opt, 'commit', '')
     let l:opt.dir = l:dir
-    execute 'packadd!' l:dir
+    let l:opt.url = l:url
+    silent! execute 'packadd!' l:dir
     let s:plugins[l:plugin] = l:opt
   else
-    echo s:plugins
+    if !isdirectory(s:plugins_root)
+      call mkdir(s:plugins_root, 'p')
+    endif
+    for [l:k, l:v] in items(s:plugins)
+      let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
+      if empty(l:i)
+        if has_key(l:v, 'path')
+          call remove(l:v, 'path')
+        endif
+      else
+        let l:v['path'] = l:i[0]
+      endif
+    endfor
+    for [l:k, l:v] in items(s:plugins)
+      " TODO check quote in various fields.
+      echo printf('# %s', l:k)
+      if has_key(l:v, 'path')
+        " TODO fetch depth.
+        " TODO hide pull command in comment if not run with bang.
+        echo printf('git -C %s pull', shellescape(l:v.path))
+      else
+        echo printf('git -C %s clone --depth 1 %s%s %s',
+              \ shellescape(s:plugins_root),
+              \ empty(l:v.commit) ? '': '-b ' . l:v.commit . ' ',
+              \ l:v.url, l:v.dir)
+      endif
+      echo
+    endfor
   endif
 endfunction
 
-function! s:pack_clean(...) abort
+function! s:pack_clean() abort
 endfunction
 
 " helper functions. {{{3
@@ -974,9 +1020,14 @@ endfunction
 
 " load plugin {{{1
 if exists(':Pack') == 2
-  Pack 'vim-filelist'
-  Pack 'vim-jump'
-  Pack 'vim-sh'
+  Pack vim-filelist
+  Pack vim-jump
+  Pack vim-sh
+
+  " used as example.
+  Pack tpope/vim-sensible
+  Pack https://github.com/Shougo/ddc.vim commit=v0.14.0
+  Pack https://github.com/dracula/vim    dir=dracula
 endif
 
 " source local vimrc {{{1
