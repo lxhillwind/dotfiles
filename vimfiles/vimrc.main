@@ -5,7 +5,8 @@ let s:nix_default = fnamemodify(expand('<sfile>'), ':p:h:h')
 let s:nix_dir = get(s:, 'nix_dir', s:nix_default)
 unlet s:nix_default
 
-" before doing thing {{{1
+" option {{{1
+" before doing thing {{{2
 " sensible
 exe 'source' fnameescape(s:nix_dir . '/vimfiles/' . 'vimrc.tiny')
 
@@ -18,7 +19,7 @@ let mapleader = ' '  " assign before use
 let maplocalleader = ' ;'
 noremap <Space> <Nop>
 
-" vim-vimserver {{{1
+" vim-vimserver {{{2
 if !exists('g:vimserver_ignore')
   let g:vimserver_ignore = 1
 endif
@@ -26,7 +27,7 @@ runtime lx/vim-vimserver/plugin/vimserver.vim
 call vimserver#main()
 
 
-" +eval version vimrc default {{{1
+" +eval version vimrc default {{{2
 if has('vim_starting')
   syntax on
 
@@ -105,7 +106,7 @@ let g:loaded_tarPlugin = 1
 let g:loaded_vimballPlugin = 1
 let g:loaded_zipPlugin = 1
 
-" various tmpfile {{{1
+" various tmpfile {{{2
 " copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
 " backup files
 set backup
@@ -135,9 +136,9 @@ endfor
 set nobackup
 set noundofile
 
-" colorscheme, term setting {{{1
+" colorscheme, term setting {{{2
 if has('vim_starting')
-" only set colorscheme on start {{{2
+" only set colorscheme on start {{{3
 " terminal statusline tweak
 hi! link StatusLineTermNC StatusLineNC
 augroup vimrc_statuslinetermnc
@@ -199,10 +200,10 @@ if s:is_unix && $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
   " Refer: https://superuser.com/a/1525060
   set t_u7=
 endif
-" }}}2
+" }}}3
 endif
 
-" gvimrc {{{1
+" gvimrc {{{2
 function! s:gui_init()
   if !has('vim_starting')
     return
@@ -217,6 +218,8 @@ if has('gui_running')
 endif
 
 " }}}
+" }}}1
+
 " common platform detection
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
@@ -230,7 +233,8 @@ function! s:echoerr(msg)
   echohl None
 endfunction
 
-" clipboard (see keymap) {{{1
+" keymap and related command {{{
+" clipboard (see keymap) {{{2
 " use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
 " detection is defined there. (~/bin/{pbcopy,pbpaste})
 
@@ -269,7 +273,7 @@ function! s:clipboard_paste(cmd)
   endif
 endfunction
 
-" Cd <path> / :Cdalternate / :Cdhome / :Cdbuffer / :Cdproject [:]cmd... {{{1
+" Cd <path> / :Cdalternate / :Cdhome / :Cdbuffer / :Cdproject [:]cmd... {{{2
 command! -nargs=1 -complete=dir Cd call <SID>cd('', <q-args>)
 command! -nargs=* -complete=command Cdalternate call <SID>cd('alternate', <q-args>)
 command! -nargs=* -complete=command Cdhome call <SID>cd('home', <q-args>)
@@ -370,7 +374,7 @@ function! s:get_project_dir()
   endwhile
 endfunction
 
-" execute current line (or select lines), comment removed (see keymap) {{{1
+" execute current line (or select lines), comment removed (see keymap) {{{2
 function! s:execute_lines(mode)
   if a:mode == 'n'
     let lines = [getline('.')]
@@ -395,7 +399,7 @@ function! s:execute_lines(mode)
   endif
 endfunction
 
-" gx related (NOTE: key `gx` overwritten) {{{1
+" gx related (NOTE: key `gx` overwritten) {{{2
 nnoremap <silent> gx :call <SID>gx('n')<CR>
 vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
 
@@ -479,7 +483,7 @@ function! s:gx(mode) abort
   norm gg"_dd
 endfunction
 
-" export SID (:h SID); variable: g:vimrc_sid {{{1
+" export SID (:h SID); variable: g:vimrc_sid {{{2
 function! s:get_sid(filename)
   for i in split(execute('scriptnames'), "\n")
     let id = substitute(i, '\v^\s*(\d+): .*$', '\1', '')
@@ -494,7 +498,7 @@ if exists('*execute')
   let g:vimrc_sid = s:get_sid(expand('<sfile>'))
 endif
 
-" switch number / relativenumber {{{1
+" switch number / relativenumber {{{2
 function! s:switch_nu_rnu() abort
   " patch-7.3.1115: set one of nu / rnu will affect another.
   if v:version < 704
@@ -514,7 +518,7 @@ function! s:switch_nu_rnu() abort
   let [&l:nu, &l:rnu] = presents[idx+1]
 endfunction
 
-" keymap {{{1
+" keymap {{{2
 " terminal <C-Space>
 map <Nul> <C-Space>
 map! <Nul> <C-Space>
@@ -562,7 +566,7 @@ endif
 " switch nu / rnu
 nnoremap <silent> <Leader>n :call <SID>switch_nu_rnu()<CR>
 
-" filetype setting {{{1
+" filetype setting {{{2
 augroup vimrc_filetype
   au!
   au BufNewFile,BufRead *.gv setl ft=dot
@@ -631,7 +635,8 @@ augroup END
 " :h ft-sh-syntax
 let g:is_posix = 1
 
-" }}}
+" }}}1
+
 " finally
 " e.g. <Space><Space>
 nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
@@ -697,6 +702,228 @@ let $ENV = expand(s:nix_dir . '/.config/env.sh')
 let $SH_RC_LOCAL = expand(s:nix_dir . '/local.sh')
 " }}}
 endif
+
+" UserCommand {{{1
+" snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{2
+command -nargs=? -complete=filetype Scratch call <SID>scratch(<q-args>)
+command! -nargs=? -complete=filetype
+      \ ScratchNew call <SID>snippet_in_new_window(<q-args>)
+
+function! s:scratch(ft) abort
+  enew | setl buftype=nofile noswapfile bufhidden=hide
+  if !empty(a:ft)
+    exe 'setl ft=' . a:ft
+  endif
+endfunction
+
+function! s:snippet_in_new_window(ft) abort
+  exe printf('bel %dnew', &cwh)
+  setl buftype=nofile noswapfile
+  setl bufhidden=hide
+  if !empty(a:ft)
+    exe 'setl ft=' . a:ft
+  endif
+endfunction
+
+" run vim command; :KvimRun {vim_command}... {{{2
+command! -nargs=+ -complete=command KvimRun call s:show_output(execute(<q-args>))
+
+" vim expr; :KvimExpr {vim_expr}... {{{2
+command! -nargs=+ -complete=expression KvimExpr call s:show_output(eval(<q-args>))
+
+function! s:show_output(data) abort
+  ScratchNew
+  for line in split(a:data, "\n")
+    call append('$', line)
+  endfor
+  norm gg"_dd
+endfunction
+
+" insert shebang based on filetype; :KshebangInsert [content after "#!/usr/bin/env "] {{{2
+command! -nargs=* -complete=shellcmd KshebangInsert
+      \ call <SID>shebang_insert(<q-args>)
+
+let g:vimrc#shebang_lines = {
+      \'awk': 'awk -f', 'javascript': 'node', 'lua': 'lua',
+      \'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
+      \'scheme': 'chez --script', 'sh': 'sh', 'zsh': 'zsh'
+      \}
+
+function! s:shebang_insert(args) abort
+  let first_line = getline(1)
+  if len(first_line) >= 2 && first_line[0:1] ==# '#!'
+    " shebang exists
+    throw 'shebang exists!'
+  endif
+  let shebang = '#!/usr/bin/env'
+  if !empty(a:args)
+    let shebang = shebang . ' ' . a:args
+  elseif has_key(g:vimrc#shebang_lines, &ft)
+    let shebang = shebang . ' ' . g:vimrc#shebang_lines[&ft]
+  else
+    throw 'shebang: which interpreter to run?'
+  endif
+  " insert at first line and leave cursor here (for further modification)
+  normal ggO<Esc>
+  let ret = setline(1, shebang)
+  if ret == 0 " success
+    normal $
+  else
+    throw 'setting shebang error!'
+  endif
+endfunction
+
+" match long line; :KmatchLongLine {number} {{{2
+" Refer: https://stackoverflow.com/a/1117367
+command! -nargs=1 KmatchLongLine exe '/\%>' . <args> . 'v.\+'
+
+" `J` with custom seperator; <visual>:J sep... {{{2
+command! -nargs=1 -range J call s:join_line(<q-args>)
+function! s:join_line(sep)
+  let buf = @"
+  try
+    norm gv
+    norm x
+    let @" = substitute(@", "\n", a:sep, 'g')
+    norm P
+  finally
+    let @" = buf
+  endtry
+endfunction
+
+" edit selected line / column; :Kjump {{{2
+command! -nargs=+ Kjump call <SID>jump_line_col(<f-args>)
+function! s:jump_line_col(line, ...) abort
+  execute 'normal' a:line . 'gg'
+  if a:0 > 0
+    let col = a:1
+    if col > 1
+      execute 'normal 0' . (col-1) . 'l'
+    endif
+  endif
+endfunction
+
+" Selection() {{{2
+function! Selection() abort
+  let tmp = @"
+  try
+    silent normal gvy
+    return @"
+  finally
+    let @" = tmp
+  endtry
+endfunction
+
+" :SetCmdText / SetCmdText() {{{2
+function! SetCmdText(text) abort
+  call feedkeys(':' .. a:text, 't')
+endfunction
+
+command! -nargs=+ SetCmdText call SetCmdText(<q-args>)
+
+" `*` / `#` in visual mode (like `g*` / `g#`); dep: Selection() {{{2
+vnoremap * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
+vnoremap # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
+
+" :Jobrun / :Jobstop / :Joblist / :Jobclear {{{2
+if exists('*job_start')
+  command! -range=0 -nargs=+ Jobrun call
+        \ s:job_run(<q-args>, #{range: <range>, line1: <line1>, line2: <line2>})
+  command! -nargs=* -bang -complete=custom,s:job_stop_comp Jobstop call
+        \ s:job_stop(<q-args>, <bang>0 ? 'kill' : 'term')
+  command! Joblist call s:job_list()
+  command! -count Jobclear call s:job_clear(<count>)
+endif
+
+let s:job_dict = {}
+
+function! s:job_exit_cb(job, ret) dict abort
+  let buf = self.bufnr
+  call appendbufline(buf, '$', '')
+  call appendbufline(buf, '$', '===========================')
+  call appendbufline(buf, '$', 'command finished with code ' . a:ret)
+endfunction
+
+function! s:job_run(cmd, opt) abort " {{{3
+  if exists(':Sh') != 2
+    throw 'depends on vim-sh plugin!'
+  endif
+  if exists(':ScratchNew') != 2
+    throw 'depends on `:ScratchNew`!'
+  endif
+  let [cmd, opt] = [a:cmd, a:opt]
+  if match(cmd, '^-') >= 0
+    let tmp = matchlist(cmd, '\v^(-\S+)\s+(.*)$')
+    let cmd = tmp[2]
+    let flag = tmp[1] . 'n'
+  else
+    let flag = '-n'
+  endif
+  let cmd_short = cmd
+  if opt.range != 0
+    let cmd = printf('%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
+  else
+    let cmd = printf('Sh %s %s', flag, cmd)
+  endif
+  let job_d = json_decode(execute(cmd))
+  ScratchNew
+  let bufnr = bufnr()
+  let d = #{bufnr: bufnr, func: function('s:job_exit_cb')}
+  wincmd p
+  call extend(s:job_dict, {
+        \ bufnr: #{
+        \  job: job_start(
+        \    job_d.cmd, extend(job_d.opt, #{
+        \      out_io: 'buffer', err_io: 'buffer',
+        \      out_buf: bufnr, err_buf: bufnr,
+        \      exit_cb: d.func,
+        \    })
+        \   ),
+        \  cmd: cmd_short,
+        \  }
+        \ })
+endfunction
+
+function! s:job_stop(id, sig) abort " {{{3
+  if empty(a:id)
+    let id = bufnr()
+  else
+    let id = str2nr(matchstr(a:id, '\v^\d+'))
+  endif
+  if has_key(s:job_dict, id)
+    call job_stop(s:job_dict[id].job, a:sig)
+  else
+    throw 'job not found: buffer id ' . id
+  endif
+endfunction
+" }}}
+
+function! s:job_stop_comp(A, L, P) abort
+  let result = []
+  for [k, v] in items(s:job_dict)
+    if v.job->job_status() == 'run'
+      call add(result, printf('%s: %s', k, v.cmd))
+    endif
+  endfor
+  return join(result, "\n")
+endfunction
+
+function! s:job_list() abort
+  for [k, v] in items(s:job_dict)
+    echo printf("%s:\t%s\t%s", k, v.job, v.cmd)
+  endfor
+endfunction
+
+function! s:job_clear(num) abort
+  for item in a:num ? [a:num] : keys(s:job_dict)
+    let job = get(s:job_dict, item)
+    if !empty(job)
+      if job.job->job_info().status != 'run'
+        call remove(s:job_dict, item)
+      endif
+    endif
+  endfor
+endfunction
 
 " source local vimrc {{{1
 if filereadable(s:nix_dir . '/vimfiles/' . 'vimrc.local')
