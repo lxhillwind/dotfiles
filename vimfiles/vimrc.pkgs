@@ -13,7 +13,11 @@
 "
 "     let @" = 'let g:vimrc#pkgs = ' . string(g:vimrc#pkgs) | echo 'copied:' @"
 "
-" plug#begin(...) / plug#end() should be called explicitly.
+
+if exists(':Pack') != 2
+  finish
+endif
+
 " {{{
 let g:vimrc#pkgs = get(g:, 'vimrc#pkgs', {})
 if type(g:vimrc#pkgs) != type({})
@@ -41,24 +45,17 @@ function! s:globpath(a, b, c, d) abort
 endfunction
 " }}}
 
-if s:enable('lx', 1) && exists(':packadd') != 2
-  for s:i in s:globpath(expand('<sfile>:p:h'), 'pack/lx/opt/*', 0, 1)
-    if isdirectory(s:i) && match(s:i, "'") < 0
-      " ensure "'" is not in path.
-      execute printf("Plug '%s'", s:i)
-    endif
-  endfor
-endif
-
+" best to have {{{2
 if s:enable('base', 1)
-  Plug 'https://github.com/justinmk/vim-dirvish'
+  Pack 'https://github.com/justinmk/vim-dirvish', {'commit': '9c0dc32af9235d42715751b30cf04fa0584c1798'}
 
   " dirvish
   let g:loaded_netrwPlugin = 1
 endif
 
+" basic completion {{{2
 if s:enable('basic-comp', 1) && v:version >= 800
-  Plug 'https://github.com/skywind3000/vim-auto-popmenu'
+  Pack 'https://github.com/skywind3000/vim-auto-popmenu', {'commit': 'ea64a79b23401f48e95b9bce65ba39c6c020a291'}
   " enable this plugin for filetypes, '*' for all files.
   "let g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
   let g:apc_enable_ft = {'*': 1}
@@ -72,7 +69,7 @@ if s:enable('basic-comp', 1) && v:version >= 800
   " suppress annoy messages.
   set shortmess+=c
 
-  Plug 'https://github.com/skywind3000/vim-dict'
+  Pack 'https://github.com/skywind3000/vim-dict', {'commit': 'c97d404977edb3d5197c025ffaa12b685ac5963c'}
   " File type override
   "let g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
   let g:vim_dict_config = {'markdown':'text'}
@@ -81,14 +78,15 @@ if s:enable('basic-comp', 1) && v:version >= 800
   "let g:vim_dict_config = {'text': ''}
 endif
 
+" coc {{{2
 if s:enable('coc', 0) && v:version >= 800
   let g:apc_enable_ft = {}
 
-  Plug 'neoclide/coc.nvim', {'branch': 'release'}
+  Pack 'neoclide/coc.nvim', {'branch': 'release'}
 
   " vim completion
-  Plug 'Shougo/neco-vim'
-  Plug 'neoclide/coc-neco'
+  Pack 'Shougo/neco-vim'
+  Pack 'neoclide/coc-neco'
 
   " run the following vim command to install coc plugins:
   "   CocInstall coc-go
@@ -145,8 +143,3 @@ if s:enable('coc', 0) && v:version >= 800
   endfunction
   " }}}
 endif
-
-" from vim-plug :PlugSnapshot
-silent! let g:plugs['vim-dirvish'].commit = '9c0dc32af9235d42715751b30cf04fa0584c1798'
-silent! let g:plugs['vim-auto-popmenu'].commit = 'ea64a79b23401f48e95b9bce65ba39c6c020a291'
-silent! let g:plugs['vim-dict'].commit = 'c97d404977edb3d5197c025ffaa12b685ac5963c'

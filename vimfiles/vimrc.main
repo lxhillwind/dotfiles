@@ -1,6 +1,11 @@
 " vim: fdm=marker
 " vimrc for +eval.
 
+if v:version < 800
+  echoerr 'vim version too old:' v:version
+  finish
+endif
+
 let s:nix_default = fnamemodify(expand('<sfile>'), ':p:h:h')
 let s:nix_dir = get(s:, 'nix_dir', s:nix_default)
 unlet s:nix_default
@@ -643,9 +648,7 @@ augroup END
 " :h ft-sh-syntax
 let g:is_posix = 1
 
-" }}}1
-
-" finally
+" finally {{{2
 " e.g. <Space><Space>
 nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
 " e.g. <Space>;; / \\
@@ -653,63 +656,7 @@ execute 'nnoremap <LocalLeader>' .
       \ (len(maplocalleader) > 1 ? matchstr(maplocalleader, '.$') : '<LocalLeader>') .
       \ ' :nmap <Char-60>LocalLeader<Char-62><CR>'
 
-" set $PATH before calling plug#.
-if has('win32')
-" set $HOME (for unix shell), $PATH, $VIM ... {{{1
-function! s:tr_slash(s)
-  return substitute(a:s, '\', '/', 'g')
-endfunction
-let s:nix_dir = s:tr_slash(s:nix_dir)
-
-" make it work in cygwin vim.
-let $VIM = s:tr_slash($VIM)
-let $VIMRUNTIME = s:tr_slash($VIMRUNTIME)
-let $MYVIMRC = s:tr_slash($MYVIMRC)
-
-if !exists('$HOME')
-  let $HOME = s:tr_slash($USERPROFILE)
-else
-  let $HOME = s:tr_slash($HOME)
-endif
-
-let s:path = map(split($PATH, ';'), 's:tr_slash(v:val)')
-for s:i in [
-      \ s:nix_dir . '/vimfiles/bin',
-      \ s:nix_dir . '/MinGit/usr/bin',
-      \ s:nix_dir . '/MinGit/cmd',
-      \ s:nix_dir . '/bin',
-      \ ]
-  if index(s:path, s:i) < 0 && isdirectory(s:i)
-    let $PATH = s:i . ';' . $PATH
-  endif
-endfor
-" cygwin vim -> vim -> others.
-let $PATH = '/usr/bin;/bin;' . $VIMRUNTIME . ';' . $PATH
-unlet s:path
-unlet s:i
-
-" vim-sh config {{{1
-for s:i in [
-      \ s:tr_slash(expand('~\nix\msys2\usr\bin\zsh')),
-      \ 'C:/msys64/usr/bin/zsh',
-      \ 'C:/msys64/usr/bin/bash',
-      \ 'C:/msys32/usr/bin/zsh',
-      \ 'C:/msys32/usr/bin/bash',
-      \ 'C:/Program Files/Git/usr/bin/bash',
-      \ 'C:/Program Files (x86)/Git/usr/bin/bash',
-      \ ]
-  if executable(s:i)
-    let g:sh_path = s:i
-    break
-  endif
-endfor
-unlet s:i
-
-" busybox sh rc
-let $ENV = expand(s:nix_dir . '/.config/env.sh')
-let $SH_RC_LOCAL = expand(s:nix_dir . '/local.sh')
-" }}}
-endif
+" }}}1
 
 " UserCommand {{{1
 " snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{2
@@ -936,51 +883,54 @@ endfunction
 " :Pack / :PackClean; a simple plugin manager (for vim8). {{{2
 "
 " usage:
-"   Pack [url] [[opt=...]...]
+"   Pack [url][, {opt}]
 "   PackClean
 " example:
-"   Pack tpope/vim-sensible
-"   Pack https://github.com/Shougo/ddc.vim commit=v0.14.0
-"   Pack https://github.com/dracula/vim dir=dracula
-"   Pack  " install / update
-"   PackClean  " clean not `Pack`ed dir
+"   Pack 'tpope/vim-sensible'
+"   Pack 'https://github.com/Shougo/ddc.vim', #{branch: 'v0.14.0'}
+"   Pack 'https://github.com/dracula/vim', #{as: 'dracula'}
+"   Pack  " output command for install / update
+"   PackClean  " prompt to clean not `Pack`ed dir
+" opt:
+"   as; branch; commit.
+" complete workflow:
+"   after running `:Pack!`, run the new file with sh with
+"   `:Jobrun sh %`, `:!sh %:S`, or other way to run external command.
 "
 " TODO:
-"   generate shell script (verify if quote works):
-"     pre:  printf "
-"     post: " | grep -v ^# | tr '\n' '\0' | xargs -r -0 -n 1 -P 5 sh -c
 "   helptag;
 if exists(':packadd') == 2
   " clear list on (re)loading vimrc.
   let s:plugins = {}
   let s:plugins_root = fnamemodify(expand('<sfile>'), ':p:h') . '/pack/rc/opt'
-  command! -nargs=* -bang Pack call s:pack(<bang>0, <f-args>)
+  command! -nargs=* -bang Pack call s:pack(<bang>0, <args>)
   command! PackClean call s:pack_clean()
 endif
 
+" s:pack() {{{
 function! s:pack(bang, ...) abort
   if a:0 > 0
     " TODO check input.
     let l:plugin = a:1
     let l:url = s:pack_construct_url(l:plugin)
-    let l:opt = {}
-    for l:i in a:000[1:]
-      let l:parse = matchlist(l:i, '\v^([a-zA-Z]+)\=(.*)$')
-      if len(l:parse) >= 3 && !empty(l:parse[1]) && !empty(l:parse[2]) &&
-            \ index(['dir', 'commit'], l:parse[1]) >= 0
-        let l:opt[l:parse[1]] = l:parse[2]
-      endif
-    endfor
-    let l:dir = get(l:opt, 'dir', s:pack_extract_git_dir(l:url))
+    let l:opt = a:0 > 1 ? a:2 : {}
+    let l:dir = get(l:opt, 'as', s:pack_extract_git_dir(l:url))
     let l:opt.commit = get(l:opt, 'commit', '')
+    let l:opt.branch = get(l:opt, 'branch', '')
     let l:opt.dir = l:dir
     let l:opt.url = l:url
     silent! execute 'packadd!' l:dir
     let s:plugins[l:plugin] = l:opt
   else
+    let l:lines = []
+    if a:bang
+      let l:tempfile = tempname()
+    endif
     if !isdirectory(s:plugins_root)
       call mkdir(s:plugins_root, 'p')
     endif
+
+    " check is plugin is already available.
     for [l:k, l:v] in items(s:plugins)
       let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
       if empty(l:i)
@@ -991,26 +941,97 @@ function! s:pack(bang, ...) abort
         let l:v['path'] = l:i[0]
       endif
     endfor
+
+    " generate command.
     for [l:k, l:v] in items(s:plugins)
       " TODO check quote in various fields.
-      echo printf('# %s', l:k)
+      call add(l:lines, printf('# %s', l:k))
       if has_key(l:v, 'path')
-        " TODO fetch depth.
-        " TODO hide pull command in comment if not run with bang.
-        echo printf('git -C %s pull', shellescape(l:v.path))
+        if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
+          " TODO fetch depth.
+          call add(l:lines, printf('git -C %s pull', shellescape(l:v.path)))
+        else
+          call add(l:lines, '# is not git repository, skip.')
+        endif
       else
-        echo printf('git -C %s clone --depth 1 %s%s %s',
-              \ shellescape(s:plugins_root),
-              \ empty(l:v.commit) ? '': '-b ' . l:v.commit . ' ',
-              \ l:v.url, l:v.dir)
+        if !empty(l:v.commit)
+          call add(l:lines,
+                \ printf('git -C %s clone -n %s %s && git -C %s/%s checkout %s',
+                \ shellescape(s:plugins_root), l:v.url, l:v.dir,
+                \ shellescape(s:plugins_root), l:v.dir, l:v.commit,
+                \ ))
+        elseif !empty(l:v.branch)
+          call add(l:lines,
+                \ printf('git -C %s clone --depth 1 -b %s %s %s',
+                \ shellescape(s:plugins_root), l:v.branch, l:v.url, l:v.dir))
+        else
+          call add(l:lines, printf('git -C %s clone --depth 1 %s %s',
+                \ shellescape(s:plugins_root), l:v.url, l:v.dir))
+        endif
       endif
-      echo
+      call add(l:lines, '')
     endfor
+
+    " output report.
+    if a:bang
+      let l:lines =
+            \ ['#!/bin/sh',
+            \ "{ grep -Ev '^(#|$)'" .
+            \ ' | tr "\n" "\0" | xargs -r -0 -n 1 -P 5 sh -c; } <<\EOF']
+            \ + [''] + l:lines + ['EOF']
+      call writefile(l:lines, l:tempfile)
+      wincmd v
+      execute 'e' fnameescape(l:tempfile)
+      setl ft=sh
+    else
+      for l:i in l:lines
+        if match(l:i, '^#') >= 0
+          echohl Comment | echo l:i | echohl None
+        else
+          echo l:i
+        endif
+      endfor
+      if !empty(l:lines)
+        echohl Special | echo 'run with bang (:Pack!) to generate a shellscript.' | echohl None
+      endif
+    endif
   endif
 endfunction
+" }}}
 
+" s:pack_clean() {{{
 function! s:pack_clean() abort
+  let l:keep = []
+  let l:dir_clean = []
+  for l:i in values(s:plugins)
+    call add(l:keep, l:i.dir)
+  endfor
+  for l:i in globpath(s:plugins_root, '*', 0, 1)
+    if index(l:keep, split(l:i, '\v[\/]')[-1]) < 0
+      call add(l:dir_clean, l:i)
+    endif
+  endfor
+  if empty(l:dir_clean)
+    echo 'no dir to clean.'
+    return
+  endif
+
+  echo 'dir to clean:'
+  for l:i in l:dir_clean
+    echohl WarningMsg | echo l:i | echohl None
+  endfor
+  echo 'clean them? [y/N] '
+  let l:yes = nr2char(getchar()) ==? 'y'
+  if l:yes
+    for l:i in l:dir_clean
+      call delete(l:i, 'rf')
+    endfor
+    echo 'dirs removed.'
+  else
+    redraws | echon 'cancelled.'
+  endif
 endfunction
+" }}}
 
 " helper functions. {{{3
 function! s:pack_construct_url(name) abort
@@ -1048,31 +1069,84 @@ endif
 " terminal-api related user function {{{2
 if exists(':terminal') == 2
   " autoload/vimrc/terminal_api.vim
-  if has('nvim')
-    au TermOpen * call vimrc#terminal_api#source()
-  else
-    au TerminalOpen * call vimrc#terminal_api#source()
-  endif
+  augroup vimrc_main
+    if has('nvim')
+      au TermOpen * call vimrc#terminal_api#source()
+    else
+      au TerminalOpen * call vimrc#terminal_api#source()
+    endif
+  augroup END
 endif
 
 " load plugin {{{1
 if exists(':Pack') == 2
-  Pack vim-filelist
-  Pack vim-jump
-  Pack vim-sh
-
-  " used as example.
-  Pack tpope/vim-sensible
-  Pack https://github.com/Shougo/ddc.vim commit=v0.14.0
-  Pack https://github.com/dracula/vim    dir=dracula
+  Pack 'vim-filelist'
+  Pack 'vim-jump'
+  Pack 'vim-sh'
 endif
 
 " source local vimrc {{{1
 if filereadable(s:nix_dir . '/vimfiles/' . 'vimrc.local')
-  " setup plugin in vimrc.local
+  " if necessary, load plugin in vimrc.local
   exe 'source' fnameescape(s:nix_dir . '/vimfiles/' . 'vimrc.local')
 else
-  call plug#begin(s:nix_dir . '/vimfiles/' . 'bundle')
+  " use default plugin
   exe 'source' fnameescape(s:nix_dir . '/vimfiles/' . 'vimrc.pkgs')
-  call plug#end()
 endif
+" }}}1
+
+if !has('win32') | finish | endif
+" set $HOME (for unix shell), $PATH, $VIM ... {{{1
+function! s:tr_slash(s)
+  return substitute(a:s, '\', '/', 'g')
+endfunction
+let s:nix_dir = s:tr_slash(s:nix_dir)
+
+" make it work in cygwin vim.
+let $VIM = s:tr_slash($VIM)
+let $VIMRUNTIME = s:tr_slash($VIMRUNTIME)
+let $MYVIMRC = s:tr_slash($MYVIMRC)
+
+if !exists('$HOME')
+  let $HOME = s:tr_slash($USERPROFILE)
+else
+  let $HOME = s:tr_slash($HOME)
+endif
+
+let s:path = map(split($PATH, ';'), 's:tr_slash(v:val)')
+for s:i in [
+      \ s:nix_dir . '/vimfiles/bin',
+      \ s:nix_dir . '/MinGit/usr/bin',
+      \ s:nix_dir . '/MinGit/cmd',
+      \ s:nix_dir . '/bin',
+      \ ]
+  if index(s:path, s:i) < 0 && isdirectory(s:i)
+    let $PATH = s:i . ';' . $PATH
+  endif
+endfor
+" cygwin vim -> vim -> others.
+let $PATH = '/usr/bin;/bin;' . $VIMRUNTIME . ';' . $PATH
+unlet s:path
+unlet s:i
+
+" vim-sh config {{{1
+for s:i in [
+      \ s:tr_slash(expand('~\nix\msys2\usr\bin\zsh')),
+      \ 'C:/msys64/usr/bin/zsh',
+      \ 'C:/msys64/usr/bin/bash',
+      \ 'C:/msys32/usr/bin/zsh',
+      \ 'C:/msys32/usr/bin/bash',
+      \ 'C:/Program Files/Git/usr/bin/bash',
+      \ 'C:/Program Files (x86)/Git/usr/bin/bash',
+      \ ]
+  if executable(s:i)
+    let g:sh_path = s:i
+    break
+  endif
+endfor
+unlet s:i
+
+" busybox sh rc
+let $ENV = expand(s:nix_dir . '/.config/env.sh')
+let $SH_RC_LOCAL = expand(s:nix_dir . '/local.sh')
+" }}}
