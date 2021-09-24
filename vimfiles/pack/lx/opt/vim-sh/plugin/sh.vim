@@ -332,7 +332,8 @@ function! s:sh(cmd, opt) abort " {{{2
 
   if opt.window " {{{
     let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
-          \ 'cmd': cmd, 'close': opt.close,
+          \ 'cmd': opt.close ? cmd : s:cmdlist_keep_window(cmd),
+          \ 'close': opt.close,
           \ 'start_fn': s:is_win32 ? function('s:win32_start') : function('s:unix_start'),
           \ 'term_name': l:term_name}
 
@@ -510,18 +511,16 @@ endfunction
 
 " -w program {{{2
 function! s:program_alacritty(context) abort
-  let [cmd, close] = [a:context.cmd, a:context.close]
+  let cmd = a:context.cmd
   if executable('alacritty')
-    let cmd = close ? cmd : s:cmdlist_keep_window(cmd)
     call a:context.start_fn(['alacritty', '-t', a:context.term_name, '-e'] + cmd)
     return 1
   endif
 endfunction
 
 function! s:program_urxvt(context) abort
-  let [cmd, close] = [a:context.cmd, a:context.close]
+  let cmd = a:context.cmd
   if executable('urxvt')
-    let cmd = close ? cmd : s:cmdlist_keep_window(cmd)
     call a:context.start_fn(['urxvt', '-title', a:context.term_name, '-e'] + cmd)
     return 1
   endif
@@ -531,15 +530,16 @@ function! s:program_cmd(context) abort
   if s:is_unix | return 0 | endif
 
   let [shell, shell_arg_patch, cmd, close] = [a:context.shell, a:context.shell_arg_patch, a:context.cmd, a:context.close]
-  if !close
-    let cmd = [shell] + shell_arg_patch + s:cmdlist_keep_window(cmd)
+  if !close && !empty(shell_arg_patch)
+    " busybox: call busybox {cmd} directly.
+    let cmd = [shell] + cmd
   endif
   call a:context.start_fn(cmd, {'term_name': a:context.term_name})
   return 1
 endfunction
 
 function! s:program_mintty(context) abort
-  let [shell, cmd, close] = [a:context.shell, a:context.cmd, a:context.close]
+  let [shell, cmd] = [a:context.shell, a:context.cmd]
   " prefer mintty in the same dir of shell.
   let mintty_path = substitute(shell, '\v([\/]|^)\zs(zsh|bash)\ze(\.exe|"?$)', 'mintty', '')
   if mintty_path ==# shell || !executable(mintty_path)
@@ -547,7 +547,7 @@ function! s:program_mintty(context) abort
   endif
 
   if executable(mintty_path)
-    let cmd = [mintty_path, '-t', a:context.term_name] + (close ? cmd : s:cmdlist_keep_window(cmd))
+    let cmd = [mintty_path, '-t', a:context.term_name] + cmd
     call a:context.start_fn(cmd)
     return 1
   endif
