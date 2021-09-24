@@ -1002,23 +1002,25 @@ endfunction
 " s:pack_clean() {{{
 function! s:pack_clean() abort
   let l:keep = []
+  " it actually matches both files and dirs.
   let l:dir_clean = []
   for l:i in values(s:plugins)
     call add(l:keep, l:i.dir)
   endfor
   for l:i in globpath(s:plugins_root, '*', 0, 1)
-    if index(l:keep, split(l:i, '\v[\/]')[-1]) < 0 ||
-          \ index([ ['.git'], [] ], readdir(l:i)) >= 0
+    if index(l:keep, split(l:i, '\v[\/]')[-1]) < 0
+          \ || !isdirectory(l:i)
+          \ || (isdirectory(l:i) && index([ ['.git'], [] ], readdir(l:i)) >= 0)
       " remove dir not defined as plugin or empty (/ broken .git) dir;
       call add(l:dir_clean, l:i)
     endif
   endfor
   if empty(l:dir_clean)
-    echo 'no dir to clean.'
+    echo 'no dir / file to clean.'
     return
   endif
 
-  echo 'dir to clean:'
+  echo 'dir / file to clean:'
   for l:i in l:dir_clean
     echohl WarningMsg | echo l:i | echohl None
   endfor
@@ -1029,7 +1031,7 @@ function! s:pack_clean() abort
     for l:i in l:dir_clean
       let l:failed += (delete(l:i, 'rf') != 0)
     endfor
-    echo printf('dirs removed. %s', l:failed > 0 ? l:failed . ' failed.' : '')
+    echo printf('dirs / files removed. %s', l:failed > 0 ? l:failed . ' failed.' : '')
   else
     redraws | echon 'cancelled.'
   endif
