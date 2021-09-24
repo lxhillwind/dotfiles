@@ -1007,7 +1007,9 @@ function! s:pack_clean() abort
     call add(l:keep, l:i.dir)
   endfor
   for l:i in globpath(s:plugins_root, '*', 0, 1)
-    if index(l:keep, split(l:i, '\v[\/]')[-1]) < 0
+    if index(l:keep, split(l:i, '\v[\/]')[-1]) < 0 ||
+          \ index([ ['.git'], [] ], readdir(l:i)) >= 0
+      " remove dir not defined as plugin or empty (/ broken .git) dir;
       call add(l:dir_clean, l:i)
     endif
   endfor
@@ -1022,11 +1024,12 @@ function! s:pack_clean() abort
   endfor
   echo 'clean them? [y/N] '
   let l:yes = nr2char(getchar()) ==? 'y'
+  let l:failed = 0
   if l:yes
     for l:i in l:dir_clean
-      call delete(l:i, 'rf')
+      let l:failed += (delete(l:i, 'rf') != 0)
     endfor
-    echo 'dirs removed.'
+    echo printf('dirs removed. %s', l:failed > 0 ? l:failed . ' failed.' : '')
   else
     redraws | echon 'cancelled.'
   endif
