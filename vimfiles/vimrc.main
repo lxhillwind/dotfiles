@@ -5,6 +5,11 @@ let s:nix_default = fnamemodify(expand('<sfile>'), ':p:h:h')
 let s:nix_dir = get(s:, 'nix_dir', s:nix_default)
 unlet s:nix_default
 
+" an augroup for unnamed event.
+augroup vimrc_main
+  au!
+augroup END
+
 " option {{{1
 " before doing thing {{{2
 " sensible
@@ -939,6 +944,12 @@ endfunction
 "   Pack https://github.com/dracula/vim dir=dracula
 "   Pack  " install / update
 "   PackClean  " clean not `Pack`ed dir
+"
+" TODO:
+"   generate shell script (verify if quote works):
+"     pre:  printf "
+"     post: " | grep -v ^# | tr '\n' '\0' | xargs -r -0 -n 1 -P 5 sh -c
+"   helptag;
 if exists(':packadd') == 2
   " clear list on (re)loading vimrc.
   let s:plugins = {}
@@ -1017,6 +1028,32 @@ function! s:pack_extract_git_dir(url) abort
   let result = substitute(result, '\v\.git$', '', '')
   return result
 endfunction
+
+" source from "autoload/vimrc.vim" and other autoload files. {{{1
+" :Mpc {{{2
+if executable('mpc')
+  command! Mpc call vimrc#mpc()
+endif
+
+" :KqutebrowserEditCmd {{{2
+if !empty($QUTE_FIFO)
+  command! KqutebrowserEditCmd call vimrc#qutebrowser_edit_cmd()
+endif
+
+" :Tmux {{{2
+if exists("$TMUX")
+  command! -nargs=1 -bar Tmux call vimrc#open_tmux_window(<q-args>)
+endif
+
+" terminal-api related user function {{{2
+if exists(':terminal') == 2
+  " autoload/vimrc/terminal_api.vim
+  if has('nvim')
+    au TermOpen * call vimrc#terminal_api#source()
+  else
+    au TerminalOpen * call vimrc#terminal_api#source()
+  endif
+endif
 
 " load plugin {{{1
 if exists(':Pack') == 2
