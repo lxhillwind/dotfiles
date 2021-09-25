@@ -903,8 +903,8 @@ if exists(':packadd') == 2
   " clear list on (re)loading vimrc.
   let s:plugins = {}
   let s:plugins_root = fnamemodify(expand('<sfile>'), ':p:h') . '/pack/rc/opt'
-  command! -nargs=* -bang Pack call s:pack(<bang>0, <args>)
-  command! PackClean call s:pack_clean()
+  command! -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang>0, <args>)
+  command! -bang PackClean call s:pack_clean(<bang>0)
 endif
 
 " s:pack() {{{
@@ -915,11 +915,21 @@ function! s:pack(bang, ...) abort
     let l:url = s:pack_construct_url(l:plugin)
     let l:opt = a:0 > 1 ? a:2 : {}
     let l:dir = get(l:opt, 'as', s:pack_extract_git_dir(l:url))
-    let l:opt.commit = get(l:opt, 'commit', '')
     let l:opt.branch = get(l:opt, 'branch', '')
+    let l:opt.commit = get(l:opt, 'commit', '')
+    let l:opt.skip = get(l:opt, 'skip', 0)
     let l:opt.dir = l:dir
     let l:opt.url = l:url
-    silent! execute 'packadd!' l:dir
+    if !l:opt.skip
+      if has('vim_starting')
+        silent! execute 'packadd!' l:dir
+      else
+        if index(&rtp->split(',')->map({_, i -> i->split('\v[\/]')[-1]}), l:opt.dir) < 0
+          " only load if not in rtp.
+          execute 'packadd' l:dir
+        endif
+      endif
+    endif
     let s:plugins[l:plugin] = l:opt
   else
     let l:lines = []
@@ -1000,7 +1010,7 @@ endfunction
 " }}}
 
 " s:pack_clean() {{{
-function! s:pack_clean() abort
+function! s:pack_clean(bang) abort
   let l:keep = []
   " it actually matches both files and dirs.
   let l:dir_clean = []
@@ -1020,10 +1030,25 @@ function! s:pack_clean() abort
     return
   endif
 
+  if a:bang
+    let l:tempfile = tempname()
+    let l:lines = ['#!/bin/sh', 'set -e', '', '{', '']
+    for l:i in l:dir_clean
+      call add(l:lines, printf('rm -rf -- %s', shellescape(l:i)))
+    endfor
+    let l:lines = l:lines + ['', '} && echo "delete success." || echo "delete failed."']
+    call writefile(l:lines, l:tempfile)
+    wincmd v
+    execute 'e' fnameescape(l:tempfile)
+    setl ft=sh
+    return
+  endif
+
   echo 'dir / file to clean:'
   for l:i in l:dir_clean
     echohl WarningMsg | echo l:i | echohl None
   endfor
+  echohl Special | echo 'run with bang (:PackClean!) to generate a shellscript.' | echohl None
   echo 'clean them? [y/N] '
   let l:yes = nr2char(getchar()) ==? 'y'
   let l:failed = 0
@@ -1053,6 +1078,17 @@ function! s:pack_extract_git_dir(url) abort
   let result = matchstr(a:url, '\v[^/]+$')
   let result = substitute(result, '\v\.git$', '', '')
   return result
+endfunction
+
+function! s:pack_comp(A, L, P) abort
+  let l:loaded = split(&rtp, ',')->map({_, i -> i->split('\v[\/]')[-1]})
+  let l:result = []
+  for [l:k, l:v] in items(s:plugins)
+    if index(l:loaded, l:v.dir) < 0
+      call add(l:result, string(l:k))
+    endif
+  endfor
+  return l:result->join("\n")
 endfunction
 
 " source from "autoload/vimrc.vim" and other autoload files. {{{1
