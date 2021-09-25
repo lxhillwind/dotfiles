@@ -35,7 +35,7 @@ endif
 let s:plugins = {}
 " ensure plugins root is in rtp.
 let s:plugins_root = ''
-let s:rtp = &rtp->split(',')
+let s:rtp = split(&rtp, ',')
 let s:self = expand('<sfile>')
 for s:root in exists('g:plugins_root') ? [g:plugins_root] : []
       \ + [fnamemodify(s:self, ':p:h'), fnamemodify(s:self, ':p:h:h')]
@@ -69,7 +69,7 @@ function! s:pack(bang, ...) abort
       if has('vim_starting')
         silent! execute 'packadd!' l:dir
       else
-        if index(&rtp->split(',')->map({_, i -> i->split('\v[\/]')[-1]}), l:opt.dir) < 0
+        if index(map(split(&rtp, ','), {_, i -> split(i, '\v[\/]')[-1]}), l:opt.dir) < 0
           " only load if not in rtp.
           execute 'packadd' l:dir
         endif
@@ -247,12 +247,12 @@ function! s:pack_extract_git_dir(url) abort
 endfunction
 
 function! s:pack_comp(A, L, P) abort
-  let l:loaded = split(&rtp, ',')->map({_, i -> i->split('\v[\/]')[-1]})
+  let l:loaded = map(split(&rtp, ','), {_, i -> split(i, '\v[\/]')[-1]})
   let l:result = []
   for [l:k, l:v] in items(s:plugins)
     if index(l:loaded, l:v.dir) < 0
       call add(l:result, string(l:k))
     endif
   endfor
-  return l:result->join("\n")
+  return join(l:result, "\n")
 endfunction
