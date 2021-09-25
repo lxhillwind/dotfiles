@@ -1,4 +1,4 @@
-if get(g:, 'loaded_vimserver')
+if get(g:, 'loaded_vimserver') || !exists('v:argv')
   finish
 endif
 let g:loaded_vimserver = 1
@@ -6,14 +6,6 @@ let g:loaded_vimserver = 1
 if &cp
   set nocp
 endif
-
-" dummy impl for old version vim. {{{
-if !exists('v:argv')
-  function! vimserver#main() abort
-  endfunction
-  finish
-endif
-" }}}
 
 " common func and env prepare {{{
 let s:is_nvim = has('nvim')
@@ -76,7 +68,7 @@ function! s:reset_vimserver_env()
   unlet $VIMSERVER_CLIENT_PID
 endfunction
 
-function! vimserver#main() abort
+function! s:main() abort
   " has('vim_starting') check doesn't work for nvim. bug?
   if get(s:, 'called_main', 0)
     return
@@ -235,12 +227,12 @@ function! s:client(server_id) abort
 endfunction
 
 " nvim polyfill {{{
-if !s:is_nvim | finish | endif
-
 function! s:nvim_env_set()
   let $VIMSERVER_ID = s:vimserver_id
   let $VIMSERVER_BIN = s:vimserver_bin
 endfunction
 " }}}
+
+call s:main()
 
 " vim:fdm=marker

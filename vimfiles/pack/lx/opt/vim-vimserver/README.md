@@ -15,11 +15,9 @@ binary is not available).
 
 ## Setup
 ```vim
-" source plugin/vimserver.vim at very top of your vimrc (or use ":runtime"),
-" then call vimserver#main()
+" source plugin/vimserver.vim at very top of your vimrc (or use ":runtime").
 " If using ":runtime", then you should set &rtp correctly.
 runtime vim-vimserver/plugin/vimserver.vim
-call vimserver#main()
 ```
 
 To ignore startup error (`vimserver executable not found!`), set variable like

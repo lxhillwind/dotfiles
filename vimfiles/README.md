@@ -12,8 +12,8 @@ source ~/vimfiles/vimrc.main
 source ~/vimfiles/vimrc.tiny
 ```
 
-[vimrc.pkgs](vimrc.pkgs) defines some plugins to install (with `:Pack` command
-defined in [vimrc.main](vimrc.main)), and it is sourced if file `vimrc.local`
+[rc/pkgs.vim](rc/pkgs.vim) defines some plugins to install (with `:Pack` command
+defined in [rc/pack.vim](rc/pack.vim)), and it is sourced if file `vimrc.local`
 is not readable;
 
 To customize plugin installation, add a file named `vimrc.local`,
