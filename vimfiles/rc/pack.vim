@@ -144,13 +144,13 @@ function! s:pack(bang, ...) abort
 
     " output report.
     if a:bang
+      enew
       let l:lines =
             \ ['#!/bin/sh',
             \ "{ grep -Ev '^(#|$)'" .
             \ ' | tr "\n" "\0" | xargs -r -0 -n 1 -P 5 sh -c; } <<\EOF']
             \ + [''] + l:lines + ['EOF']
       call writefile(l:lines, l:tempfile)
-      wincmd v
       execute 'e' fnameescape(l:tempfile)
       setl ft=sh
     else
@@ -197,6 +197,7 @@ function! s:pack_clean(bang) abort
   endif
 
   if a:bang
+    enew
     let l:tempfile = tempname()
     let l:lines = ['#!/bin/sh', 'set -e', '', '{', '']
     for l:i in l:dir_clean
@@ -204,7 +205,6 @@ function! s:pack_clean(bang) abort
     endfor
     let l:lines = l:lines + ['', '} && echo "delete success." || echo "delete failed."']
     call writefile(l:lines, l:tempfile)
-    wincmd v
     execute 'e' fnameescape(l:tempfile)
     setl ft=sh
     return
