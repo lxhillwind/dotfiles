@@ -40,7 +40,7 @@ endfunction
 command! -nargs=* -complete=shellcmd KshebangInsert
       \ call <SID>shebang_insert(<q-args>)
 
-let g:vimrc#shebang_lines = {
+let g:vimrc_shebang_lines = {
       \'awk': 'awk -f', 'javascript': 'node', 'lua': 'lua',
       \'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
       \'scheme': 'chez --script', 'sh': 'sh', 'zsh': 'zsh'
@@ -55,8 +55,8 @@ function! s:shebang_insert(args) abort
   let shebang = '#!/usr/bin/env'
   if !empty(a:args)
     let shebang = shebang . ' ' . a:args
-  elseif has_key(g:vimrc#shebang_lines, &ft)
-    let shebang = shebang . ' ' . g:vimrc#shebang_lines[&ft]
+  elseif has_key(g:vimrc_shebang_lines, &ft)
+    let shebang = shebang . ' ' . g:vimrc_shebang_lines[&ft]
   else
     throw 'shebang: which interpreter to run?'
   endif

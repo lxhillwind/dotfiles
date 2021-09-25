@@ -1,17 +1,17 @@
 " vim:fdm=marker
 " pkg list.
 "
-" set g:vimrc#pkgs before source this file; example:
+" set g:vimrc_pkgs before source this file; example:
 "
-"     let g:vimrc#pkgs = {'base': 1, 'coc': 0}
+"     let g:vimrc_pkgs = {'base': 1, 'coc': 0}
 "
 " to get available pkgs:
 "
-"     echo g:vimrc#pkgs
+"     echo g:vimrc_pkgs
 "
 " or copy it via <Leader><CR> (see rc.vim):
 "
-"     let @" = 'let g:vimrc#pkgs = ' . string(g:vimrc#pkgs) | echo 'copied:' @"
+"     let @" = 'let g:vimrc_pkgs = ' . string(g:vimrc_pkgs) | echo 'copied:' @"
 "
 
 if exists(':Pack') != 2
@@ -19,10 +19,10 @@ if exists(':Pack') != 2
 endif
 
 " {{{
-let g:vimrc#pkgs = get(g:, 'vimrc#pkgs', {})
-if type(g:vimrc#pkgs) != type({})
-  let g:vimrc#pkgs = {}
-  echoerr '`g:vimrc#pkgs` should be dict! fallback to {}.'
+let g:vimrc_pkgs = get(g:, 'vimrc_pkgs', {})
+if type(g:vimrc_pkgs) != type({})
+  let g:vimrc_pkgs = {}
+  echoerr '`g:vimrc_pkgs` should be dict! fallback to {}.'
 endif
 " }}}
 
@@ -30,8 +30,8 @@ endif
 " optinoal arg: default value (1 / 0).
 function! s:enable(pkg, ...)  " {{{
   let default = a:0 > 0 ? a:1 : 0
-  let g:vimrc#pkgs[a:pkg] = !empty(get(g:vimrc#pkgs, a:pkg, default))
-  return !empty(g:vimrc#pkgs[a:pkg])
+  let g:vimrc_pkgs[a:pkg] = !empty(get(g:vimrc_pkgs, a:pkg, default))
+  return !empty(g:vimrc_pkgs[a:pkg])
 endfunction
 " }}}
 
