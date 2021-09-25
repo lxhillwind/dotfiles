@@ -65,6 +65,47 @@ let s:gui0E = s:base16_pallet['base0E']
 let s:gui0F = s:base16_pallet['base0F']
 
 " Terminal color definitions
+if exists(':def') == 2
+" vim9 {{{
+def s:round(num: number): number
+  if num < (95 - 55) / 2 + 55
+    return 0
+  elseif num < (135 - 95) / 2 + 95
+    return 1
+  elseif num < (175 - 135) / 2 + 135
+    return 2
+  elseif num < (215 - 175) / 2 + 175
+    return 3
+  elseif num < (255 - 215) / 2 + 215
+    return 4
+  else
+    return 5
+  endif
+enddef
+
+" color info is from https://jonasjacek.github.io/colors/
+def s:cast_rgb(hex_code: string): number
+  var r = str2nr(hex_code[0 : 1], 16)
+  var g = str2nr(hex_code[2 : 3], 16)
+  var b = str2nr(hex_code[4 : 5], 16)
+
+  # greyscale
+  var r1 = (r - 8) / 10
+  var r2 = (g - 8) / 10
+  var r3 = (b - 8) / 10
+  if abs(r1 - r2) <= 2 && abs(r1 - r3) <= 2 && abs(r2 - r3) <= 2 && r1 < 24
+    return 232 + r1
+  endif
+
+  # 16-231
+  r = s:round(r)
+  g = s:round(g)
+  b = s:round(b)
+  return 36 * r + 6 * g + b + 16
+enddef
+" }}}
+else
+
 function! s:round(num)
   let num = a:num
   if num < (95 - 55) / 2 + 55
@@ -102,6 +143,8 @@ function! s:cast_rgb(hex_code)
   let l:b = s:round(l:b)
   return 36 * l:r + 6 * l:g + l:b + 16
 endfunction
+
+endif
 
 let s:cterm00 = s:cast_rgb(s:gui00)
 let s:cterm01 = s:cast_rgb(s:gui01)
@@ -164,6 +207,40 @@ hi clear
 syntax reset
 let g:colors_name = "base16-dynamic"
 
+if exists(':def') == 2
+" vim9 {{{
+def s:hi(group: string, guifg: string, guibg: string, ctermfg: any, ctermbg: any, attr: string, guisp: string)
+  g:Base16hi(group, guifg, guibg, ctermfg, ctermbg, attr, guisp)
+enddef
+
+" Highlighting function
+" Optional variables are attributes and guisp
+def g:Base16hi(group: string, guifg: string, guibg: string, ctermfg: any, ctermbg: any, ...args: list<string>)
+  var attr = get(args, 0, "")
+  var guisp = get(args, 1, "")
+
+  if guifg != ""
+    exec "hi " .. group .. " guifg=#" .. guifg
+  endif
+  if guibg != ""
+    exec "hi " .. group .. " guibg=#" .. guibg
+  endif
+  if ctermfg != ""
+    exec "hi " .. group .. " ctermfg=" .. string(ctermfg)
+  endif
+  if ctermbg != ""
+    exec "hi " .. group .. " ctermbg=" .. string(ctermbg)
+  endif
+  if attr != ""
+    exec "hi " .. group .. " gui=" .. attr .. " cterm=" .. attr
+  endif
+  if guisp != ""
+    exec "hi " .. group .. " guisp=#" .. guisp
+  endif
+enddef
+" }}}
+else
+
 " Highlighting function
 " Optional variables are attributes and guisp
 function! g:Base16hi(group, guifg, guibg, ctermfg, ctermbg, ...)
@@ -190,10 +267,11 @@ function! g:Base16hi(group, guifg, guibg, ctermfg, ctermbg, ...)
   endif
 endfunction
 
-
 fun <sid>hi(group, guifg, guibg, ctermfg, ctermbg, attr, guisp)
   call g:Base16hi(a:group, a:guifg, a:guibg, a:ctermfg, a:ctermbg, a:attr, a:guisp)
 endfun
+
+endif
 
 " Vim editor colors
 call <sid>hi("Normal",        s:gui05, s:gui00, s:cterm05, s:cterm00, "", "")
