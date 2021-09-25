@@ -6,14 +6,29 @@ if v:version < 800
   finish
 endif
 
+" common script var / script func. {{{1
 let s:nix_default = fnamemodify(expand('<sfile>'), ':p:h:h')
 let s:nix_dir = get(s:, 'nix_dir', s:nix_default)
 unlet s:nix_default
 
+" common platform detection
+let s:is_unix = has('unix')
+let s:is_win32 = has('win32')
+let s:has_gui = has('gui_running') || has('mac')
+      \ || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
+
+" :echoerr will raise exception (?)
+function! s:echoerr(msg)
+  echohl ErrorMsg
+  echon a:msg
+  echohl None
+endfunction
+
 " an augroup for unnamed event.
-augroup vimrc_main
+augroup vimrc_unnamed
   au!
 augroup END
+" }}}1
 
 " option {{{1
 " before doing thing {{{2
@@ -232,19 +247,6 @@ endif
 
 " }}}
 " }}}1
-
-" common platform detection
-let s:is_unix = has('unix')
-let s:is_win32 = has('win32')
-let s:has_gui = has('gui_running') || has('mac')
-      \ || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
-
-" :echoerr will raise exception (?)
-function! s:echoerr(msg)
-  echohl ErrorMsg
-  echon a:msg
-  echohl None
-endfunction
 
 " keymap and related command {{{
 " clipboard (see keymap) {{{2
@@ -1091,33 +1093,83 @@ function! s:pack_comp(A, L, P) abort
   return l:result->join("\n")
 endfunction
 
-" source from "autoload/vimrc.vim" and other autoload files. {{{1
 " :Mpc {{{2
 if executable('mpc')
-  command! Mpc call vimrc#mpc()
+  command! Mpc call s:mpc_main()
+
+  let s:mpc_prop_type = 'song'
+
+  function! s:mpc_main() abort
+    enew | setl filetype=mpc buftype=nofile noswapfile nobuflisted
+    let l:buf = bufnr()
+    call prop_type_add(s:mpc_prop_type, {'bufnr': l:buf})
+    let l:i = 1
+    for line in split(system('mpc playlist'), "\n")
+      call setline(l:i, line)
+      call prop_add(l:i, 1, {'type': s:mpc_prop_type, 'id': l:i, 'bufnr': l:buf})
+      let l:i += 1
+    endfor
+    nnoremap <buffer> <CR> <cmd>call <SID>mpc_play()<CR>
+  endfunction
+
+  function! s:mpc_play() abort
+    let prop = prop_list(line('.'))
+    if len(prop) == 0
+      return
+    endif
+
+    let prop = prop[-1]
+    if prop['type'] ==# s:mpc_prop_type
+      let l:id = prop['id']
+      silent call job_start(printf('mpc play %d', l:id))
+    endif
+  endfunction
 endif
 
 " :KqutebrowserEditCmd {{{2
 if !empty($QUTE_FIFO)
-  command! KqutebrowserEditCmd call vimrc#qutebrowser_edit_cmd()
+  command! KqutebrowserEditCmd call s:qutebrowser_edit_cmd()
+
+  function! s:qutebrowser_edit_cmd()
+    setl buftype=nofile noswapfile
+    call setline(1, $QUTE_COMMANDLINE_TEXT[1:])
+    call setline(2, '')
+    call setline(3, 'hit `<Space>q` to save cmd (first line) and quit')
+    nnoremap <buffer> <Space>q :call writefile(['set-cmd-text -s :' . getline(1)], $QUTE_FIFO) \| q<CR>
+  endfunction
 endif
 
 " :Tmux {{{2
 if exists("$TMUX")
-  command! -nargs=1 -bar Tmux call vimrc#open_tmux_window(<q-args>)
+  command! -nargs=1 -bar Tmux call s:tmux_open_window(<q-args>)
+
+  function! s:tmux_open_window(args)
+    let options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
+    let ch = match(a:args, '\s')
+    if ch == -1
+      let [option, args] = [a:args, '']
+    else
+      let [option, args] = [a:args[:ch], a:args[ch:]]
+    endif
+    let option = get(options, trim(option))
+    if empty(option)
+      throw 'unknown option: ' . a:args . '; valid: ' . join(keys(options), ' / ')
+    endif
+    call system("tmux " . option . " -c " . shellescape(getcwd()) . args)
+  endfunction
 endif
 
 " terminal-api related user function {{{2
 if exists(':terminal') == 2
-  " autoload/vimrc/terminal_api.vim
-  augroup vimrc_main
-    if has('nvim')
-      au TermOpen * call vimrc#terminal_api#source()
-    else
-      au TerminalOpen * call vimrc#terminal_api#source()
+" sync terminal path to buffer path.
+" TODO follow cd even when terminal buffer not in focus (with event?).
+  function! Tapi_cd(nr, arg)
+    if bufnr() == a:nr
+      execute 'lcd' fnameescape(a:arg[0])
     endif
-  augroup END
+  endfunction
 endif
+" }}}1
 
 " load plugin {{{1
 if exists(':Pack') == 2
@@ -1125,6 +1177,7 @@ if exists(':Pack') == 2
   Pack 'vim-jump'
   Pack 'vim-sh'
 endif
+" }}}1
 
 " source local vimrc {{{1
 if filereadable(s:nix_dir . '/vimfiles/' . 'vimrc.local')
