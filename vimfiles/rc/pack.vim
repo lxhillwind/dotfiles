@@ -6,12 +6,19 @@
 "   PackClean
 " example:
 "   Pack 'tpope/vim-sensible'
-"   Pack 'https://github.com/Shougo/ddc.vim', #{branch: 'v0.14.0'}
+"   " as: install with a different folder name
 "   Pack 'https://github.com/dracula/vim', #{as: 'dracula'}
+"   " branch: tag or branch
+"   Pack 'https://github.com/Shougo/ddc.vim', #{branch: 'v0.14.0'}
+"   " after: install to after sub directory of plugin folder
+"   " commit: checkout a special commit.
+"   Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
+"   " skip: do not load plugin.
+"   Pack 'a-plugin-to-packadd-on-demand', #{skip: 1}
 "   Pack  " output command for install / update
 "   PackClean  " prompt to clean not `Pack`ed dir
 " opt:
-"   as; branch; commit.
+"   as; branch; commit; after; skip.
 " complete workflow:
 "   after running `:Pack!`, run the new file with sh with
 "   `:Jobrun sh %`, `:!sh %:S`, or other way to run external command.
@@ -55,6 +62,7 @@ function! s:pack(bang, ...) abort
     let l:opt.branch = get(l:opt, 'branch', '')
     let l:opt.commit = get(l:opt, 'commit', '')
     let l:opt.skip = get(l:opt, 'skip', 0)
+    let l:opt.after = get(l:opt, 'after', 0)
     let l:opt.dir = l:dir
     let l:opt.url = l:url
     if !l:opt.skip
@@ -89,7 +97,11 @@ function! s:pack(bang, ...) abort
 
     " check is plugin is already available.
     for [l:k, l:v] in items(s:plugins)
-      let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
+      if l:v.after
+        let l:i = globpath(&pp, printf('pack/*/opt/%s/after', l:v.dir), 0, 1)
+      else
+        let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
+      endif
       if empty(l:i)
         if has_key(l:v, 'path')
           call remove(l:v, 'path')
@@ -111,19 +123,20 @@ function! s:pack(bang, ...) abort
           call add(l:lines, '# is not git repository, skip.')
         endif
       else
+        let l:real_dir = l:v.after ? printf('%s/after', l:v.dir) : l:v.dir
         if !empty(l:v.commit)
           call add(l:lines,
                 \ printf('git -C %s clone -n %s %s && git -C %s/%s checkout %s',
-                \ shellescape(s:plugins_root), l:v.url, l:v.dir,
-                \ shellescape(s:plugins_root), l:v.dir, l:v.commit,
+                \ shellescape(s:plugins_root), l:v.url, l:real_dir,
+                \ shellescape(s:plugins_root), l:real_dir, l:v.commit,
                 \ ))
         elseif !empty(l:v.branch)
           call add(l:lines,
                 \ printf('git -C %s clone --depth 1 -b %s %s %s',
-                \ shellescape(s:plugins_root), l:v.branch, l:v.url, l:v.dir))
+                \ shellescape(s:plugins_root), l:v.branch, l:v.url, l:real_dir))
         else
           call add(l:lines, printf('git -C %s clone --depth 1 %s %s',
-                \ shellescape(s:plugins_root), l:v.url, l:v.dir))
+                \ shellescape(s:plugins_root), l:v.url, l:real_dir))
         endif
       endif
       call add(l:lines, '')
@@ -158,17 +171,23 @@ endfunction
 
 " s:pack_clean() {{{1
 function! s:pack_clean(bang) abort
-  let l:keep = []
+  let l:keep = {}
   " it actually matches both files and dirs.
   let l:dir_clean = []
-  for l:i in values(s:plugins)
-    call add(l:keep, l:i.dir)
+  for [l:k, l:v] in items(s:plugins)
+    call extend(l:keep, {l:v.dir : l:k})
   endfor
   for l:i in globpath(s:plugins_root, '*', 0, 1)
-    if index(l:keep, split(l:i, '\v[\/]')[-1]) < 0
-          \ || !isdirectory(l:i)
-          \ || (isdirectory(l:i) && index([ ['.git'], [] ], readdir(l:i)) >= 0)
-      " remove dir not defined as plugin or empty (/ broken .git) dir;
+    let l:name = get(l:keep, split(l:i, '\v[\/]')[-1])
+    if !empty(l:name)
+      let l:check_dir = s:plugins[l:name].after ? (l:i . '/after') : l:i
+      if !isdirectory(l:check_dir)
+            \ || (isdirectory(l:check_dir) && index([ ['.git'], [] ], readdir(l:check_dir)) >= 0)
+        " remove empty (/ broken .git) dir;
+        call add(l:dir_clean, l:i)
+      endif
+    else
+      " remove dir not defined as plugin;
       call add(l:dir_clean, l:i)
     endif
   endfor

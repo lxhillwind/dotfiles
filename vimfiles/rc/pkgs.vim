@@ -35,25 +35,16 @@ function! s:enable(pkg, ...)  " {{{
 endfunction
 " }}}
 
-" globpath() polyfill {{{
-function! s:globpath(a, b, c, d) abort
-  if has('patch-7.4.654')
-    return globpath(a:a, a:b, a:c, a:d)
-  else
-    return split(globpath(a:a, a:b), "\n")
-  endif
-endfunction
-" }}}
-
-" best to have {{{2
+" best to have {{{1
 if s:enable('base', 1)
   Pack 'https://github.com/justinmk/vim-dirvish', {'commit': '9c0dc32af9235d42715751b30cf04fa0584c1798'}
-
-  " dirvish
   let g:loaded_netrwPlugin = 1
-endif
 
-" basic completion {{{2
+  Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
+endif
+" }}}1
+
+" basic completion {{{1
 if s:enable('basic-comp', 1) && v:version >= 800
   Pack 'https://github.com/skywind3000/vim-auto-popmenu', {'commit': 'ea64a79b23401f48e95b9bce65ba39c6c020a291'}
   " enable this plugin for filetypes, '*' for all files.
@@ -77,8 +68,9 @@ if s:enable('basic-comp', 1) && v:version >= 800
   " Disable certain types
   "let g:vim_dict_config = {'text': ''}
 endif
+" }}}1
 
-" coc {{{2
+" coc {{{1
 if s:enable('coc', 0) && v:version >= 800
   let g:apc_enable_ft = {}
 
