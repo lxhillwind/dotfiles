@@ -179,11 +179,18 @@ function! s:server() abort
         \ {(s:is_nvim ? 'on_stdout' : 'callback'):
         \ function('s:server_handler')})
   let $VIMSERVER_ID = bind_name
-  let $VIMSERVER_BIN = s:vimserver_exe
+  if s:is_nvim && match(s:vimserver_exe, '\.sh$') >= 0
+    " only expose sh client if in vim (not neovim).
+    :
+  else
+    let $VIMSERVER_BIN = s:vimserver_exe
+  endif
   augroup vimserver_clients_cleaner
     au!
     au WinEnter * call s:server_clients_cleaner()
   augroup END
+
+  " nvim env set does not work; don't know why.
   if s:is_nvim
     let s:vimserver_id = $VIMSERVER_ID
     let s:vimserver_bin = $VIMSERVER_BIN
@@ -229,7 +236,9 @@ endfunction
 " nvim polyfill {{{
 function! s:nvim_env_set()
   let $VIMSERVER_ID = s:vimserver_id
-  let $VIMSERVER_BIN = s:vimserver_bin
+  if !empty(s:vimserver_bin)
+    let $VIMSERVER_BIN = s:vimserver_bin
+  endif
 endfunction
 " }}}
 
