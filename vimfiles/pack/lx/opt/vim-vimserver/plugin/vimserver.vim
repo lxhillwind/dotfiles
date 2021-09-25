@@ -185,6 +185,11 @@ function! s:server() abort
   else
     let $VIMSERVER_BIN = s:vimserver_exe
   endif
+
+  " expose variables, since vim-sh plugin will clean these env variable.
+  " they may be required in other place (plugin), like popup terminal.
+  let g:vimserver_env = {'VIMSERVER_ID': bind_name, 'VIMSERVER_BIN': s:vimserver_exe}
+
   augroup vimserver_clients_cleaner
     au!
     au WinEnter * call s:server_clients_cleaner()

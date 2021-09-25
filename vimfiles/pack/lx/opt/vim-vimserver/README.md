@@ -41,6 +41,11 @@ If no filename argument is provided, vim will just open a new empty window.
 If multiple filename arguments are provided, only the first one will be shown,
 other files can be accessed with `:next` / `:prev` (`:help arglist` for help).
 
+## Info
+This plugin defines variable `g:vimserver_env` (dict of string), which can be
+passed to other functions (like `term_start`) in case environment variables
+`VIMSERVER_*` are unset in some place.
+
 ## vimserver-helper binary
 It should work on all major platforms, including at least Windows, Linux, Mac.
 
