@@ -24,10 +24,6 @@ set rnu
 " hlsearch
 set hls
 
-" filetype / syntax
-filetype on
-filetype plugin on
-filetype indent on
 " belloff
 if exists('&bo')
   set bo=all

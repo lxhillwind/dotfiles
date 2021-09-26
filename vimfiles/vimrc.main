@@ -29,6 +29,9 @@ if has('win32')
   call s:load_script('rc/win32.vim')
 endif
 
+" ensure filetype detection is disabled before calling ":packadd".
+filetype off
+
 " source local vimrc
 if filereadable(fnamemodify(s:self, ':p:h') . '/' . 'vimrc.local')
   call s:load_script('vimrc.local')
@@ -43,3 +46,10 @@ if exists(':Pack') == 2
   Pack 'vim-jump'
   Pack 'vim-sh'
 endif
+
+" this also enables filetype.
+filetype plugin indent on
+
+" set colorscheme at very end (after "filetype on");
+" since it ("syntax on") loads filetype.vim unless already loaded.
+call s:load_script('rc/color.vim')
