@@ -17,11 +17,18 @@
 "   Pack 'a-plugin-to-packadd-on-demand', #{skip: 1}
 "   Pack  " output command for install / update
 "   PackClean  " prompt to clean not `Pack`ed dir
+"   PackHelpTags  " generate helptags for plugins it knows.
 " opt:
 "   as; branch; commit; after; skip.
 " complete workflow:
 "   after running `:Pack!`, run the new file with sh with
 "   `:Jobrun sh %`, `:!sh %:S`, or other way to run external command.
+"
+" after vim is started, ":Pack {url}" can be used to load skipped plugin.
+" command completion returns plugins (not loaded) list.
+"
+" ":Pack {url}[, {opt}]" can be re-run for the same url ({opt} can change),
+" once package is not actually available (not downloaded).
 "
 " TODO:
 "   helptag;
@@ -50,6 +57,7 @@ endif
 
 command! -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang>0, <args>)
 command! -bang PackClean call s:pack_clean(<bang>0)
+command! PackHelpTags call s:pack_help_tags()
 
 " s:pack() {{{1
 function! s:pack(bang, ...) abort
@@ -228,6 +236,25 @@ function! s:pack_clean(bang) abort
   endif
 endfunction
 " }}}
+
+" s:pack_help_tags() {{{1
+function! s:pack_help_tags()
+  for l:v in values(s:plugins)
+    if l:v.after
+      let l:i = globpath(&pp, printf('pack/*/opt/%s/after', l:v.dir), 0, 1)
+    else
+      let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
+    endif
+    if !empty(l:i)
+      let l:path = l:i[0]
+      let l:path = l:path . '/doc'
+      if isdirectory(l:path)
+        execute 'helptags' fnameescape(l:path)
+      endif
+    endif
+  endfor
+endfunction
+" }}}1
 
 " helper functions. {{{1
 function! s:pack_construct_url(name) abort
