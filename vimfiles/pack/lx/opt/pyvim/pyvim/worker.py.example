@@ -1,0 +1,25 @@
+# vim:ft=python
+
+from .libvim import Worker as BaseWorker
+
+
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except:
+        return False
+
+
+class Worker(BaseWorker):
+    def hello(self, *args):
+        """create a new buffer, append every line with one of args"""
+        self.client.cmd('wincmd s')
+        for i in args:
+            self.client.fn.append('$', str(i))
+
+    def world(self, *args):
+        """for every line in this buffer, multiply 9 if it is a integer"""
+        for k, i in enumerate(self.client.fn.getline(1, '$')):
+            if is_int(i):
+                self.client.fn.setline(k+1, int(i) * 9)
