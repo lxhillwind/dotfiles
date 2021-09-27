@@ -50,6 +50,8 @@ class Client:
             data = sys.stdin.readline()
             try:
                 return json.loads(data)
+            except KeyboardInterrupt:
+                sys.exit(-2)
             except:
                 print('invalid data:', data)
                 traceback.print_exc(file=sys.stdout)
@@ -70,6 +72,8 @@ class Client:
         while True:
             try:
                 self._handle(self._read_data())
+            except KeyboardInterrupt:
+                sys.exit(-2)
             except:
                 traceback.print_exc(file=sys.stdout)
 
