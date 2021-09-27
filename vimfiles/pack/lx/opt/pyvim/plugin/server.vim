@@ -62,8 +62,9 @@ enddef
 
 var s:job: job
 
+var s:python_path: string = exists('g:pyvim_host') ? g:pyvim_host : 'python3'
 def s:server(): void
-  s:job = job_start(['python3', '-u', 'pyvim/runner.py'], {
+  s:job = job_start([s:python_path, '-u', 'pyvim/runner.py'], {
     out_cb: function('s:server_handler'),
     err_cb: function('s:server_handler'),
     cwd: fnamemodify(pwd, ':h'),

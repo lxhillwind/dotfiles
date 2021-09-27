@@ -1,7 +1,9 @@
 ## Usage
 
-create file `pyvim/worker.py` (template: [pyvim/worker.py.example](pyvim/worker.py.example)),
-and define method here.
+- create file `pyvim/worker.py` (template:
+  [pyvim/worker.py.example](pyvim/worker.py.example)), and define method here.
+
+- set variable `g:pyvim_host` (default: `python3`) to path of Python.
 
 Then you can run vim command `:Py3 {method-name}`.
 
@@ -14,4 +16,5 @@ Then you can run vim command `:Py3 {method-name}`.
 - async is buggy (vim ex cmd may block, e.g. call `vim.sleep` in worker will
   block subsequent ex cmd)
 
-Currently, the main goal of this plugin is to take advantage of Python's expressiveness.
+Currently, the main goal of this plugin is to take advantage of Python's
+expressiveness.
