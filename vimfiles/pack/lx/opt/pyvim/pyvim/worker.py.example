@@ -12,13 +12,13 @@ def is_int(s):
 
 
 class Worker(BaseWorker):
-    def hello(self, *args):
+    def hello(self, *args, **kwargs):
         """create a new buffer, append every line with one of args"""
         self.client.cmd('wincmd s')
         for i in args:
             self.client.fn.append('$', str(i))
 
-    def world(self, *args):
+    def world(self, *args, **kwargs):
         """for every line in this buffer, multiply 9 if it is a integer"""
         for k, i in enumerate(self.client.fn.getline(1, '$')):
             if is_int(i):

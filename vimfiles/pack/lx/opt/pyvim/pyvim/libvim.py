@@ -78,7 +78,7 @@ class Client:
             args = data.get('args')
             if isinstance(args, list):
                 if hasattr(self.worker, op):
-                    getattr(self.worker, op)(*args)
+                    getattr(self.worker, op)(*args[:-1], **args[-1])
                     return
         print('unknown cmd: %s' % data, file=sys.stderr)
 

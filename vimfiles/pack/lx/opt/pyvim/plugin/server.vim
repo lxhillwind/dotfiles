@@ -76,7 +76,8 @@ def s:send_input(...data: list<any>): void
     return
   endif
   if data[0] == 'help'
-    if len(data) == 2
+    # 0: op; 1..-2: args; -1: kwargs
+    if len(data) == 3
       if s:complete_source->has_key(data[1])
         echo s:complete_source->get(data[1])
       else
@@ -94,4 +95,5 @@ def s:send_input(...data: list<any>): void
   s:job->job_getchannel()->ch_sendraw(json_encode(request) .. "\n")
 enddef
 
-command! -nargs=+ -complete=custom,s:comp_func Py3 s:send_input(<f-args>)
+command! -nargs=+ -bang -range=0 -complete=custom,s:comp_func Py3
+| s:send_input(<f-args>, {bang: <bang>false, range: <range>, line1: <line1>, line2: <line2>})
