@@ -29,9 +29,24 @@ function! s:load_script(file) abort
   exec 'source' fnameescape(fnamemodify(s:self, ':p:h') . '/' . a:file)
 endfunction
 
+" export SID (:h SID); variable: g:vimrc_sid {{{1
+function! s:get_sid(filename)
+  for i in split(execute('scriptnames'), "\n")
+    let id = substitute(i, '\v^\s*(\d+): .*$', '\1', '')
+    let file = substitute(i, '\v^\s*\d+: ', '', '')
+    if a:filename ==# expand(file)
+      return id
+    endif
+  endfor
+  return 0
+endfunction
+let g:vimrc_sid = s:get_sid(expand('<sfile>'))
+" }}}1
+
 call s:load_script('vimrc.tiny')
 call s:load_script('rc/option.vim')
 call s:load_script('rc/keymap.vim')
+call s:load_script('rc/filetype.vim')
 call s:load_script('rc/command.vim')
 call s:load_script('rc/pack.vim')
 call s:load_script('rc/tasks.vim')

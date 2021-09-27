@@ -264,21 +264,6 @@ function! s:gx(mode) abort
   norm gg"_dd
 endfunction
 
-" export SID (:h SID); variable: g:vimrc_sid {{{1
-function! s:get_sid(filename)
-  for i in split(execute('scriptnames'), "\n")
-    let id = substitute(i, '\v^\s*(\d+): .*$', '\1', '')
-    let file = substitute(i, '\v^\s*\d+: ', '', '')
-    if a:filename ==# expand(file)
-      return id
-    endif
-  endfor
-  return 0
-endfunction
-if exists('*execute')
-  let g:vimrc_sid = s:get_sid(expand('<sfile>'))
-endif
-
 " switch number / relativenumber {{{1
 function! s:switch_nu_rnu() abort
   " patch-7.3.1115: set one of nu / rnu will affect another.
@@ -347,20 +332,9 @@ endif
 " switch nu / rnu
 nnoremap <silent> <Leader>n :call <SID>switch_nu_rnu()<CR>
 
-" filetype setting {{{1
-augroup vimrc_filetype
+" filetype related keymap setting {{{1
+augroup vimrc_keymap
   au!
-  au BufNewFile,BufRead *.gv setl ft=dot
-  au FileType vim setl sw=2
-  au FileType yaml setl sw=2 indentkeys-=0#
-  au FileType zig setl fp=zig\ fmt\ --stdin
-  au FileType markdown setl tw=78
-
-  " open plugin directory
-  au FileType vim nnoremap <buffer> <LocalLeader>e <cmd>e ~/vimfiles/plugin<CR>
-
-  " quickfix window
-  au FileType qf let &l:stl = &g:stl
 
   " viml completion
   au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
@@ -412,9 +386,6 @@ augroup vimrc_filetype
   endfunction
   au FileType gx call <SID>gx_init()
 augroup END
-
-" :h ft-sh-syntax
-let g:is_posix = 1
 
 " finally {{{1
 " e.g. <Space><Space>
