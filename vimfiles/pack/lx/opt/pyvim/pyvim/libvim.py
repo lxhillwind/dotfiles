@@ -3,6 +3,7 @@ import functools
 import sys
 import traceback
 import inspect
+import typing
 
 
 _global_id = 0
@@ -115,7 +116,7 @@ class Client:
         payload = {'op': 'eval', 'cmd': cmd}
         return self._eval(payload)
 
-    def execute(self, cmd: str) -> list[str]:
+    def execute(self, cmd: str) -> typing.List[str]:
         """sync"""
         payload = {'op': 'execute', 'cmd': cmd}
         return self._eval(payload)
