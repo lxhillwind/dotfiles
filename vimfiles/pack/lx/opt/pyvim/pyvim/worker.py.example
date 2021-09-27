@@ -1,6 +1,6 @@
 import pathlib
 import textwrap
-from pyvim.libvim import Worker as BaseWorker
+from pyvim.libvim import Worker as BaseWorker, vim
 
 # this file may be loaded with exec(), so __file__ can't be used to get cwd.
 # so use python process startup cwd (set in plugin/server.vim) and join pyvim.
@@ -19,9 +19,9 @@ class Worker(BaseWorker):
         """open worker.py (pyvim user config file)"""
         config_file = CWD.joinpath('worker.py')
         f_exists = config_file.exists()
-        f_escaped = self.client.fn.fnameescape(str(config_file))
+        f_escaped = vim.fn.fnameescape(str(config_file))
         f_editcmd = 'e' if bang else 'tabe'
-        self.client.cmd(f_editcmd + ' ' + f_escaped)
+        vim.cmd(f_editcmd + ' ' + f_escaped)
         if not f_exists:
             content = textwrap.dedent('''\
                 # This file is generated from "worker.py.example";
@@ -31,6 +31,6 @@ class Worker(BaseWorker):
             content += '\n'
             with CWD.joinpath('worker.py.example').open() as f:
                 content += f.read()
-            self.client.fn.append('$', content.rstrip('\n').split('\n'))
+            vim.fn.append('$', content.rstrip('\n').split('\n'))
 
 # vim:ft=python

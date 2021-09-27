@@ -142,3 +142,19 @@ class Worker:
     def restart(self):
         """a dummy method"""
         pass
+
+
+class Proxy:
+    _client = None
+
+    def register(self, client):
+        self._client = client
+        # use it only once.
+        # TODO impl it.
+        #object.__delattr__(self, 'register')
+
+    def __getattr__(self, key):
+        return getattr(self._client, key)
+
+
+vim: Client = Proxy()

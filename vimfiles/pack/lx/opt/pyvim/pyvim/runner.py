@@ -6,7 +6,7 @@ import sys
 # str() is required.
 sys.path.insert(0, str(this_file.parent.parent))
 
-from pyvim.libvim import Client
+from pyvim.libvim import Client, vim
 
 if this_file.parent.joinpath('worker.py').exists():
     from pyvim.worker import Worker
@@ -16,4 +16,5 @@ else:
 
 
 client = Client()
+vim.register(client)
 client._loop(Worker)
