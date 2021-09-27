@@ -1,11 +1,12 @@
 ## Usage
 
-- create file `pyvim/worker.py` (template:
-  [pyvim/worker.py.example](pyvim/worker.py.example)), and define method here.
-
-- set variable `g:pyvim_host` (default: `python3`) to path of Python.
+- **optional** set variable `g:pyvim_host` (default: `python3`) to path of
+  Python.
 
 Then you can run vim command `:Py3 {method-name}`.
+
+Run `:Py3 config` to open user config file (you can re-define the behavior
+by rewriting the `config` method in it).
 
 ## special method (not passed to python process)
 

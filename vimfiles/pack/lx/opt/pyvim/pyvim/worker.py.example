@@ -1,25 +1,36 @@
-# vim:ft=python
+import pathlib
+import textwrap
+from pyvim.libvim import Worker as BaseWorker
 
-from .libvim import Worker as BaseWorker
-
-
-def is_int(s):
-    try:
-        int(s)
-        return True
-    except:
-        return False
+# this file may be loaded with exec(), so __file__ can't be used to get cwd.
+# so use python process startup cwd (set in plugin/server.vim) and join pyvim.
+CWD = pathlib.Path().cwd().joinpath('pyvim')
 
 
 class Worker(BaseWorker):
-    def hello(self, *args, **kwargs):
-        """create a new buffer, append every line with one of args"""
-        self.client.cmd('wincmd s')
-        for i in args:
-            self.client.fn.append('$', str(i))
 
-    def world(self, *args, **kwargs):
-        """for every line in this buffer, multiply 9 if it is a integer"""
-        for k, i in enumerate(self.client.fn.getline(1, '$')):
-            if is_int(i):
-                self.client.fn.setline(k+1, int(i) * 9)
+    # it's recommended to keep the config method defined below in "worker.py",
+    # then you can open it easily.
+    #
+    # you can define more methods in this class, and they will appear once
+    # the python process is reloaded (restart vim or `:Py3 restart`).
+
+    def config(self, *args, bang: bool = False, **kwargs):
+        """open worker.py (pyvim user config file)"""
+        config_file = CWD.joinpath('worker.py')
+        f_exists = config_file.exists()
+        f_escaped = self.client.fn.fnameescape(str(config_file))
+        f_editcmd = 'e' if bang else 'tabe'
+        self.client.cmd(f_editcmd + ' ' + f_escaped)
+        if not f_exists:
+            content = textwrap.dedent('''\
+                # This file is generated from "worker.py.example";
+                # once you save this file ("worker.py") to disk,
+                # `:Py3` command will load worker.py instead of worker.py.example.
+            ''')
+            content += '\n'
+            with CWD.joinpath('worker.py.example').open() as f:
+                content += f.read()
+            self.client.fn.append('$', content.rstrip('\n').split('\n'))
+
+# vim:ft=python
