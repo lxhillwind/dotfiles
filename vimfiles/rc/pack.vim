@@ -1,5 +1,5 @@
 " vim: fdm=marker
-" :Pack / :PackClean; a simple plugin manager (for vim8). {{{1
+" :Pack / :PackClean / :PackHelpTags; a simple plugin manager (for vim8). {{{1
 "
 " usage:
 "   Pack [url][, {opt}]
