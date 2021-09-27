@@ -1,5 +1,16 @@
 " vim: fdm=marker
 " vimrc for +eval.
+"
+" about loading order:
+"
+" disable filetype detection before ":packadd", otherwise ftdetect in packages
+" won't be loaded. (call "filetype off" to ensure it is disabled)
+"
+" "colorscheme XXX" should be called very lately, since it usally depends on
+" "syntax on", which calls "filetype on", if not loaded (or filetype-off
+" before).
+"
+" be sure to also call "syntax on", if set colorscheme in vimrc.local.
 
 if v:version < 800
   echoerr 'vim version too old:' v:version
@@ -32,6 +43,13 @@ endif
 " ensure filetype detection is disabled before calling ":packadd".
 filetype off
 
+" load plugin (:Pack is defined in rc/pack.vim)
+if exists(':Pack') == 2
+  Pack 'vim-filelist'
+  Pack 'vim-jump'
+  Pack 'vim-sh'
+endif
+
 " source local vimrc
 if filereadable(fnamemodify(s:self, ':p:h') . '/' . 'vimrc.local')
   call s:load_script('vimrc.local')
@@ -40,16 +58,9 @@ else
   call s:load_script('rc/pkgs.vim')
 endif
 
-" load plugin (:Pack is defined in rc/pack.vim)
-if exists(':Pack') == 2
-  Pack 'vim-filelist'
-  Pack 'vim-jump'
-  Pack 'vim-sh'
-endif
-
 " this also enables filetype.
 filetype plugin indent on
 
-" set colorscheme at very end (after "filetype on");
+" set colorscheme (if not set before) at very end (after "filetype on");
 " since it ("syntax on") loads filetype.vim unless already loaded.
 call s:load_script('rc/color.vim')

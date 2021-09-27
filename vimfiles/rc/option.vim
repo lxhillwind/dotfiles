@@ -120,3 +120,40 @@ endfor
 set nobackup
 set noundofile
 
+" term & gui (but not colorscheme) {{{1
+if has('vim_starting')
+  if has('gui_running')
+    set guioptions=
+    set lines=32
+    set columns=128
+  else
+    if has('unix')
+      if $TERM ==? 'linux'
+        " linux tty
+        set bg=dark
+      else
+        " 256color or tgc
+        if exists('&tgc') && $TERM !~ 'xterm'
+          " make tgc work; :help xterm-true-color
+          let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+          let &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+        endif
+        silent! set termguicolors
+        if $BAT_THEME =~? 'light'
+          set bg=light
+        else
+          set bg=dark
+        endif
+      endif
+
+      if $TERM =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
+        " wsl; fix vim start in replace mode;
+        " Refer: https://superuser.com/a/1525060
+        set t_u7=
+      endif
+    else
+      " win32 cmd
+      set nocursorcolumn
+    endif
+  endif
+endif
