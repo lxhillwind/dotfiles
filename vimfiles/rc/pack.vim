@@ -4,6 +4,7 @@
 " usage:
 "   Pack [url][, {opt}]
 "   PackClean
+"   PackHelpTags
 " example:
 "   Pack 'tpope/vim-sensible'
 "   " as: install with a different folder name
@@ -29,9 +30,6 @@
 "
 " ":Pack {url}[, {opt}]" can be re-run for the same url ({opt} can change),
 " once package is not actually available (not downloaded).
-"
-" TODO:
-"   helptag;
 " }}}
 
 if exists(':packadd') != 2
