@@ -16,6 +16,14 @@ by rewriting the `config` method in it).
 - help: display method `__doc__`.
 - restart: restart python process.
 
+## stdout / stderr
+- msg in stdout, if not json deserializable (and not starts with `{`), will be
+  shown with vim's ":echo" command.
+- msg in stderr will be shown with vim's ":echomsg" command.
+
+Be aware that vim handles msg line by line; if you run `print(msg + '\n')` in
+Python, then `msg` in msg bar will be overwritten by `''` (empty).
+
 ## TODO
 - async is buggy (vim ex cmd may block, e.g. call `vim.sleep` in worker will
   block subsequent ex cmd)

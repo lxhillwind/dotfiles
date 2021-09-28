@@ -45,6 +45,15 @@ class Client:
     def __init__(self):
         pass
 
+    def _print(self, obj):
+        sys.stdout.write(json.dumps(obj) + '\n')
+
+    def _exception(self, msg, stack):
+        self._print({
+            'op': 'raise', 'cmd': '',
+            'args': [msg, stack]
+            })
+
     def _read_data(self):
         while True:
             data = sys.stdin.readline()
@@ -53,8 +62,7 @@ class Client:
             except KeyboardInterrupt:
                 sys.exit(-2)
             except:
-                print('invalid data:', data)
-                traceback.print_exc(file=sys.stdout)
+                self._exception('invalid data: %s' % data, traceback.format_exc())
 
     def _loop(self, worker):
         """NOTE: worker is a class"""
@@ -66,7 +74,7 @@ class Client:
                 if not i[0].startswith('_')
                 }
         # completion register
-        print(json.dumps({'op': 'completion', 'args': [funcs]}) + '\n')
+        self._print({'op': 'completion', 'args': [funcs]})
 
         # used in stdio server
         while True:
@@ -74,8 +82,8 @@ class Client:
                 self._handle(self._read_data())
             except KeyboardInterrupt:
                 sys.exit(-2)
-            except:
-                traceback.print_exc(file=sys.stdout)
+            except Exception as e:
+                self._exception(str(e), traceback.format_exc())
 
     def _handle(self, data):
         op = data.get('op')
@@ -85,12 +93,12 @@ class Client:
                 if hasattr(self.worker, op):
                     getattr(self.worker, op)(*args[:-1], **args[-1])
                     return
-        print('unknown cmd: %s' % data, file=sys.stderr)
+        self._exception('unknown cmd: %s' % data, '')
 
     def _eval(self, obj):
         id_ = GenId()
         # send
-        print(json.dumps(dict(obj, id=id_)) + '\n')
+        self._print(dict(obj, id=id_))
 
         while True:
             data = self._read_data()

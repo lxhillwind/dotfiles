@@ -12,14 +12,23 @@ def s:comp_func(...args: list<any>): string
   return s:complete_source->keys()->join("\n")
 enddef
 
-def s:server_handler(channel: channel, msg: string): void
+def s:server_handler(stdout: bool, msg: string)
   var data: dict<any>
-  try
-    data = json_decode(msg)
-  catch
-    echomsg msg
+  if stdout && len(msg) > 1 && msg[0] == '{'
+    try
+      data = json_decode(msg)
+    catch
+      echo msg
+      return
+    endtry
+  else
+    if stdout
+      echo msg
+    else
+      echomsg msg
+    endif
     return
-  endtry
+  endif
 
   var resp: any = v:none
 
@@ -36,6 +45,17 @@ def s:server_handler(channel: channel, msg: string): void
         help: 'show __doc__ of worker method',
         restart: 'restart worker process',
         })
+      return
+    elseif data.op == 'raise'
+      try
+        echohl ErrorMsg
+        for i in data.args[1]->split("\n")
+          echomsg i
+        endfor
+      finally
+        echohl None
+      endtry
+      throw data.args[0]
       return
     elseif data.op == 'cmd'
       execute 'legacy' data.cmd
@@ -60,6 +80,14 @@ def s:server_handler(channel: channel, msg: string): void
   s:send_input('response', {id: get(data, 'id'), data: resp, code: code})
 enddef
 
+def s:out_cb(_: channel, data: string)
+  s:server_handler(true, data)
+enddef
+
+def s:err_cb(_: channel, data: string)
+  s:server_handler(false, data)
+enddef
+
 var s:job: job
 
 var s:python_path: string = exists('g:pyvim_host') ? g:pyvim_host : 'python3'
@@ -71,8 +99,8 @@ def s:server(): void
   endif
   const env: dict<string> = {PYVIM_RC: pyvim_rc}
   s:job = job_start([s:python_path, '-u', 'pyvim/runner.py'], {
-    out_cb: function('s:server_handler'),
-    err_cb: function('s:server_handler'),
+    out_cb: function('s:out_cb'),
+    err_cb: function('s:err_cb'),
     cwd: fnamemodify(pwd, ':h'),
     env: env,
     })
