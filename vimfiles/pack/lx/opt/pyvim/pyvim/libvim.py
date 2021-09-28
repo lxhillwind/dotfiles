@@ -1,5 +1,6 @@
 import json
 import functools
+import os
 import sys
 import traceback
 import inspect
@@ -76,13 +77,21 @@ class Client:
         self._print({'op': 'completion', 'args': [funcs]})
 
         loop = asyncio.get_event_loop()
-        reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(reader)
-        await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+
+        is_posix = os.name == 'posix'
+        if is_posix:
+            reader = asyncio.StreamReader()
+            protocol = asyncio.StreamReaderProtocol(reader)
+            await loop.connect_read_pipe(lambda: protocol, sys.stdin)
 
         # used in stdio server
         while True:
-            data = await reader.readline()
+            if is_posix:
+                data = await reader.readline()
+            else:
+                # TODO make it work
+                data = await loop.run_in_executor(None, sys.stdin.readline)
+
             if len(data.strip()) == 0:
                 continue
             try:
