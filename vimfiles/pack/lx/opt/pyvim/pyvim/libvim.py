@@ -114,7 +114,7 @@ class Client:
         op = data.get('op')
         if op == 'response':
             resp = data['args'][0]
-            fut = _global_resp.get(resp['id'])
+            fut = _global_resp.pop(resp['id'], None)
             if asyncio.isfuture(fut) and not fut.done():
                 if resp['code'] == 0:
                     fut.set_result(resp['data'])
