@@ -23,7 +23,9 @@ def s:server_handler(stdout: bool, msg: string)
     endtry
   else
     if stdout
-      echo msg
+      if len(msg) > 0
+        echo msg
+      endif
     else
       echomsg msg
     endif

@@ -21,8 +21,17 @@ by rewriting the `config` method in it).
   shown with vim's ":echo" command.
 - msg in stderr will be shown with vim's ":echomsg" command.
 
+<del>
+
 Be aware that vim handles msg line by line; if you run `print(msg + '\n')` in
 Python, then `msg` in msg bar will be overwritten by `''` (empty).
+
+</del>
+
+Since it is too easy to output a final newline in stdout (which makes debug
+harder), this plugin will ignore lines in stdout which only contains a newline
+character. (newline alone in stderr is still reserved; it can be revisited
+with `:messages` command)
 
 ## asyncio
 - worker method should be marked as `async`.
