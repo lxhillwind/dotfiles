@@ -1,5 +1,6 @@
 import os
 import pathlib
+import asyncio
 this_file = pathlib.Path(__file__)
 
 # this is required for win32. but why?
@@ -21,5 +22,5 @@ else:
 
 
 client = Client()
-vim.register(client)
-client._loop(Worker)
+vim._register(client)
+asyncio.run(client._loop(Worker))

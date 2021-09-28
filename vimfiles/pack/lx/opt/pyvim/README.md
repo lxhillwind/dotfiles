@@ -24,9 +24,6 @@ by rewriting the `config` method in it).
 Be aware that vim handles msg line by line; if you run `print(msg + '\n')` in
 Python, then `msg` in msg bar will be overwritten by `''` (empty).
 
-## TODO
-- async is buggy (vim ex cmd may block, e.g. call `vim.sleep` in worker will
-  block subsequent ex cmd)
-
-Currently, the main goal of this plugin is to take advantage of Python's
-expressiveness.
+## asyncio
+- worker method should be marked as `async`.
+- all `vim.XXX` method is async; be sure to call them with `await`.

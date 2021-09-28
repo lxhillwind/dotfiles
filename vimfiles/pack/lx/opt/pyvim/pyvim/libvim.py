@@ -4,13 +4,22 @@ import sys
 import traceback
 import inspect
 import typing
+import asyncio
 
 
 _global_id = 0
-def GenId():
+_global_resp = {}
+
+
+
+async def _gen_future():
+    """returns msg id and future"""
+    loop = asyncio.get_running_loop()
     global _global_id
     _global_id += 1
-    return _global_id
+    fut = loop.create_future()
+    _global_resp[_global_id] = fut
+    return (_global_id, fut)
 
 
 class VimException(Exception):
@@ -21,21 +30,21 @@ class _Cmd:
     def __init__(self, c):
         self.c = c
 
-    def __call__(self, cmd: str, *args) -> None:
+    async def __call__(self, cmd: str, *args) -> None:
         payload = {'op': 'cmd', 'cmd': ' '.join([cmd, *args])}
-        self.c._eval(payload)
+        await self.c._eval(payload)
 
-    def __getattr__(self, key):
-        return functools.partial(self.__call__, key)
+    async def __getattr__(self, key):
+        return await functools.partial(self.__call__, key)
 
 
 class _Fn:
     def __init__(self, c):
         self.c = c
 
-    def __call__(self, cmd: str, *args):
+    async def __call__(self, cmd: str, *args):
         payload = {'op': 'fn', 'cmd': cmd, 'args': args}
-        return self.c._eval(payload)
+        return await self.c._eval(payload)
 
     def __getattr__(self, key):
         return functools.partial(self.__call__, key)
@@ -54,17 +63,7 @@ class Client:
             'args': [msg, stack]
             })
 
-    def _read_data(self):
-        while True:
-            data = sys.stdin.readline()
-            try:
-                return json.loads(data)
-            except KeyboardInterrupt:
-                sys.exit(-2)
-            except:
-                self._exception('invalid data: %s' % data, traceback.format_exc())
-
-    def _loop(self, worker):
+    async def _loop(self, worker):
         """NOTE: worker is a class"""
         self.worker = worker(self)
 
@@ -76,62 +75,78 @@ class Client:
         # completion register
         self._print({'op': 'completion', 'args': [funcs]})
 
+        loop = asyncio.get_event_loop()
+        reader = asyncio.StreamReader()
+        protocol = asyncio.StreamReaderProtocol(reader)
+        await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+
         # used in stdio server
         while True:
+            data = await reader.readline()
+            if len(data.strip()) == 0:
+                continue
             try:
-                self._handle(self._read_data())
+                data = json.loads(data)
             except KeyboardInterrupt:
                 sys.exit(-2)
-            except Exception as e:
-                self._exception(str(e), traceback.format_exc())
+            except:
+                self._exception('invalid data: %s' % data, traceback.format_exc())
+                continue
 
-    def _handle(self, data):
+            task = asyncio.create_task(self._handle(data))
+            task.add_done_callback(self._handle_fut_ex)
+
+    def _handle_fut_ex(self, fut):
+        try:
+            fut.result()
+        except Exception as e:
+            self._exception(str(e), traceback.format_exc())
+
+    async def _handle(self, data):
         op = data.get('op')
-        if op:
+        if op == 'response':
+            resp = data['args'][0]
+            fut = _global_resp.get(resp['id'])
+            if asyncio.isfuture(fut) and not fut.done():
+                if resp['code'] == 0:
+                    fut.set_result(resp['data'])
+                else:
+                    fut.set_exception(VimException(resp['data']))
+            return
+        elif op:
             args = data.get('args')
             if isinstance(args, list):
                 if hasattr(self.worker, op):
-                    getattr(self.worker, op)(*args[:-1], **args[-1])
+                    await getattr(self.worker, op)(*args[:-1], **args[-1])
                     return
         self._exception('unknown cmd: %s' % data, '')
 
-    def _eval(self, obj):
-        id_ = GenId()
+    async def _eval(self, obj):
+        id_, fut = await _gen_future()
+
         # send
         self._print(dict(obj, id=id_))
-
-        while True:
-            data = self._read_data()
-            if data['op'] == 'response':
-                resp = data['args'][0]
-                if resp['code'] == 0:
-                    return resp['data']
-                else:
-                    raise VimException(resp['data'])
-            # throw other data away.
-            # TODO impl async (await) logic.
-            #else:
-            #    self._handle(data)
+        return await fut
 
     @property
     def cmd(self):
         """async"""
         return _Cmd(self)
 
-    def key(self, cmd: str) -> None:
+    async def key(self, cmd: str) -> None:
         """async"""
         payload = {'op': 'key', 'cmd': cmd}
-        self._eval(payload)
+        await self._eval(payload)
 
-    def eval(self, cmd: str):
+    async def eval(self, cmd: str):
         """sync"""
         payload = {'op': 'eval', 'cmd': cmd}
-        return self._eval(payload)
+        return await self._eval(payload)
 
-    def execute(self, cmd: str) -> typing.List[str]:
+    async def execute(self, cmd: str) -> typing.List[str]:
         """sync"""
         payload = {'op': 'execute', 'cmd': cmd}
-        return self._eval(payload)
+        return await self._eval(payload)
 
     @property
     def fn(self):
@@ -143,11 +158,11 @@ class Worker:
     def __init__(self, client: Client):
         self.client = client
 
-    def help(self):
+    async def help(self):
         """a dummy method"""
         pass
 
-    def restart(self):
+    async def restart(self):
         """a dummy method"""
         pass
 
@@ -155,7 +170,7 @@ class Worker:
 class Proxy:
     _client = None
 
-    def register(self, client):
+    def _register(self, client):
         self._client = client
         # use it only once.
         # TODO impl it.
