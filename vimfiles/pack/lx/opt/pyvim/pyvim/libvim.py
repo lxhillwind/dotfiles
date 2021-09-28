@@ -12,7 +12,6 @@ _global_id = 0
 _global_resp = {}
 
 
-
 async def _gen_future():
     """returns msg id and future"""
     loop = asyncio.get_running_loop()
@@ -89,7 +88,7 @@ class Client:
             if is_posix:
                 data = await reader.readline()
             else:
-                # TODO make it work
+                # NOTE it doesn't work on Linux, but works on Windows (thinpc).
                 data = await loop.run_in_executor(None, sys.stdin.readline)
 
             if len(data.strip()) == 0:
