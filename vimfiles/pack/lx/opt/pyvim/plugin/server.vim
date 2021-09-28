@@ -64,10 +64,17 @@ var s:job: job
 
 var s:python_path: string = exists('g:pyvim_host') ? g:pyvim_host : 'python3'
 def s:server(): void
+  const pyvim_rc: string =
+    exists('g:pyvim_rc') && type(g:pyvim_rc) == v:t_string ? g:pyvim_rc : ''
+  if !empty(pyvim_rc) && !filereadable(pyvim_rc)
+    throw 'g:pyvim_rc is specified, but not readable!'
+  endif
+  const env: dict<string> = {PYVIM_RC: pyvim_rc}
   s:job = job_start([s:python_path, '-u', 'pyvim/runner.py'], {
     out_cb: function('s:server_handler'),
     err_cb: function('s:server_handler'),
     cwd: fnamemodify(pwd, ':h'),
+    env: env,
     })
 enddef
 

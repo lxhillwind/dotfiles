@@ -1,3 +1,4 @@
+import os
 import pathlib
 import textwrap
 from pyvim.libvim import Worker as BaseWorker, vim
@@ -5,6 +6,8 @@ from pyvim.libvim import Worker as BaseWorker, vim
 # this file may be loaded with exec(), so __file__ can't be used to get cwd.
 # so use python process startup cwd (set in plugin/server.vim) and join pyvim.
 CWD = pathlib.Path().cwd().joinpath('pyvim')
+
+PYVIM_RC = os.getenv('PYVIM_RC')
 
 
 class Worker(BaseWorker):
@@ -18,6 +21,8 @@ class Worker(BaseWorker):
     def config(self, *args, bang: bool = False, **kwargs):
         """open worker.py (pyvim user config file)"""
         config_file = CWD.joinpath('worker.py')
+        if PYVIM_RC:
+            config_file = pathlib.Path(PYVIM_RC)
         f_exists = config_file.exists()
         f_escaped = vim.fn.fnameescape(str(config_file))
         f_editcmd = 'e' if bang else 'tabe'

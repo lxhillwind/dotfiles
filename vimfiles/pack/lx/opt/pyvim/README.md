@@ -2,6 +2,9 @@
 
 - **optional** set variable `g:pyvim_host` (default: `python3`) to path of
   Python.
+- **optional** set variable `g:pyvim_rc` to alternative path of user config
+  file (maybe you want to keep it in your dotfiles; access it in Python
+  process with environment variable `PYVIM_RC`, if variable is set).
 
 Then you can run vim command `:Py3 {method-name}`.
 
