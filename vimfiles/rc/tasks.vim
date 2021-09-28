@@ -216,13 +216,13 @@ function! s:read_config() abort
   let result = []
   let config_exists = 0
   for item in s:config_paths()
-    if filereadable(expand(item))
-      let result = extend(result, s:parse(readfile(expand(item))))
+    if filereadable(item)
+      let result = extend(result, s:parse(readfile(item)))
       let config_exists = 1
     endif
   endfor
   if !config_exists
-    throw 'no g:tasks_config_paths specified!'
+    throw 'no g:tasks_config_paths specified (or readable)!'
   endif
   return result
 endfunction
