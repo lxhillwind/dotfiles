@@ -54,10 +54,11 @@ def s:server_handler(stdout: bool, msg: string)
         for i in data.args[1]->split("\n")
           echomsg i
         endfor
+        echomsg data.args[0]
+      catch /.*/
       finally
         echohl None
       endtry
-      throw data.args[0]
       return
     elseif data.op == 'cmd'
       execute 'legacy' data.cmd

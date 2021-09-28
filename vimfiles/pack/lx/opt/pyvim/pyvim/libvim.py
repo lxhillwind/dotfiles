@@ -127,7 +127,7 @@ class Client:
                 if hasattr(self.worker, op):
                     await getattr(self.worker, op)(*args[:-1], **args[-1])
                     return
-        self._exception('unknown cmd: %s' % data, '')
+        self._exception(f'unknown method: {op or ""}', 'raw data: %s' % data)
 
     async def _eval(self, obj):
         id_, fut = await _gen_future()
