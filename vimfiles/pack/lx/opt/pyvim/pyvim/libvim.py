@@ -138,27 +138,25 @@ class Client:
 
     @property
     def cmd(self):
-        """async"""
+        """return None"""
         return _Cmd(self)
 
     async def key(self, cmd: str) -> None:
-        """async"""
         payload = {'op': 'key', 'cmd': cmd}
         await self._eval(payload)
 
     async def eval(self, cmd: str):
-        """sync"""
+        """return Any"""
         payload = {'op': 'eval', 'cmd': cmd}
         return await self._eval(payload)
 
     async def execute(self, cmd: str) -> typing.List[str]:
-        """sync"""
         payload = {'op': 'execute', 'cmd': cmd}
         return await self._eval(payload)
 
     @property
     def fn(self):
-        """sync"""
+        """return Any"""
         return _Fn(self)
 
 
