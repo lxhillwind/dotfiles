@@ -1,5 +1,6 @@
 import os
 import pathlib
+import traceback
 import asyncio
 this_file = pathlib.Path(__file__)
 
@@ -10,13 +11,23 @@ sys.path.insert(0, str(this_file.parent.parent))
 
 from pyvim.libvim import Client, vim
 
+loaded = True
+
 pyvim_rc = os.getenv('PYVIM_RC')
-if pyvim_rc:
-    with pathlib.Path(pyvim_rc).open() as f:
-        exec(f.read())
-elif this_file.parent.joinpath('worker.py').exists():
-    from pyvim.worker import Worker
-else:
+try:
+    if pyvim_rc:
+        with pathlib.Path(pyvim_rc).open() as f:
+            exec(f.read())
+    elif this_file.parent.joinpath('worker.py').exists():
+        from pyvim.worker import Worker
+    else:
+        loaded = False
+except:
+    print(traceback.format_exc() + '\nload default config instead.',
+            file=sys.stderr)
+    loaded = False
+
+if not loaded:
     with this_file.parent.joinpath('worker.py.example').open() as f:
         exec(f.read())
 
