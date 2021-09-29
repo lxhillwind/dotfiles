@@ -155,7 +155,8 @@ function! s:pack_status(bang) abort
     if has_key(l:v, 'path')
       if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
         call add(l:lines, printf('printf "%%s\n" %s', shellescape(l:v.path)))
-        call add(l:lines, printf('git -C %s log ..FETCH_HEAD --oneline', shellescape(l:v.path)))
+        call add(l:lines, printf('git -C %s log -n 1 --oneline; echo', shellescape(l:v.path)))
+        call add(l:lines, printf('git -C %s log ..FETCH_HEAD --oneline; echo', shellescape(l:v.path)))
       else
         call add(l:lines, '# is not git repository, skip.')
       endif
