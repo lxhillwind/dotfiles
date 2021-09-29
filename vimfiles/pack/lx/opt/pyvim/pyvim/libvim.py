@@ -86,9 +86,9 @@ class Client:
         # used in stdio server
         while True:
             if is_posix:
+                # NOTE it doesn't work on on Windows (at least thinpc).
                 data = await reader.readline()
             else:
-                # NOTE it doesn't work on Linux, but works on Windows (thinpc).
                 data = await loop.run_in_executor(None, sys.stdin.readline)
 
             if len(data.strip()) == 0:

@@ -54,107 +54,6 @@ function! s:clipboard_paste(cmd)
   endif
 endfunction
 
-" Cd <path> / :Cdalternate / :Cdhome / :Cdbuffer / :Cdproject [:]cmd... {{{1
-command! -nargs=1 -complete=dir Cd call <SID>cd('', <q-args>)
-command! -nargs=* -complete=command Cdalternate call <SID>cd('alternate', <q-args>)
-command! -nargs=* -complete=command Cdhome call <SID>cd('home', <q-args>)
-command! -nargs=* -complete=command Cdbuffer call <SID>cd('buffer', <q-args>)
-command! -nargs=* -complete=command Cdproject call <SID>cd('project', <q-args>)
-
-function! s:cd(flag, args)
-  let cmd = a:args
-  if a:flag ==# 'alternate'
-    let path = fnamemodify(bufname('#'), '%:p:h')
-  elseif a:flag ==# 'home'
-    let path = expand('~')
-  elseif a:flag ==# 'project'
-    let path = s:get_project_dir()
-  elseif a:flag ==# 'buffer'
-    let path = s:get_buf_dir()
-  else
-    if a:args =~ '^:'
-      call s:echoerr('path argument is required!') | return
-    endif
-    " Cd: split argument as path & cmd
-    let path = substitute(a:args, '\v^(.{}) :.+$', '\1', '')
-    let cmd = a:args[len(path)+1:]
-  endif
-
-  if !isdirectory(path)
-    let path = expand(path)
-  endif
-  if !isdirectory(path)
-    let path = fnamemodify(path, ':h')
-  endif
-  if !isdirectory(path)
-    call s:echoerr('not a directory: ' . a:args) | return
-  endif
-
-  if !empty(cmd)
-    let old_cwd = getcwd()
-    let buf = bufnr('')
-    try
-      " use buffer variable to store cwd if `exe` switch to new window
-      let b:vimrc_old_cwd = old_cwd
-      exe 'lcd' fnameescape(path)
-      exe cmd
-    finally
-      if buf == bufnr('')
-        if exists('b:vimrc_old_cwd')
-          unlet b:vimrc_old_cwd
-        endif
-        exe 'lcd' fnameescape(old_cwd)
-      endif
-    endtry
-  else
-    exe 'lcd' fnameescape(path)
-    if &buftype == 'terminal'
-      call term_sendkeys(bufnr(''), 'cd ' . shellescape(path))
-    endif
-  endif
-endfunction
-
-function! s:cd_reset()
-  if exists('b:vimrc_old_cwd')
-    try
-      exe 'lcd' fnameescape(b:vimrc_old_cwd)
-    finally
-      unlet b:vimrc_old_cwd
-    endtry
-  endif
-endfunction
-
-augroup vimrc_cd
-  au!
-  au BufEnter * call s:cd_reset()
-augroup END
-
-function! s:get_buf_dir()
-  let path = expand('%:p:h')
-  if empty(path) || &buftype == 'terminal'
-    let path = getcwd()
-  endif
-  return path
-endfunction
-
-function! s:get_project_dir()
-  let path = s:get_buf_dir()
-  while 1
-    if isdirectory(path . '/.git')
-      return path
-    endif
-    if filereadable(path . '/.git')
-      " git submodule
-      return path
-    endif
-    let parent = fnamemodify(path, ':h')
-    if path == parent
-      return ''
-    endif
-    let path = parent
-  endwhile
-endfunction
-
 " execute current line (or select lines), comment removed (see keymap) {{{1
 function! s:execute_lines(mode)
   if a:mode == 'n'
@@ -174,7 +73,7 @@ function! s:execute_lines(mode)
   echom result
   echo 'execute? y/N '
   if nr2char(getchar()) ==? 'y'
-    redraws | execute 'Cdbuffer' result
+    redraws | execute result
   else
     redraws | echon 'cancelled.'
   endif
