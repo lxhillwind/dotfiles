@@ -18,7 +18,7 @@ class Worker(BaseWorker):
     # you can define more methods in this class, and they will appear once
     # the python process is reloaded (restart vim or `:Py3 restart`).
 
-    async def config(self, *args, bang: bool = False, **kwargs):
+    async def config(self, *, bang: bool = False):
         """open worker.py (pyvim user config file)"""
         config_file = CWD.joinpath('worker.py')
         if PYVIM_RC:
