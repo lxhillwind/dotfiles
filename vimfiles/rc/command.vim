@@ -397,7 +397,7 @@ function! s:new_shell_here(bang, range, path) abort
   else
     let path = a:path
   endif
-  if match(path, '\v^[~$<%]')
+  if match(path, '\v^[~$<%]') >= 0
     let path = expand(path)
   endif
   if filereadable(path)
