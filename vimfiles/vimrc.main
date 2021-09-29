@@ -65,6 +65,16 @@ if exists(':Pack') == 2
   Pack 'vim-sh'
 endif
 
+" some variable used by plugin (can be overwritten in vimrc.local)
+function! s:joinpath(path) abort
+  return fnamemodify(s:self, ':h') . '/' . a:path
+endfunction
+
+let g:tasks_config_paths = [s:joinpath('config/tasks.ini')]
+if filereadable(s:joinpath('config/tasks-local.ini'))
+  call add(g:tasks_config_paths, s:joinpath('config/tasks-local.ini'))
+endif
+
 " source local vimrc
 if filereadable(fnamemodify(s:self, ':p:h') . '/' . 'vimrc.local')
   call s:load_script('vimrc.local')

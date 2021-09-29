@@ -56,10 +56,10 @@ if empty(s:plugins_root)
   throw '`g:plugins_root` / `(parent) dir of pack.vim` is not in runtimepath!'
 endif
 
-command! -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang>0, <args>)
-command! -bang PackStatus call s:pack_status(<bang>0)
-command! -bang PackClean call s:pack_clean(<bang>0)
-command! PackHelpTags call s:pack_help_tags()
+command! -bar -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang>0, <args>)
+command! -bar -bang PackStatus call s:pack_status(<bang>0)
+command! -bar -bang PackClean call s:pack_clean(<bang>0)
+command! -bar PackHelpTags call s:pack_help_tags()
 
 " s:pack() {{{1
 function! s:pack(bang, ...) abort
