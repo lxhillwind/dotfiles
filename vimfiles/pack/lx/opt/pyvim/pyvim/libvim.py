@@ -22,6 +22,11 @@ async def _gen_future():
     return (_global_id, fut)
 
 
+def _format_parameter(sig):
+    result = [str(v) for k, v in sig.parameters.items() if k != 'self']
+    return ', '.join(result)
+
+
 class VimException(Exception):
     pass
 
@@ -68,7 +73,8 @@ class Client:
         self.worker = worker(self)
 
         funcs = {
-                i[0]: i[1].__doc__ or ''
+                i[0]: (i[1].__doc__ or '')
+                    + '\nsignature:\n' + _format_parameter(inspect.signature(i[1]))
                 for i in inspect.getmembers(worker, predicate=inspect.isfunction)
                 if not i[0].startswith('_')
                 }
@@ -125,7 +131,13 @@ class Client:
             args = data.get('args')
             if isinstance(args, list):
                 if hasattr(self.worker, op):
-                    await getattr(self.worker, op)(*args[:-1], **args[-1])
+                    args, kwargs = args[:-1], args[-1]
+                    if not kwargs.get('bang'):
+                        kwargs.pop('bang', None)
+                    if not kwargs.get('range'):
+                        for i in ('range', 'line1', 'line2',):
+                            kwargs.pop(i, None)
+                    await getattr(self.worker, op)(*args, **kwargs)
                     return
         self._exception(f'unknown method: {op or ""}', 'raw data: %s' % data)
 
