@@ -1,8 +1,9 @@
 " vim: fdm=marker
-" :Pack / :PackClean / :PackHelpTags; a simple plugin manager (for vim8). {{{1
+" :Pack / :PackStatus / :PackClean / :PackHelpTags; a simple plugin manager (for vim8). {{{1
 "
 " usage:
 "   Pack [url][, {opt}]
+"   PackStatus
 "   PackClean
 "   PackHelpTags
 " example:
@@ -16,7 +17,9 @@
 "   Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
 "   " skip: do not load plugin.
 "   Pack 'a-plugin-to-packadd-on-demand', #{skip: 1}
-"   Pack  " output command for install / update
+"   Pack  " output command for install / update (fetch, not pull; merge manually required)
+"
+"   PackStatus  " output command to get `git log` summary for each plugin (which plugin requires merge)
 "   PackClean  " prompt to clean not `Pack`ed dir
 "   PackHelpTags  " generate helptags for plugins it knows.
 " opt:
@@ -54,6 +57,7 @@ if empty(s:plugins_root)
 endif
 
 command! -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang>0, <args>)
+command! -bang PackStatus call s:pack_status(<bang>0)
 command! -bang PackClean call s:pack_clean(<bang>0)
 command! PackHelpTags call s:pack_help_tags()
 
@@ -84,9 +88,6 @@ function! s:pack(bang, ...) abort
     let s:plugins[l:plugin] = l:opt
   else
     let l:lines = []
-    if a:bang
-      let l:tempfile = tempname()
-    endif
     if !isdirectory(s:plugins_root)
       echo printf('plugin directory `%s` is not created;', s:plugins_root)
       echo 'create it? [y/N] '
@@ -101,30 +102,15 @@ function! s:pack(bang, ...) abort
       endif
     endif
 
-    " check is plugin is already available.
-    for [l:k, l:v] in items(s:plugins)
-      if l:v.after
-        let l:i = globpath(&pp, printf('pack/*/opt/%s/after', l:v.dir), 0, 1)
-      else
-        let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
-      endif
-      if empty(l:i)
-        if has_key(l:v, 'path')
-          call remove(l:v, 'path')
-        endif
-      else
-        let l:v['path'] = l:i[0]
-      endif
-    endfor
+    call s:pack_check_exists()
 
     " generate command.
     for [l:k, l:v] in items(s:plugins)
       " TODO check quote in various fields.
-      call add(l:lines, printf('# %s', l:k))
+      call add(l:lines, printf('## %s', l:k))
       if has_key(l:v, 'path')
         if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
-          " TODO fetch depth.
-          call add(l:lines, printf('git -C %s pull', shellescape(l:v.path)))
+          call add(l:lines, printf('git -C %s fetch --update-shallow', shellescape(l:v.path)))
         else
           call add(l:lines, '# is not git repository, skip.')
         endif
@@ -149,31 +135,38 @@ function! s:pack(bang, ...) abort
     endfor
 
     " output report.
-    if a:bang
-      enew
-      let l:lines =
+    call s:pack_report(a:bang, l:lines,
             \ ['#!/bin/sh',
             \ "{ grep -Ev '^(#|$)'" .
             \ ' | tr "\n" "\0" | xargs -r -0 -n 1 -P 5 sh -c; } <<\EOF']
-            \ + [''] + l:lines + ['EOF']
-      call writefile(l:lines, l:tempfile)
-      execute 'e' fnameescape(l:tempfile)
-      setl ft=sh
-    else
-      for l:i in l:lines
-        if match(l:i, '^#') >= 0
-          echohl Comment | echo l:i | echohl None
-        else
-          echo l:i
-        endif
-      endfor
-      if !empty(l:lines)
-        echohl Special | echo 'run with bang (:Pack!) to generate a shellscript.' | echohl None
-      endif
-    endif
+            \ + [''],
+            \ ['EOF'])
   endif
 endfunction
 " }}}
+
+" s:pack_status() {{{1
+function! s:pack_status(bang) abort
+  call s:pack_check_exists()
+  let l:lines = []
+  for [l:k, l:v] in items(s:plugins)
+    " TODO check quote in various fields.
+    call add(l:lines, printf('## %s', l:k))
+    if has_key(l:v, 'path')
+      if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
+        call add(l:lines, printf('printf "%%s\n" %s', shellescape(l:v.path)))
+        call add(l:lines, printf('git -C %s log ..FETCH_HEAD --oneline', shellescape(l:v.path)))
+      else
+        call add(l:lines, '# is not git repository, skip.')
+      endif
+    else
+      call add(l:lines, '# not downloaded, skip.')
+    endif
+  endfor
+
+  call s:pack_report(a:bang, l:lines, [], [])
+endfunction
+" }}}1
 
 " s:pack_clean() {{{1
 function! s:pack_clean(bang) abort
@@ -203,8 +196,8 @@ function! s:pack_clean(bang) abort
   endif
 
   if a:bang
-    enew
     let l:tempfile = tempname()
+    enew
     let l:lines = ['#!/bin/sh', 'set -e', '', '{', '']
     for l:i in l:dir_clean
       call add(l:lines, printf('rm -rf -- %s', shellescape(l:i)))
@@ -269,6 +262,51 @@ function! s:pack_extract_git_dir(url) abort
   let result = matchstr(a:url, '\v[^/]+$')
   let result = substitute(result, '\v\.git$', '', '')
   return result
+endfunction
+
+" used in Pack / PackStatus
+function! s:pack_check_exists() abort
+  " check is plugin is already available.
+  for [l:k, l:v] in items(s:plugins)
+    if l:v.after
+      let l:i = globpath(&pp, printf('pack/*/opt/%s/after', l:v.dir), 0, 1)
+    else
+      let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
+    endif
+    if empty(l:i)
+      if has_key(l:v, 'path')
+        call remove(l:v, 'path')
+      endif
+    else
+      let l:v['path'] = l:i[0]
+    endif
+  endfor
+endfunction
+
+" used in Pack / PackStatus
+function! s:pack_report(bang, lines, pre, post) abort
+  let l:lines = a:lines
+  if a:bang
+    let l:tempfile = tempname()
+    enew
+    let l:lines = a:pre + l:lines + a:post
+    call writefile(l:lines, l:tempfile)
+    execute 'e' fnameescape(l:tempfile)
+    setl ft=sh
+  else
+    for l:i in l:lines
+      if match(l:i, '^##') >= 0
+        echohl Special | echo l:i | echohl None
+      elseif match(l:i, '^#') >= 0
+        echohl Comment | echo l:i | echohl None
+      else
+        echo l:i
+      endif
+    endfor
+    if !empty(l:lines)
+      echohl Special | echo 'run with bang (!) to generate a shellscript.' | echohl None
+    endif
+  endif
 endfunction
 
 function! s:pack_comp(A, L, P) abort
