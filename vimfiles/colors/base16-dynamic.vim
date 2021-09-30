@@ -125,43 +125,45 @@ let s:cterm0D = s:cast_rgb(s:gui0D)
 let s:cterm0E = s:cast_rgb(s:gui0E)
 let s:cterm0F = s:cast_rgb(s:gui0F)
 
-" Neovim terminal colours
-if has("nvim")
-  let g:terminal_color_0 =  '#' . s:base16_pallet['base00']
-  let g:terminal_color_1 =  '#' . s:base16_pallet['base08']
-  let g:terminal_color_2 =  '#' . s:base16_pallet['base0B']
-  let g:terminal_color_3 =  '#' . s:base16_pallet['base0A']
-  let g:terminal_color_4 =  '#' . s:base16_pallet['base0D']
-  let g:terminal_color_5 =  '#' . s:base16_pallet['base0E']
-  let g:terminal_color_6 =  '#' . s:base16_pallet['base0C']
-  let g:terminal_color_7 =  '#' . s:base16_pallet['base05']
-  let g:terminal_color_8 =  '#' . s:base16_pallet['base03']
-  let g:terminal_color_9 =  '#' . s:base16_pallet['base08']
-  let g:terminal_color_10 = '#' . s:base16_pallet['base0B']
-  let g:terminal_color_11 = '#' . s:base16_pallet['base0A']
-  let g:terminal_color_12 = '#' . s:base16_pallet['base0D']
-  let g:terminal_color_13 = '#' . s:base16_pallet['base0E']
-  let g:terminal_color_14 = '#' . s:base16_pallet['base0C']
-  let g:terminal_color_15 = '#' . s:base16_pallet['base07']
-elseif has("terminal")
-  let g:terminal_ansi_colors = [
-        \ '#' . s:base16_pallet['base00'],
-        \ '#' . s:base16_pallet['base08'],
-        \ '#' . s:base16_pallet['base0B'],
-        \ '#' . s:base16_pallet['base0A'],
-        \ '#' . s:base16_pallet['base0D'],
-        \ '#' . s:base16_pallet['base0E'],
-        \ '#' . s:base16_pallet['base0C'],
-        \ '#' . s:base16_pallet['base05'],
-        \ '#' . s:base16_pallet['base03'],
-        \ '#' . s:base16_pallet['base08'],
-        \ '#' . s:base16_pallet['base0B'],
-        \ '#' . s:base16_pallet['base0A'],
-        \ '#' . s:base16_pallet['base0D'],
-        \ '#' . s:base16_pallet['base0E'],
-        \ '#' . s:base16_pallet['base0C'],
-        \ '#' . s:base16_pallet['base07'],
-        \ ]
+" terminal colours
+if has('gui_running') || &t_Co >= 256
+  if has("nvim")
+    let g:terminal_color_0 =  '#' . s:base16_pallet['base00']
+    let g:terminal_color_1 =  '#' . s:base16_pallet['base08']
+    let g:terminal_color_2 =  '#' . s:base16_pallet['base0B']
+    let g:terminal_color_3 =  '#' . s:base16_pallet['base0A']
+    let g:terminal_color_4 =  '#' . s:base16_pallet['base0D']
+    let g:terminal_color_5 =  '#' . s:base16_pallet['base0E']
+    let g:terminal_color_6 =  '#' . s:base16_pallet['base0C']
+    let g:terminal_color_7 =  '#' . s:base16_pallet['base05']
+    let g:terminal_color_8 =  '#' . s:base16_pallet['base03']
+    let g:terminal_color_9 =  '#' . s:base16_pallet['base08']
+    let g:terminal_color_10 = '#' . s:base16_pallet['base0B']
+    let g:terminal_color_11 = '#' . s:base16_pallet['base0A']
+    let g:terminal_color_12 = '#' . s:base16_pallet['base0D']
+    let g:terminal_color_13 = '#' . s:base16_pallet['base0E']
+    let g:terminal_color_14 = '#' . s:base16_pallet['base0C']
+    let g:terminal_color_15 = '#' . s:base16_pallet['base07']
+  elseif has("terminal")
+    let g:terminal_ansi_colors = [
+          \ '#' . s:base16_pallet['base00'],
+          \ '#' . s:base16_pallet['base08'],
+          \ '#' . s:base16_pallet['base0B'],
+          \ '#' . s:base16_pallet['base0A'],
+          \ '#' . s:base16_pallet['base0D'],
+          \ '#' . s:base16_pallet['base0E'],
+          \ '#' . s:base16_pallet['base0C'],
+          \ '#' . s:base16_pallet['base05'],
+          \ '#' . s:base16_pallet['base03'],
+          \ '#' . s:base16_pallet['base08'],
+          \ '#' . s:base16_pallet['base0B'],
+          \ '#' . s:base16_pallet['base0A'],
+          \ '#' . s:base16_pallet['base0D'],
+          \ '#' . s:base16_pallet['base0E'],
+          \ '#' . s:base16_pallet['base0C'],
+          \ '#' . s:base16_pallet['base07'],
+          \ ]
+  endif
 endif
 
 " Theme setup

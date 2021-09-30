@@ -4,15 +4,16 @@
 " using `trim(execute('color')) == 'default'` is not valid.
 if !exists('g:colors_name')
   syntax on
-
-  if has('win32') && !has('gui_running')
-    " win32 cmd
-    color pablo
-  elseif !has('win32') && &t_Co < 256
-    " no 256color and no tgc
-    color default
-  else
+  if has('gui_running') || &t_Co >= 256
     color base16-dynamic
+  else
+    if has('win32')
+      " win32 cmd
+      color pablo
+    else
+      " no 256color
+      color default
+    endif
   endif
 endif
 
@@ -26,6 +27,9 @@ hi! link StatusLineTermNC StatusLineNC
 
 " terminal 16color {{{1
 function! s:vimrc_terminal_ansi_color()
+  if !(has('gui_running') || &t_Co >= 256)
+    return
+  endif
   " https://github.com/lxhillwind/base16-dynamic.vim
   if &bg == 'dark'
     let g:terminal_ansi_colors = ["#263238","#F07178","#C3E88D","#FFCB6B","#82AAFF","#C792EA","#89DDFF","#EEFFFF","#546E7A","#F07178","#C3E88D","#FFCB6B","#82AAFF","#C792EA","#89DDFF","#FFFFFF"]
