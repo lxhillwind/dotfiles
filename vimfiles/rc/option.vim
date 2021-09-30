@@ -121,6 +121,7 @@ set nobackup
 set noundofile
 
 " term & gui (but not colorscheme) {{{1
+" TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
 if has('vim_starting')
   if has('gui_running')
     set guioptions=
@@ -160,6 +161,7 @@ endif
 
 " alt key in terminal {{{1
 if !has('gui_running') && has('unix')
+  " see ":set-termcap"
   for s:i in 'abcdefghijklmnopqrstuvwxyz1234567890'
     exec printf("set <M-%s>=\<Esc>%s", s:i, s:i)
   endfor
