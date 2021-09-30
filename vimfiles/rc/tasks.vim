@@ -398,10 +398,10 @@ function! s:ui(mode) abort
   endfor
   echo "select task by its key: "
   let choice = nr2char(getchar())
-  if !has_key(result_d, tolower(choice))
+  if !has_key(result_d, choice)
     redrawstatus | echon 'task not selected.' | return
   endif
-  let result_l = result_d[tolower(choice)]
+  let result_l = result_d[choice]
   if len(result_l) > 1
     redrawstatus
     let idx = 0
