@@ -151,6 +151,7 @@ function! s:pack_status(bang) abort
   let l:lines = []
   for [l:k, l:v] in items(s:plugins)
     " TODO check quote in various fields.
+    call add(l:lines, '')
     call add(l:lines, printf('## %s', l:k))
     if has_key(l:v, 'path')
       if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
@@ -165,7 +166,7 @@ function! s:pack_status(bang) abort
     endif
   endfor
 
-  call s:pack_report(a:bang, l:lines, [], [])
+  call s:pack_report(a:bang, l:lines, ['#!/bin/sh'], [])
 endfunction
 " }}}1
 
@@ -197,13 +198,13 @@ function! s:pack_clean(bang) abort
   endif
 
   if a:bang
-    let l:tempfile = tempname()
     enew
     let l:lines = ['#!/bin/sh', 'set -e', '', '{', '']
     for l:i in l:dir_clean
       call add(l:lines, printf('rm -rf -- %s', shellescape(l:i)))
     endfor
     let l:lines = l:lines + ['', '} && echo "delete success." || echo "delete failed."']
+    let l:tempfile = tempname()
     call writefile(l:lines, l:tempfile)
     execute 'e' fnameescape(l:tempfile)
     setl ft=sh
@@ -288,9 +289,9 @@ endfunction
 function! s:pack_report(bang, lines, pre, post) abort
   let l:lines = a:lines
   if a:bang
-    let l:tempfile = tempname()
     enew
     let l:lines = a:pre + l:lines + a:post
+    let l:tempfile = tempname()
     call writefile(l:lines, l:tempfile)
     execute 'e' fnameescape(l:tempfile)
     setl ft=sh

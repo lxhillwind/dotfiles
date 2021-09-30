@@ -37,7 +37,7 @@ endfunction
 
 " best to have {{{1
 if s:enable('base', 1)
-  Pack 'https://github.com/justinmk/vim-dirvish', {'commit': '9c0dc32af9235d42715751b30cf04fa0584c1798'}
+  Pack 'https://github.com/justinmk/vim-dirvish', {'commit': 'b2b5709'}
   let g:loaded_netrwPlugin = 1
 
   Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
@@ -60,7 +60,7 @@ if s:enable('basic-comp', 1) && v:version >= 800
   " suppress annoy messages.
   set shortmess+=c
 
-  Pack 'https://github.com/skywind3000/vim-dict', {'commit': 'c97d404977edb3d5197c025ffaa12b685ac5963c'}
+  Pack 'https://github.com/skywind3000/vim-dict', {'commit': 'b73128b'}
   " File type override
   "let g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
   let g:vim_dict_config = {'markdown':'text'}
