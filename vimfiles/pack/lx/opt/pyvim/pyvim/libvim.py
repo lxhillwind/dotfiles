@@ -6,6 +6,7 @@ import traceback
 import inspect
 import typing
 import asyncio
+import shlex
 
 
 _global_id = 0
@@ -117,9 +118,15 @@ class Client:
             self._exception(str(e), traceback.format_exc())
 
     async def _handle(self, data):
-        op = data.get('op')
+        op = data.get('op') or ''
+        # NOTE if op is empty or whitespace string, then exception raises.
+        # we ensure that it is not in server.vim.
+        # but op below may be empty or whitespace string. that's ok.
+        # try ":Py3 ''".
+        # invalid cmdline also raises exception, like "'" (a single quote).
+        op, *args = shlex.split(op)
         if op == 'response':
-            resp = data['args'][0]
+            resp = data['args']
             fut = _global_resp.pop(resp['id'], None)
             if asyncio.isfuture(fut) and not fut.done():
                 if resp['code'] == 0:
@@ -127,18 +134,16 @@ class Client:
                 else:
                     fut.set_exception(VimException(resp['data']))
             return
-        elif op:
-            args = data.get('args')
-            if isinstance(args, list):
-                if hasattr(self.worker, op):
-                    args, kwargs = args[:-1], args[-1]
-                    if not kwargs.get('bang'):
-                        kwargs.pop('bang', None)
-                    if not kwargs.get('range'):
-                        for i in ('range', 'line1', 'line2',):
-                            kwargs.pop(i, None)
-                    await getattr(self.worker, op)(*args, **kwargs)
-                    return
+        else:
+            if hasattr(self.worker, op):
+                kwargs = data['args']
+                if not kwargs.get('bang'):
+                    kwargs.pop('bang', None)
+                if not kwargs.get('range'):
+                    for i in ('range', 'line1', 'line2',):
+                        kwargs.pop(i, None)
+                await getattr(self.worker, op)(*args, **kwargs)
+                return
         self._exception(f'unknown method: {op or ""}', 'raw data: %s' % data)
 
     async def _eval(self, obj):

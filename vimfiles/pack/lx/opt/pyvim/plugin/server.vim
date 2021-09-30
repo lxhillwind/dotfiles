@@ -109,18 +109,22 @@ def s:server(): void
     })
 enddef
 
-def s:send_input(...data: list<any>): void
-  if data[0] == 'restart'
+def s:send_input(data: string, param: dict<any>): void
+  # we will split it with shellsplit in python.
+  const data_list: list<string> = data->split(' ')
+  if len(data_list) == 0
+    throw 'invalid input! requires non-empty string!'
+  endif
+  if data_list[0] == 'restart'
     s:job->job_stop()
     return
   endif
-  if data[0] == 'help'
-    # 0: op; 1..-2: args; -1: kwargs
-    if len(data) == 3
-      if s:complete_source->has_key(data[1])
-        echo s:complete_source->get(data[1])
+  if data_list[0] == 'help'
+    if len(data_list) == 2
+      if s:complete_source->has_key(data_list[1])
+        echo s:complete_source->get(data_list[1])
       else
-        echoerr printf('worker method not found: %s', data[1])
+        echoerr printf('worker method not found: %s', data_list[1])
       endif
     else
       echoerr 'usage: help {method-name}'
@@ -130,9 +134,9 @@ def s:send_input(...data: list<any>): void
   if s:job->job_status() != 'run'
     s:server()
   endif
-  var request: dict<any> = {op: data[0], args: data[1 : ]}
+  var request: dict<any> = {op: data, args: param}
   s:job->job_getchannel()->ch_sendraw(json_encode(request) .. "\n")
 enddef
 
 command! -nargs=+ -bang -range=0 -complete=custom,s:comp_func Py3
-| s:send_input(<f-args>, {bang: <bang>false, range: <range>, line1: <line1>, line2: <line2>})
+| s:send_input(<q-args>, {bang: <bang>false, range: <range>, line1: <line1>, line2: <line2>})
