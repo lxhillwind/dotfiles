@@ -27,7 +27,7 @@ hi! link StatusLineTermNC StatusLineNC
 
 " terminal 16color {{{1
 function! s:vimrc_terminal_ansi_color()
-  if !(has('gui_running') || &t_Co >= 256)
+  if !(has('gui_running') || &tgc)
     return
   endif
   " https://github.com/lxhillwind/base16-dynamic.vim

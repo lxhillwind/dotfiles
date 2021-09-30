@@ -126,7 +126,7 @@ let s:cterm0E = s:cast_rgb(s:gui0E)
 let s:cterm0F = s:cast_rgb(s:gui0F)
 
 " terminal colours
-if has('gui_running') || &t_Co >= 256
+if has('gui_running') || (exists('&tgc') && &tgc)
   if has("nvim")
     let g:terminal_color_0 =  '#' . s:base16_pallet['base00']
     let g:terminal_color_1 =  '#' . s:base16_pallet['base08']
