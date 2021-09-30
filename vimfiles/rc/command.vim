@@ -389,27 +389,6 @@ function! s:get_project_dir()
   endwhile
 endfunction
 
-" :NewShellHere [path]; default path: selection / <cfile>; expand() is applied; bang: using Sh -w (default: Sh -t) {{{1
-command! -bang -nargs=* -range=0 NewShellHere call s:new_shell_here(<bang>0, <range>, <q-args>)
-function! s:new_shell_here(bang, range, path) abort
-  if empty(a:path)
-    let path = a:range > 0 ? Selection() : expand('<cfile>')
-  else
-    let path = a:path
-  endif
-  if match(path, '\v^[~$<%]') >= 0
-    let path = expand(path)
-  endif
-  if filereadable(path)
-    let path = fnamemodify(path, ':h')
-  endif
-  if !isdirectory(path)
-    throw 'is not directory: ' .. path
-  endif
-  let cmd = a:bang ? 'Sh -w' : 'Sh -t'
-  execute 'Cd' path ':' .. cmd
-endfunction
-
 " terminal-api related user function {{{1
 if exists(':terminal') == 2
 " sync terminal path to buffer path.

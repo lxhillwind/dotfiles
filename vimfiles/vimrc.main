@@ -48,6 +48,9 @@ call s:load_script('rc/option.vim')
 call s:load_script('rc/keymap.vim')
 call s:load_script('rc/filetype.vim')
 call s:load_script('rc/command.vim')
+if exists(':def') == 2
+  call s:load_script('rc/command.vim9')
+endif
 call s:load_script('rc/pack.vim')
 call s:load_script('rc/tasks.vim')
 

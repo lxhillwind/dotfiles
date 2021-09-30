@@ -1,0 +1,40 @@
+" vim: ft=vim fdm=marker
+" UserCommand, but in vim9.
+
+vim9script
+
+# :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{1
+command! -bang -nargs=* -range=0 ChdirTerminal call s:chdir_terminal(<bang>false, <range>, <q-args>)
+
+def s:chdir_terminal(bang: bool, range: number, path_a: string)
+  var path = path_a ?? ( range > 0 ? Selection() : expand('<cfile>') )
+  if match(path, '\v^[~$<%]') >= 0
+    path = expand(path)
+  endif
+  path = fnamemodify(path, ':p')
+  if filereadable(path)
+    path = fnamemodify(path, ':h')
+  endif
+  if !isdirectory(path)
+    throw 'is not directory: ' .. path
+  endif
+
+  const bufs: list<number> = tabpagebuflist()
+  if !bang
+    for i in term_list()
+      const idx: number = index(bufs, i)
+      if idx >= 0
+        echo printf('chdir in window [%d]? [y/N] ', idx + 1)
+        if nr2char(getchar()) ==? 'y'
+          execute ':' .. (idx + 1) 'wincmd w'
+          call feedkeys(printf('%scd %s', mode() == 'n' ? 'i' : '', shellescape(path)), 't')
+        else
+          redrawstatus | echon 'cancelled.'
+        endif
+        return
+      endif
+    endfor
+  endif
+  const cmd = bang ? 'Sh -w' : 'Sh -t'
+  execute 'Cd' path ':' .. cmd
+enddef
