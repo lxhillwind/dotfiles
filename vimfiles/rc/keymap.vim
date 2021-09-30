@@ -191,6 +191,21 @@ if exists(':tmap') == 2
   tmap <Nul> <C-Space>
 endif
 
+tnoremap <M-h> <C-w>h
+tnoremap <M-j> <C-w>j
+tnoremap <M-k> <C-w>k
+tnoremap <M-l> <C-w>l
+
+nnoremap <M-h> <C-w>h
+nnoremap <M-j> <C-w>j
+nnoremap <M-k> <C-w>k
+nnoremap <M-l> <C-w>l
+
+inoremap <M-h> <C-o><C-w>h
+inoremap <M-j> <C-o><C-w>j
+inoremap <M-k> <C-o><C-w>k
+inoremap <M-l> <C-o><C-w>l
+
 " completion
 inoremap <C-Space> <C-x><C-o>
 

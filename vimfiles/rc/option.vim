@@ -157,3 +157,11 @@ if has('vim_starting')
     endif
   endif
 endif
+
+" alt key in terminal {{{1
+if !has('gui_running') && has('unix')
+  for s:i in 'abcdefghijklmnopqrstuvwxyz1234567890'
+    exec printf("set <M-%s>=\<Esc>%s", s:i, s:i)
+  endfor
+  set ttimeoutlen=100
+endif
