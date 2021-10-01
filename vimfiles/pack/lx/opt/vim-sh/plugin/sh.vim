@@ -3,6 +3,8 @@ if get(g:, 'loaded_sh') || v:version < 703
 endif
 let g:loaded_sh = 1
 
+let s:programs = ['alacritty', 'urxvt', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
+
 " main {{{1
 " common var def {{{2
 let s:is_unix = has('unix')
@@ -164,12 +166,13 @@ function! s:sh(cmd, opt) abort " {{{2
   let opt.tty = match(opt_string, 't') >= 0
 
   call add(help, '  w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)')
+  call add(help, '     currently supported: ' . join(s:programs, ', '))
   let opt.window = match(opt_string, 'w') >= 0
 
   call add(help, '  c: close terminal after execution')
   let opt.close = match(opt_string, 'c') >= 0
 
-  call add(help, '  b: focus on current buffer (implies -t flag)')
+  call add(help, '  b: focus on current buffer / window')
   let opt.background = match(opt_string, 'b') >= 0
 
   call add(help, '  f: filter, like ":{range}!cmd"')
@@ -199,10 +202,6 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
 
   let opt = extend(opt, a:opt)
-
-  if opt.background
-    let opt.tty = 1
-  endif
 
   if opt.bang
     let opt.tty = 1
@@ -353,7 +352,7 @@ function! s:sh(cmd, opt) abort " {{{2
   if opt.window " {{{
     let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
           \ 'cmd': opt.close ? cmd : s:cmdlist_keep_window(cmd),
-          \ 'close': opt.close,
+          \ 'close': opt.close, 'background': opt.background,
           \ 'start_fn': s:is_win32 ? function('s:win32_start') : function('s:unix_start'),
           \ 'term_name': l:term_name}
 
@@ -363,7 +362,7 @@ function! s:sh(cmd, opt) abort " {{{2
     elseif exists('g:sh_programs')
       let program_set = g:sh_programs
     else
-      let program_set = ['alacritty', 'urxvt', 'mintty', 'cmd',]
+      let program_set = s:sh_programs
     endif
     for s:program in program_set
       if type(s:program) == type(function('tr'))
@@ -550,6 +549,36 @@ function! s:program_urxvt(context) abort
     call a:context.start_fn(['urxvt', '-title', a:context.term_name, '-e'] + cmd)
     return 1
   endif
+endfunction
+
+function! s:program_tmux_main(context) abort dict
+  if empty($TMUX) || !executable('tmux')
+    return 0
+  endif
+  let cmd = a:context.cmd
+  let background = a:context.background
+  let opt = get(self, 'opt', ['neww'])
+  if background
+    let opt = add(opt, '-d')
+  endif
+  call a:context.start_fn(['tmux'] + opt + cmd)
+  return 1
+endfunction
+
+function! s:program_tmux(context) abort
+  return {'opt': ['neww'], 'fn': function('s:program_tmux_main')}.fn(a:context)
+endfunction
+
+function! s:program_tmuxc(context) abort
+  return {'opt': ['neww'], 'fn': function('s:program_tmux_main')}.fn(a:context)
+endfunction
+
+function! s:program_tmuxs(context) abort
+  return {'opt': ['splitw', '-v'], 'fn': function('s:program_tmux_main')}.fn(a:context)
+endfunction
+
+function! s:program_tmuxv(context) abort
+  return {'opt': ['splitw', '-h'], 'fn': function('s:program_tmux_main')}.fn(a:context)
 endfunction
 
 function! s:program_cmd(context) abort
