@@ -96,7 +96,7 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
   # use builtin popup, then s:tmpfile can be set safely.
   # (popup terminal steals focus).
   s:popup_tmpfile = tmpfile
-  var buf = term_start(res.cmd, extend(res.opt, {exit_cb: function('s:term_exit_cb'), hidden: 1}))
+  var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: function('s:term_exit_cb'), hidden: 1}))
   const width: number = min([&columns - 10, 80])
   const height: number = min([&lines - 5, 24])
   s:win = popup_create(buf, {minwidth: width, maxwidth: width, minheight: height, maxheight: height, callback: function('s:popup_close_cb', [cb])})
@@ -152,7 +152,7 @@ def LsBuffers(ctx: dict<any>)
       const bufnr = s[0]->matchstr('\v^\s*\zs(\d+)\ze')
       execute ':' .. bufnr .. 'b'
       },
-    extend({ex: 'ls'},
+    extendnew({ex: 'ls'},
       ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef
@@ -164,7 +164,7 @@ def Color(ctx: dict<any>)
   (s: list<string>) => {
     execute 'color' fnameescape(s[0])
     },
-  extend({input: globpath(&rtp, "colors/*.vim", 0, 1)
+  extendnew({input: globpath(&rtp, "colors/*.vim", 0, 1)
       ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")},
     ctx_use_w_program ? {program: 'cmd'} : {}),
     )
@@ -180,7 +180,7 @@ def File(ctx: dict<any>)
   (s: list<string>) => {
     execute 'e' fnameescape(s[0])
     },
-  extend(ctx,
+  extendnew(ctx,
     ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef

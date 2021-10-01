@@ -44,7 +44,13 @@ let g:vimrc_sid = s:get_sid(expand('<sfile>'))
 " }}}1
 
 call s:load_script('vimrc.tiny')
+
+if has('win32')
+  " setup env before calling vim-vimserver in rc/option.vim
+  call s:load_script('rc/win32.vim')
+endif
 call s:load_script('rc/option.vim')
+
 call s:load_script('rc/keymap.vim')
 call s:load_script('rc/filetype.vim')
 call s:load_script('rc/command.vim')
@@ -53,10 +59,6 @@ if exists(':def') == 2
 endif
 call s:load_script('rc/pack.vim')
 call s:load_script('rc/tasks.vim')
-
-if has('win32')
-  call s:load_script('rc/win32.vim')
-endif
 
 " ensure filetype detection is disabled before calling ":packadd".
 filetype off
