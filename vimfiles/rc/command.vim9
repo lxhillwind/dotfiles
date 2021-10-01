@@ -40,7 +40,7 @@ def s:chdir_terminal(bang: bool, range: number, path_a: string)
 enddef
 
 # g:Popup(cmd: string, cb: fn<list<string>>, ctx : dict = {}); {{{1
-var s:tmpfile: string
+var s:popup_tmpfile: string = ''
 var s:win: number
 def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
   var exec_pre: string = 'exec'
@@ -58,9 +58,13 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
   if kwargs->get('range', 0) > 0
     range = printf(':%d,%d', kwargs.line1, kwargs.line2)
   endif
-  s:tmpfile = tempname()
-  exec_pre ..= (' > ' .. shellescape(s:tmpfile))
+  const tmpfile: string = tempname()
+  exec_pre ..= (' > ' .. shellescape(tmpfile))
   var res: dict<any> = json_decode(execute(printf('%sSh -n %s; %s', range, exec_pre, cmd)))
+
+  # use builtin popup, then s:tmpfile can be set safely.
+  # (popup terminal steals focus).
+  s:popup_tmpfile = tmpfile
   var buf = term_start(res.cmd, extend(res.opt, {exit_cb: function('s:term_exit_cb'), hidden: 1}))
   const width: number = min([&columns - 10, 80])
   const height: number = min([&lines - 5, 24])
@@ -68,7 +72,7 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
 enddef
 
 def s:term_exit_cb(_: job, code: number)
-  popup_close(s:win, code == 0 ? readfile(s:tmpfile) : [])
+  popup_close(s:win, code == 0 ? readfile(s:popup_tmpfile) : [])
 enddef
 
 def s:popup_close_cb(cb: func, _: number, result: list<string>)
@@ -96,7 +100,7 @@ def Select(source: string, ctx: dict<any>)
 enddef
 
 # buffers / LsBuffers() {{{2
-def LsBuffers(..._: list<any>)
+def LsBuffers(ctx: dict<any>)
   g:Popup(
     'fzf',
     (s: list<string>) => {
@@ -108,7 +112,7 @@ def LsBuffers(..._: list<any>)
 enddef
 
 # color / Color() {{{2
-def Color(..._: list<any>)
+def Color(ctx: dict<any>)
   g:Popup(
   'fzf',
   (s: list<string>) => {
