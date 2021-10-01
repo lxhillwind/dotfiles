@@ -87,7 +87,7 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
     exe = shellescape(exe)
     server = shellescape(server)
     tmpfile = shellescape(tmpfile)
-    execute(printf("%sSh -c,w=%s -n %s; sh -c '\"$@\" && %s %s %s %s' - %s",
+    execute(printf("%sSh -c,w=%s %s; sh -c '\"$@\" && %s %s %s %s' - %s",
                     range, program, exec_pre,    exe, server, 'Tapi_popup_cb', tmpfile, cmd))
     # exit now!
     return
