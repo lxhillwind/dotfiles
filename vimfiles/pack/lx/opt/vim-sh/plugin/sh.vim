@@ -128,7 +128,28 @@ endfunction
 function! s:sh(cmd, opt) abort " {{{2
   " opt parse {{{
   let opt = {'bang': 0, 'newwin': 1}
-  let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z]*')
+
+  let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z_,=-]*')
+  let cmd = a:cmd[len(opt_string):]
+  let opt_string = substitute(opt_string, '\v^\s{-}-', '', '')
+
+  let opt_dict = {}
+  if match(opt_string, '\v[,=]') >= 0
+    let tmp = split(opt_string, '\v,+')
+    let opt_string = ''
+    for i in tmp
+      if match(i, '=') < 0
+        let opt_string = opt_string . i
+      else
+        let [k, v] = split(i, '\v^[^=]+\zs\=\ze')
+        if len(k) != 1
+          throw printf('in sub opt "%s": key "%s" length should be 1!', i, k)
+        endif
+        let opt_string = opt_string . k
+        let opt_dict[k] = add(get(opt_dict, k, []), v)
+      endif
+    endfor
+  endif
   let help = ['Usage: [range]Sh [-flags] [cmd...]']
   call extend(help, ['', 'Example:', '  Sh uname -o'])
   call extend(help, ['', 'Supported flags:'])
@@ -142,7 +163,7 @@ function! s:sh(cmd, opt) abort " {{{2
   call add(help, '  t: use builtin terminal')
   let opt.tty = match(opt_string, 't') >= 0
 
-  call add(help, '  w: use external terminal')
+  call add(help, '  w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)')
   let opt.window = match(opt_string, 'w') >= 0
 
   call add(help, '  c: close terminal after execution')
@@ -229,7 +250,6 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
-  let cmd = a:cmd[len(opt_string):]
   let l:term_name = cmd
   " expand %
   let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtreS])*)\ze%($|\s)',
@@ -337,9 +357,15 @@ function! s:sh(cmd, opt) abort " {{{2
           \ 'start_fn': s:is_win32 ? function('s:win32_start') : function('s:unix_start'),
           \ 'term_name': l:term_name}
 
-    for s:program in (exists('g:sh_programs') ? g:sh_programs :
-          \ ['alacritty', 'urxvt', 'mintty', 'cmd',]
-          \ )
+    let program_set = []
+    if has_key(opt_dict, 'w')
+      let program_set = opt_dict.w
+    elseif exists('g:sh_programs')
+      let program_set = g:sh_programs
+    else
+      let program_set = ['alacritty', 'urxvt', 'mintty', 'cmd',]
+    endif
+    for s:program in program_set
       if type(s:program) == type(function('tr'))
         :
       elseif type(s:program) == type('')
