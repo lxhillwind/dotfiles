@@ -215,6 +215,10 @@ nnoremap <S-C-Tab> gT
 inoremap <C-Tab> <C-o>gt
 inoremap <S-C-Tab> <C-o>gT
 
+tnoremap <M-t> <C-w>:tabe<CR>
+nnoremap <M-t> :tabe<CR>
+inoremap <M-t> <C-o>:tabe<CR>
+
 for s:i in range(1, 9)
   execute printf("tnoremap \<M-%d> \<C-w>%dgt", s:i, s:i)
   execute printf("nnoremap \<M-%d> %dgt", s:i, s:i)
