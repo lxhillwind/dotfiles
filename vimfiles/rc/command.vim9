@@ -128,7 +128,7 @@ def PopupCallback(tmpfile: string)
   endif
 enddef
 
-# :Select {buffer|file|color} {{{1
+# :Select {buffer|filelist|color} {{{1
 command! -nargs=1 -range=0 -complete=custom,s:SelectComp Select
 | call s:Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
 
@@ -177,8 +177,8 @@ def Color(ctx: dict<any>)
     )
 enddef
 
-# file / File() {{{2
-def File(ctx: dict<any>)
+# filelist / FileList() {{{2
+def FileList(ctx: dict<any>)
   if ctx.range == 0
     throw 'range is required!'
   endif
@@ -188,7 +188,7 @@ def File(ctx: dict<any>)
     execute 'e' fnameescape(s[0])
     },
   extendnew(
-    extendnew(ctx, {title: 'select-file'}),
+    extendnew(ctx, {title: 'select-filelist'}),
     ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef
@@ -197,7 +197,7 @@ enddef
 const s:sources: dict<func> = {
   buffer: LsBuffers,
   color: Color,
-  file: File,
+  filelist: FileList,
   }
 
 # g:Tapi_popup_cb() {{{2
