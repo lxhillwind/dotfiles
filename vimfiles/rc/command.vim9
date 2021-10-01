@@ -40,8 +40,14 @@ def s:chdir_terminal(bang: bool, range: number, path_a: string)
 enddef
 
 # g:Popup(cmd: string, cb: fn<list<string>>, ctx : dict = {}); {{{1
+
+# variable used in popup terminal;
 var s:popup_tmpfile: string = ''
 var s:win: number
+
+# variable used in Sh -w popup program;
+var s:tmpfiles_dict: dict<func> = {}
+
 def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
   var exec_pre: string = 'exec'
   var range: string = ''
@@ -58,9 +64,34 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
   if kwargs->get('range', 0) > 0
     range = printf(':%d,%d', kwargs.line1, kwargs.line2)
   endif
-  const tmpfile: string = tempname()
+  var tmpfile: string = tempname()
   exec_pre ..= (' > ' .. shellescape(tmpfile))
   var res: dict<any> = json_decode(execute(printf('%sSh -n %s; %s', range, exec_pre, cmd)))
+
+  # use Sh -w as popup, then we set s:tmpfiles_dict.
+  if kwargs->has_key('program')
+    const program: string = kwargs.program
+    if match(program, '\v[^a-z]') >= 0
+      throw printf('invalid program: "%s"', program)
+    endif
+
+    if !exists('g:vimserver_env')
+      || match(get(g:vimserver_env, 'VIMSERVER_BIN', '.sh'), '\v\.sh$') >= 0
+      throw 'vimserver-helper (.exe) not available!'
+    endif
+
+    var exe: string = g:vimserver_env['VIMSERVER_BIN']
+    var server: string = g:vimserver_env['VIMSERVER_ID']
+
+    s:tmpfiles_dict[tmpfile] = cb
+    exe = shellescape(exe)
+    server = shellescape(server)
+    tmpfile = shellescape(tmpfile)
+    execute(printf("%sSh -c,w=%s -n %s; sh -c '\"$@\" && %s %s %s %s' - %s",
+                    range, program, exec_pre,    exe, server, 'Tapi_popup_cb', tmpfile, cmd))
+    # exit now!
+    return
+  endif
 
   # use builtin popup, then s:tmpfile can be set safely.
   # (popup terminal steals focus).
@@ -82,9 +113,23 @@ def s:popup_close_cb(cb: func, _: number, result: list<string>)
   endif
 enddef
 
+# it will be called from g:Tapi_popup_cb (also defined in this file).
+def PopupCallback(tmpfile: string)
+  if s:tmpfiles_dict->has_key(tmpfile)
+    # -1 is random.
+    # TODO check exitcode? (seems not necessary)
+    s:popup_close_cb(s:tmpfiles_dict[tmpfile], -1, readfile(tmpfile))
+    remove(s:tmpfiles_dict, tmpfile)
+  endif
+enddef
+
 # :Select {buffer|file|color} {{{1
 command! -nargs=1 -range=0 -complete=custom,s:SelectComp Select
 | call s:Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
+
+# platform dependent setting
+# TODO win32: check if tty is available (conpty or winpty)
+const ctx_use_w_program: bool = has('win32')
 
 # Select() and it's comp {{{2
 def SelectComp(..._: list<any>): string
@@ -107,7 +152,8 @@ def LsBuffers(ctx: dict<any>)
       const bufnr = s[0]->matchstr('\v^\s*\zs(\d+)\ze')
       execute ':' .. bufnr .. 'b'
       },
-    {ex: 'ls'}
+    extend({ex: 'ls'},
+      ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef
 
@@ -118,8 +164,9 @@ def Color(ctx: dict<any>)
   (s: list<string>) => {
     execute 'color' fnameescape(s[0])
     },
-    {input: globpath(&rtp, "colors/*.vim", 0, 1)
-      ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")}
+  extend({input: globpath(&rtp, "colors/*.vim", 0, 1)
+      ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")},
+    ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef
 
@@ -133,7 +180,8 @@ def File(ctx: dict<any>)
   (s: list<string>) => {
     execute 'e' fnameescape(s[0])
     },
-  ctx,
+  extend(ctx,
+    ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef
 
@@ -143,3 +191,11 @@ const s:sources: dict<func> = {
   color: Color,
   file: File,
   }
+
+# g:Tapi_popup_cb() {{{2
+def g:Tapi_popup_cb(nr: number, arg: list<string>)
+  const tmpfile = arg->get(0, '')
+  if !empty(tmpfile)
+    PopupCallback(tmpfile)
+  endif
+enddef
