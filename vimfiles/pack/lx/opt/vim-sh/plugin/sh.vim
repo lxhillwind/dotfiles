@@ -340,7 +340,12 @@ function! s:sh(cmd, opt) abort " {{{2
       " it may be set by title opt already.
       let l:term_name = shell
     endif
-    let cmd_new = [shell] + shell_arg_patch
+    if s:is_win32
+      " replace it later.
+      let cmd_new = ['sh']
+    else
+      let cmd_new = [shell]
+    endif
   else
     if !empty(tmpfile)
       if s:is_unix
