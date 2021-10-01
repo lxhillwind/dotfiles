@@ -135,6 +135,7 @@ function! s:sh(cmd, opt) abort " {{{2
   let cmd = a:cmd[len(opt_string):]
   let opt_string = substitute(opt_string, '\v^\s{-}-', '', '')
 
+  " TODO doc about opt: title
   let opt_dict = {}
   if match(opt_string, '\v[,=]') >= 0
     let tmp = split(opt_string, '\v,+')
@@ -143,11 +144,16 @@ function! s:sh(cmd, opt) abort " {{{2
       if match(i, '=') < 0
         let opt_string = opt_string . i
       else
-        let [k, v] = split(i, '\v^[^=]+\zs\=\ze')
-        if len(k) != 1
-          throw printf('in sub opt "%s": key "%s" length should be 1!', i, k)
+        try
+          let [k, v] = split(i, '\v^[^=]+\zs\=\ze')
+        catch /E688/
+          " empty opt will raise, just ignore it.
+          continue
+        endtry
+        if len(k) == 1
+          " only add short option.
+          let opt_string = opt_string . k
         endif
-        let opt_string = opt_string . k
         let opt_dict[k] = add(get(opt_dict, k, []), v)
       endif
     endfor
@@ -249,7 +255,7 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
-  let l:term_name = cmd
+  let l:term_name = has_key(opt_dict, 'title') ? opt_dict.title[-1] : cmd
   " expand %
   let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtreS])*)\ze%($|\s)',
         \ s:is_win32 ?
@@ -329,7 +335,10 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
 
   if empty(cmd)
-    let l:term_name = shell
+    if empty(l:term_name)
+      " it may be set by title opt already.
+      let l:term_name = shell
+    endif
     let cmd_new = [shell] + shell_arg_patch
   else
     if !empty(tmpfile)
