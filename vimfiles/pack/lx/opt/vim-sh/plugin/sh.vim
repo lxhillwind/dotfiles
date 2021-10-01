@@ -3,7 +3,7 @@ if get(g:, 'loaded_sh') || v:version < 703
 endif
 let g:loaded_sh = 1
 
-let s:programs = ['alacritty', 'urxvt', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
+let s:sh_programs = ['alacritty', 'urxvt', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
 
 " main {{{1
 " common var def {{{2
@@ -166,7 +166,7 @@ function! s:sh(cmd, opt) abort " {{{2
   let opt.tty = match(opt_string, 't') >= 0
 
   call add(help, '  w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)')
-  call add(help, '     currently supported: ' . join(s:programs, ', '))
+  call add(help, '     currently supported: ' . join(s:sh_programs, ', '))
   let opt.window = match(opt_string, 'w') >= 0
 
   call add(help, '  c: close terminal after execution')
