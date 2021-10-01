@@ -38,3 +38,104 @@ def s:chdir_terminal(bang: bool, range: number, path_a: string)
   const cmd = bang ? 'Sh -w' : 'Sh -t'
   execute 'Cd' path ':' .. cmd
 enddef
+
+# g:Popup(cmd: string, cb: fn<list<string>>, ctx : dict = {}); {{{1
+var s:tmpfile: string
+var s:win: number
+def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
+  var exec_pre: string = 'exec'
+  var range: string = ''
+  var kwargs: dict<any> = args->get(0) ?? {}
+  if kwargs->has_key('input') || kwargs->has_key('ex')
+    const stdin_f: string = tempname()
+    if kwargs->has_key('input')
+      writefile(kwargs.input->split("\n"), stdin_f)
+    else
+      writefile(execute(kwargs.ex)->split("\n"), stdin_f)
+    endif
+    exec_pre ..= (' < ' .. shellescape(stdin_f))
+  endif
+  if kwargs->get('range', 0) > 0
+    range = printf(':%d,%d', kwargs.line1, kwargs.line2)
+  endif
+  s:tmpfile = tempname()
+  exec_pre ..= (' > ' .. shellescape(s:tmpfile))
+  var res: dict<any> = json_decode(execute(printf('%sSh -n %s; %s', range, exec_pre, cmd)))
+  var buf = term_start(res.cmd, extend(res.opt, {exit_cb: function('s:term_exit_cb'), hidden: 1}))
+  const width: number = min([&columns - 10, 80])
+  const height: number = min([&lines - 5, 24])
+  s:win = popup_create(buf, {minwidth: width, maxwidth: width, minheight: height, maxheight: height, callback: function('s:popup_close_cb', [cb])})
+enddef
+
+def s:term_exit_cb(_: job, code: number)
+  popup_close(s:win, code == 0 ? readfile(s:tmpfile) : [])
+enddef
+
+def s:popup_close_cb(cb: func, _: number, result: list<string>)
+  # TODO is this check required?
+  if !empty(result)
+    call(cb, [result])
+  endif
+enddef
+
+# :Select {buffer|file|color} {{{1
+command! -nargs=1 -range=0 -complete=custom,s:SelectComp Select
+| call s:Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
+
+# Select() and it's comp {{{2
+def SelectComp(..._: list<any>): string
+  return s:sources->keys()->join("\n")
+enddef
+
+def Select(source: string, ctx: dict<any>)
+  if s:sources->has_key(source)
+    call(s:sources[source], [ctx])
+  else
+    throw printf('selection not implemented: "%s"!', source)
+  endif
+enddef
+
+# buffers / LsBuffers() {{{2
+def LsBuffers(..._: list<any>)
+  g:Popup(
+    'fzf',
+    (s: list<string>) => {
+      const bufnr = s[0]->matchstr('\v^\s*\zs(\d+)\ze')
+      execute ':' .. bufnr .. 'b'
+      },
+    {ex: 'ls'}
+    )
+enddef
+
+# color / Color() {{{2
+def Color(..._: list<any>)
+  g:Popup(
+  'fzf',
+  (s: list<string>) => {
+    execute 'color' fnameescape(s[0])
+    },
+    {input: globpath(&rtp, "colors/*.vim", 0, 1)
+      ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")}
+    )
+enddef
+
+# file / File() {{{2
+def File(ctx: dict<any>)
+  if ctx.range == 0
+    throw 'range is required!'
+  endif
+  g:Popup(
+  'fzf',
+  (s: list<string>) => {
+    execute 'e' fnameescape(s[0])
+    },
+  ctx,
+    )
+enddef
+
+# register new source here! {{{2
+const s:sources: dict<func> = {
+  buffer: LsBuffers,
+  color: Color,
+  file: File,
+  }
