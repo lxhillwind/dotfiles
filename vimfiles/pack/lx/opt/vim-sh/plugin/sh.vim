@@ -537,6 +537,7 @@ endfunction
 function! s:cmdlist_keep_window(cmd) abort
   " NOTE `read` -n option is not in posix standard, but it works for at least
   " zsh, bash, busybox ash.
+  " NOTE `sh` here may be replaced by correct sh path later (for win32).
   return ['sh', '-c',
         \ '"$@"; if command -v stty >/dev/null; then stty sane; fi; '
         \ . 'echo; echo "Press any key to continue..."; read -n 1',
@@ -594,9 +595,14 @@ function! s:program_cmd(context) abort
   if s:is_unix | return 0 | endif
 
   let [shell, shell_arg_patch, cmd, close] = [a:context.shell, a:context.shell_arg_patch, a:context.cmd, a:context.close]
-  if !close && !empty(shell_arg_patch)
-    " busybox: call busybox {cmd} directly.
-    let cmd = [shell] + cmd
+  if !close
+    if !empty(shell_arg_patch)
+      " busybox: call busybox {cmd} directly.
+      let cmd = [shell] + cmd
+    else
+      " others: replace cmd[0] ('sh') with correct sh path.
+      let cmd = [shell] + cmd[1 : ]
+    endif
   endif
   call a:context.start_fn(cmd, {'term_name': a:context.term_name})
   return 1
