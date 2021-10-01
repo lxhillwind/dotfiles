@@ -288,7 +288,7 @@ function! s:sh(cmd, opt) abort " {{{2
       " use new variable is required for old version vim (like 7.2.051),
       " since it has strong type checking for variable redeclare.
       " see tag 7.4.1546
-      let cmd_new = [shell] + shell_arg_patch + ['-c', cmd]
+      let cmd_new = s:win32_sh_replace(shell, shell_arg_patch, ['sh', '-c', cmd])
       if s:is_nvim
         let cmd = cmd_new
       else
@@ -334,7 +334,8 @@ function! s:sh(cmd, opt) abort " {{{2
     call writefile(stdin, tmpfile, 'b')
   endif
 
-  if empty(cmd)
+  let interactive_shell = empty(cmd)
+  if interactive_shell
     if empty(l:term_name)
       " it may be set by title opt already.
       let l:term_name = shell
@@ -343,14 +344,14 @@ function! s:sh(cmd, opt) abort " {{{2
   else
     if !empty(tmpfile)
       if s:is_unix
-        let cmd_new = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
+        let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
               \ shellescape(cmd), shellescape(tmpfile))]
       else
-        let cmd_new = [shell] + shell_arg_patch + ['-c', printf('sh -c %s < %s',
+        let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
               \ s:shellescape(cmd), s:shellescape(s:tr_slash(tmpfile)))]
       endif
     else
-      let cmd_new = [shell] + shell_arg_patch + ['-c', cmd]
+      let cmd_new = ['sh', '-c', cmd]
     endif
   endif
   unlet cmd
@@ -359,8 +360,12 @@ function! s:sh(cmd, opt) abort " {{{2
   " }}}
 
   if opt.window " {{{
-    let context = {'shell': shell, 'shell_arg_patch': shell_arg_patch,
-          \ 'cmd': opt.close ? cmd : s:cmdlist_keep_window(cmd),
+    let cmd = opt.close ? cmd : s:cmdlist_keep_window(cmd)
+    if s:is_win32
+      let cmd = s:win32_sh_replace(shell, shell_arg_patch, cmd)
+    endif
+    let context = {'shell': shell,
+          \ 'cmd': cmd,
           \ 'close': opt.close, 'background': opt.background,
           \ 'start_fn': s:is_win32 ? function('s:win32_start') : function('s:unix_start'),
           \ 'term_name': l:term_name}
@@ -393,6 +398,10 @@ function! s:sh(cmd, opt) abort " {{{2
     return
   endif
   " }}}
+
+  if s:is_win32
+    let cmd = s:win32_sh_replace(shell, shell_arg_patch, cmd)
+  endif
 
   if s:is_win32 && !s:is_nvim
     let cmd_new = s:win32_cmd_list_to_str(cmd)
@@ -594,17 +603,7 @@ endfunction
 function! s:program_cmd(context) abort
   if s:is_unix | return 0 | endif
 
-  let [shell, shell_arg_patch, cmd, close] = [a:context.shell, a:context.shell_arg_patch, a:context.cmd, a:context.close]
-  if !close
-    if !empty(shell_arg_patch)
-      " busybox: call busybox {cmd} directly.
-      let cmd = [shell] + cmd
-    else
-      " others: replace cmd[0] ('sh') with correct sh path.
-      let cmd = [shell] + cmd[1 : ]
-    endif
-  endif
-  call a:context.start_fn(cmd, {'term_name': a:context.term_name})
+  call a:context.start_fn(a:context.cmd, {'term_name': a:context.term_name})
   return 1
 endfunction
 
@@ -676,6 +675,10 @@ endfunction
 
 " win32 polyfill {{{1
 if !s:is_win32 | finish | endif
+
+function! s:win32_sh_replace(shell, args, cmd) abort
+  return [a:shell] + a:args + a:cmd[1 : ]
+endfunction
 
 " win32 quote related {{{2
 function! s:shellescape(cmd) abort
