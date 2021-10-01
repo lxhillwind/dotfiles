@@ -206,6 +206,21 @@ inoremap <M-j> <C-o><C-w>j
 inoremap <M-k> <C-o><C-w>k
 inoremap <M-l> <C-o><C-w>l
 
+tnoremap <C-Tab> <C-w>gt
+tnoremap <S-C-Tab> <C-w>gT
+
+nnoremap <C-Tab> gt
+nnoremap <S-C-Tab> gT
+
+inoremap <C-Tab> <C-o>gt
+inoremap <S-C-Tab> <C-o>gT
+
+for s:i in range(1, 9)
+  execute printf("tnoremap \<M-%d> \<C-w>%dgt", s:i, s:i)
+  execute printf("nnoremap \<M-%d> %dgt", s:i, s:i)
+  execute printf("inoremap \<M-%d> \<C-o>\<C-w>%dgt", s:i, s:i)
+endfor
+
 " completion
 inoremap <C-Space> <C-x><C-o>
 

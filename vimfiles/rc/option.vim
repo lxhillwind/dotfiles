@@ -27,9 +27,9 @@ if has('vim_starting')
       echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
       if tolower(nr2char(getchar())) == 'y'
         if has('nvim')
-          call feedkeys('p', 'n')
+          call feedkeys('pi', 'n')
         else
-          call feedkeys("i\<C-w>" . '""' . "\<C-\>\<C-n>", 'n')
+          call feedkeys("i\<C-w>" . '""', 'n')
         endif
         redraws | echon 'pasted.'
       else
