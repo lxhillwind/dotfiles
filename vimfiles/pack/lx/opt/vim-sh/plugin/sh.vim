@@ -63,19 +63,6 @@ else
   endif
 endif
 
-" vimserver tweak {{{2
-" store vimserver.vim related environment variable, and delete them from env;
-" so that ":!" / "system()" / "job_start()" will not be affected by vimserver.
-let s:vimserver_envs = get(s:, 'vimserver_envs', {})
-for s:i in ['VIMSERVER_ID', 'VIMSERVER_BIN', 'VIMSERVER_CLIENT_PID']
-  if exists('$'.s:i)
-    if exists('*getenv')
-      let s:vimserver_envs[s:i] = getenv(s:i)
-    endif
-    execute 'unlet' '$'.s:i
-  endif
-endfor
-
 " polyfill {{{2
 function! s:trim(s, p) abort
   if exists('*trim')
@@ -436,7 +423,8 @@ function! s:sh(cmd, opt) abort " {{{2
     if opt.close
       let job_opt = extend(job_opt, {'term_finish': 'close'})
     endif
-    let job_opt = extend(job_opt, {'env': s:vimserver_envs})
+    " use g:vimserver_env (set in vim-vimserver)
+    let job_opt = extend(job_opt, {'env': exists('g:vimserver_env') ? g:vimserver_env : {}})
     if s:is_nvim
       enew
       let job_opt = extend(job_opt,

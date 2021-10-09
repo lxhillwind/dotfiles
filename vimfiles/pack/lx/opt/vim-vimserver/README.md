@@ -18,6 +18,10 @@ binary is not available).
 " source plugin/vimserver.vim at very top of your vimrc (or use ":runtime").
 " If using ":runtime", then you should set &rtp correctly.
 runtime vim-vimserver/plugin/vimserver.vim
+" pass environment variable to subprocess;
+" you may want to set env in `term_start()`, like this:
+"   term_start(..., #{env: g:vimserver_env})
+let $VIMSERVER_ID = g:vimserver_env['VIMSERVER_ID']
 ```
 
 To ignore startup error (`vimserver executable not found!`), set variable like
