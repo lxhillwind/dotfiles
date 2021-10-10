@@ -118,7 +118,7 @@ function! s:sh(cmd, opt) abort " {{{2
   " opt parse {{{
   let opt = {'bang': 0, 'newwin': 1}
 
-  let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z_,=-]*')
+  let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z_,=0-9:-]*')
   let cmd = a:cmd[len(opt_string):]
   let opt_string = substitute(opt_string, '\v^\s{-}-', '', '')
 
@@ -155,7 +155,8 @@ function! s:sh(cmd, opt) abort " {{{2
   call add(help, '  v: visual mode (char level)')
   let opt.visual = match(opt_string, 'v') >= 0
 
-  call add(help, '  t: use builtin terminal')
+  call add(help, '  t: use builtin terminal (support sub opt, like this: -t=7split)')
+  call add(help, '     sub opt is used as action to prepare terminal buffer')
   let opt.tty = match(opt_string, 't') >= 0
 
   call add(help, '  w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)')
@@ -415,8 +416,12 @@ function! s:sh(cmd, opt) abort " {{{2
         endif
       endfor
     endif
-    if opt.newwin && buf_idx < 0
-      execute 'bel' &cmdwinheight . 'split'
+    if buf_idx < 0
+      if has_key(opt_dict, 't')
+        execute opt_dict.t[-1]
+      elseif opt.newwin
+        execute 'bel' &cmdwinheight . 'split'
+      endif
     endif
 
     let job_opt = extend(job_opt, {'curwin': 1, 'term_name': l:term_name})

@@ -7,7 +7,6 @@ Two commands are provided:
 
 - `:Terminal [cmd]...`; (like `:Sh`, but always open tty in current window)
 
-## Usage
 ```console
 Usage: [range]Sh [-flags] [cmd...]
 
@@ -17,12 +16,15 @@ Example:
 Supported flags:
   h: display this help
   v: visual mode (char level)
-  t: use builtin terminal
-  w: use external terminal
+  t: use builtin terminal (support sub opt, like this: -t=7split)
+     sub opt is used as action to prepare terminal buffer
+  w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)
+     currently supported: alacritty, urxvt, mintty, cmd, tmux, tmuxc, tmuxs, tmuxv
   c: close terminal after execution
-  b: focus on current buffer (implies -t flag)
+  b: focus on current buffer / window
   f: filter, like ":{range}!cmd"
   r: like ":[range]read !cmd"
+  n: dry run (echo options passed to job_start / jobstart)
 ```
 
 details:
@@ -31,9 +33,14 @@ details:
   level); visual mode
 
 - `-w`: execute shell command in new application window. On Windows, it is
-  mintty.exe or cmd.exe; on other OS, urxvt / alacritty is supported now.
+  mintty.exe or cmd.exe; on other OS, urxvt / alacritty / tmux is supported
+  now.
 
 - `<bang>`: try to reuse existing builtin tty window (implies -t option)
+
+- `-t`: support `-t=xxx` to specify cmd to prepare terminal buffer; since
+  space is not allowd in opt, cmd like `:bel 7sp` should be wrapped with
+  UserCommand.
 
 ```vim
 :Sh! [cmd]...
