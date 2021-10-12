@@ -85,6 +85,9 @@ if filereadable(s:joinpath('config/tasks-local.ini'))
   call add(g:tasks_config_paths, s:joinpath('config/tasks-local.ini'))
 endif
 
+" colorscheme base16-dynamic speedup
+let g:base16#vim9 = 1
+
 " source local vimrc
 if filereadable(fnamemodify(s:self, ':p:h') . '/' . 'vimrc.local')
   call s:load_script('vimrc.local')

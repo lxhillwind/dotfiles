@@ -13,7 +13,7 @@
 " Material: Nate Peterson <https://github.com/ntpeters/base16-materialtheme-scheme>
 " One Light: Daniel Pfeifer <https://github.com/purpleKarrot/base16-one-light-scheme>
 
-if exists(':def') == 2
+if exists(':def') == 2 && exists('g:base16#vim9') && g:base16#vim9 == 1
   execute 'source' fnameescape(fnamemodify(expand('<sfile>'), ':p:h') . '/' . 'base16-dynamic.vim9')
   finish
 endif
