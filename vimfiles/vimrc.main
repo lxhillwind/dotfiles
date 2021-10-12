@@ -54,10 +54,14 @@ call s:load_script('rc/option.vim')
 call s:load_script('rc/keymap.vim')
 call s:load_script('rc/filetype.vim')
 call s:load_script('rc/command.vim')
-" NOTE always use latest version (version info from Arch Linux repo)
-if has('patch-8.2.3441')
+
+let s:patch_ver = '8.2.3441'
+if has(printf('patch-%s', s:patch_ver))
   call s:load_script('rc/command.vim9')
+else
+  echoerr printf('vim version not up-to-date; arch latest: %s', s:patch_ver)
 endif
+
 call s:load_script('rc/pack.vim')
 call s:load_script('rc/tasks.vim')
 
