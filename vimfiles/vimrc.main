@@ -54,7 +54,8 @@ call s:load_script('rc/option.vim')
 call s:load_script('rc/keymap.vim')
 call s:load_script('rc/filetype.vim')
 call s:load_script('rc/command.vim')
-if exists(':def') == 2
+" NOTE always use latest version (version info from Arch Linux repo)
+if has('patch-8.2.3441')
   call s:load_script('rc/command.vim9')
 endif
 call s:load_script('rc/pack.vim')
