@@ -90,11 +90,11 @@ let g:loaded_tarPlugin = 1
 let g:loaded_vimballPlugin = 1
 let g:loaded_zipPlugin = 1
 
-" various tmpfile {{{1
+" various vim dir & file {{{1
 " copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
 " backup files
 set backup
-let &backupdir = expand('~/.vim/files/backup/')
+let &backupdir = expand('~/.vim/files/backup' . '//')
 set backupext=-vimbackup
 set backupskip=
 " swap files
@@ -104,13 +104,15 @@ let &directory = expand('~/.vim/files/swap' . '//')
 " undo files
 set undofile
 let &undodir = expand('~/.vim/files/undo/')
+" viewdir (:mkview / :loadview)
+let &viewdir = expand('~/.vim/files/view/')
 " viminfo files
 if exists('&viminfofile')
   let &viminfofile = expand('~/.vim/files/viminfo')
 endif
 
 " create directory if needed
-for s:t_dir in [&backupdir, &directory, &undodir]
+for s:t_dir in [&backupdir, &directory, &undodir, &viewdir]
   if !isdirectory(s:t_dir)
     call mkdir(s:t_dir, 'p')
   endif
