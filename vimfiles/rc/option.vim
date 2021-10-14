@@ -164,7 +164,8 @@ endif
 " alt key in terminal {{{1
 if !has('gui_running') && has('unix')
   " see ":set-termcap"
-  for s:i in 'abcdefghijklmnopqrstuvwxyz1234567890'
+  " for on string is introduced in v8.2.2658; so use list here.
+  for s:i in split('abcdefghijklmnopqrstuvwxyz1234567890', '\zs')
     exec printf("set <M-%s>=\<Esc>%s", s:i, s:i)
   endfor
   set ttimeoutlen=100
