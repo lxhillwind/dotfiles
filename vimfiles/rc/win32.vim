@@ -59,3 +59,8 @@ unlet s:i
 let $ENV = expand(s:nix_dir . '/.config/env.sh')
 let $SH_RC_LOCAL = expand(s:nix_dir . '/local.sh')
 " }}}
+" vim-vimserver config {{{1
+if exists('g:sh_path') && match(g:sh_path, '\v[\/]zsh(|\.exe)$') >= 0
+  let g:vimserver_sh_path = g:sh_path
+endif
+" }}}
