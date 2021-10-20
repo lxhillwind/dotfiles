@@ -14,30 +14,24 @@ let s:is_win32 = has('win32')
 let s:job_start = function(s:is_nvim ? 'jobstart': 'job_start')
 let s:job_stop = function(s:is_nvim ? 'jobstop': 'job_stop')
 
-if s:is_win32
-  let s:vimserver_exe = expand('<sfile>:p:h:h') . '\vimserver-helper\vimserver-helper.exe'
-  " fallback to vimserver-helper in $PATH
-  if !executable(s:vimserver_exe)
-    let s:vimserver_exe = 'vimserver-helper'
-  endif
-else
-  let s:vimserver_exe = expand('<sfile>:p:h:h') . '/vimserver-helper/vimserver-helper'
-  " fallback to vimserver-helper in $PATH
-  if !executable(s:vimserver_exe)
-    let s:vimserver_exe = 'vimserver-helper'
-  endif
-  " fallback to vimserver-helper.sh
-  if !executable(s:vimserver_exe)
-    let s:vimserver_exe = expand('<sfile>:p:h:h') . '/bin/vimserver-helper.sh'
-  endif
+let s:vimserver_exe = expand('<sfile>:p:h:h') . '/vimserver-helper/vimserver-helper'
+" fallback to vimserver-helper in $PATH
+if !executable(s:vimserver_exe)
+  let s:vimserver_exe = 'vimserver-helper'
+endif
+" fallback to vimserver-helper.sh
+if !executable(s:vimserver_exe)
+  let s:vimserver_exe = expand('<sfile>:p:h:h') . '/bin/vimserver-helper.sh'
 endif
 
-function! s:cmd_server(id)
-  return [s:vimserver_exe, a:id, 'listen']
+function! s:cmd_server(id) abort
+  let sh = match(s:vimserver_exe, '\.sh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
+  return sh + [s:vimserver_exe, a:id, 'listen']
 endfunction
 
-function! s:cmd_client(id)
-  return [s:vimserver_exe, a:id]
+function! s:cmd_client(id) abort
+  let sh = match(s:vimserver_exe, '\.sh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
+  return sh + [s:vimserver_exe, a:id]
 endfunction
 
 function! s:system(cmd, stdin)
@@ -75,12 +69,6 @@ function! s:main() abort
   endif
   let s:called_main = 1
 
-  if !executable(s:vimserver_exe)
-    if !exists('g:vimserver_ignore') || empty(g:vimserver_ignore)
-      echoerr 'vimserver executable not found!'
-    endif
-    return
-  endif
   " gvim always starts a vimserver.
   if has('gui_running')
     " unlet env here will execute unconditionally for nvim. bug?

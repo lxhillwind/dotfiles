@@ -6,10 +6,9 @@
 ## Requirement
 - vim 8.1.2233+ (job feature) or neovim 0.5.0+; (`v:argv`)
 
-- vimserver-helper binary (*optional*; required for Windows OS; see below for
-  installation method);
+- vimserver-helper binary (*optional*; see below for installation method);
 
-- `socat` (*optional*; required for bundled shell script
+- `zsh` or (`socat` / `jq`) (*optional*; required for bundled shell script
   [bin/vimserver-helper.sh](bin/vimserver-helper.sh) if vimserver-helper
 binary is not available).
 
@@ -24,12 +23,8 @@ runtime vim-vimserver/plugin/vimserver.vim
 let $VIMSERVER_ID = g:vimserver_env['VIMSERVER_ID']
 ```
 
-To ignore startup error (`vimserver executable not found!`), set variable like
-this:
-
-```vim
-let g:vimserver_ignore = 1
-```
+To use bundled shell script (`vimserver-helper.sh`) in win32, variable
+`g:vimserver_sh_path` need to be set to path to sh (bash / zsh / ...).
 
 ## Usage
 - Inside terminal session, call `vim [filename]...` to open buffer in outside
@@ -83,8 +78,6 @@ $0 {server_filename}
   `$0` above with `"$VIMSERVER_BIN"`.
 
 - Replace `{server_filename}` with `$VIMSERVER_ID`.
-
-- For terminal-api style client (bundled shell script), `jq` is required.
 
 TODO: allow passing non-string argument in terminal-api mode.
 
