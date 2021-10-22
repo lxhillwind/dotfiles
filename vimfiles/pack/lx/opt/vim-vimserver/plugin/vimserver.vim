@@ -164,7 +164,7 @@ endfunction
 function! s:server() abort
   let bind_name = tempname()
   let job = s:job_start(s:cmd_server(bind_name),
-        \ {(s:is_nvim ? 'on_stdout' : 'callback'):
+        \ {(s:is_nvim ? 'on_stdout' : 'out_cb'):
         \ function('s:server_handler')})
   " expose variables, since vim-sh plugin will clean these env variable.
   " they may be required in other place (plugin), like popup terminal.
@@ -184,7 +184,7 @@ endfunction
 function! s:client(server_id) abort
   let bind_name = tempname()
   let job = s:job_start(s:cmd_server(bind_name),
-        \ {(s:is_nvim ? 'on_stdout' : 'callback'):
+        \ {(s:is_nvim ? 'on_stdout' : 'out_cb'):
         \ function('s:client_handler')})
   let client = bind_name
   call s:system(
