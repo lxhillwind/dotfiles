@@ -395,7 +395,11 @@ if exists(':terminal') == 2
 " TODO follow cd even when terminal buffer not in focus (with event?).
   function! Tapi_cd(nr, arg)
     if bufnr() == a:nr
-      execute 'lcd' fnameescape(a:arg[0])
+      let p = a:arg[0]
+      if has('win32') && match(p, '^/') >= 0
+        let p = execute(printf("Sh cygpath -w '%s'", substitute(p, "'", "'\\\\''", 'g')))
+      endif
+      execute 'lcd' fnameescape(p)
     endif
   endfunction
 endif
