@@ -1,4 +1,4 @@
-if get(g:, 'loaded_vimserver') || !exists('v:argv')
+if exists('g:loaded_vimserver') || !exists('v:argv')
   finish
 endif
 let g:loaded_vimserver = 1
@@ -19,18 +19,18 @@ let s:vimserver_exe = expand('<sfile>:p:h:h') . '/vimserver-helper/vimserver-hel
 if !executable(s:vimserver_exe)
   let s:vimserver_exe = 'vimserver-helper'
 endif
-" fallback to vimserver-helper.sh
+" fallback to vimserver-helper.zsh
 if !executable(s:vimserver_exe)
-  let s:vimserver_exe = expand('<sfile>:p:h:h') . '/bin/vimserver-helper.sh'
+  let s:vimserver_exe = expand('<sfile>:p:h:h') . '/bin/vimserver-helper.zsh'
 endif
 
 function! s:cmd_server(id) abort
-  let sh = match(s:vimserver_exe, '\.sh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
+  let sh = match(s:vimserver_exe, '\.zsh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
   return sh + [s:vimserver_exe, a:id, 'listen']
 endfunction
 
 function! s:cmd_client(id) abort
-  let sh = match(s:vimserver_exe, '\.sh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
+  let sh = match(s:vimserver_exe, '\.zsh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
   return sh + [s:vimserver_exe, a:id]
 endfunction
 

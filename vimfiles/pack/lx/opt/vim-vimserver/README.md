@@ -8,8 +8,8 @@
 
 - vimserver-helper binary (*optional*; see below for installation method);
 
-- `zsh` or (`socat` / `jq`) (*optional*; required for bundled shell script
-  [bin/vimserver-helper.sh](bin/vimserver-helper.sh) if vimserver-helper
+- `zsh` (*optional*; required for bundled shell script
+  [bin/vimserver-helper.zsh](bin/vimserver-helper.zsh) if vimserver-helper
 binary is not available).
 
 ## Setup
@@ -23,8 +23,10 @@ runtime vim-vimserver/plugin/vimserver.vim
 let $VIMSERVER_ID = g:vimserver_env['VIMSERVER_ID']
 ```
 
-To use bundled shell script (`vimserver-helper.sh`) in win32, variable
-`g:vimserver_sh_path` need to be set to path to sh (bash / zsh / ...).
+To use bundled shell script (`vimserver-helper.zsh`) in win32, variable
+`g:vimserver_sh_path` need to be set to path to zsh.
+
+Define variable `g:loaded_vimserver` to skip loading this plugin.
 
 ## Usage
 - Inside terminal session, call `vim [filename]...` to open buffer in outside
