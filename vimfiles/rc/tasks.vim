@@ -327,7 +327,9 @@ function! s:check(mode) abort
         " ignore item
         continue
       endif
-      let new_list = add(new_list, item)
+      if item.section !=# k
+        let new_list = add(new_list, item)
+      endif
     endfor
     if used
       continue
