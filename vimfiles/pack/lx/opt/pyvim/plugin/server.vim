@@ -93,7 +93,11 @@ enddef
 
 var s:job: job
 
-var s:python_path: string = exists('g:pyvim_host') ? g:pyvim_host : 'python3'
+# win32: default python3 installation executable name is python.exe, not
+# python3.exe.
+var s:python_path: string = exists('g:pyvim_host') ? g:pyvim_host :
+  (has('win32') ? 'python' : 'python3')
+
 def s:server(): void
   const pyvim_rc: string =
     exists('g:pyvim_rc') && type(g:pyvim_rc) == v:t_string ? g:pyvim_rc : ''
