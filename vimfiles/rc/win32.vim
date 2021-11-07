@@ -39,28 +39,7 @@ unlet s:path
 unlet s:i
 
 " vim-sh config {{{1
-for s:i in [
-      \ s:tr_slash(expand('~\nix\msys2\usr\bin\zsh')),
-      \ 'C:/msys64/usr/bin/zsh',
-      \ 'C:/msys64/usr/bin/bash',
-      \ 'C:/msys32/usr/bin/zsh',
-      \ 'C:/msys32/usr/bin/bash',
-      \ 'C:/Program Files/Git/usr/bin/bash',
-      \ 'C:/Program Files (x86)/Git/usr/bin/bash',
-      \ ]
-  if executable(s:i)
-    let g:sh_path = s:i
-    break
-  endif
-endfor
-unlet s:i
-
 " busybox sh rc
 let $ENV = expand(s:nix_dir . '/.config/env.sh')
 let $SH_RC_LOCAL = expand(s:nix_dir . '/local.sh')
-" }}}
-" vim-vimserver config {{{1
-if exists('g:sh_path') && match(g:sh_path, '\v[\/]zsh(|\.exe)$') >= 0
-  let g:vimserver_sh_path = g:sh_path
-endif
 " }}}
