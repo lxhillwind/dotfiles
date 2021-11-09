@@ -48,7 +48,7 @@ function! s:jump_to_file(nr, ...) abort
     return
   endif
 
-  let group = matchlist(chunk, '\v^\s*(..{-})\:([0-9]+)\:([0-9]+)\:')
+  let group = matchlist(chunk, '\v^\s*(..{-})\:([0-9]+)\:([0-9]+)')
   if !empty(group)
     let [file, line, col] = [group[1], group[2], group[3]]
     call s:jump_flc(file, line, col)
@@ -56,7 +56,7 @@ function! s:jump_to_file(nr, ...) abort
   endif
 
   " it also matches line:col:, so need to check if it is file or linenr.
-  let group = matchlist(chunk, '\v^\s*(..{-})\:([0-9]+)\:')
+  let group = matchlist(chunk, '\v^\s*(..{-})\:([0-9]+)')
   if !empty(group)
     let [file, line] = [group[1], group[2]]
     if filereadable(file)
@@ -65,7 +65,7 @@ function! s:jump_to_file(nr, ...) abort
     endif
   endif
 
-  let group = matchlist(chunk, '\v^(\d+)\:(\d+)\:')
+  let group = matchlist(chunk, '\v^(\d+)\:(\d+)')
   if !empty(group)
     let [line, col] = [group[1], group[2]]
     let file = s:find_filename_above()
