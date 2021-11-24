@@ -41,24 +41,27 @@ command! -nargs=* -complete=shellcmd KshebangInsert
       \ call <SID>shebang_insert(<q-args>)
 
 let g:vimrc_shebang_lines = {
-      \'awk': 'awk -f', 'javascript': 'node', 'lua': 'lua',
+      \'awk': '/usr/bin/awk -f', 'javascript': 'node', 'lua': 'lua',
       \'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
-      \'scheme': 'chez --script', 'sh': 'sh', 'zsh': 'zsh'
+      \'scheme': 'scheme-run', 'sh': '/bin/sh', 'zsh': 'zsh'
       \}
 
 function! s:shebang_insert(args) abort
   let first_line = getline(1)
   if len(first_line) >= 2 && first_line[0:1] ==# '#!'
-    " shebang exists
     throw 'shebang exists!'
   endif
-  let shebang = '#!/usr/bin/env'
   if !empty(a:args)
-    let shebang = shebang . ' ' . a:args
+    let shebang = a:args
   elseif has_key(g:vimrc_shebang_lines, &ft)
-    let shebang = shebang . ' ' . g:vimrc_shebang_lines[&ft]
+    let shebang = g:vimrc_shebang_lines[&ft]
   else
     throw 'shebang: which interpreter to run?'
+  endif
+  if match(shebang, '^/') >= 0
+    let shebang = '#!' . shebang
+  else
+    let shebang = '#!/usr/bin/env ' . shebang
   endif
   " insert at first line and leave cursor here (for further modification)
   normal ggO<Esc>

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+if command -v chez >/dev/null; then
+    run="chez --script"
+elif command -v chicken-csi >/dev/null; then
+    run="chicken-csi -s"
+elif command -v csi >/dev/null; then
+    run="csi -s"
+elif command -v racket >/dev/null; then
+    run="racket -r"
+else
+    echo "scheme interpreter not found!" >&2
+    exit 1
+fi
+
+# no quote here!
+$run "$@"
