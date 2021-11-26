@@ -94,8 +94,12 @@ if filereadable(fnamemodify(s:self, ':p:h') . '/' . 'vimrc.local')
 else
   " use default plugin
   call s:load_script('rc/pkgs.vim')
+  syntax on
 endif
 
+if !exists('g:syntax_on')
+  echoerr '"syntax on" or "syntax enable" should be called early (after :packadd)!'
+endif
 " this also enables filetype.
 filetype plugin indent on
 

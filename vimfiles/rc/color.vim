@@ -3,7 +3,6 @@
 " only set colorscheme if not set yet. {{{1
 " using `trim(execute('color')) == 'default'` is not valid.
 if !exists('g:colors_name')
-  syntax on
   if has('gui_running') || &t_Co >= 256
     color base16-dynamic
   else
