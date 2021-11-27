@@ -542,12 +542,11 @@ function! s:post_func(result, opt) abort
 endfunction
 
 function! s:cmdlist_keep_window(cmd) abort
-  " NOTE `read` -n option is not in posix standard, but it works for at least
-  " zsh, bash, busybox ash.
   " NOTE `sh` here may be replaced by correct sh path later (for win32).
   return ['sh', '-c',
         \ '"$@"; if command -v stty >/dev/null; then stty sane; fi; '
-        \ . 'echo; echo "Press any key to continue..."; read -n 1',
+        \ . 'echo; echo "Press any key to continue..."; '
+        \ . 'if command -v zstyle >/dev/null; then read -q; else read -n 1; fi',
         \ ''] + a:cmd
 endfunction
 
