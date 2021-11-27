@@ -1,9 +1,5 @@
 " vim config compatible with tiny version.
 
-if !has('vim_starting')
-  finish
-endif
-
 " if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
 " lines between `:if` and `:endif` will be ignored by vim tiny.
 if &compatible
