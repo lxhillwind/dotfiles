@@ -571,17 +571,7 @@ augroup END
 " ":h ft-sh-syntax"
 let g:is_posix = 1
 
-" command {{{1
-call s:load_script('rc/command.vim')
-
-let s:patch_ver = '8.2.3441'
-if has(printf('patch-%s', s:patch_ver))
-  call s:load_script('rc/command.vim9')
-endif
-
-" load plugin manually {{{2
-call s:load_script('rc/tasks.vim')
-
+" misc {{{1
 " some variable used by plugin (can be overwritten in vimrc.local) {{{2
 function! s:joinpath(path) abort
   return fnamemodify(s:self, ':h') . '/' . a:path

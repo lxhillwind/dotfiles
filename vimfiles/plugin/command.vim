@@ -1,6 +1,10 @@
 " vim: fdm=marker
 " UserCommand
 
+if has('patch-8.2.3020')
+  exec 'source' fnameescape(printf('%s/command.vim9', fnamemodify(expand('<sfile>'), ':h')))
+endif
+
 " snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{1
 command -nargs=? -complete=filetype Scratch call <SID>scratch(<q-args>)
 command! -nargs=? -complete=filetype
