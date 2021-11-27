@@ -36,6 +36,8 @@
 " }}}
 
 if exists(':packadd') != 2
+  " ignore old version vim.
+  command! -bar -nargs=* -bang Pack
   finish
 endif
 
