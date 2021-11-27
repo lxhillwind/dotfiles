@@ -394,9 +394,15 @@ function! s:ui(mode) abort
     redrawstatus | echon 'task not found.' | return
   endif
   for key in order
-    for item in get(result_d, key, [])
-      echo key "\t" item.section "\t" item.cmd
-    endfor
+    let items = get(result_d, key, [])
+    if len(items) >= 1
+      let item = items[0]
+      if len(items) > 1
+        echo key "\t[" .. item.origin .. "]..."
+      else
+        echo key "\t[" .. item.section .. "]\t" item.cmd
+      endif
+    endif
   endfor
   echo "select task by its key: "
   let choice = nr2char(getchar())
@@ -429,7 +435,10 @@ function! s:ui(mode) abort
   if !empty(workdir)
     call s:cd_exe(workdir, result.cmd)
   else
-    execute result.cmd
+    try
+      execute result.cmd
+    finally
+    endtry
   endif
 endfunction
 

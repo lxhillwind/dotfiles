@@ -300,7 +300,11 @@ function! s:execute_lines(mode)
   echom result
   echo 'execute? y/N '
   if nr2char(getchar()) ==? 'y'
-    redraws | execute result
+    redraws
+    try
+      execute result
+    finally
+    endtry
   else
     redraws | echon 'cancelled.'
   endif
