@@ -203,7 +203,7 @@ if has('vim_starting')
 endif
 
 " alt key in terminal {{{2
-if !has('gui_running') && has('unix')
+if !has('gui_running') && !has('nvim') && has('unix')
   " see ":set-termcap"
   " for on string is introduced in v8.2.2658; so use list here.
   for s:i in split('abcdefghijklmnopqrstuvwxyz1234567890', '\zs')
