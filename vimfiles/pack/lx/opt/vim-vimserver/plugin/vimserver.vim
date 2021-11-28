@@ -111,9 +111,15 @@ function! s:server_handler(channel, msg, ...) abort
     if match(data[1], '^Tapi_') < 0
       echoerr 'vimserver: function not in whitelist!' | return
     endif
-    " data: ['call', funcname, argument, optional-pid]
-    " pid SHOULD NOT be trusted!
-    let pid = len(data) == 4 ? str2nr(data[3]) : -1
+    " data: ['call', funcname, argument, optional-pid, optional-tty]
+    " pid / tty SHOULD NOT be trusted!
+    let pid = len(data) >= 4 ? str2nr(data[3]) : -1
+    let tty = len(data) == 5 ? data[4] : ''
+    if pid is# 0 && len(data) == 4
+      " not pid, but tty.
+      let pid = -1
+      let tty = data[3]
+    endif
     let buffer = -1
     if s:is_nvim
       for l:i in getbufinfo()
@@ -124,7 +130,10 @@ function! s:server_handler(channel, msg, ...) abort
       endfor
     else
       for l:i in term_list()
-        if job_info(term_getjob(l:i)).process == pid
+        if (!empty(tty) && term_gettty(l:i) == tty)
+              \ || job_info(term_getjob(l:i)).process == pid
+          " term_gettty() returns empty in win10 (conpty), so also check
+          " whether tty is empty here.
           let buffer = l:i
           break
         endif

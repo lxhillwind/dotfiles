@@ -45,8 +45,9 @@ if :; then
         done
         printf ']'
         if [[ -n "$VIMSERVER_CLIENT_PID" ]]; then
-            printf ', "%s"' ${${VIMSERVER_CLIENT_PID//\\/\\\\}//\"/\\\"}
+            printf ', "%s"' "${${VIMSERVER_CLIENT_PID//\\/\\\\}//\"/\\\"}"
         fi
+        printf ', "%s"' "${${TTY//\\/\\\\}//\"/\\\"}"
         printf ']\n'
     } >&$fd
     exit 0
