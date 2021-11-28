@@ -6,7 +6,6 @@ import traceback
 import inspect
 import typing
 import asyncio
-import shlex
 
 
 _global_id = 0
@@ -122,9 +121,11 @@ class Client:
         # NOTE if op is empty or whitespace string, then exception raises.
         # we ensure that it is not in server.vim.
         # but op below may be empty or whitespace string. that's ok.
-        # try ":Py3 ''".
-        # invalid cmdline also raises exception, like "'" (a single quote).
-        op, *args = shlex.split(op)
+        idx = op.find(' ')
+        if idx >= 0:
+            op, args = op[:idx], op[idx:].lstrip()
+        else:
+            op, args = op, ''
         if op == 'response':
             resp = data['args']
             fut = _global_resp.pop(resp['id'], None)
@@ -142,7 +143,7 @@ class Client:
                 if not kwargs.get('range'):
                     for i in ('range', 'line1', 'line2',):
                         kwargs.pop(i, None)
-                await getattr(self.worker, op)(*args, **kwargs)
+                await getattr(self.worker, op)(args, **kwargs)
                 return
         self._exception(f'unknown method: {op or ""}', 'raw data: %s' % data)
 
