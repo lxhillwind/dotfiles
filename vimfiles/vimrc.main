@@ -11,7 +11,7 @@
 " filetype-off before).
 " }}}
 
-" common definition {{{1
+" common definition & setting {{{1
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
 let s:has_gui = has('gui_running') || has('mac')
@@ -24,7 +24,12 @@ function! s:echoerr(msg)
   echohl None
 endfunction
 
-" option {{{1
+" s:helper {{{2
+let s:self = expand('<sfile>')
+function! s:load_script(file) abort
+  exec 'source' fnameescape(fnamemodify(s:self, ':p:h') . '/' . a:file)
+endfunction
+
 " add this directory to &rtp / &pp {{{2
 execute 'set rtp^=' . fnameescape(expand('<sfile>:p:h'))
 execute 'set rtp+=' . fnameescape(expand('<sfile>:p:h') . '/after')
@@ -32,13 +37,9 @@ if exists('&pp')
   execute 'set pp^=' . fnameescape(expand('<sfile>:p:h'))
 endif
 
-" s:helper {{{2
-let s:self = expand('<sfile>')
-function! s:load_script(file) abort
-  exec 'source' fnameescape(fnamemodify(s:self, ':p:h') . '/' . a:file)
-endfunction
 
 " }}}2
+" option {{{1
 if has('vim_starting')
   call s:load_script('vimrc.tiny')
 endif
