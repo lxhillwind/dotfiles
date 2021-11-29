@@ -17,6 +17,9 @@
 "   Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
 "   " skip: do not load plugin.
 "   Pack 'a-plugin-to-packadd-on-demand', #{skip: 1}
+"   Pack '~/dir/local'
+"   Pack '$HOME/dir/local'
+"   Pack '~/file/local'  " same as :source
 "   Pack  " output command for install / update (fetch, not pull; merge manually required)
 "
 "   PackStatus  " output command to get `git log` summary for each plugin (which plugin requires merge)
@@ -43,6 +46,8 @@ endif
 
 " clear list on (re)loading vimrc.
 let s:plugins = {}
+" plugin list for local dir; this is to be used in ":PackHelpTags"
+let s:plugins_local = []
 " ensure plugins root is in rtp.
 let s:plugins_root = ''
 let s:rtp = split(&rtp, ',')
@@ -68,6 +73,28 @@ function! s:pack(bang, ...) abort
   if a:0 > 0
     " TODO check input.
     let l:plugin = a:1
+
+    if match(l:plugin, '\v^[~$]') >= 0
+      let l:path = expand(l:plugin)
+    else
+      let l:path = fnamemodify(l:plugin, ':p')
+    endif
+    " local dir; it is hard to inject path to correct place in &rtp,
+    " so just insert it at begin.
+    if isdirectory(l:path)
+      exec 'set rtp^=' .. fnameescape(l:path)
+      if isdirectory(l:path .. '/after')
+        exec 'set rtp+=' .. fnameescape(l:path) .. '/after'
+      endif
+      call add(s:plugins_local, l:path)
+      return
+    endif
+    " local file; source it immediately.
+    if filereadable(l:path)
+      exec 'source' fnameescape(l:path)
+      return
+    endif
+
     let l:url = s:pack_construct_url(l:plugin)
     let l:opt = a:0 > 1 ? a:2 : {}
     let l:dir = get(l:opt, 'as', s:pack_extract_git_dir(l:url))
@@ -234,6 +261,7 @@ endfunction
 
 " s:pack_help_tags() {{{1
 function! s:pack_help_tags()
+  let l:paths = []
   for l:v in values(s:plugins)
     if l:v.after
       let l:i = globpath(&pp, printf('pack/*/opt/%s/after', l:v.dir), 0, 1)
@@ -241,11 +269,13 @@ function! s:pack_help_tags()
       let l:i = globpath(&pp, printf('pack/*/opt/%s', l:v.dir), 0, 1)
     endif
     if !empty(l:i)
-      let l:path = l:i[0]
-      let l:path = l:path . '/doc'
-      if isdirectory(l:path)
-        execute 'helptags' fnameescape(l:path)
-      endif
+      call add(l:paths, l:i[0])
+    endif
+  endfor
+  for l:i in extend(l:paths, s:plugins_local)
+    let l:path = l:i .. '/doc'
+    if isdirectory(l:path)
+      execute 'helptags' fnameescape(l:path)
     endif
   endfor
 endfunction
