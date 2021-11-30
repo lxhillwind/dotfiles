@@ -9,6 +9,13 @@
 " "colorscheme XXX" should be called after all ":packadd", since it usally
 " depends on "syntax on", which calls "filetype on", if not loaded (or
 " filetype-off before).
+"
+" keymap (and some plugin setting) should be called before vimrc.local, so it
+" can be overwritten.  then it should be put before plugin list.
+"
+" filetype setting should be called after filetype detection, then it should
+" be put after vimrc.local (plugin list).
+" to overwrite filetype setting, do it in plugin/*.vim.
 " }}}
 
 " common definition & setting {{{1
@@ -532,22 +539,6 @@ execute 'nnoremap <LocalLeader>' .
       \ (len(maplocalleader) > 1 ? matchstr(maplocalleader, '.$') : '<LocalLeader>') .
       \ ' :nmap <Char-60>LocalLeader<Char-62><CR>'
 
-" filetype setting {{{1
-augroup vimrc_filetype
-  au!
-  au BufNewFile,BufRead *.gv setl ft=dot
-  au FileType vim setl sw=2
-  au FileType yaml setl sw=2 indentkeys-=0#
-  au FileType zig setl fp=zig\ fmt\ --stdin
-  au FileType markdown setl tw=78
-
-  " quickfix window
-  au FileType qf let &l:stl = &g:stl
-augroup END
-
-" ":h ft-sh-syntax"
-let g:is_posix = 1
-
 " misc {{{1
 " some variable used by plugin (can be overwritten in vimrc.local) {{{2
 function! s:joinpath(path) abort
@@ -586,6 +577,22 @@ endif
 
 " this also enables filetype.
 filetype plugin indent on
+
+" filetype setting {{{1
+augroup vimrc_filetype
+  au!
+  au BufNewFile,BufRead *.gv setl ft=dot
+  au FileType vim setl sw=2
+  au FileType yaml setl sw=2 indentkeys-=0#
+  au FileType zig setl fp=zig\ fmt\ --stdin
+  au FileType markdown setl tw=78
+
+  " quickfix window
+  au FileType qf let &l:stl = &g:stl
+augroup END
+
+" ":h ft-sh-syntax"
+let g:is_posix = 1
 
 " colorscheme {{{1
 " only set colorscheme if not set yet. {{{2
