@@ -156,7 +156,9 @@ let &undodir = expand('~/.vim/files/undo/')
 " viewdir (:mkview / :loadview)
 let &viewdir = expand('~/.vim/files/view/')
 " viminfo files
-if exists('&viminfofile')
+if has('nvim')
+  let &shadafile = expand('~/.vim/files/nvim.viminfo')
+elseif exists('&viminfofile')
   let &viminfofile = expand('~/.vim/files/viminfo')
 endif
 
