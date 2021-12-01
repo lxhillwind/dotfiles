@@ -1,6 +1,10 @@
 " vim: ft=vim fdm=marker
 " UserCommand, but in vim9.
 
+if !has('patch-8.2.3020')
+  finish
+endif
+
 vim9script
 
 # :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{1
