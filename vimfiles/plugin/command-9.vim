@@ -5,7 +5,131 @@ if !has('patch-8.2.3020')
   finish
 endif
 
-vim9script
+vim9script noclear
+
+# :Jobrun / :Jobstop / :Joblist / :Jobclear {{{1
+command! -range=0 -nargs=+ Jobrun
+| s:job_run(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
+command! -nargs=* -bang -complete=custom,s:job_stop_comp Jobstop
+| s:job_stop(<q-args>, <bang>0 ? 'kill' : 'term')
+command! Joblist call s:job_list()
+command! -count Jobclear call s:job_clear(<count>)
+
+var s:job_dict = {}
+
+legacy function! s:job_exit_cb(job, ret) dict abort
+  let buf = self.bufnr
+  call appendbufline(buf, '$', '')
+  call appendbufline(buf, '$', '===========================')
+  call appendbufline(buf, '$', 'command finished with code ' .. a:ret)
+endfunction
+
+def s:job_run(cmd_a: string, opt: dict<any>)
+  if exists(':Sh') != 2
+    throw 'depends on vim-sh plugin!'
+  endif
+  if exists(':ScratchNew') != 2
+    throw 'depends on `:ScratchNew`!'
+  endif
+  var cmd: string = cmd_a
+  var flag: string = '-n'
+  if match(cmd, '^-') >= 0
+    var tmp = matchlist(cmd, '\v^(-\S+)\s+(.*)$')
+    cmd = tmp[2]
+    flag = tmp[1] .. 'n'
+  endif
+  var cmd_short = cmd
+  if opt.range != 0
+    cmd = printf('%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
+  else
+    cmd = printf('Sh %s %s', flag, cmd)
+  endif
+  var job_d = json_decode(execute(cmd))
+  ScratchNew
+  var bufnr = bufnr()
+  var d = {bufnr: bufnr, func: function('s:job_exit_cb')}
+  wincmd p
+  extend(s:job_dict, {
+    [bufnr]: {
+     job: job_start(
+       job_d.cmd, extend(job_d.opt, {
+         out_io: 'buffer', err_io: 'buffer',
+         out_buf: bufnr, err_buf: bufnr,
+         exit_cb: d.func,
+       })
+      ),
+     cmd: cmd_short,
+     }
+    })
+enddef
+
+def s:job_stop(id_a: string, sig: string)
+  var id = empty(id_a) ? bufnr() : str2nr(matchstr(id_a, '\v^\d+'))
+  if has_key(s:job_dict, id)
+    job_stop(s:job_dict[id].job, sig)
+  else
+    throw 'job not found: buffer id ' .. id
+  endif
+enddef
+
+legacy function! s:job_stop_comp(A, L, P) abort
+  let result = []
+  for [k, v] in items(s:job_dict)
+    if v.job->job_status() == 'run'
+      call add(result, printf('%s: %s', k, v.cmd))
+    endif
+  endfor
+  return join(result, "\n")
+endfunction
+
+def s:job_list()
+  for [k, v] in items(s:job_dict)
+    echo printf("%s:\t%s\t%s", k, v.job, v.cmd)
+  endfor
+enddef
+
+def s:job_clear(num: number)
+  for item in num > 0 ? [num] : keys(s:job_dict)
+    var job = get(s:job_dict, item)
+    if !empty(job)
+      if job.job->job_info().status != 'run'
+        remove(s:job_dict, item)
+      endif
+    endif
+  endfor
+enddef
+
+# :Mpc {{{1
+if executable('mpc')
+  command! Mpc s:mpc_main()
+
+  var s:mpc_prop_type = 'song'
+
+  def s:mpc_main()
+    enew | setl filetype=mpc buftype=nofile noswapfile nobuflisted
+    var buf = bufnr()
+    prop_type_add(s:mpc_prop_type, {bufnr: buf})
+    var i = 1
+    for line in split(system('mpc playlist'), "\n")
+      setline(i, line)
+      prop_add(i, 1, {type: s:mpc_prop_type, id: i, bufnr: buf})
+      i += 1
+    endfor
+    nnoremap <buffer> <CR> <cmd>call <SID>mpc_play()<CR>
+  enddef
+
+  def s:mpc_play()
+    var props = prop_list(line('.'))
+    if len(props) == 0
+      return
+    endif
+
+    var prop = props[-1]
+    if prop['type'] ==# s:mpc_prop_type
+      silent call job_start(printf('mpc play %d', prop.id))
+    endif
+  enddef
+endif
 
 # :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{1
 command! -bang -nargs=* -range=0 ChdirTerminal call s:chdir_terminal(<bang>false, <range>, <q-args>)
