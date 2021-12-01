@@ -21,7 +21,9 @@ def s:chdir_terminal(bang: bool, range: number, path_a: string)
 
   const bufs: list<number> = tabpagebuflist()
   if !bang
-    for i in term_list()
+    for i in term_list()->filter(
+      (_, x) => x->term_getstatus() == 'running'
+      )
       const idx: number = index(bufs, i)
       if idx >= 0
         echo printf('chdir in window [%d]? [y/N] ', idx + 1)
