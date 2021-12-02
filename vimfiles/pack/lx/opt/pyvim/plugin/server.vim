@@ -98,7 +98,7 @@ var s:job: job
 var s:python_path: string = exists('g:pyvim_host') ? g:pyvim_host :
   (has('win32') ? 'python' : 'python3')
 
-def s:server(): void
+def s:server()
   const pyvim_rc: string =
     exists('g:pyvim_rc') && type(g:pyvim_rc) == v:t_string ? g:pyvim_rc : ''
   if !empty(pyvim_rc) && !filereadable(pyvim_rc)
@@ -113,7 +113,7 @@ def s:server(): void
     })
 enddef
 
-def s:send_input(data: string, param: dict<any>): void
+def s:send_input(data: string, param: dict<any>)
   # we will split it with shellsplit in python.
   const data_list: list<string> = data->split(' ')
   if len(data_list) == 0
