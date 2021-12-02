@@ -17,13 +17,11 @@ command! -count Jobclear call s:job_clear(<count>)
 
 var s:job_dict = {}
 
-def s:job_exit_cb_gen(ctx: dict<any>): func
-  return (job: job, ret: number) => {
-    var buf = ctx.bufnr
-    appendbufline(buf, '$', '')
-    appendbufline(buf, '$', '===========================')
-    appendbufline(buf, '$', 'command finished with code ' .. ret)
-    }
+def s:job_exit_cb(ctx: dict<any>, job: job, ret: number)
+  const buf = ctx.bufnr
+  appendbufline(buf, '$', '')
+  appendbufline(buf, '$', '===========================')
+  appendbufline(buf, '$', 'command finished with code ' .. ret)
 enddef
 
 def s:job_run(cmd_a: string, opt: dict<any>)
@@ -56,7 +54,7 @@ def s:job_run(cmd_a: string, opt: dict<any>)
        job_d.cmd, extend(job_d.opt, {
          out_io: 'buffer', err_io: 'buffer',
          out_buf: bufnr, err_buf: bufnr,
-         exit_cb: s:job_exit_cb_gen({bufnr: bufnr}),
+         exit_cb: function('s:job_exit_cb', [{bufnr: bufnr}]),
        })
       ),
      cmd: cmd_short,
