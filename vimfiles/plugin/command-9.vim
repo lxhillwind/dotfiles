@@ -17,12 +17,14 @@ command! -count Jobclear call s:job_clear(<count>)
 
 var s:job_dict = {}
 
-legacy function! s:job_exit_cb(job, ret) dict abort
-  let buf = self.bufnr
-  call appendbufline(buf, '$', '')
-  call appendbufline(buf, '$', '===========================')
-  call appendbufline(buf, '$', 'command finished with code ' .. a:ret)
-endfunction
+def s:job_exit_cb_gen(ctx: dict<any>): func
+  return (job: job, ret: number) => {
+    var buf = ctx.bufnr
+    appendbufline(buf, '$', '')
+    appendbufline(buf, '$', '===========================')
+    appendbufline(buf, '$', 'command finished with code ' .. ret)
+    }
+enddef
 
 def s:job_run(cmd_a: string, opt: dict<any>)
   if exists(':Sh') != 2
@@ -47,7 +49,6 @@ def s:job_run(cmd_a: string, opt: dict<any>)
   var job_d = json_decode(execute(cmd))
   ScratchNew
   var bufnr = bufnr()
-  var d = {bufnr: bufnr, func: function('s:job_exit_cb')}
   wincmd p
   extend(s:job_dict, {
     [bufnr]: {
@@ -55,7 +56,7 @@ def s:job_run(cmd_a: string, opt: dict<any>)
        job_d.cmd, extend(job_d.opt, {
          out_io: 'buffer', err_io: 'buffer',
          out_buf: bufnr, err_buf: bufnr,
-         exit_cb: d.func,
+         exit_cb: s:job_exit_cb_gen({bufnr: bufnr}),
        })
       ),
      cmd: cmd_short,
@@ -72,15 +73,15 @@ def s:job_stop(id_a: string, sig: string)
   endif
 enddef
 
-legacy function! s:job_stop_comp(A, L, P) abort
-  let result = []
+def s:job_stop_comp(...arg: list<any>): string
+  var result = []
   for [k, v] in items(s:job_dict)
     if v.job->job_status() == 'run'
-      call add(result, printf('%s: %s', k, v.cmd))
+      add(result, printf('%s: %s', k, v.cmd))
     endif
   endfor
   return join(result, "\n")
-endfunction
+enddef
 
 def s:job_list()
   for [k, v] in items(s:job_dict)
