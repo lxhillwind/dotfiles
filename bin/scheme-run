@@ -8,13 +8,21 @@ if command -v chez >/dev/null; then
     fi
 elif command -v chicken-csi >/dev/null; then
     if [ $# -eq 0 ]; then
-        run=chicken-csi
+        if [ -t 0 ]; then
+            run=chicken-csi
+        else
+            run="chicken-csi -q"
+        fi
     else
         run="chicken-csi -s"
     fi
 elif command -v csi >/dev/null; then
     if [ $# -eq 0 ]; then
-        run=csi
+        if [ -t 0 ]; then
+            run=csi
+        else
+            run="csi -q"
+        fi
     else
         run="csi -s"
     fi
