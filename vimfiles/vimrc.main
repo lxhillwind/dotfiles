@@ -486,13 +486,6 @@ augroup vimrc_keymap
   au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
 
   " markdown checkbox {{{
-  function! s:markdown_checkbox()
-    hi link CheckboxUnchecked Type
-    hi link CheckboxChecked Comment
-    syn match CheckboxUnchecked '\v^\s*- \[ \] '
-    syn match CheckboxChecked '\v^\s*- \[X\] '
-  endfunction
-
   function! s:markdown_toggle_task_status()
     let lineno = line('.')
     let line = getline(lineno)
@@ -506,7 +499,7 @@ augroup vimrc_keymap
     call setline(lineno, line)
   endfunction
   " }}}
-  au FileType markdown call s:markdown_checkbox() | nnoremap <buffer>
+  au FileType markdown nnoremap <buffer>
         \ <LocalLeader>c :call <SID>markdown_toggle_task_status()<CR>
 
   " simple filelist (vim-filelist)
@@ -587,7 +580,14 @@ augroup vimrc_filetype
   au FileType vim setl sw=2
   au FileType yaml setl sw=2 indentkeys-=0#
   au FileType zig setl fp=zig\ fmt\ --stdin
-  au FileType markdown setl tw=78
+  au FileType markdown setl tw=78 | call s:markdown_checkbox_hl()
+
+  function! s:markdown_checkbox_hl()
+    hi link CheckboxUnchecked Type
+    hi link CheckboxChecked Comment
+    syn match CheckboxUnchecked '\v^\s*- \[ \] '
+    syn match CheckboxChecked '\v^\s*- \[X\] '
+  endfunction
 
   " quickfix window
   au FileType qf let &l:stl = &g:stl
