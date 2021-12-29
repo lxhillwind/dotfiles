@@ -437,6 +437,9 @@ for s:i in range(1, 9)
   execute printf("nnoremap \<M-%d> %dgt", s:i, s:i)
   execute printf("inoremap \<M-%d> \<C-o>\<C-w>%dgt", s:i, s:i)
 endfor
+execute "tnoremap \<M-0> \<C-w>:tablast<CR>"
+execute "nnoremap \<M-0> :tablast<CR>"
+execute "inoremap \<M-0> \<C-o>:tablast<CR>"
 
 " completion
 inoremap <C-Space> <C-x><C-o>
