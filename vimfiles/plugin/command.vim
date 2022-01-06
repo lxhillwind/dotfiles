@@ -122,8 +122,8 @@ endfunction
 command! -nargs=+ SetCmdText call SetCmdText(<q-args>)
 
 " `*` / `#` in visual mode (like `g*` / `g#`); dep: Selection() {{{1
-vnoremap * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
-vnoremap # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
+vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
+vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 
 " :KqutebrowserEditCmd {{{1
 if !empty($QUTE_FIFO)

@@ -549,9 +549,14 @@ if filereadable(s:joinpath('config/tasks-local.ini'))
 endif
 
 let g:markdown_folding = 1
+
+" keep sync with https://lxhillwind.gitee.io/ highlight.
+" NOTE: zig is not available in hljs right now.
 let g:markdown_fenced_languages = [
       \ 'awk', 'python', 'sh', 'vim',
-      \ 'c', 'javascript', 'json', 'zig',
+      \ 'c', 'go', 'javascript',
+      \ 'dosini', 'json', 'yaml',
+      \ 'zig',
       \ ]
 
 " plugin {{{1
