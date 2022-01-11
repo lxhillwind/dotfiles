@@ -24,6 +24,9 @@ c.aliases = {
 c.content.blocking.adblock.lists.extend([
     "https://easylist-downloads.adblockplus.org/easylistchina.txt",
     ])
+# security
+c.content.local_content_can_access_file_urls = False
+
 c.fonts.completion.entry = '12pt monospace'
 c.fonts.downloads = '12pt monospace'
 c.fonts.hints = 'bold 11pt monospace'
