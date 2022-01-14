@@ -91,6 +91,12 @@ fi
 # simple PS1 (zsh re-defines it)
 PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date +%Y-%m-%d\ %H:%M:%S)] \[\e[33m\]\w'$'\n''\[\e[32m\]\$\[\e[0m\] '
 
+# load vimserver related setting after PS1.
+# see lxhillwind/vim-vimserver
+if [ -f "$VIMSERVER_SH_SOURCE" ]; then
+    source "$VIMSERVER_SH_SOURCE"
+fi
+
 # Following code may cause syntax error in strict POSIX shell
 # (like array construction), so return early.
 if ! command -v zstyle >/dev/null; then
