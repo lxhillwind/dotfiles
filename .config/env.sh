@@ -42,42 +42,12 @@ case "$-" in
 esac
 
 # rc {{{
-# terminal inside vim
-if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ] && { \
-    [ -x "$VIMSERVER_BIN" ] || command -v "$VIMSERVER_BIN" >/dev/null; }; then
-    if [ -z "$VIMSERVER_CLIENT_PID" ]; then
-        export VIMSERVER_CLIENT_PID=$$
-
-        # msys2: get WINPID from ps output.
-        # `/` will be translated to `C:/msys64` correctly, don't know why.
-        #
-        # git-bash (g:win32_unix_sh_path):
-        # use <gitdir>/usr/bin/bash instead of <gitdir>/bin/bash,
-        # so that child pid of vim will be set in bash correctly.
-        if [ -f /msys2.exe ] || [ -f /git-bash.exe ] || [ -d /cygdrive ]; then
-            export VIMSERVER_CLIENT_PID=$(ps -p $$ | awk '{ print $4 }' | tail -n 1)
-        fi
-    fi
-    vimserver()
-    {
-        "$VIMSERVER_BIN" "$VIMSERVER_ID" "$@"
-    }
-    _f_cd_vim()
-    {
-        \cd "$@" && vimserver Tapi_cd "$PWD"
-    }
-else
-    # dummy
-    _f_cd_vim() { \cd "$@"; }
-fi
-alias cd=_f_cd_vim
-
 # fzf and cd
 if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
     _f_cd()
     {
         if [ $# -eq 0 ]; then
-            _f_cd_vim ~
+            \cd ~
             return
         fi
         if [ $# -eq 1 ]; then
@@ -88,7 +58,7 @@ if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
         if [ -e "$p" ] && ! [ -d "$p" ]; then
             p=${p%/*}
         fi
-        _f_cd_vim "$p"
+        \cd "$p"
     }
     alias cd=_f_cd
 fi

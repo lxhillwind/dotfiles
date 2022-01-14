@@ -42,6 +42,29 @@ If no filename argument is provided, vim will just open a new empty window.
 If multiple filename arguments are provided, only the first one will be shown,
 other files can be accessed with `:next` / `:prev` (`:help arglist` for help).
 
+## Usage (`cd` in vim buffer follow embedded terminal)
+
+Add this after `PS1` / `precmd` config in shell's rc:
+
+```sh
+if [ -f "$VIMSERVER_SH_SOURCE" ]; then
+    source "$VIMSERVER_SH_SOURCE"
+fi
+```
+
+This feature requires a vim User Function `Tapi_cd` defined in vim plugin.
+
+example definition:
+
+```vim
+function! Tapi_cd(nr, arg)
+  if bufnr() == a:nr
+    let p = a:arg[0]
+    execute 'lcd' fnameescape(p)
+  endif
+endfunction
+```
+
 ## Info
 This plugin defines variable `g:vimserver_env` (dict of string), which can be
 passed to other functions (like `term_start`) in case environment variables

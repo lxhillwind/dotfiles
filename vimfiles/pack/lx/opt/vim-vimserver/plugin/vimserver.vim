@@ -14,6 +14,7 @@ let s:is_win32 = has('win32')
 let s:job_start = function(s:is_nvim ? 'jobstart': 'job_start')
 let s:job_stop = function(s:is_nvim ? 'jobstop': 'job_stop')
 
+let s:vimserver_sh_source = expand('<sfile>:p:h:h') . '/source.d/vimserver.sh'
 let s:vimserver_exe = expand('<sfile>:p:h:h') . '/vimserver-helper/vimserver-helper'
 " fallback to vimserver-helper in $PATH
 if !executable(s:vimserver_exe)
@@ -57,6 +58,7 @@ endfunction
 " }}}
 
 function! s:reset_vimserver_env()
+  unlet $VIMSERVER_SH_SOURCE
   unlet $VIMSERVER_ID
   unlet $VIMSERVER_BIN
   unlet $VIMSERVER_CLIENT_PID
@@ -177,7 +179,10 @@ function! s:server() abort
         \ function('s:server_handler')})
   " expose variables, since vim-sh plugin will clean these env variable.
   " they may be required in other place (plugin), like popup terminal.
-  let g:vimserver_env = {'VIMSERVER_ID': bind_name, 'VIMSERVER_BIN': s:vimserver_exe}
+  let g:vimserver_env = {
+        \'VIMSERVER_ID': bind_name, 'VIMSERVER_BIN': s:vimserver_exe,
+        \'VIMSERVER_SH_SOURCE': s:vimserver_sh_source,
+        \}
 
   augroup vimserver_clients_cleaner
     au!
