@@ -21,6 +21,11 @@ runtime vim-vimserver/plugin/vimserver.vim
 " you may want to set env in `term_start()`, like this:
 "   term_start(..., #{env: g:vimserver_env})
 let $VIMSERVER_ID = g:vimserver_env['VIMSERVER_ID']
+
+" optional:
+" to use auto `cd` (see below), more env variables are required:
+let $VIMSERVER_SH_SOURCE = g:vimserver_env['VIMSERVER_SH_SOURCE']
+let $VIMSERVER_BIN = g:vimserver_env['VIMSERVER_BIN']
 ```
 
 To use bundled shell script (`vimserver-helper.zsh`) in win32, variable
@@ -52,7 +57,7 @@ if [ -f "$VIMSERVER_SH_SOURCE" ]; then
 fi
 ```
 
-This feature requires a vim User Function `Tapi_cd` defined in vim plugin.
+This feature requires a vim User Function `Tapi_cd` defined.
 
 example definition:
 
