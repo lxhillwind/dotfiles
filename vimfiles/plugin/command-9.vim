@@ -114,7 +114,7 @@ if executable('mpc')
       prop_add(i, 1, {type: s:mpc_prop_type, id: i, bufnr: buf})
       i += 1
     endfor
-    nnoremap <buffer> <CR> <cmd>call <SID>mpc_play()<CR>
+    nnoremap <buffer> <silent> <CR> <cmd>call <SID>mpc_play()<CR>
   enddef
 
   def s:mpc_play()
@@ -125,7 +125,7 @@ if executable('mpc')
 
     var prop = props[-1]
     if prop['type'] ==# s:mpc_prop_type
-      silent call job_start(printf('mpc play %d', prop.id))
+      job_start(printf('mpc play %d', prop.id))
     endif
   enddef
 endif
