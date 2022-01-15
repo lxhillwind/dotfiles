@@ -60,7 +60,9 @@ NOTE: `:Sh -w -v [cmd]...` will not work!
 
 set variable `g:sh_path` to override default shell:
 
-- win32 default shell: busybox
+- win32 default shell: msys2 shell (msys64 zsh, msys64 bash, msys32 zsh,
+  msys32 bash), git shell (git bash, git x86 bash), busybox; the first
+available shell is set.
 - unix-like default shell: `&shell`
 
 *If g:sh_path contains `busybox`, then sh is appended, like `busybox sh`.*

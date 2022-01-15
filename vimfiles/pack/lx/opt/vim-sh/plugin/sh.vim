@@ -265,6 +265,10 @@ function! s:sh(cmd, opt) abort " {{{2
   let shell = exists('g:sh_path') ? g:sh_path :
         \ (s:is_win32 ? 'busybox' : &shell)
 
+  if !executable(shell)
+    call s:echoerr(printf('shell is not found! (`%s`)', shell)) | return
+  endif
+
   " if set shell to busybox, then call sh with `busybox sh`
   let shell_arg_patch = (match(shell, '\vbusybox(.exe|)$') >= 0) ? ['sh'] : []
 
@@ -677,6 +681,23 @@ function! s:win32_sh_replace(shell, args, cmd) abort
   return [a:shell] + a:args + a:cmd[1 : ]
 endfunction
 
+" guess shell if not set {{{2
+if !exists('g:sh_path')
+  for s:i in [
+        \'C:/msys64/usr/bin/zsh.exe',
+        \'C:/msys64/usr/bin/bash.exe',
+        \'C:/msys32/usr/bin/zsh.exe',
+        \'C:/msys32/usr/bin/bash.exe',
+        \'C:/Program Files/Git/usr/bin/bash.exe',
+        \'C:/Program Files (x86)/Git/usr/bin/bash.exe',
+        \]
+    if executable(s:i)
+      let g:sh_path = s:i
+      break
+    endif
+  endfor
+endif
+
 " win32 quote related {{{2
 function! s:shellescape(cmd) abort
   return "'" . substitute(a:cmd, "'", "'\"'\"'", 'g') . "'"
@@ -745,7 +766,7 @@ function! s:globpath(a, b, c, d) abort
 endfunction
 
 " win32 vim from unix shell will set &shell incorrectly, so restore it
-if s:is_win32 && match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
+if match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
   let &shell = 'cmd.exe'
   let &shellcmdflag = '/s /c'
   let &shellquote = ''
