@@ -57,7 +57,10 @@ if [ -f "$VIMSERVER_SH_SOURCE" ]; then
 fi
 ```
 
-This feature requires a vim User Function `Tapi_cd` defined.
+- It will adjust `$PATH` to make win32 vim match first instead of
+  `/usr/bin/vim`, if cygwin (git for windows / msys2) is detected.
+
+- This feature requires a vim User Function `Tapi_cd` defined.
 
 example definition:
 
