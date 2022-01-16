@@ -44,7 +44,7 @@ fi
 
 # adjust $PATH for cygwin (git for windows), to make win32 vim win.
 if [ -n "$_vimserver_is_cygwin" ] && command -v which >/dev/null; then
-    _vimserver_win32_vim_path=$({ which -a vim | grep -E '[/\]vim[/\]vim(|.exe)$' } 2>/dev/null || true)
+    _vimserver_win32_vim_path=$({ which -a vim | grep -E '[/\]vim[/\]vim(|.exe)$'; } 2>/dev/null || true)
     if [ -x "$_vimserver_win32_vim_path" ] && [ "$(command -v vim)" = "/usr/bin/vim" ]; then
         _vimserver_win32_vim_path="${_vimserver_win32_vim_path%.exe}"
         _vimserver_win32_vim_path="${_vimserver_win32_vim_path%vim}"
