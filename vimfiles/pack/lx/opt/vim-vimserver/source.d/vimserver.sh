@@ -59,7 +59,7 @@ if ! command -v zstyle >/dev/null; then
     if printf %s "$PS1" | grep _vimserver_cd >/dev/null; then
         :
     else
-        PS1="${_vimserver_ps1}${PS1}"
+        PS1="${PS1}${_vimserver_ps1}"
     fi
 fi
 
