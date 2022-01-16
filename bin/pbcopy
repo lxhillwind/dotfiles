@@ -5,6 +5,9 @@ if [ -e /usr/bin/pbcopy ]; then
 else
     if [ -n "$WAYLAND_DISPLAY" ]; then
         exec wl-copy
+    # vscode may set $DISPLAY in win32, so we should detect cygwin clipboard before DISPLAY.
+    elif [ -e /dev/clipboard ]; then
+        cat > /dev/clipboard
     elif [ -n "$DISPLAY" ]; then
         exec xsel -ib
     elif [ -n "$SSH_CLIENT" ] && \

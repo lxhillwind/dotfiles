@@ -5,6 +5,9 @@ if [ -e /usr/bin/pbpaste ]; then
 else
     if [ -n "$WAYLAND_DISPLAY" ]; then
         exec wl-paste -n
+    # vscode may set $DISPLAY in win32, so we should detect cygwin clipboard before DISPLAY.
+    elif [ -e /dev/clipboard ]; then
+        exec cat /dev/clipboard
     elif [ -n "$DISPLAY" ]; then
         exec xsel -ob
     elif [ -n "$SSH_CLIENT" ] && \
