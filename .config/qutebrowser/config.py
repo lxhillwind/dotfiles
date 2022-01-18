@@ -1,3 +1,4 @@
+import os
 import sys
 import pathlib
 # Documentation:
@@ -26,6 +27,11 @@ c.content.blocking.adblock.lists.extend([
     ])
 # security
 c.content.local_content_can_access_file_urls = False
+
+# see https://lxhillwind.gitee.io/?qutebrowser.md
+if sys.platform == 'linux':
+    if os.getenv('SANDBOXED_QUTEBROWSER') != '1':
+        c.content.javascript.enabled = False
 
 c.fonts.completion.entry = '12pt monospace'
 c.fonts.downloads = '12pt monospace'
