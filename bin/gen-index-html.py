@@ -26,9 +26,14 @@ template = """\
             font-size: xx-large;
         }
         </style>
+        <noscript>
+        <h1>JavaScript is not enabled.</h1>
+        <hr />
+        </noscript>
+
         {% for item in paths %}
         <a href='{{ item.path }}'>{{ item.name }}</a>
-        <br>
+        <br />
         {% endfor %}
     </body>
 </html>
