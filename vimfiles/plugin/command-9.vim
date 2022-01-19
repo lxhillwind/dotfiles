@@ -1,7 +1,7 @@
 " vim: ft=vim fdm=marker
 " UserCommand, but in vim9.
 
-if !has('patch-8.2.3020')
+if !has('vim9script')
   finish
 endif
 

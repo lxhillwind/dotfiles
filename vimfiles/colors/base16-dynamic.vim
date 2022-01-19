@@ -13,9 +13,8 @@
 " Material: Nate Peterson <https://github.com/ntpeters/base16-materialtheme-scheme>
 " One Light: Daniel Pfeifer <https://github.com/purpleKarrot/base16-one-light-scheme>
 
-" choose at random
-if has('patch-8.2.3020')
-  execute 'source' fnameescape(fnamemodify(expand('<sfile>'), ':p:h') . '/' . 'base16-dynamic.vim9')
+if !has('vim9script')
+  execute 'source' fnameescape(fnamemodify(expand('<sfile>'), ':p:h') . '/' . 'base16-dynamic.vim.legacy')
   finish
 endif
 
@@ -71,8 +70,7 @@ let s:gui0E = s:base16_pallet['base0E']
 let s:gui0F = s:base16_pallet['base0F']
 
 " Terminal color definitions
-function! s:round(num)
-  let num = a:num
+def s:round(num: number): number
   if num < (95 - 55) / 2 + 55
     return 0
   elseif num < (135 - 95) / 2 + 95
@@ -86,28 +84,28 @@ function! s:round(num)
   else
     return 5
   endif
-endfunction
+enddef
 
 " color info is from https://jonasjacek.github.io/colors/
-function! s:cast_rgb(hex_code)
-  let l:r = str2nr(a:hex_code[0:1], 16)
-  let l:g = str2nr(a:hex_code[2:3], 16)
-  let l:b = str2nr(a:hex_code[4:5], 16)
+def s:cast_rgb(hex_code: string): number
+  var r = str2nr(hex_code[0 : 1], 16)
+  var g = str2nr(hex_code[2 : 3], 16)
+  var b = str2nr(hex_code[4 : 5], 16)
 
-  " greyscale
-  let r1 = (l:r - 8) / 10
-  let r2 = (l:g - 8) / 10
-  let r3 = (l:b - 8) / 10
+  # greyscale
+  var r1 = (r - 8) / 10
+  var r2 = (g - 8) / 10
+  var r3 = (b - 8) / 10
   if abs(r1 - r2) <= 2 && abs(r1 - r3) <= 2 && abs(r2 - r3) <= 2 && r1 < 24
     return 232 + r1
   endif
 
-  " 16-231
-  let l:r = s:round(l:r)
-  let l:g = s:round(l:g)
-  let l:b = s:round(l:b)
-  return 36 * l:r + 6 * l:g + l:b + 16
-endfunction
+  # 16-231
+  r = s:round(r)
+  g = s:round(g)
+  b = s:round(b)
+  return 36 * r + 6 * g + b + 16
+enddef
 
 let s:cterm00 = s:cast_rgb(s:gui00)
 let s:cterm01 = s:cast_rgb(s:gui01)
@@ -174,34 +172,34 @@ let g:colors_name = "base16-dynamic"
 
 " Highlighting function
 " Optional variables are attributes and guisp
-function! g:Base16hi(group, guifg, guibg, ctermfg, ctermbg, ...)
-  let l:attr = get(a:, 1, "")
-  let l:guisp = get(a:, 2, "")
+def g:Base16hi(group: string, guifg: string, guibg: string, ctermfg: any, ctermbg: any, ...args: list<string>)
+  var attr = get(args, 0, "")
+  var guisp = get(args, 1, "")
 
-  if a:guifg != ""
-    exec "hi " . a:group . " guifg=#" . a:guifg
+  if guifg != ""
+    exec "hi " .. group .. " guifg=#" .. guifg
   endif
-  if a:guibg != ""
-    exec "hi " . a:group . " guibg=#" . a:guibg
+  if guibg != ""
+    exec "hi " .. group .. " guibg=#" .. guibg
   endif
-  if a:ctermfg != ""
-    exec "hi " . a:group . " ctermfg=" . a:ctermfg
+  if ctermfg != ""
+    exec "hi " .. group .. " ctermfg=" .. string(ctermfg)
   endif
-  if a:ctermbg != ""
-    exec "hi " . a:group . " ctermbg=" . a:ctermbg
+  if ctermbg != ""
+    exec "hi " .. group .. " ctermbg=" .. string(ctermbg)
   endif
-  if l:attr != ""
-    exec "hi " . a:group . " gui=" . l:attr . " cterm=" . l:attr
+  if attr != ""
+    exec "hi " .. group .. " gui=" .. attr .. " cterm=" .. attr
   endif
-  if l:guisp != ""
-    exec "hi " . a:group . " guisp=#" . l:guisp
+  if guisp != ""
+    exec "hi " .. group .. " guisp=#" .. guisp
   endif
-endfunction
+enddef
 
 
-fun <sid>hi(group, guifg, guibg, ctermfg, ctermbg, attr, guisp)
-  call g:Base16hi(a:group, a:guifg, a:guibg, a:ctermfg, a:ctermbg, a:attr, a:guisp)
-endfun
+def s:hi(group: string, guifg: string, guibg: string, ctermfg: any, ctermbg: any, attr: string, guisp: string)
+  g:Base16hi(group, guifg, guibg, ctermfg, ctermbg, attr, guisp)
+enddef
 
 " Vim editor colors
 call <sid>hi("Normal",        s:gui05, s:gui00, s:cterm05, s:cterm00, "", "")
@@ -444,4 +442,4 @@ unlet s:gui00 s:gui01 s:gui02 s:gui03  s:gui04  s:gui05  s:gui06  s:gui07  s:gui
 unlet s:cterm00 s:cterm01 s:cterm02 s:cterm03 s:cterm04 s:cterm05 s:cterm06 s:cterm07 s:cterm08 s:cterm09 s:cterm0A s:cterm0B s:cterm0C s:cterm0D s:cterm0E s:cterm0F
 unlet s:base16_pallet
 
-" vim:syntax=vim sw=2 fdm=marker
+" vim:ft=vim sw=2 fdm=marker
