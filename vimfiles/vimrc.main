@@ -230,13 +230,12 @@ endif
 
 function! s:clipboard_copy(cmd)
   if empty(a:cmd)
-    if has('clipboard') && !s:is_unix
-      " unix: X11 clipboard content will disapper when program exits.
-      let @+ = @"
-      return
-    endif
     if executable('pbcopy')
       let l:cmd = 'pbcopy'
+    elseif has('clipboard')
+      " NOTE: unix: X11 clipboard content will disapper when program exits.
+      let @+ = @"
+      return
     else
       call s:echoerr('clipboard not found!') | return
     endif
@@ -248,12 +247,11 @@ endfunction
 
 function! s:clipboard_paste(cmd)
   if empty(a:cmd)
-    if has('clipboard') && !s:is_unix
-      let @" = @+
-      return
-    endif
     if executable('pbpaste')
       let l:cmd = 'pbpaste'
+    elseif has('clipboard')
+      let @" = @+
+      return
     else
       call s:echoerr('clipboard not found!') | return
     endif
