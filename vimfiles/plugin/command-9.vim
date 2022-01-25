@@ -40,7 +40,7 @@ def s:job_run(cmd_a: string, opt: dict<any>)
   endif
   var cmd_short = cmd
   if opt.range != 0
-    cmd = printf('%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
+    cmd = printf(':%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
   else
     cmd = printf('Sh %s %s', flag, cmd)
   endif
