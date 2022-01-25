@@ -227,16 +227,14 @@ function! s:pack_clean(bang) abort
   endif
 
   if a:bang
-    enew
+    enew | setl buftype=nofile
     let l:lines = ['#!/bin/sh', 'set -e', '', '{', '']
     for l:i in l:dir_clean
       call add(l:lines, printf('rm -rf -- %s', shellescape(l:i)))
     endfor
     let l:lines = l:lines + ['', '} && echo "delete success." || echo "delete failed."']
-    let l:tempfile = tempname()
-    call writefile(l:lines, l:tempfile)
-    execute 'e' fnameescape(l:tempfile)
     setl ft=sh
+    call setline(1, l:lines)
     return
   endif
 
@@ -321,12 +319,10 @@ endfunction
 function! s:pack_report(bang, lines, pre, post) abort
   let l:lines = a:lines
   if a:bang
-    enew
+    enew | setl buftype=nofile
     let l:lines = a:pre + l:lines + a:post
-    let l:tempfile = tempname()
-    call writefile(l:lines, l:tempfile)
-    execute 'e' fnameescape(l:tempfile)
     setl ft=sh
+    call setline(1, l:lines)
   else
     for l:i in l:lines
       if match(l:i, '^##') >= 0
