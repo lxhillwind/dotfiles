@@ -86,8 +86,11 @@ config.bind('<num-enter>', 'fake-key <space>', mode='passthrough')
 
 # Bindings for normal mode
 config.bind('<ctrl-h>', 'nop')
+config.bind('<ctrl-n>', 'nop')
 config.bind('<ctrl-p>', 'nop')
 config.bind('<ctrl-s>', 'nop')
+config.bind('<ctrl-t>', 'nop')
+config.bind('<ctrl-w>', 'nop')
 config.bind('<shift-space>', 'scroll-page 0 -0.97')
 config.bind('<space>', 'scroll-page 0 0.97')
 config.bind('F', 'hint all tab-bg')
