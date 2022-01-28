@@ -152,7 +152,7 @@ config.bind(';dc', 'download-clear')
 config.bind(';dq', 'download-cancel')
 
 # host config
-rc = pathlib.Path(__file__).parent.joinpath('rc.py')
+rc = pathlib.Path(__file__).parent.joinpath('local.py')
 if rc.exists():
     with rc.open() as f:
         exec(f.read())
