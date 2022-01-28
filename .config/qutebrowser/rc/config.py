@@ -152,7 +152,9 @@ config.bind(';dc', 'download-clear')
 config.bind(';dq', 'download-cancel')
 
 # host config
-rc = pathlib.Path(__file__).parent.joinpath('local.py')
+# NOTE: this file is exec-ed from ../config.py,
+# so to reach ./local.py, we need to use rc/local.py instead of local.py.
+rc = pathlib.Path(__file__).parent.joinpath('rc/local.py')
 if rc.exists():
     with rc.open() as f:
         exec(f.read())
