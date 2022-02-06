@@ -1,0 +1,36 @@
+#!/bin/sh
+set -e
+
+# `script` wrapper;
+# mainly used to capture terminal output.
+#
+# usage:
+# $0  # run shell (if $SCRIPT_SESSION_FILE var is empty)
+# $0  # capture terminal output (otherwise)
+# $0 number  # like above, but use number instead of $(tput lines).
+
+if ! command -v script >/dev/null; then
+    echo 'command `script` not found! exiting...' >&2
+    exit 1
+fi
+
+if [ -z "$SCRIPT_SESSION_FILE" ]; then
+    export SCRIPT_SESSION_FILE=$(mktemp)
+    exec script -q -a -c '
+    export SCRIPT_SESSION_PID=$PPID;
+    "$0";
+    rm -- "$SCRIPT_SESSION_FILE";
+    ' "$SCRIPT_SESSION_FILE"
+else
+    if [ -z "$SCRIPT_SESSION_PID" ]; then
+        echo 'cannot found $SCRIPT_SESSION_PID! env var not set?' >&2
+        exit 1
+    fi
+    if [ -n "$1" ]; then
+        line=$1
+    else
+        line=$(tput lines)
+    fi
+    kill -USR1 "$SCRIPT_SESSION_PID"
+    tail -n "$line" "$SCRIPT_SESSION_FILE"
+fi
