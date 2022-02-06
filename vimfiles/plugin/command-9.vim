@@ -336,3 +336,8 @@ def g:Tapi_popup_cb(nr: number, arg: list<string>)
     PopupCallback(tmpfile)
   endif
 enddef
+
+# sv() helper (in vim embedded terminal) {{{2
+def g:Tapi_shell_sv_helper(...arg: list<any>)
+  feedkeys("\<C-space>")
+enddef
