@@ -9,15 +9,8 @@ if [ -f /msys2.exe ] || [ -f /git-bash.exe ] || [ -d /cygdrive ]; then
     _vimserver_is_cygwin=1
 fi
 
-# var used in _vimserver_ps1 & _vimserver()
+# var used in _vimserver()
 _vimserver_cd=
-
-_vimserver_ps1='$(
-    if [ "$PWD" != "$_vimserver_cd" ]; then
-        _vimserver_cd="$PWD"
-        "$VIMSERVER_BIN" "$VIMSERVER_ID" Tapi_cd "$_vimserver_cd"
-    fi
-)'
 
 _vimserver()
 {
@@ -59,7 +52,9 @@ if ! command -v zstyle >/dev/null; then
     if printf %s "$PS1" | grep _vimserver_cd >/dev/null; then
         :
     else
-        PS1="${PS1}${_vimserver_ps1}"
+        # TODO it is eval in subprocess, so Tapi_cd is always called.
+        # how to fix it?
+        PS1="${PS1}\$(_vimserver)"
     fi
 fi
 
