@@ -1,3 +1,5 @@
+# vim:fdm=marker
+# check if it's running in vim embedded terminal. {{{1
 if [ -n "$VIM" ] && [ -n "$VIMSERVER_ID" ] && { \
     [ -x "$VIMSERVER_BIN" ] || command -v "$VIMSERVER_BIN" >/dev/null; }; then
     :
@@ -9,18 +11,7 @@ if [ -f /msys2.exe ] || [ -f /git-bash.exe ] || [ -d /cygdrive ]; then
     _vimserver_is_cygwin=1
 fi
 
-# var used in _vimserver()
-_vimserver_cd=
-
-_vimserver()
-{
-    if [ "$PWD" != "$_vimserver_cd" ]; then
-        _vimserver_cd="$PWD"
-        "$VIMSERVER_BIN" "$VIMSERVER_ID" Tapi_cd "$_vimserver_cd"
-    fi
-}
-
-# set env VIMSERVER_CLIENT_PID
+# set env VIMSERVER_CLIENT_PID {{{1
 if [ -z "$VIMSERVER_CLIENT_PID" ]; then
     export VIMSERVER_CLIENT_PID=$$
 
@@ -35,7 +26,7 @@ if [ -z "$VIMSERVER_CLIENT_PID" ]; then
     fi
 fi
 
-# adjust $PATH for cygwin (git for windows), to make win32 vim win.
+# adjust $PATH for cygwin (git for windows), to make win32 vim win. {{{1
 if [ -n "$_vimserver_is_cygwin" ] && command -v which >/dev/null; then
     _vimserver_win32_vim_path=$({ which -a vim | grep -E '[/\]vim[/\]vim(|.exe)$'; } 2>/dev/null || true)
     if [ -x "$_vimserver_win32_vim_path" ] && [ "$(command -v vim)" = "/usr/bin/vim" ]; then
@@ -46,20 +37,31 @@ if [ -n "$_vimserver_is_cygwin" ] && command -v which >/dev/null; then
     unset _vimserver_win32_vim_path
 fi
 
+if [ -n "$_vimserver_is_cygwin" ]; then
+    unset _vimserver_is_cygwin
+fi
+
+# sync directory to vim buffer. (an example of terminal-api) {{{1
+# var used in _vimserver_cd_func()
+_vimserver_cd=
+
+_vimserver_cd_func()
+{
+    if [ "$PWD" != "$_vimserver_cd" ]; then
+        _vimserver_cd="$PWD"
+        "$VIMSERVER_BIN" "$VIMSERVER_ID" Tapi_cd "$_vimserver_cd"
+    fi
+}
 
 # PS1 for bash, busybox, etc.
 if ! command -v zstyle >/dev/null; then
-    if printf %s "$PS1" | grep _vimserver_cd >/dev/null; then
+    if printf %s "$PS1" | grep _vimserver_cd_func >/dev/null; then
         :
     else
         # TODO it is eval in subprocess, so Tapi_cd is always called.
         # how to fix it?
-        PS1="${PS1}\$(_vimserver)"
+        PS1="${PS1}\$(_vimserver_cd_func)"
     fi
-fi
-
-if [ -n "$_vimserver_is_cygwin" ]; then
-    unset _vimserver_is_cygwin
 fi
 
 if ! command -v zstyle >/dev/null; then
@@ -68,8 +70,8 @@ if ! command -v zstyle >/dev/null; then
 fi
 
 # zsh
-if printf %s "$precmd_functions" | grep _vimserver >/dev/null; then
+if printf %s "$precmd_functions" | grep _vimserver_cd_func >/dev/null; then
     :
 else
-    precmd_functions+=(_vimserver)
+    precmd_functions+=(_vimserver_cd_func)
 fi
