@@ -2,6 +2,8 @@
 
 ## Feature
 - inside terminal, open vim buffer in outside vim.
+- `terminal-api` for vim on win32 and neovim. (builtin `terminal-api` only
+  works in vim on unix)
 
 ## Requirement
 - vim 8.1.2233+ (job feature) or neovim 0.5.0+; (`v:argv`)
@@ -24,8 +26,12 @@ let $VIMSERVER_ID = g:vimserver_env['VIMSERVER_ID']
 
 " optional:
 " to use auto `cd` (see below), more env variables are required:
-let $VIMSERVER_SH_SOURCE = g:vimserver_env['VIMSERVER_SH_SOURCE']
+
+" this is required for terminal-api command `call`.
 let $VIMSERVER_BIN = g:vimserver_env['VIMSERVER_BIN']
+" this is required for terminal-api command `call`
+" (UserFunction buffer number argument).
+let $VIMSERVER_SH_SOURCE = g:vimserver_env['VIMSERVER_SH_SOURCE']
 ```
 
 To use bundled shell script (`vimserver-helper.zsh`) in win32, variable
@@ -34,6 +40,9 @@ To use bundled shell script (`vimserver-helper.zsh`) in win32, variable
 Define variable `g:loaded_vimserver` to skip loading this plugin.
 
 ## Usage
+
+### basic
+
 - Inside terminal session, call `vim [filename]...` to open buffer in outside
   vim.
 - `vim +vs [filename]...` will split window vertically.
@@ -47,7 +56,14 @@ If no filename argument is provided, vim will just open a new empty window.
 If multiple filename arguments are provided, only the first one will be shown,
 other files can be accessed with `:next` / `:prev` (`:help arglist` for help).
 
-## Usage (`cd` in vim buffer follow embedded terminal)
+### terminal-api
+
+see <https://vimhelp.org/terminal.txt.html#terminal-api>:
+
+To execute command `call {funcname} {argument}`,
+run shell cmd `"$VIMSERVER_BIN" "$VIMSERVER_ID" {funcname} {argument}...`.
+
+### terminal-api example: (`cd` in vim buffer follow embedded terminal)
 
 Add this after `PS1` / `precmd` config in shell's rc:
 
