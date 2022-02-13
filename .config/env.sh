@@ -65,6 +65,12 @@ fi
 
 # colorful man
 man() {
+    # openSUSE requires MAN_POSIXLY_CORRECT to display without prompt.
+    # openSUSE requires GROFF_NO_SGR to display color (but why?).
+    # ref: https://forums.opensuse.org/showthread.php/414983-Color-Man-Pages/page2?s=7bff9fc804859ecde549a354ecaacea0
+    env \
+    MAN_POSIXLY_CORRECT=1 \
+    GROFF_NO_SGR=yes \
     LANG=en_US.UTF-8 \
     PAGER="sh -c 'sed -E \"s/[—−‐]/-/g\" | less'" \
     LESS_TERMCAP_md=$'\e[01;31m' \
@@ -73,7 +79,7 @@ man() {
     LESS_TERMCAP_so=$'\e[01;44;33m' \
     LESS_TERMCAP_ue=$'\e[0m' \
     LESS_TERMCAP_us=$'\e[01;32m' \
-    command man "$@"
+    man "$@"
 }
 
 # alias & functions

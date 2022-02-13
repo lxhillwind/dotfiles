@@ -11,7 +11,7 @@ nnoremap <Plug>(filelist_edit) :<C-u>call <SID>edit_cur_line()<CR>
 " {{{
 augroup filelist
   au!
-  au BufNewFile,BufRead,BufWritePost * call s:save_filelist()
+  au BufNewFile,BufRead * call s:save_filelist()
 augroup END
 
 function! s:cd_cur_line()
