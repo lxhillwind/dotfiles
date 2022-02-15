@@ -50,11 +50,26 @@ function! s:choose_filelist() abort
   call reverse(l:list)
   call append(0, l:list)
   call append(0, '')
-  let doc_pattern = map(globpath(&rtp, 'doc', 0, 1),
+
+  let pattern_exclude = []
+  " doc
+  call extend(pattern_exclude,
+        \ map(globpath(&rtp, 'doc', 0, 1),
         \ 'glob2regpat(resolve(v:val) . "/*.txt")')
+        \ )
+  " git (list copy from openSUSE vimrc)
+  call extend(pattern_exclude,
+        \ [
+          \ '/.*/COMMIT_EDITMSG',
+          \ '/.*/ADD_EDIT.patch',
+          \ '/.*/addp-hunk-edit.diff',
+          \ '/.*/git-rebase-todo',
+          \]
+        \ )
+
   call append(0, filter(
         \ map(copy(v:oldfiles), 's:filename_tweak(v:val)'),
-        \   '!s:match_any(doc_pattern, v:val)'))
+        \   '!s:match_any(pattern_exclude, v:val)'))
   norm gg
 endfunction
 
