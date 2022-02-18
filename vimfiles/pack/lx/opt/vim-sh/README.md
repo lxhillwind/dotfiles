@@ -19,7 +19,7 @@ Supported flags:
   t: use builtin terminal (support sub opt, like this: -t=7split)
      sub opt is used as action to prepare terminal buffer
   w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)
-     currently supported: alacritty, urxvt, mintty, cmd, tmux, tmuxc, tmuxs, tmuxv
+     currently supported: alacritty, urxvt, mintty, cmd, tmux, tmuxc, tmuxs, tmuxv, konsole
   c: close terminal after execution
   b: focus on current buffer / window
   f: filter, like ":{range}!cmd"
@@ -32,9 +32,9 @@ details:
 - `-v`: selected text as stdin (this is different from filter, which is line
   level); visual mode
 
-- `-w`: execute shell command in new application window. On Windows, it is
-  mintty.exe or cmd.exe; on other OS, urxvt / alacritty / tmux is supported
-  now.
+- `-w`: execute shell command in new application window. To see which
+  application is supported, execute `:Sh -h` or see `w` flag above (the latter
+  may not be updated).
 
 - `<bang>`: try to reuse existing builtin tty window (implies -t option)
 
@@ -71,7 +71,9 @@ available shell is set.
 
 set variable `g:sh_programs` to override default `-w` program detection order:
 
-default: `['alacritty', 'urxvt', 'mintty', 'cmd',]`
+default is like: `['alacritty', 'urxvt', ...]`
+
+(all available values can be viewed by executing `:Sh -h`)
 
 ### `g:sh_win32_cr`
 

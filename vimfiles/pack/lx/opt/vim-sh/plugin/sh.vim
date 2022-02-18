@@ -3,7 +3,7 @@ if get(g:, 'loaded_sh') || v:version < 703
 endif
 let g:loaded_sh = 1
 
-let s:sh_programs = ['alacritty', 'urxvt', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
+let s:sh_programs = ['alacritty', 'urxvt', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv', 'konsole']
 
 " main {{{1
 " common var def {{{2
@@ -619,6 +619,14 @@ function! s:program_mintty(context) abort
   if executable(mintty_path)
     let cmd = [mintty_path, '-t', a:context.term_name] + cmd
     call a:context.start_fn(cmd)
+    return 1
+  endif
+endfunction
+
+function! s:program_konsole(context) abort
+  let cmd = a:context.cmd
+  if executable('konsole')
+    call a:context.start_fn(['konsole', '-p', 'tabtitle=' .. a:context.term_name, '-e'] + cmd)
     return 1
   endif
 endfunction
