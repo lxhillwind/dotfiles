@@ -9,22 +9,22 @@ vim9script noclear
 
 # :Jobrun / :Jobstop / :Joblist / :Jobclear {{{1
 command! -range=0 -nargs=+ Jobrun
-| s:job_run(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
-command! -nargs=* -bang -complete=custom,s:job_stop_comp Jobstop
-| s:job_stop(<q-args>, <bang>0 ? 'kill' : 'term')
-command! Joblist call s:job_list()
-command! -count Jobclear call s:job_clear(<count>)
+| JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
+command! -nargs=* -bang -complete=custom,JobStopComp Jobstop
+| JobStop(<q-args>, <bang>0 ? 'kill' : 'term')
+command! Joblist call JobList()
+command! -count Jobclear call JobClear(<count>)
 
-var s:job_dict = {}
+var job_dict = {}
 
-def s:job_exit_cb(ctx: dict<any>, job: job, ret: number)
+def JobExitCb(ctx: dict<any>, job: job, ret: number)
   const buf = ctx.bufnr
   appendbufline(buf, '$', '')
   appendbufline(buf, '$', '===========================')
   appendbufline(buf, '$', 'command finished with code ' .. ret)
 enddef
 
-def s:job_run(cmd_a: string, opt: dict<any>)
+def JobRun(cmd_a: string, opt: dict<any>)
   if exists(':Sh') != 2
     throw 'depends on vim-sh plugin!'
   endif
@@ -48,13 +48,13 @@ def s:job_run(cmd_a: string, opt: dict<any>)
   ScratchNew
   var bufnr = bufnr()
   wincmd p
-  extend(s:job_dict, {
+  extend(job_dict, {
     [bufnr]: {
      job: job_start(
        job_d.cmd, extend(job_d.opt, {
          out_io: 'buffer', err_io: 'buffer',
          out_buf: bufnr, err_buf: bufnr,
-         exit_cb: function('s:job_exit_cb', [{bufnr: bufnr}]),
+         exit_cb: function(JobExitCb, [{bufnr: bufnr}]),
        })
       ),
      cmd: cmd_short,
@@ -62,18 +62,18 @@ def s:job_run(cmd_a: string, opt: dict<any>)
     })
 enddef
 
-def s:job_stop(id_a: string, sig: string)
+def JobStop(id_a: string, sig: string)
   var id = empty(id_a) ? bufnr() : str2nr(matchstr(id_a, '\v^\d+'))
-  if has_key(s:job_dict, id)
-    job_stop(s:job_dict[id].job, sig)
+  if has_key(job_dict, id)
+    job_stop(job_dict[id].job, sig)
   else
     throw 'job not found: buffer id ' .. id
   endif
 enddef
 
-def s:job_stop_comp(...arg: list<any>): string
+def JobStopComp(...arg: list<any>): string
   var result = []
-  for [k, v] in items(s:job_dict)
+  for [k, v] in items(job_dict)
     if v.job->job_status() == 'run'
       add(result, printf('%s: %s', k, v.cmd))
     endif
@@ -81,18 +81,18 @@ def s:job_stop_comp(...arg: list<any>): string
   return join(result, "\n")
 enddef
 
-def s:job_list()
-  for [k, v] in items(s:job_dict)
+def JobList()
+  for [k, v] in items(job_dict)
     echo printf("%s:\t%s\t%s", k, v.job, v.cmd)
   endfor
 enddef
 
-def s:job_clear(num: number)
-  for item in num > 0 ? [num] : keys(s:job_dict)
-    var job = get(s:job_dict, item)
+def JobClear(num: number)
+  for item in num > 0 ? [num] : keys(job_dict)
+    var job = get(job_dict, item)
     if !empty(job)
       if job.job->job_info().status != 'run'
-        remove(s:job_dict, item)
+        remove(job_dict, item)
       endif
     endif
   endfor
@@ -100,41 +100,42 @@ enddef
 
 # :Mpc {{{1
 if executable('mpc')
-  command! Mpc s:mpc_main()
+  command! Mpc Mpc()
 
-  var s:mpc_prop_type = 'song'
+  var mpc_prop_type = 'song'
 
-  def s:mpc_main()
+  def Mpc()
     enew | setl filetype=mpc buftype=nofile noswapfile nobuflisted
     var buf = bufnr()
-    prop_type_add(s:mpc_prop_type, {bufnr: buf})
+    prop_type_add(mpc_prop_type, {bufnr: buf})
     var i = 1
     for line in split(system('mpc playlist'), "\n")
       setline(i, line)
-      prop_add(i, 1, {type: s:mpc_prop_type, id: i, bufnr: buf})
+      prop_add(i, 1, {type: mpc_prop_type, id: i, bufnr: buf})
       i += 1
     endfor
-    nnoremap <buffer> <silent> <CR> <cmd>call <SID>mpc_play()<CR>
+    nnoremap <buffer> <silent> <CR> <cmd>call <SID>MpcPlay()<CR>
   enddef
 
-  def s:mpc_play()
+  def MpcPlay()
     var props = prop_list(line('.'))
     if len(props) == 0
       return
     endif
 
     var prop = props[-1]
-    if prop['type'] ==# s:mpc_prop_type
+    if prop['type'] ==# mpc_prop_type
       job_start(printf('mpc play %d', prop.id))
     endif
   enddef
 endif
 
 # :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{1
-command! -bang -nargs=* -range=0 ChdirTerminal call s:chdir_terminal(<bang>false, <range>, <q-args>)
+# depends on g:Selection().
+command! -bang -nargs=* -range=0 ChdirTerminal ChdirTerminal(<bang>false, <range>, <q-args>)
 
-def s:chdir_terminal(bang: bool, range: number, path_a: string)
-  var path = path_a ?? ( range > 0 ? Selection() : expand('<cfile>') )
+def ChdirTerminal(bang: bool, range: number, path_a: string)
+  var path = path_a ?? ( range > 0 ? g:Selection() : expand('<cfile>') )
   if match(path, '\v^[~$<%]') >= 0
     path = expand(path)
   endif
@@ -171,11 +172,11 @@ enddef
 # g:Popup(cmd: string, cb: fn<list<string>>, ctx : dict = {}); {{{1
 
 # variable used in popup terminal;
-var s:popup_tmpfile: string = ''
-var s:win: number
+var popup_tmpfile: string = ''
+var popup_win: number
 
 # variable used in Sh -w popup program;
-var s:tmpfiles_dict: dict<func> = {}
+var tmpfiles_dict: dict<func> = {}
 
 def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
   var exec_pre: string = 'exec'
@@ -212,7 +213,7 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
     var exe: string = g:vimserver_env['VIMSERVER_BIN']
     var server: string = g:vimserver_env['VIMSERVER_ID']
 
-    s:tmpfiles_dict[tmpfile] = cb
+    tmpfiles_dict[tmpfile] = cb
     exe = shellescape(exe)
     server = shellescape(server)
     tmpfile = shellescape(tmpfile)
@@ -227,20 +228,23 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
     return
   endif
 
-  # use builtin popup, then s:tmpfile can be set safely.
+  # use builtin popup, then tmpfile can be set safely.
   # (popup terminal steals focus).
-  s:popup_tmpfile = tmpfile
-  var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: function('s:term_exit_cb'), hidden: 1}))
+  popup_tmpfile = tmpfile
+  var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: function(TermExitCb), hidden: 1}))
   const width: number = min([&columns - 10, 80])
   const height: number = min([&lines - 5, 24])
-  s:win = popup_create(buf, {minwidth: width, maxwidth: width, minheight: height, maxheight: height, callback: function('s:popup_close_cb', [cb])})
+  popup_win = popup_create(buf, {
+    minwidth: width, maxwidth: width, minheight: height, maxheight: height,
+    callback: function(PopupCloseCb, [cb])
+    })
 enddef
 
-def s:term_exit_cb(_: job, code: number)
-  popup_close(s:win, code == 0 ? readfile(s:popup_tmpfile) : [])
+def TermExitCb(_: job, code: number)
+  popup_close(popup_win, code == 0 ? readfile(popup_tmpfile) : [])
 enddef
 
-def s:popup_close_cb(cb: func, _: number, result: list<string>)
+def PopupCloseCb(cb: func, _: number, result: list<string>)
   # TODO is this check required?
   if !empty(result)
     call(cb, [result])
@@ -249,17 +253,17 @@ enddef
 
 # it will be called from g:Tapi_popup_cb (also defined in this file).
 def PopupCallback(tmpfile: string)
-  if s:tmpfiles_dict->has_key(tmpfile)
+  if tmpfiles_dict->has_key(tmpfile)
     # -1 is random.
     # TODO check exitcode? (seems not necessary)
-    s:popup_close_cb(s:tmpfiles_dict[tmpfile], -1, readfile(tmpfile))
-    remove(s:tmpfiles_dict, tmpfile)
+    PopupCloseCb(tmpfiles_dict[tmpfile], -1, readfile(tmpfile))
+    remove(tmpfiles_dict, tmpfile)
   endif
 enddef
 
 # :Select {buffer|filelist|color} {{{1
-command! -nargs=1 -range=0 -complete=custom,s:SelectComp Select
-| call s:Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
+command! -nargs=1 -range=0 -complete=custom,SelectComp Select
+| Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
 
 # platform dependent setting
 # TODO win32: check if tty is available (conpty or winpty)
@@ -267,12 +271,12 @@ const ctx_use_w_program: bool = has('win32')
 
 # Select() and it's comp {{{2
 def SelectComp(..._: list<any>): string
-  return s:sources->keys()->join("\n")
+  return popup_sources->keys()->join("\n")
 enddef
 
 def Select(source: string, ctx: dict<any>)
-  if s:sources->has_key(source)
-    call(s:sources[source], [ctx])
+  if popup_sources->has_key(source)
+    call(popup_sources[source], [ctx])
   else
     throw printf('selection not implemented: "%s"!', source)
   endif
@@ -323,7 +327,7 @@ def FileList(ctx: dict<any>)
 enddef
 
 # register new source here! {{{2
-const s:sources: dict<func> = {
+const popup_sources: dict<func> = {
   buffer: LsBuffers,
   color: Color,
   filelist: FileList,
