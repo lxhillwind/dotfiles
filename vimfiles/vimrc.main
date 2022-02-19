@@ -567,21 +567,3 @@ filetype off
 Pack 'vim-filelist'
 Pack 'vim-jump'
 Pack 'vim-sh'
-
-" more plugin {{{1
-if filereadable(fnamemodify(s:self, ':p:h') . '/' . 'vimrc.local')
-  " source local vimrc
-  call s:load_script('vimrc.local')
-else
-  " use default plugin
-  call s:load_script('rc/pkgs.vim')
-  syntax on
-endif
-
-if !exists('g:syntax_on')
-  echoerr 'vimrc.local: "syntax on" or "syntax enable" should be called early (after :packadd)!'
-endif
-
-" this also enables filetype.
-filetype plugin indent on
-

@@ -8,6 +8,13 @@ endif
 
 set nomodeline
 
+if has('vim_starting')
+  " openSUSE set mapping to make <Ctrl-[> look buggy. so we clear it.
+  " /usr/share/vim/vim82/suse.vimrc
+  mapclear
+  mapclear!
+endif
+
 " backspace
 set bs=2
 " expandtab
