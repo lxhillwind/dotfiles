@@ -1,23 +1,6 @@
 " vim: fdm=marker
 " vimrc for +eval.
 
-" about loading order: {{{
-"
-" disable filetype detection before ":packadd", otherwise ftdetect in packages
-" won't be loaded. (call "filetype off" to ensure it is disabled)
-"
-" "colorscheme XXX" should be called after all ":packadd", since it usally
-" depends on "syntax on", which calls "filetype on", if not loaded (or
-" filetype-off before).
-"
-" keymap (and some plugin setting) should be called before vimrc.local, so it
-" can be overwritten.  then it should be put before plugin list.
-"
-" filetype setting should be called after filetype detection, then it should
-" be put after vimrc.local (plugin list).
-" to overwrite filetype setting, do it in plugin/*.vim.
-" }}}
-
 " common definition & setting {{{1
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
@@ -560,9 +543,6 @@ let g:markdown_fenced_languages = [
 " plugin {{{1
 " first, enable ":Pack" command.
 call s:load_script('rc/pack.vim')
-
-" ensure filetype detection is disabled before calling ":packadd".
-filetype off
 
 Pack 'vim-filelist'
 Pack 'vim-jump'

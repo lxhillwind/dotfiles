@@ -38,6 +38,12 @@
 " once package is not actually available (not downloaded).
 " }}}
 
+if exists('loaded_pack')
+  finish
+endif
+let g:loaded_pack = 1
+filetype plugin indent on
+
 if exists(':packadd') != 2
   " ignore old version vim.
   command! -bar -nargs=* -bang Pack
@@ -107,10 +113,12 @@ function! s:pack(bang, ...) abort
     if !l:opt.skip
       if has('vim_starting')
         silent! execute 'packadd!' l:dir
+        call s:pack_ftdetect(l:opt.after, l:dir)
       else
         if index(map(split(&rtp, ','), {_, i -> split(i, '\v[\/]')[-1]}), l:opt.dir) < 0
           " only load if not in rtp.
           execute 'packadd' l:dir
+          call s:pack_ftdetect(l:opt.after, l:dir)
         endif
       endif
     endif
@@ -288,6 +296,22 @@ function! s:pack_construct_url(name) abort
     " TODO handle dirname as param, like vim-sh.
     return printf('https://github.com/%s', name)
   endif
+endfunction
+
+function! s:pack_ftdetect(after, name) abort
+  if !exists("g:did_load_filetypes")
+    " :filetype is off, so we can use :packadd to load ftdetect.
+    return
+  endif
+
+  if empty(a:after)
+    let l:path = globpath(&pp, printf('pack/*/opt/%s/ftdetect/*.vim', a:name), 0, 1)
+  else
+    let l:path = globpath(&pp, printf('pack/*/opt/%s/after/ftdetect/*.vim', a:name), 0, 1)
+  endif
+  for l:file in l:path
+    execute 'silent source' fnameescape(l:file)
+  endfor
 endfunction
 
 function! s:pack_extract_git_dir(url) abort
