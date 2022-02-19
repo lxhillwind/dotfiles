@@ -3,16 +3,16 @@ vim9script
 const pwd = fnamemodify(expand('<sfile>'), ':p:h')
 
 # key: func name; value: func doc.
-var s:complete_source: dict<string>
+var complete_source: dict<string>
 
-def s:comp_func(...args: list<any>): string
-  if s:job->job_status() != 'run'
-    s:server()
+def CompFunc(...args: list<any>): string
+  if job->job_status() != 'run'
+    Server()
   endif
-  return s:complete_source->keys()->join("\n")
+  return complete_source->keys()->join("\n")
 enddef
 
-def s:server_handler(stdout: bool, msg: string)
+def ServerHandler(stdout: bool, msg: string)
   var data: dict<any>
   if stdout && len(msg) > 1 && msg[0] == '{'
     try
@@ -43,7 +43,7 @@ def s:server_handler(stdout: bool, msg: string)
     endif
 
     if data.op == 'completion'
-      s:complete_source = extend(data.args[0], {
+      complete_source = extend(data.args[0], {
         help: 'show __doc__ of worker method',
         restart: 'restart worker process',
         })
@@ -80,53 +80,53 @@ def s:server_handler(stdout: bool, msg: string)
   catch /.*/
     resp = string(resp)
   endtry
-  s:send_input('response', {id: get(data, 'id'), data: resp, code: code})
+  SendInput('response', {id: get(data, 'id'), data: resp, code: code})
 enddef
 
-def s:out_cb(_: channel, data: string)
-  s:server_handler(true, data)
+def OutCb(_: channel, data: string)
+  ServerHandler(true, data)
 enddef
 
-def s:err_cb(_: channel, data: string)
-  s:server_handler(false, data)
+def ErrCb(_: channel, data: string)
+  ServerHandler(false, data)
 enddef
 
-var s:job: job
+var job: job
 
 # win32: default python3 installation executable name is python.exe, not
 # python3.exe.
-var s:python_path: string = exists('g:pyvim_host') ? g:pyvim_host :
+var python_path: string = exists('g:pyvim_host') ? g:pyvim_host :
   (has('win32') ? 'python' : 'python3')
 
-def s:server()
+def Server()
   const pyvim_rc: string =
     exists('g:pyvim_rc') && type(g:pyvim_rc) == v:t_string ? g:pyvim_rc : ''
   if !empty(pyvim_rc) && !filereadable(pyvim_rc)
     throw 'g:pyvim_rc is specified, but not readable!'
   endif
   const env: dict<string> = {PYVIM_RC: pyvim_rc}
-  s:job = job_start([s:python_path, '-u', 'pyvim/runner.py'], {
-    out_cb: function('s:out_cb'),
-    err_cb: function('s:err_cb'),
+  job = job_start([python_path, '-u', 'pyvim/runner.py'], {
+    out_cb: function(OutCb),
+    err_cb: function(ErrCb),
     cwd: fnamemodify(pwd, ':h'),
     env: env,
     })
 enddef
 
-def s:send_input(data: string, param: dict<any>)
+def SendInput(data: string, param: dict<any>)
   # we will split it with shellsplit in python.
   const data_list: list<string> = data->split(' ')
   if len(data_list) == 0
     throw 'invalid input! requires non-empty string!'
   endif
   if data_list[0] == 'restart'
-    s:job->job_stop()
+    job->job_stop()
     return
   endif
   if data_list[0] == 'help'
     if len(data_list) == 2
-      if s:complete_source->has_key(data_list[1])
-        echo s:complete_source->get(data_list[1])
+      if complete_source->has_key(data_list[1])
+        echo complete_source->get(data_list[1])
       else
         echoerr printf('worker method not found: %s', data_list[1])
       endif
@@ -135,12 +135,12 @@ def s:send_input(data: string, param: dict<any>)
     endif
     return
   endif
-  if s:job->job_status() != 'run'
-    s:server()
+  if job->job_status() != 'run'
+    Server()
   endif
   var request: dict<any> = {op: data, args: param}
-  s:job->job_getchannel()->ch_sendraw(json_encode(request) .. "\n")
+  job->job_getchannel()->ch_sendraw(json_encode(request) .. "\n")
 enddef
 
-command! -nargs=+ -bang -range=0 -complete=custom,s:comp_func Py3
-| s:send_input(<q-args>, {bang: <bang>false, range: <range>, line1: <line1>, line2: <line2>})
+command! -nargs=+ -bang -range=0 -complete=custom,CompFunc Py3
+| SendInput(<q-args>, {bang: <bang>false, range: <range>, line1: <line1>, line2: <line2>})
