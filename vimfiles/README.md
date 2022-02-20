@@ -1,4 +1,4 @@
-## Usage
+# Usage
 
 Add in vimrc:
 
@@ -13,8 +13,9 @@ source ~/vimfiles/vimrc.tiny
 ```
 
 [rc/pkgs.vim](rc/pkgs.vim) defines some plugins to install (with `:Pack` command
-defined in [rc/pack.vim](rc/pack.vim)), and it is sourced if file `vimrc.local`
-is not readable;
+defined in [rc/pack.vim](rc/pack.vim)), and it should be sourced manually,
+like:
 
-To customize plugin installation, add a file named `vimrc.local`,
-and call `:Pack` here.
+```vim
+runtime rc/pkgs.vim
+```
