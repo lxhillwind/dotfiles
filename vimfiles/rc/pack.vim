@@ -42,7 +42,6 @@ if exists('loaded_pack')
   finish
 endif
 let g:loaded_pack = 1
-filetype plugin indent on
 
 if exists(':packadd') != 2
   " ignore old version vim.
