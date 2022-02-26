@@ -75,7 +75,11 @@ if [ "${#args[@]}" -eq 0 ] && [ -z "$opt_root_dir" ]; then
     printf '%s\n\n%s\n\n%s\n' \
         'profile not found.' 'usage: $0 [root] {profile} [args...]' 'supported profiles:' >&2
     bubblewrap_list
-    exit 1
+    if [ $# -eq 0 ] && [ -z "$is_root" ]; then
+        exit 0
+    else
+        exit 1
+    fi
 else
     shift
 fi
