@@ -3,7 +3,7 @@
 set -e
 
 # utils. {{{1
-if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/qemu/config ]; then
+if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/.config/misc/qemu.conf ]; then
     vm_is_virtualbox=1
 else
     vm_is_virtualbox=
@@ -41,7 +41,7 @@ launch_qemu()
 {
     cd ~/qemu
     args=()
-    source ~/qemu/config
+    source ~/.config/misc/qemu.conf
 
     if [ "${#args[@]}" -eq 0 ]; then
         printf '%s\n\n%s\n' 'profile not found.' 'supported profiles:' >&2
@@ -63,7 +63,7 @@ vm_list()
     if [ -n "$vm_is_virtualbox" ]; then
         exec VBoxManage list vms
     else
-        grep -Ewo '^\s+[a-zA-Z0-9_-][^: ]*\)$' ~/qemu/config | tr -d ')'
+        grep -Ewo '^\s+[a-zA-Z0-9_-][^: ]*\)$' ~/.config/misc/qemu.conf | tr -d ')'
     fi
 }
 

@@ -40,6 +40,6 @@ unlet s:i
 
 " vim-sh config {{{1
 " busybox sh rc
-let $ENV = expand(s:nix_dir . '/.config/env.sh')
+let $ENV = expand(s:nix_dir . '/.config/misc/env.sh')
 let $SH_RC_LOCAL = expand(s:nix_dir . '/local.sh')
 " }}}
