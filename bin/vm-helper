@@ -44,7 +44,6 @@ launch_qemu()
     source ~/.config/misc/qemu.conf
 
     if [ "${#args[@]}" -eq 0 ]; then
-        printf '%s\n\n%s\n' 'profile not found.' 'supported profiles:' >&2
         vm_list
         exit 1
     fi
@@ -60,6 +59,8 @@ launch_qemu()
 # vm_list / vm_start impl. {{{1
 vm_list()
 {
+    printf '%s\n\n%s\n\n%s\n' \
+        'profile not found.' 'usage: $0 {profile} [args...]' 'supported profiles:' >&2
     if [ -n "$vm_is_virtualbox" ]; then
         exec VBoxManage list vms
     else
