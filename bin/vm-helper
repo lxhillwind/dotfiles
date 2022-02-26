@@ -3,14 +3,6 @@
 set -e
 
 # utils. {{{1
-basename=${0##*/}
-
-err()
-{
-    printf 'not implemented: %s\n' "$*"
-    exit 1
-}
-
 if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/qemu/config ]; then
     vm_is_virtualbox=1
 else
@@ -87,14 +79,11 @@ vm_start()
 # main {{{1
 main()
 {
-    case "$basename" in
-        vm-list)
-            vm_list ;;
-        vm-start)
-            vm_start "$@" ;;
-        *)
-            err "$basename" ;;
-    esac
+    if [ $# -eq 0 ]; then
+        vm_list
+    else
+        vm_start "$@"
+    fi
 }
 
 main "$@"
