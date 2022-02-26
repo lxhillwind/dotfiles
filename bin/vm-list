@@ -10,7 +10,7 @@ err()
 
 basename=${0##*/}
 
-if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/qemu/config.yml ]; then
+if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/qemu/config ]; then
     case "$basename" in
         vm-list)
             exec VBoxManage list vms ;;
@@ -23,9 +23,9 @@ if [ -n "$VM_USING_VIRTUALBOX" ] || ! [ -f ~/qemu/config.yml ]; then
 else
     case "$basename" in
         vm-list)
-            exec grep -Ewo '^[a-zA-Z0-9_-][^: ]*' ~/qemu/config.yml ;;
+            grep -Ewo '^\s+[a-zA-Z0-9_-][^: ]*\)$' ~/qemu/config | tr -d ')' ;;
         vm-start)
-            exec launch-qemu.py "$@" ;;
+            exec launch-qemu "$@" ;;
         *)
             err "$basename" ;;
     esac
