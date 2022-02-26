@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# vim:fdm=marker
+set -e
+
+# option. {{{1
+# to set a valid profile, set opt_root_dir (string) or args (array).
+# example config:
+#
+# ```bash
+# # ~/.config/misc/bubblewrap.conf
+# case "$1" in
+#     arch)
+#         opt_root_dir=~/.sandbox/archlinux
+#         opt_default_sh=bash
+#         ;;
+# esac
+# ```
+
+# set to bash or zsh if it is installed to improve UX.
+opt_default_sh=
+# if net is not required, set it to non-empty.
+opt_no_net=
+# set it or set args (array).
+opt_root_dir=
+
+# helper. {{{1
+bubblewrap_list()
+{
+    grep -Ewo '^\s+[a-zA-Z0-9_-][^: ]*\)$' ~/.config/misc/bubblewrap.conf | tr -d ')'
+}
+
+# check if running with root. {{{1
+if [ "$1" = root ]; then
+    is_root=1
+    shift
+else
+    is_root=
+fi
+
+# args_pre, args, args_post present. {{{1
+args_pre=(
+    --new-session --die-with-parent
+    --clearenv
+    --setenv PATH "/usr/local/bin:/bin:/usr/bin"
+)
+
+args_post=(
+    --tmpfs /tmp
+    --proc /proc --dev /dev
+    --unshare-all
+    --setenv TERM "$TERM"
+)
+
+args=()
+
+# adjust args* based on profile. {{{1
+source ~/.config/misc/bubblewrap.conf
+
+if [ -n "$opt_root_dir" ]; then
+    if [ -n "$is_root" ]; then
+        args_pre=(
+            "${args_pre[@]}" --uid 0 --gid 0 --setenv USER root
+            --bind "$opt_root_dir" /
+        )
+    else
+        args_pre=("${args_pre[@]}" --ro-bind "$opt_root_dir" /)
+    fi
+fi
+
+if [ -z "$opt_no_net" ]; then
+    args_post=("${args_post[@]}" --share-net --ro-bind /etc/resolv.conf /etc/resolv.conf)
+fi
+
+if [ "${#args[@]}" -eq 0 ] && [ -z "$opt_root_dir" ]; then
+    printf '%s\n\n%s\n\n%s\n' \
+        'profile not found.' 'usage: $0 [root] {profile} [args...]' 'supported profiles:' >&2
+    bubblewrap_list
+    exit 1
+else
+    shift
+fi
+
+# $@ or default. {{{1
+if [ $# -eq 0 ]; then
+    set -- "${opt_default_sh:-sh}"
+fi
+
+# main. {{{1
+if [ -n "$DEBUG" ]; then
+    printf "%s\n" "bwrap ${args_pre[*]} ${args[*]} ${args_post[*]} $*"
+else
+    exec bwrap "${args_pre[@]}" "${args[@]}" "${args_post[@]}" "$@"
+fi
