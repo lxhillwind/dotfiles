@@ -1,0 +1,39 @@
+#!/bin/sh
+set -e
+
+# `dtach` wrapper;
+# mainly used to capture terminal output.
+#
+# usage:
+# $0  # run shell (if $DTACH_SESSION_FILE var is empty)
+# $0  # capture terminal output (otherwise)
+# $0 number  # like above, but use number instead of $(tput lines).
+
+if ! command -v dtach >/dev/null; then
+    echo 'command `dtach` not found! exiting...' >&2
+    exit 1
+fi
+
+if ! [ -d ~/dtaches ]; then
+    mkdir ~/dtaches
+fi
+
+if [ -z "$DTACH_SESSION_FILE" ]; then
+    export DTACH_SESSION_FILE=$(mktemp)
+    dtach -c ~/dtaches/"$(date +%Y%m%d_%H%M%S)" -z sh -c '
+    export DTACH_SESSION_PID=$PPID;
+    "${SHELL:-sh}";
+    rm -- "$DTACH_SESSION_FILE";
+    ' 2>&1 | tee "$DTACH_SESSION_FILE"
+else
+    if [ -z "$DTACH_SESSION_PID" ]; then
+        echo 'cannot found $DTACH_SESSION_PID! env var not set?' >&2
+        exit 1
+    fi
+    if [ -n "$1" ]; then
+        line=$1
+    else
+        line=$(tput lines)
+    fi
+    tail -n "$line" "$DTACH_SESSION_FILE"
+fi
