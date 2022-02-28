@@ -1,1 +1,1 @@
-source ~/.config/env.sh
+source ~/.config/misc/env.sh
