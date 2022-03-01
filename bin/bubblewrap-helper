@@ -15,6 +15,8 @@ set -e
 #         ;;
 # esac
 # ```
+#
+# NOTE: mountpoint under /tmp, /dev, /proc should be set in args_post.
 
 # set to bash or zsh if it is installed to improve UX.
 opt_default_sh=
@@ -41,13 +43,11 @@ fi
 args_pre=(
     --new-session --die-with-parent
     --clearenv
-    --setenv PATH "/usr/local/bin:/bin:/usr/bin"
+    --setenv HOME "$HOME"
+    --setenv PATH "$HOME/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 )
 
 args_post=(
-    --tmpfs /tmp
-    --proc /proc --dev /dev
-    --unshare-all
     --setenv TERM "$TERM"
 )
 
@@ -55,6 +55,26 @@ args=()
 
 # adjust args* based on profile. {{{1
 source ~/.config/misc/bubblewrap.conf
+
+if [ "${#args[@]}" -eq 0 ] && [ -z "$opt_root_dir" ]; then
+    printf '%s\n\n%s\n\n%s\n' \
+        'profile not found.' 'usage: $0 [root] {profile} [args...]' 'supported profiles:' >&2
+    bubblewrap_list
+    if [ $# -eq 0 ] && [ -z "$is_root" ]; then
+        exit 0
+    else
+        exit 1
+    fi
+else
+    shift
+fi
+
+if [ -n "$opt_default_sh" ]; then
+    args_pre=(
+        "${args_pre[@]}"
+        --setenv SHELL "$opt_default_sh"
+        )
+fi
 
 if [ -n "$opt_root_dir" ]; then
     if [ -n "$is_root" ]; then
@@ -68,20 +88,20 @@ if [ -n "$opt_root_dir" ]; then
 fi
 
 if [ -z "$opt_no_net" ]; then
-    args_post=("${args_post[@]}" --share-net --ro-bind /etc/resolv.conf /etc/resolv.conf)
-fi
-
-if [ "${#args[@]}" -eq 0 ] && [ -z "$opt_root_dir" ]; then
-    printf '%s\n\n%s\n\n%s\n' \
-        'profile not found.' 'usage: $0 [root] {profile} [args...]' 'supported profiles:' >&2
-    bubblewrap_list
-    if [ $# -eq 0 ] && [ -z "$is_root" ]; then
-        exit 0
-    else
-        exit 1
-    fi
+    args_post=(
+        --tmpfs /tmp
+        --proc /proc --dev /dev
+        --unshare-all
+        --share-net --ro-bind /etc/resolv.conf /etc/resolv.conf
+        "${args_post[@]}"
+    )
 else
-    shift
+    args_post=(
+        --tmpfs /tmp
+        --proc /proc --dev /dev
+        --unshare-all
+        "${args_post[@]}"
+    )
 fi
 
 # $@ or default. {{{1
