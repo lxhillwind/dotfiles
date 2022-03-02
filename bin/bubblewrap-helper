@@ -43,8 +43,6 @@ fi
 args_pre=(
     --new-session --die-with-parent
     --clearenv
-    --setenv HOME "$HOME"
-    --setenv PATH "$HOME/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 )
 
 args_post=(
@@ -67,6 +65,22 @@ if [ "${#args[@]}" -eq 0 ] && [ -z "$opt_root_dir" ]; then
     fi
 else
     shift
+fi
+
+if [ -n "$is_root" ]; then
+    args_pre=(
+        "${args_pre[@]}"
+        --setenv HOME /root
+        --setenv USER root
+        --setenv PATH "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    )
+else
+    args_pre=(
+        "${args_pre[@]}"
+        --setenv HOME "$HOME"
+        --setenv USER "$USER"
+        --setenv PATH "$HOME/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    )
 fi
 
 if [ -n "$opt_default_sh" ]; then
