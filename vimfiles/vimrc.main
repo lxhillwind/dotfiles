@@ -547,3 +547,4 @@ call s:load_script('rc/pack.vim')
 Pack 'vim-filelist'
 Pack 'vim-jump'
 Pack 'vim-sh'
+Pack 'pyvim'

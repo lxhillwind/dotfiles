@@ -114,7 +114,6 @@ def Server()
 enddef
 
 def SendInput(data: string, param: dict<any>)
-  # we will split it with shellsplit in python.
   const data_list: list<string> = data->split(' ')
   if len(data_list) == 0
     throw 'invalid input! requires non-empty string!'
