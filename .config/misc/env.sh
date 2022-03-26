@@ -42,27 +42,6 @@ case "$-" in
 esac
 
 # rc {{{
-# fzf and cd
-if { command -v local && command -v fd && command -v fzf; } >/dev/null; then
-    _f_cd()
-    {
-        if [ $# -eq 0 ]; then
-            \cd ~
-            return
-        fi
-        if [ $# -eq 1 ]; then
-            local p=$1
-        else
-            local p=$(fd "$@" | fzf)
-        fi
-        if [ -e "$p" ] && ! [ -d "$p" ]; then
-            p=${p%/*}
-        fi
-        \cd "$p"
-    }
-    alias cd=_f_cd
-fi
-
 # colorful man
 man() {
     # openSUSE requires MAN_POSIXLY_CORRECT to display without prompt.
