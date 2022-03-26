@@ -1,0 +1,165 @@
+" vim:ft=vim
+let s:is_nvim = has('nvim')
+
+let s:pwd = fnamemodify(expand('<sfile>'), ':p:h')
+
+" key: func name; value: func doc.
+let s:complete_source = {}
+
+let s:null = s:is_nvim ? v:null : v:none
+
+function! s:job_is_running()
+  if s:is_nvim
+    return jobwait([s:job], 0)[0] == -1
+  else
+    return !empty(s:job) && job_status(s:job) == 'run'
+  endif
+endfunction
+
+function! s:CompFunc(...)
+  if !s:job_is_running()
+    call s:Server()
+  endif
+  return join(keys(s:complete_source), "\n")
+endfunction
+
+function! s:ServerHandler(stdout, msg)
+  let data = {}
+  let stdout = a:stdout
+  let msg = s:is_nvim ? a:msg[0] : a:msg
+  if stdout && len(msg) > 1 && msg[0] == '{'
+    try
+      let data = json_decode(msg)
+    catch
+      echo msg
+      return
+    endtry
+  else
+    if stdout
+      if len(msg) > 0
+        echo msg
+      endif
+    else
+      echomsg msg
+    endif
+    return
+  endif
+
+  let resp = s:null
+
+  let code = 0
+  try
+    if index(['cmd', 'execute'], data.op) >= 0
+      if !exists(':' .. split(substitute(data.cmd, '\v^\s*', '', ''), ' ')[0])
+        throw 'ex command not found: ' .. data.cmd
+      endif
+    endif
+
+    if data.op == 'completion'
+      let s:complete_source = extend(data.args[0], #{
+            \ help: 'show __doc__ of worker method',
+            \ restart: 'restart worker process',
+            \ })
+      return
+    elseif data.op == 'raise'
+      try
+        echohl ErrorMsg
+        for i in split(data.args[1], "\n")
+          echomsg i
+        endfor
+        echomsg data.args[0]
+      catch /.*/
+      finally
+        echohl None
+      endtry
+      return
+    elseif data.op == 'cmd'
+      execute data.cmd
+    elseif data.op == 'key'
+      call feedkeys(data.cmd, 't')
+    elseif data.op == 'execute'
+      let resp = split(execute(data.cmd), "\n")
+    elseif data.op == 'eval'
+      let resp = eval(data.cmd)
+    elseif data.op == 'fn'
+      let resp = call(data.cmd, data.args)
+    endif
+  catch /.*/
+    let resp = v:exception
+    let code = -1
+  endtry
+  try
+    call json_encode(resp)
+  catch /.*/
+    let resp = string(resp)
+  endtry
+  call s:SendInput('response', #{id: get(data, 'id'), data: resp, code: code})
+endfunction
+
+function! s:OutCb(_, data, ...)
+  call s:ServerHandler(v:true, a:data)
+endfunction
+
+function! s:ErrCb(_, data, ...)
+  call s:ServerHandler(v:false, a:data)
+endfunction
+
+let s:job = s:null
+
+" win32: default python3 installation executable name is python.exe, not
+" python3.exe.
+let s:python_path = exists('g:pyvim_host') ? g:pyvim_host :
+      \ (has('win32') ? 'python' : 'python3')
+
+function! s:Server()
+  let pyvim_rc =
+        \ exists('g:pyvim_rc') && type(g:pyvim_rc) == v:t_string ? g:pyvim_rc : ''
+  if !empty(pyvim_rc) && !filereadable(pyvim_rc)
+    throw 'g:pyvim_rc is specified, but not readable!'
+  endif
+  let env = #{PYVIM_RC: pyvim_rc}
+  let s:job = function(s:is_nvim ? 'jobstart' : 'job_start')(
+        \ [s:python_path, '-u', 'pyvim/runner.py'], {
+        \ (s:is_nvim ? 'on_stdout' : 'out_cb'): function('s:OutCb'),
+        \ (s:is_nvim ? 'on_stderr' : 'err_cb'): function('s:ErrCb'),
+        \ 'cwd': fnamemodify(s:pwd, ':h'),
+        \ 'env': env,
+        \ })
+endfunction
+
+function! s:SendInput(data, param)
+  let data = a:data
+  let param = a:param
+  let data_list = split(data, ' ')
+  if len(data_list) == 0
+    throw 'invalid input! requires non-empty string!'
+  endif
+  if data_list[0] == 'restart'
+    call function(s:is_nvim ? 'jobstop' : 'job_stop')(s:job)
+    return
+  endif
+  if data_list[0] == 'help'
+    if len(data_list) == 2
+      if has_key(s:complete_source, data_list[1])
+        echo get(s:complete_source, data_list[1])
+      else
+        echoerr printf('worker method not found: %s', data_list[1])
+      endif
+    else
+      echoerr 'usage: help {method-name}'
+    endif
+    return
+  endif
+  if !s:job_is_running()
+    call s:Server()
+  endif
+  let request = #{op: data, args: param}
+  if s:is_nvim
+    call chansend(s:job, json_encode(request) .. "\n")
+  else
+    let _ = s:job->job_getchannel()->ch_sendraw(json_encode(request) .. "\n")
+  endif
+endfunction
+
+command! -nargs=+ -bang -range=0 -complete=custom,s:CompFunc Py3
+\ call s:SendInput(<q-args>, #{bang: <bang>0, range: <range>, line1: <line1>, line2: <line2>})

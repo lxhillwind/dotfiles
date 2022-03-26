@@ -1,3 +1,9 @@
+if !has('vim9script')
+  let s:pwd = fnamemodify(expand('<sfile>'), ':p:h')
+  execute 'source' fnameescape(s:pwd .. '/server.vim.legacy')
+  finish
+endif
+
 vim9script
 
 const pwd = fnamemodify(expand('<sfile>'), ':p:h')
