@@ -26,6 +26,7 @@ endfunction
 function! s:ServerHandler(stdout, msg)
   let data = {}
   let stdout = a:stdout
+  " FIXME neovim handle newline-split stream correctly.
   let msg = s:is_nvim ? a:msg[0] : a:msg
   if stdout && len(msg) > 1 && msg[0] == '{'
     try
