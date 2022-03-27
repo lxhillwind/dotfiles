@@ -44,6 +44,8 @@ if s:enable('base', 1)
   let g:sneak#label = 1
   let g:sneak#target_labels = "qwertasdfgzxcv"
 
+  Pack 'https://github.com/tpope/vim-repeat', #{commit: '24afe922e6a05891756ecf331f39a1f6743d3d5a'}
+
   Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
 endif
 " }}}1
