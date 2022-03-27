@@ -1,3 +1,7 @@
+# pyvim
+
+Extend vim with Python **without** `has('python3')`.
+
 ## Usage
 
 - **optional** set variable `g:pyvim_host` (default: `python3` (`python` on

@@ -40,6 +40,10 @@ if s:enable('base', 1)
   Pack 'https://github.com/justinmk/vim-dirvish', {'commit': 'b2b5709'}
   let g:loaded_netrwPlugin = 1
 
+  Pack 'https://github.com/justinmk/vim-sneak', #{commit: '94c2de47ab301d476a2baec9ffda07367046bec9'}
+  let g:sneak#label = 1
+  let g:sneak#target_labels = "qwertasdfgzxcv"
+
   Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
 endif
 " }}}1
