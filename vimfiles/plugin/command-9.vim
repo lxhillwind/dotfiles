@@ -169,7 +169,7 @@ def ChdirTerminal(bang: bool, range: number, path_a: string)
   execute 'Cd' path ':' .. cmd
 enddef
 
-# g:Popup(cmd: string, cb: fn<list<string>>, ctx : dict = {}); {{{1
+# g:Popup(cmd: string, Cb: fn<list<string>>, ctx : dict = {}); {{{1
 
 # variable used in popup terminal;
 var popup_tmpfile: string = ''
@@ -178,7 +178,7 @@ var popup_win: number
 # variable used in Sh -w popup program;
 var tmpfiles_dict: dict<func> = {}
 
-def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
+def g:Popup(cmd: string, Cb: func, ...args: list<dict<any>>)
   var exec_pre: string = 'exec'
   var range: string = ''
   var kwargs: dict<any> = args->get(0) ?? {}
@@ -213,7 +213,7 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
     var exe: string = g:vimserver_env['VIMSERVER_BIN']
     var server: string = g:vimserver_env['VIMSERVER_ID']
 
-    tmpfiles_dict[tmpfile] = cb
+    tmpfiles_dict[tmpfile] = Cb
     exe = shellescape(exe)
     server = shellescape(server)
     tmpfile = shellescape(tmpfile)
@@ -236,7 +236,7 @@ def g:Popup(cmd: string, cb: func, ...args: list<dict<any>>)
   const height: number = min([&lines - 5, 24])
   popup_win = popup_create(buf, {
     minwidth: width, maxwidth: width, minheight: height, maxheight: height,
-    callback: function(PopupCloseCb, [cb])
+    callback: function(PopupCloseCb, [Cb])
     })
 enddef
 
@@ -244,10 +244,10 @@ def TermExitCb(_: job, code: number)
   popup_close(popup_win, code == 0 ? readfile(popup_tmpfile) : [])
 enddef
 
-def PopupCloseCb(cb: func, _: number, result: list<string>)
+def PopupCloseCb(Cb: func, _: number, result: list<string>)
   # TODO is this check required?
   if !empty(result)
-    call(cb, [result])
+    call(Cb, [result])
   endif
 enddef
 
