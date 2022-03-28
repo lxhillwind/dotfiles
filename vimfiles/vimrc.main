@@ -92,7 +92,7 @@ if has('patch-8.2.2854')
   " %{% expr %}
   let &stl = '[%{winnr()},%{mode()}' . '%{% empty(&buftype) ? "%M%R" : "" %}]'
         \ . '%{ empty(&ft) ? "" : " [".&ft."]" }'
-        \ . ' %<' . '%{% exists("w:quickfix_title") ? w:quickfix_title : "%F" %}'
+        \ . ' %<' . '%{% &ft == "qf" && exists("w:quickfix_title") ? w:quickfix_title : "%F" %}'
         \ . ' %=<%B>'
         \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%cb')
         \ . '%{% &buftype == "terminal" ? "" : "/%L" %}' . ']'
