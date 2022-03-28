@@ -92,7 +92,7 @@ if has('patch-8.2.2854')
   " %{% expr %}
   let &stl = '[%{winnr()},%{mode()}' . '%{% empty(&buftype) ? "%M%R" : "" %}]'
         \ . '%{ empty(&ft) ? "" : " [".&ft."]" }'
-        \ . ' %<%F'
+        \ . ' %<' . '%{% exists("w:quickfix_title") ? w:quickfix_title : "%F" %}'
         \ . ' %=<%B>'
         \ . ' [%l:' . (exists('*charcol') ? '%{charcol(".")}' : '%cb')
         \ . '%{% &buftype == "terminal" ? "" : "/%L" %}' . ']'
@@ -377,6 +377,14 @@ function! s:switch_nu_rnu() abort
   let [&l:nu, &l:rnu] = presents[idx+1]
 endfunction
 
+" switch quickfix window (open / focus or close) {{{2
+function! s:switch_quickfix_window() abort
+  if &ft == 'qf'
+    cclose
+  else
+    execute 'bot' 'copen' &cwh
+  endif
+endfunction
 " keymap {{{2
 " terminal <C-Space>
 map <Nul> <C-Space>
@@ -461,6 +469,9 @@ endif
 
 " switch nu / rnu
 nnoremap <silent> <Leader>n :call <SID>switch_nu_rnu()<CR>
+
+" switch quickfix
+nnoremap <silent> <Leader>q :call <SID>switch_quickfix_window()<CR>
 
 " filetype related keymap setting {{{2
 augroup vimrc_keymap

@@ -26,6 +26,9 @@ augroup vimrc_filetype
 
   " quickfix window
   au FileType qf let &l:stl = &g:stl
+  au FileType qf nnoremap <buffer> <C-n> <cmd>cnewer<CR>
+  au FileType qf nnoremap <buffer> <C-p> <cmd>colder<CR>
+  au FileType qf nnoremap <buffer> <LocalLeader>l <cmd>chistory<CR>
 augroup END
 
 " ":h ft-sh-syntax"
