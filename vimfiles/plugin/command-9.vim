@@ -114,6 +114,8 @@ if executable('mpc')
       prop_add(i, 1, {type: mpc_prop_type, id: i, bufnr: buf})
       i += 1
     endfor
+    const nr = str2nr(system('mpc current -f "%position%"'))
+    execute 'norm' nr .. 'G'
     nnoremap <buffer> <silent> <CR> <cmd>call <SID>MpcPlay()<CR>
   enddef
 
