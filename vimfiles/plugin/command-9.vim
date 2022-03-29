@@ -1,5 +1,5 @@
 " vim: ft=vim fdm=marker
-" UserCommand, but in vim9.
+" UserCommand / UserFunction, but in vim9.
 
 if !has('vim9script')
   finish
@@ -346,4 +346,28 @@ enddef
 # sv() helper (in vim embedded terminal) {{{1
 def g:Tapi_shell_sv_helper(...arg: list<any>)
   feedkeys("\<C-space>")
+enddef
+
+# <c-n> / <c-p> to switch buffer. {{{1
+nnoremap <C-n> <cmd>call <SID>SwitchBuffer(v:true)<CR>
+nnoremap <C-p> <cmd>call <SID>SwitchBuffer(v:false)<CR>
+def SwitchBuffer(reverse: bool = false)
+  const single_window: bool = tabpagebuflist()->len() == 1
+  if !single_window
+    tabe
+  endif
+
+  var current: number = bufnr()
+  const all_bufs = getbufinfo()
+  ->filter((_, i) => !empty(i.name) && !empty(i.listed))
+  ->mapnew((_, i) => i.bufnr)
+
+  var idx = index(all_bufs, current)
+  if idx < 0 && reverse
+    idx = 0
+  endif
+  idx += (reverse ? 1 : -1)
+  idx = idx % len(all_bufs)
+
+  execute ':' string(all_bufs[idx]) 'b'
 enddef
