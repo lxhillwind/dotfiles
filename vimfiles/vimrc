@@ -874,6 +874,11 @@ def SwitchBuffer(reverse: bool = false)
   ->filter((_, i) => !empty(i.name) && !empty(i.listed))
   ->mapnew((_, i) => i.bufnr)
 
+  if empty(all_bufs)
+    # avoid divide zero
+    return
+  endif
+
   var idx = index(all_bufs, current)
   if idx < 0 && reverse
     idx = 0
