@@ -1,5 +1,109 @@
 " vim: fdm=marker
-" UserCommand
+" UserCommand / UserFunction.
+
+" clipboard {{{1
+" use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
+" detection is defined there. (~/bin/{pbcopy,pbpaste})
+nnoremap <Leader>y :call <SID>clipboard_copy("")<CR>
+nnoremap <Leader>p :call <SID>clipboard_paste("")<CR>
+
+function! s:clipboard_copy(cmd)
+  if empty(a:cmd)
+    if executable('pbcopy')
+      let l:cmd = 'pbcopy'
+    elseif has('clipboard')
+      " NOTE: unix: X11 clipboard content will disapper when program exits.
+      let @+ = @"
+      return
+    else
+      throw 'clipboard not found!'
+    endif
+    call system(l:cmd, @")
+  else
+    call system(a:cmd, @")
+  endif
+endfunction
+
+function! s:clipboard_paste(cmd)
+  if empty(a:cmd)
+    if executable('pbpaste')
+      let l:cmd = 'pbpaste'
+    elseif has('clipboard')
+      let @" = @+
+      return
+    else
+      throw 'clipboard not found!'
+    endif
+    let @" = system(l:cmd)
+  else
+    let @" = system(a:cmd)
+  endif
+endfunction
+
+" execute current line (or select lines), comment removed {{{1
+nnoremap <Leader><CR> :call <SID>execute_lines('n')<CR>
+vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
+
+function! s:execute_lines(mode)
+  if a:mode == 'n'
+    let lines = [getline('.')]
+  elseif a:mode == 'v'
+    let t = @"
+    silent normal gvy
+    let lines = split(@", "\n")
+    let @" = t
+  endif
+  let result = []
+  for l:i in lines
+    " TODO add more comment (or based on filetype).
+    let result = add(result, substitute(l:i, '\v^\s*(//|#|"|--)+', '', ''))
+  endfor
+  let result = join(result, "\n")
+  echom result
+  echo 'execute? y/N '
+  if nr2char(getchar()) ==? 'y'
+    redraws
+    try
+      execute result
+    finally
+    endtry
+  else
+    redraws | echon 'cancelled.'
+  endif
+endfunction
+
+" switch number / relativenumber {{{1
+nnoremap <silent> <Leader>n :call <SID>switch_nu_rnu()<CR>
+
+function! s:switch_nu_rnu() abort
+  " patch-7.3.1115: set one of nu / rnu will affect another.
+  if v:version < 704
+    " [1, 0] -> [0, 0] -> [0, 1] -> [1, 0]
+    if &nu
+      setl nonu
+    elseif &rnu
+      setl nu
+    else
+      setl rnu
+    endif
+    return
+  endif
+  " no [0, 1]
+  let presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
+  let idx = index(presents, [&l:nu, &l:rnu])
+  let [&l:nu, &l:rnu] = presents[idx+1]
+endfunction
+
+" switch quickfix window (open / focus or close) {{{1
+nnoremap <silent> <Leader>q :call <SID>switch_quickfix_window()<CR>
+
+function! s:switch_quickfix_window() abort
+  if &ft == 'qf'
+    cclose
+  else
+    execute 'bot' 'copen' &cwh
+  endif
+endfunction
 
 " snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{1
 command -nargs=? -complete=filetype Scratch call <SID>scratch(<q-args>)

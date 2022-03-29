@@ -207,185 +207,6 @@ endif
 " }}}2
 
 " keymap {{{1
-" clipboard (see keymap) {{{2
-" use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
-" detection is defined there. (~/bin/{pbcopy,pbpaste})
-
-function! s:clipboard_copy(cmd)
-  if empty(a:cmd)
-    if executable('pbcopy')
-      let l:cmd = 'pbcopy'
-    elseif has('clipboard')
-      " NOTE: unix: X11 clipboard content will disapper when program exits.
-      let @+ = @"
-      return
-    else
-      call s:echoerr('clipboard not found!') | return
-    endif
-    call system(l:cmd, @")
-  else
-    call system(a:cmd, @")
-  endif
-endfunction
-
-function! s:clipboard_paste(cmd)
-  if empty(a:cmd)
-    if executable('pbpaste')
-      let l:cmd = 'pbpaste'
-    elseif has('clipboard')
-      let @" = @+
-      return
-    else
-      call s:echoerr('clipboard not found!') | return
-    endif
-    let @" = system(l:cmd)
-  else
-    let @" = system(a:cmd)
-  endif
-endfunction
-
-" execute current line (or select lines), comment removed (see keymap) {{{2
-function! s:execute_lines(mode)
-  if a:mode == 'n'
-    let lines = [getline('.')]
-  elseif a:mode == 'v'
-    let t = @"
-    silent normal gvy
-    let lines = split(@", "\n")
-    let @" = t
-  endif
-  let result = []
-  for l:i in lines
-    " TODO add more comment (or based on filetype).
-    let result = add(result, substitute(l:i, '\v^\s*(//|#|"|--)+', '', ''))
-  endfor
-  let result = join(result, "\n")
-  echom result
-  echo 'execute? y/N '
-  if nr2char(getchar()) ==? 'y'
-    redraws
-    try
-      execute result
-    finally
-    endtry
-  else
-    redraws | echon 'cancelled.'
-  endif
-endfunction
-
-" gx related (NOTE: key `gx` overwritten) {{{2
-nnoremap <silent> gx :call <SID>gx('n')<CR>
-vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
-
-" TODO fix quote / escape
-function! s:gx_open_cmd(s)
-  if executable('xdg-open')
-    return ['xdg-open', a:s]
-  elseif executable('open')
-    return ['open', a:s]
-  elseif s:is_win32
-    " TODO fix open for win32
-    return ['cmd', '/c', isdirectory(a:s) ? 'explorer' : 'start', a:s]
-  else
-    call s:echoerr('do not know how to open') | return
-  endif
-endfunction
-
-" TODO show error?
-function! s:gx_open(...)
-  let text = join(getline(1, '$'), "\n")
-  if empty(text)
-    return
-  endif
-  if empty(a:0)
-    let open_cmd = s:gx_open_cmd(text)
-  else
-    let open_cmd = [a:1, text]
-  endif
-  if empty(open_cmd)
-    return
-  endif
-  call job_start(open_cmd, {'stoponexit': ''})
-endfunction
-
-function! s:gx_open_gx(...)
-  if a:0 == 1
-    call s:gx_open(a:1)
-  else
-    call s:gx_open()
-  endif
-  let winnr = winnr()
-  wincmd p
-  execute winnr . 'wincmd c'
-endfunction
-
-function! s:gx_vim(...)
-  " a:1 -> cmd; a:2 -> text modifier; a: 3 -> post string.
-  let text = join(getline(1, '$'), "\n")
-  if empty(text)
-    return
-  endif
-  if empty(a:0)
-    let cmd = text
-  else
-    if a:0 >= 2 && !empty(a:2)
-      let text = function(a:2)(text)
-    endif
-    let cmd = a:1 . ' ' . text
-    if a:0 >= 3 && !empty(a:3)
-      let cmd .= a:3
-    endif
-  endif
-  exe cmd
-endfunction
-
-function! s:gx(mode) abort
-  if a:mode == 'v'
-    let t = @"
-    silent normal gvy
-    let text = @"
-    let @" = t
-  else
-    let text = expand(get(g:, 'netrw_gx', '<cfile>'))
-  endif
-  exe printf('bel %dnew', &cwh)
-  " a special filetype
-  setl ft=gx
-  for line in split(text, "\n")
-    call append('$', line)
-  endfor
-  norm gg"_dd
-endfunction
-
-" switch number / relativenumber {{{2
-function! s:switch_nu_rnu() abort
-  " patch-7.3.1115: set one of nu / rnu will affect another.
-  if v:version < 704
-    " [1, 0] -> [0, 0] -> [0, 1] -> [1, 0]
-    if &nu
-      setl nonu
-    elseif &rnu
-      setl nu
-    else
-      setl rnu
-    endif
-    return
-  endif
-  " no [0, 1]
-  let presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
-  let idx = index(presents, [&l:nu, &l:rnu])
-  let [&l:nu, &l:rnu] = presents[idx+1]
-endfunction
-
-" switch quickfix window (open / focus or close) {{{2
-function! s:switch_quickfix_window() abort
-  if &ft == 'qf'
-    cclose
-  else
-    execute 'bot' 'copen' &cwh
-  endif
-endfunction
-" keymap {{{2
 " terminal <C-Space>
 map <Nul> <C-Space>
 map! <Nul> <C-Space>
@@ -444,20 +265,12 @@ onoremap al :<C-u>normal! 0v$h<CR>
 vnoremap il :<C-u>normal! ^vg_<CR>
 onoremap il :<C-u>normal! ^vg_<CR>
 
-" clipboard
-nnoremap <Leader>y :call <SID>clipboard_copy("")<CR>
-nnoremap <Leader>p :call <SID>clipboard_paste("")<CR>
-
 " filelist buffer; vim-filelist
 nmap <Leader>f <Plug>(filelist_show)
 
 " simple tasks: tasks.vim
 nmap <Leader>r <Plug>(tasks-select)
 vmap <Leader>r <Plug>(tasks-select)
-
-" execute current line
-nnoremap <Leader><CR> :call <SID>execute_lines('n')<CR>
-vnoremap <Leader><CR> :<C-u>call <SID>execute_lines('v')<CR>
 
 " terminal escape
 if exists(':tnoremap')
@@ -467,13 +280,7 @@ if exists(':tnoremap')
   endif
 endif
 
-" switch nu / rnu
-nnoremap <silent> <Leader>n :call <SID>switch_nu_rnu()<CR>
-
-" switch quickfix
-nnoremap <silent> <Leader>q :call <SID>switch_quickfix_window()<CR>
-
-" filetype related keymap setting {{{2
+" filetype related keymap setting {{{1
 augroup vimrc_keymap
   au!
 
@@ -504,7 +311,90 @@ augroup vimrc_keymap
   endfunction
   au FileType filelist call <SID>filelist_init()
 
-  " gx
+  " gx related (NOTE: key `gx` overwritten) {{{
+  nnoremap <silent> gx :call <SID>gx('n')<CR>
+  vnoremap <silent> gx :<C-u>call <SID>gx('v')<CR>
+
+  " TODO fix quote / escape
+  function! s:gx_open_cmd(s)
+    if executable('xdg-open')
+      return ['xdg-open', a:s]
+    elseif executable('open')
+      return ['open', a:s]
+    elseif s:is_win32
+      " TODO fix open for win32
+      return ['cmd', '/c', isdirectory(a:s) ? 'explorer' : 'start', a:s]
+    else
+      call s:echoerr('do not know how to open') | return
+    endif
+  endfunction
+
+  " TODO show error?
+  function! s:gx_open(...)
+    let text = join(getline(1, '$'), "\n")
+    if empty(text)
+      return
+    endif
+    if empty(a:0)
+      let open_cmd = s:gx_open_cmd(text)
+    else
+      let open_cmd = [a:1, text]
+    endif
+    if empty(open_cmd)
+      return
+    endif
+    call job_start(open_cmd, {'stoponexit': ''})
+  endfunction
+
+  function! s:gx_open_gx(...)
+    if a:0 == 1
+      call s:gx_open(a:1)
+    else
+      call s:gx_open()
+    endif
+    let winnr = winnr()
+    wincmd p
+    execute winnr . 'wincmd c'
+  endfunction
+
+  function! s:gx_vim(...)
+    " a:1 -> cmd; a:2 -> text modifier; a: 3 -> post string.
+    let text = join(getline(1, '$'), "\n")
+    if empty(text)
+      return
+    endif
+    if empty(a:0)
+      let cmd = text
+    else
+      if a:0 >= 2 && !empty(a:2)
+        let text = function(a:2)(text)
+      endif
+      let cmd = a:1 . ' ' . text
+      if a:0 >= 3 && !empty(a:3)
+        let cmd .= a:3
+      endif
+    endif
+    exe cmd
+  endfunction
+
+  function! s:gx(mode) abort
+    if a:mode == 'v'
+      let t = @"
+      silent normal gvy
+      let text = @"
+      let @" = t
+    else
+      let text = expand(get(g:, 'netrw_gx', '<cfile>'))
+    endif
+    exe printf('bel %dnew', &cwh)
+    " a special filetype
+    setl ft=gx
+    for line in split(text, "\n")
+      call append('$', line)
+    endfor
+    norm gg"_dd
+  endfunction
+
   function! s:gx_init()
     setl buftype=nofile noswapfile
     setl bufhidden=hide
