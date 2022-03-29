@@ -1,0 +1,573 @@
+" vim:fdm=marker
+" path: ~/.vimrc
+
+" vim9 header {{{1
+if !has('vim9script')
+  throw 'vim9script feature not detected!'
+endif
+
+vim9script
+
+# config compatible with vim tiny version. {{{1
+legacy function! s:config_with_legacy_comment() abort
+" main {{{2
+" if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
+" lines between `:if` and `:endif` will be ignored by vim tiny.
+if &compatible
+  set nocompatible
+endif
+
+set nomodeline
+
+if has('vim_starting')
+  " openSUSE set mapping to make <Ctrl-[> look buggy. so we clear it.
+  " /usr/share/vim/vim82/suse.vimrc
+  mapclear
+  mapclear!
+endif
+
+" backspace
+set bs=2
+" expandtab
+set et
+" shiftwidth
+set sw=4
+" (relative)number
+set nu
+set rnu
+" hlsearch
+set hls
+
+" belloff
+if exists('&bo')
+  set bo=all
+endif
+" incsearch
+set is
+" timeoutlen
+set tm=5000
+" ttimeoutlen
+set ttm=0
+" cursorcolumn & cursorline
+set cuc
+set cul
+" laststatus
+set ls=2
+" showcmd
+set sc
+" wildmenu
+set wmnu
+" completeopt
+set cot-=preview
+" shortmess; show search count message (default in neovim)
+set shm-=S
+" sessionoptions; better :mksession option.
+set ssop=blank,curdir,folds,tabpages,winsize
+
+" set locale in vimrc.vim, since vim tiny doesn't support :if.
+
+" menu
+set enc=utf-8
+" fileencodings
+" See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
+set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+
+" runtimepath
+" for tiny version, set rtp to empty string to avoid loading any file.
+"set rtp=
+
+" finish. }}}2
+endfunction
+
+legacy call s:config_with_legacy_comment()
+
+# common definition & setting {{{1
+const is_unix = has('unix')
+const is_win32 = has('win32')
+const has_gui = has('gui_running') || has('mac')
+|| (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
+
+var self = expand('<sfile>:p')
+if is_unix
+  # this file may be symbolic-ed.
+  self = resolve(self)
+endif
+const self_dir = fnamemodify(self, ':h')
+def LoadScript(file: string)
+  exec 'source' fnameescape(self_dir .. '/' .. file)
+enddef
+
+# add this directory to &rtp / &pp
+execute 'set rtp^=' .. fnameescape(self_dir)
+execute 'set rtp+=' .. fnameescape(self_dir .. '/after')
+execute 'set pp^=' .. fnameescape(self_dir)
+
+# option {{{1
+# unnamed... {{{2
+if has('win32')
+  # setup env before calling vim-vimserver in rc/option.vim
+  LoadScript('rc/win32.vim')
+endif
+
+# vim-vimserver should be called early.
+LoadScript('pack/lx/opt/vim-vimserver/plugin/vimserver.vim')
+
+# map early
+g:mapleader = ' '  # assign before use
+g:maplocalleader = ' ;'
+noremap <Space> <Nop>
+
+augroup vimrc
+  au!
+augroup END
+
+# uniform builtin terminal {{{2
+augroup vimrc
+  def TerminalPaste()
+    echo @"
+    if @"[-1 : ] == "\n"
+      echohl WarningMsg
+      echo '<Newline> at end!'
+      echohl NONE
+    endif
+    echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
+    if tolower(nr2char(getchar())) == 'y'
+      if has('nvim')
+        feedkeys('pi', 'n')
+      else
+        feedkeys("i\<C-w>" .. '""', 'n')
+      endif
+      redraws | echon 'pasted.'
+    else
+      redraws | echon 'cancelled.'
+    endif
+  enddef
+  def TerminalInit()
+    # NOTE: keymap defined here (terminal [p]aste).
+    if &buftype ==# 'terminal'
+      setl nonu | setl nornu
+      # vim-jump
+      nmap <buffer> <CR> <Plug>(jump_to_file)
+      vmap <buffer> <CR> <Plug>(jump_to_file)
+      nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
+      nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
+    endif
+  enddef
+  au TerminalOpen * TerminalInit()
+augroup END
+
+# statusline {{{2
+&stl = '[%{winnr()},%{mode()}' .. '%{% empty(&buftype) ? "%M%R" : "" %}]'
+.. '%{ empty(&ft) ? "" : " [".&ft."]" }'
+.. ' %<' .. '%{% &ft == "qf" && exists("w:quickfix_title") ? w:quickfix_title : "%F" %}'
+.. ' %=<%B>'
+.. ' [%l:%{charcol(".")}'
+.. '%{% &buftype == "terminal" ? "" : "/%L" %}' .. ']'
+
+# set locale {{{2
+if has('unix')
+  lang en_US.UTF-8
+else
+  $LANG = 'en'
+endif
+
+# disable default plugin {{{2
+g:loaded_2html_plugin = 1
+g:loaded_getscriptPlugin = 1
+g:loaded_gzip = 1
+g:loaded_logiPat = 1
+g:loaded_netrwPlugin = 1
+g:loaded_tarPlugin = 1
+g:loaded_vimballPlugin = 1
+g:loaded_zipPlugin = 1
+
+# various vim dir & file {{{2
+# copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
+# backup files
+set backup
+&backupdir = expand('~/.vim/files/backup' .. '//')
+set backupext=-vimbackup
+set backupskip=
+# swap files
+&directory = expand('~/.vim/files/swap' .. '//')
+# use default value
+#set updatecount =100
+# undo files
+set undofile
+&undodir = expand('~/.vim/files/undo/')
+# viewdir (:mkview / :loadview)
+&viewdir = expand('~/.vim/files/view/')
+# viminfo files
+&viminfofile = expand('~/.vim/files/viminfo')
+
+# create directory if needed
+for t_dir in [&backupdir, &directory, &undodir, &viewdir]
+  if !isdirectory(t_dir)
+    mkdir(t_dir, 'p')
+  endif
+endfor
+
+# disable some feature
+set nobackup
+set noundofile
+
+# term & gui (but not colorscheme) {{{2
+# TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
+if has('vim_starting')
+  if has('gui_running')
+    set guioptions=
+    set lines=32
+    set columns=128
+  else
+    if has('unix')
+      if $TERM ==? 'linux'
+        # linux tty
+        set bg=dark
+      else
+        # 256color or tgc
+        if exists('&tgc') && $TERM !~ 'xterm'
+          # make tgc work; :help xterm-true-color
+          &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+          &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+        endif
+        silent! set termguicolors
+        if $BAT_THEME->tolower() =~ 'light'
+          set bg=light
+        else
+          set bg=dark
+        endif
+      endif
+
+      if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
+        # wsl; fix vim start in replace mode;
+        # Refer: https://superuser.com/a/1525060
+        set t_u7=
+      endif
+    else
+      # win32 cmd
+      set nocursorcolumn
+    endif
+  endif
+endif
+
+# alt key in terminal {{{2
+if !has('gui_running') && has('unix')
+  # see ":set-termcap"
+  for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
+    exec printf("set <M-%s>=\<Esc>%s", i, i)
+  endfor
+  set ttimeoutlen=100
+endif
+
+# keymap {{{1
+# terminal <C-Space>
+map <Nul> <C-Space>
+map! <Nul> <C-Space>
+tmap <Nul> <C-Space>
+
+tnoremap <M-h> <C-w>h
+tnoremap <M-j> <C-w>j
+tnoremap <M-k> <C-w>k
+tnoremap <M-l> <C-w>l
+
+nnoremap <M-h> <C-w>h
+nnoremap <M-j> <C-w>j
+nnoremap <M-k> <C-w>k
+nnoremap <M-l> <C-w>l
+
+inoremap <M-h> <C-o><C-w>h
+inoremap <M-j> <C-o><C-w>j
+inoremap <M-k> <C-o><C-w>k
+inoremap <M-l> <C-o><C-w>l
+
+tnoremap <C-Tab> <C-w>gt
+tnoremap <S-C-Tab> <C-w>gT
+
+nnoremap <C-Tab> gt
+nnoremap <S-C-Tab> gT
+
+inoremap <C-Tab> <C-o>gt
+inoremap <S-C-Tab> <C-o>gT
+
+tnoremap <M-t> <C-w>:tabe<CR>
+nnoremap <M-t> :tabe<CR>
+inoremap <M-t> <C-o>:tabe<CR>
+
+for i in range(1, 9)
+  execute printf("tnoremap \<M-%d> \<C-w>%dgt", i, i)
+  execute printf("nnoremap \<M-%d> %dgt", i, i)
+  execute printf("inoremap \<M-%d> \<C-o>\<C-w>%dgt", i, i)
+endfor
+execute "tnoremap \<M-0> \<C-w>:tablast<CR>"
+execute "nnoremap \<M-0> :tablast<CR>"
+execute "inoremap \<M-0> \<C-o>:tablast<CR>"
+
+# completion
+inoremap <C-Space> <C-x><C-o>
+
+# clear hlsearch
+nnoremap <silent> <Leader>l :noh<CR>
+
+# custom text object
+vnoremap aa :<C-u>normal! ggVG<CR>
+onoremap aa :<C-u>normal! ggVG<CR>
+vnoremap al :<C-u>normal! 0v$h<CR>
+onoremap al :<C-u>normal! 0v$h<CR>
+vnoremap il :<C-u>normal! ^vg_<CR>
+onoremap il :<C-u>normal! ^vg_<CR>
+
+# filelist buffer; vim-filelist
+nmap <Leader>f <Plug>(filelist_show)
+
+# simple tasks: tasks.vim
+nmap <Leader>r <Plug>(tasks-select)
+vmap <Leader>r <Plug>(tasks-select)
+
+# terminal escape
+tnoremap <C-Space> <C-\><C-n>
+tnoremap <C-w> <C-w>.
+
+# filetype related keymap setting {{{1
+augroup vimrc
+  # viml completion
+  au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
+
+  # markdown checkbox {{{
+  def MarkdownToggleTaskStatus()
+    const lineno = line('.')
+    var line = getline(lineno)
+    if line =~ '\v^\s*- \[X\] '
+      line = substitute(line, '\v(^\s*- )@<=\[X\] ', '', '')
+    elseif line =~ '\v^\s*- \[ \] '
+      line = substitute(line, '\v(^\s*- \[)@<= ', 'X', '')
+    elseif line =~ '\v^\s*- '
+      line = substitute(line, '\v(^\s*-)@<= ', ' [ ] ', '')
+    endif
+    setline(lineno, line)
+  enddef
+  # }}}
+  au FileType markdown nnoremap <buffer>
+        \ <LocalLeader>c :call <SID>MarkdownToggleTaskStatus()<CR>
+
+  # simple filelist (vim-filelist)
+  def FilelistInit()
+    nmap <buffer> <LocalLeader><CR> <Plug>(filelist_cd)
+    nmap <buffer> <CR> <Plug>(filelist_edit)
+  enddef
+  au FileType filelist FilelistInit()
+
+  # gx related (NOTE: key `gx` overwritten) {{{
+  nnoremap <silent> gx :call <SID>Gx('n')<CR>
+  vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
+
+  # TODO fix quote / escape
+  def GxOpenCmd(s: string): list<string>
+    if executable('xdg-open')
+      return ['xdg-open', s]
+    elseif executable('open')
+      return ['open', s]
+    elseif is_win32
+      # TODO fix open for win32
+      return ['cmd', '/c', isdirectory(s) ? 'explorer' : 'start', s]
+    else
+      echoerr 'do not know how to open' | return []
+    endif
+  enddef
+
+  # TODO show error?
+  def GxOpen(...arg: list<string>)
+    const text = join(getline(1, '$'), "\n")
+    if empty(text)
+      return
+    endif
+    const open_cmd = empty(arg) ? GxOpenCmd(text) : [arg[0], text]
+    if empty(open_cmd)
+      return
+    endif
+    job_start(open_cmd, {stoponexit: ''})
+  enddef
+
+  def GxOpenGx(...arg: list<string>)
+    if len(arg) == 1
+      GxOpen(arg[0])
+    else
+      GxOpen()
+    endif
+    const winnr = winnr()
+    wincmd p
+    execute ':' .. winnr .. 'wincmd c'
+  enddef
+
+  def GxVim(...arg: list<string>)
+    # a:1 -> cmd; a:2 -> text modifier; a:3 -> post string.
+    var text = join(getline(1, '$'), "\n")
+    if empty(text)
+      return
+    endif
+    var cmd: string
+    if len(arg) == 0
+      cmd = text
+    else
+      if len(arg) >= 2 && !empty(arg[1])
+        var Fun = arg[1]
+        text = function(Fun)(text)
+      endif
+      cmd = arg[1] .. ' ' .. text
+      if len(arg) >= 3 && !empty(arg[2])
+        cmd ..= arg[2]
+      endif
+    endif
+    exe cmd
+  enddef
+
+  def Gx(mode: string)
+    var text: string
+    if mode == 'v'
+      var t = @"
+      silent normal gvy
+      text = @"
+      @" = t
+    else
+      text = expand(get(g:, 'netrw_gx', '<cfile>'))
+    endif
+    exe printf('bel :%dnew', &cwh)
+    # a special filetype
+    setl ft=gx
+    for line in split(text, "\n")
+      append('$', line)
+    endfor
+    norm gg"_dd
+  enddef
+
+  def GxInit()
+    setl buftype=nofile noswapfile
+    setl bufhidden=hide
+    if executable('qutebrowser')
+      nnoremap <buffer> <LocalLeader>s :call <SID>GxOpen('qutebrowser')<CR>
+    endif
+    nnoremap <buffer> gx :call <SID>GxOpenGx()<CR>
+    if executable('qutebrowser') && has_gui
+      nnoremap <buffer> gs :call <SID>GxOpenGx('qutebrowser')<CR>
+    endif
+    nnoremap <buffer> <LocalLeader>f :call <SID>GxOpen()<CR>
+    nnoremap <buffer> <LocalLeader>v :call <SID>GxVim("wincmd p \\|")<CR>
+  enddef
+  au FileType gx GxInit()
+augroup END
+
+# finally {{{2
+# e.g. <Space><Space>
+nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
+# e.g. <Space>;; / \\
+execute 'nnoremap <LocalLeader>' ..
+(len(g:maplocalleader) > 1 ? matchstr(g:maplocalleader, '.$') : '<LocalLeader>') ..
+' :nmap <Char-60>LocalLeader<Char-62><CR>'
+
+# TODO moved to plugin config {{{1
+# some variable used by plugin {{{2
+def JoinPath(path: string): string
+  return self_dir .. '/' .. path
+enddef
+
+g:tasks_config_paths = [JoinPath('config/tasks.ini')]
+if filereadable(JoinPath('config/tasks-local.ini'))
+  add(g:tasks_config_paths, JoinPath('config/tasks-local.ini'))
+endif
+
+g:markdown_folding = 1
+
+# keep sync with https://lxhillwind.gitee.io/ highlight.
+# NOTE: zig is not available in hljs right now.
+g:markdown_fenced_languages = [
+      \ 'awk', 'python', 'sh', 'vim',
+      \ 'c', 'go', 'javascript',
+      \ 'dosini', 'json', 'yaml',
+      \ 'zig',
+      \ ]
+
+# plugin TODO moved above filetype setting. {{{1
+# first, enable ":Pack" command.
+LoadScript('rc/pack.vim')
+
+Pack 'vim-filelist'
+Pack 'vim-jump'
+Pack 'vim-sh'
+Pack 'pyvim'
+# TODO merge pkgs.vim here. {{{1
+runtime rc/pkgs.vim
+
+g:loaded_fzf = 1
+
+Pack 'pyvim',#{skip: 1}
+g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
+
+Pack 'https://github.com/ziglang/zig.vim'
+
+Pack 'https://github.com/masukomi/vim-markdown-folding'
+g:markdown_fold_style = 'nested'
+g:markdown_fold_override_foldtext = 0
+
+# TODO merge filetype-post.vim here. {{{1
+augroup vimrc
+  au BufNewFile,BufRead */qutebrowser/qutebrowser.service setl ft=systemd
+augroup END
+
+# TODO move to ui setting above. {{{1
+if has('gui_running')
+  set gfn=Hack\ 12
+  set bg=light
+endif
+
+# TODO merge command.vim / command-9.vim here. {{{1
+command! -nargs=+ Man Terminal zsh -ic 'man <q-args>'
+
+# :Rgbuffer {...} {{{2
+command! -nargs=+ Rgbuffer Rgbuffer(<q-args>)
+
+def Jumpback(buf: number)
+  const buffers = tabpagebuflist()
+  const idx = index(buffers, buf)
+  if idx >= 0
+    execute 'normal' (idx + 1) "\<Plug>(jump_to_file)"
+  else
+    echoerr 'buffer not found!'
+  endif
+enddef
+
+def Rgbuffer(arg: string)
+  const buf = bufnr()
+  const result = execute(':%Sh rg -I --column ' .. arg)
+  bel :7sp +enew | setl buftype=nofile
+  put =result
+  norm gg"_dd
+  execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
+  syn match String '\v^[0-9]+'
+enddef
+
+# exe {{{2
+augroup vimrc
+  au BufReadCmd *.exe,*.dll ReadBin(expand('<amatch>'))
+  au BufWriteCmd *.exe,*.dll WriteBin(expand('<amatch>'))
+augroup END
+
+# avoid using busybox xxd.
+const xxd_path = exists($VIM .. '/bin/xxd') ? '"$VIM"/bin/xxd' : 'xxd'
+
+def ReadBin(name: string)
+  execute printf('silent r !%s %s', xxd_path, shellescape(name))
+  normal gg"_dd
+enddef
+
+def WriteBin(name: string)
+  if has('win32') && !has('nvim')
+    # returncode check is ignored.
+    job_start('xxd -r', {in_io: 'buffer', in_buf: bufnr(), out_io: 'file', out_name: name})
+  else
+    execute printf(':%w !%s -r > %s', xxd_path, shellescape(name))
+    if !empty(v:shell_error)
+      return
+    endif
+  endif
+  setl nomodified
+  redrawstatus | echon 'written.'
+enddef
