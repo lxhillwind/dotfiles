@@ -104,8 +104,8 @@ execute 'set pp^=' .. fnameescape(self_dir)
 
 # option {{{1
 # unnamed... {{{2
-if has('win32')
-  # setup env before calling vim-vimserver in rc/option.vim
+if is_win32
+  # setup env before calling vim-vimserver below.
   LoadScript('rc/win32.vim')
 endif
 
@@ -132,11 +132,7 @@ augroup vimrc
     endif
     echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
     if tolower(nr2char(getchar())) == 'y'
-      if has('nvim')
-        feedkeys('pi', 'n')
-      else
-        feedkeys("i\<C-w>" .. '""', 'n')
-      endif
+      feedkeys("i\<C-w>" .. '""', 'n')
       redraws | echon 'pasted.'
     else
       redraws | echon 'cancelled.'
@@ -165,7 +161,7 @@ augroup END
 .. '%{% &buftype == "terminal" ? "" : "/%L" %}' .. ']'
 
 # set locale {{{2
-if has('unix')
+if is_unix
   lang en_US.UTF-8
 else
   $LANG = 'en'
@@ -222,8 +218,8 @@ if has('vim_starting')
     set lines=32
     set columns=128
   else
-    if has('unix')
-      if $TERM ==? 'linux'
+    if is_unix
+      if $TERM->tolower() == 'linux'
         # linux tty
         set bg=dark
       else
@@ -254,7 +250,7 @@ if has('vim_starting')
 endif
 
 # alt key in terminal {{{2
-if !has('gui_running') && has('unix')
+if !has('gui_running') && is_unix
   # see ":set-termcap"
   for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
     exec printf("set <M-%s>=\<Esc>%s", i, i)
@@ -644,7 +640,7 @@ if !exists('g:colors_name')
   if has('gui_running') || &t_Co->str2nr() >= 256
     color base16-dynamic
   else
-    if has('win32')
+    if is_win32
       # win32 cmd
       color pablo
     else
@@ -989,18 +985,18 @@ def Cd(flag: string, args: string)
     try
       # use buffer variable to store cwd if `exe` switch to new window
       b:vimrc_old_cwd = old_cwd
-      exe 'lcd' fnameescape(path)
+      silent exe 'lcd' fnameescape(path)
       exe cmd
     finally
       if buf == bufnr('')
         if exists('b:vimrc_old_cwd')
           unlet b:vimrc_old_cwd
         endif
-        exe 'lcd' fnameescape(old_cwd)
+        silent exe 'lcd' fnameescape(old_cwd)
       endif
     endtry
   else
-    exe 'lcd' fnameescape(path)
+    silent exe 'lcd' fnameescape(path)
     if &buftype == 'terminal'
       term_sendkeys(bufnr(''), 'cd ' .. shellescape(path))
     endif
@@ -1010,7 +1006,7 @@ enddef
 def Cd_reset()
   if exists('b:vimrc_old_cwd')
     try
-      exe 'lcd' fnameescape(b:vimrc_old_cwd)
+      silent exe 'lcd' fnameescape(b:vimrc_old_cwd)
     finally
       unlet b:vimrc_old_cwd
     endtry
@@ -1056,10 +1052,10 @@ enddef
 def g:Tapi_cd(nr: number, arg: list<string>)
   if bufnr() == nr
     var p = arg[0]
-    if has('win32') && match(p, '^/') >= 0
+    if is_win32 && match(p, '^/') >= 0
       p = execute(printf("Sh cygpath -w '%s'", substitute(p, "'", "'\\\\''", 'g')))
     endif
-    execute 'lcd' fnameescape(p)
+    silent execute 'lcd' fnameescape(p)
   endif
 enddef
 
@@ -1213,7 +1209,7 @@ def ChdirTerminal(bang: bool, range: number, path_a: string)
       const idx: number = index(bufs, i)
       if idx >= 0
         echo printf('chdir in window [%d]? [y/N] ', idx + 1)
-        if nr2char(getchar()) ==? 'y'
+        if nr2char(getchar())->tolower() == 'y'
           execute ':' .. (idx + 1) 'wincmd w'
           call feedkeys(printf('%scd %s', mode() == 'n' ? 'i' : '', shellescape(path)), 't')
         else
@@ -1325,7 +1321,7 @@ command! -nargs=1 -range=0 -complete=custom,SelectComp Select
 
 # platform dependent setting
 # TODO win32: check if tty is available (conpty or winpty)
-const ctx_use_w_program: bool = has('win32')
+const ctx_use_w_program: bool = is_win32
 
 # Select() and it's comp {{{3
 def SelectComp(..._: list<any>): string
@@ -1474,7 +1470,7 @@ def ReadBin(name: string)
 enddef
 
 def WriteBin(name: string)
-  if has('win32') && !has('nvim')
+  if is_win32
     # returncode check is ignored.
     job_start('xxd -r', {in_io: 'buffer', in_buf: bufnr(), out_io: 'file', out_name: name})
   else
