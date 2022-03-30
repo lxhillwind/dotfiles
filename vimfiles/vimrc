@@ -167,19 +167,6 @@ else
     $LANG = 'en'
 endif
 
-# disable default plugin {{{2
-g:loaded_2html_plugin = 1
-g:loaded_getscriptPlugin = 1
-g:loaded_gzip = 1
-g:loaded_logiPat = 1
-g:loaded_netrwPlugin = 1
-g:loaded_tarPlugin = 1
-g:loaded_vimballPlugin = 1
-g:loaded_zipPlugin = 1
-
-# some plugin installed by system package manager
-g:loaded_fzf = 1
-
 # various vim dir & file {{{2
 # copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
 # backup files
@@ -262,6 +249,19 @@ endif
 # TODO check plugin commmit.
 # first, enable ":Pack" command.
 LoadScript('rc/pack.vim')
+
+# disable default plugin {{{
+g:loaded_2html_plugin = 1
+g:loaded_getscriptPlugin = 1
+g:loaded_gzip = 1
+g:loaded_logiPat = 1
+g:loaded_netrwPlugin = 1
+g:loaded_tarPlugin = 1
+g:loaded_vimballPlugin = 1
+g:loaded_zipPlugin = 1
+
+# some plugin installed by system package manager
+g:loaded_fzf = 1
 
 # plugin config. {{{
 def JoinPath(path: string): string
