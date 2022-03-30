@@ -933,12 +933,13 @@ enddef
 nnoremap <C-n> <cmd>call <SID>SwitchBuffer(v:true)<CR>
 nnoremap <C-p> <cmd>call <SID>SwitchBuffer(v:false)<CR>
 def SwitchBuffer(reverse: bool = false)
+  var current: number = bufnr()
+
   const single_window: bool = tabpagebuflist()->len() == 1
   if !single_window
     tabe
   endif
 
-  var current: number = bufnr()
   const all_bufs = getbufinfo()
   ->filter((_, i) => !empty(i.name) && !empty(i.listed))
   ->mapnew((_, i) => i.bufnr)
@@ -952,7 +953,9 @@ def SwitchBuffer(reverse: bool = false)
   if idx < 0 && reverse
     idx = 0
   endif
-  idx += (reverse ? 1 : -1)
+  if single_window
+    idx += (reverse ? 1 : -1)
+  endif
   idx = idx % len(all_bufs)
 
   execute ':' string(all_bufs[idx]) 'b'

@@ -61,6 +61,7 @@ function! s:choose_filelist() abort
   call extend(pattern_exclude,
         \ [
           \ '/.*/COMMIT_EDITMSG',
+          \ '/.*/MERGE_MSG',
           \ '/.*/ADD_EDIT.patch',
           \ '/.*/addp-hunk-edit.diff',
           \ '/.*/git-rebase-todo',
