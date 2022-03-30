@@ -3,7 +3,7 @@
 
 " vim9 header {{{1
 if !has('vim9script')
-  throw 'vim9script feature not detected!'
+    throw 'vim9script feature not detected!'
 endif
 
 vim9script noclear
@@ -14,16 +14,16 @@ legacy function! s:config_with_legacy_comment() abort
 " if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
 " lines between `:if` and `:endif` will be ignored by vim tiny.
 if &compatible
-  set nocompatible
+    set nocompatible
 endif
 
 set nomodeline
 
 if has('vim_starting')
-  " openSUSE set mapping to make <Ctrl-[> look buggy. so we clear it.
-  " /usr/share/vim/vim82/suse.vimrc
-  mapclear
-  mapclear!
+    " openSUSE set mapping to make <Ctrl-[> look buggy. so we clear it.
+    " /usr/share/vim/vim82/suse.vimrc
+    mapclear
+    mapclear!
 endif
 
 " backspace
@@ -40,7 +40,7 @@ set hls
 
 " belloff
 if exists('&bo')
-  set bo=all
+    set bo=all
 endif
 " incsearch
 set is
@@ -89,12 +89,12 @@ const has_gui = has('gui_running') || has('mac')
 
 var self = expand('<sfile>:p')
 if is_unix
-  # this file may be symbolic-ed.
-  self = resolve(self)
+    # this file may be symbolic-ed.
+    self = resolve(self)
 endif
 const self_dir = fnamemodify(self, ':h')
 def LoadScript(file: string)
-  exec 'source' fnameescape(self_dir .. '/' .. file)
+    exec 'source' fnameescape(self_dir .. '/' .. file)
 enddef
 
 # add this directory to &rtp / &pp
@@ -105,8 +105,8 @@ execute 'set pp^=' .. fnameescape(self_dir)
 # option {{{1
 # unnamed... {{{2
 if is_win32
-  # setup env before calling vim-vimserver below.
-  LoadScript('rc/win32.vim')
+    # setup env before calling vim-vimserver below.
+    LoadScript('rc/win32.vim')
 endif
 
 # vim-vimserver should be called early.
@@ -118,38 +118,38 @@ g:maplocalleader = ' ;'
 noremap <Space> <Nop>
 
 augroup vimrc
-  au!
+    au!
 augroup END
 
 # uniform builtin terminal {{{2
 augroup vimrc
-  def TerminalPaste()
-    echo @"
-    if @"[-1 : ] == "\n"
-      echohl WarningMsg
-      echo '<Newline> at end!'
-      echohl NONE
-    endif
-    echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
-    if tolower(nr2char(getchar())) == 'y'
-      feedkeys("i\<C-w>" .. '""', 'n')
-      redraws | echon 'pasted.'
-    else
-      redraws | echon 'cancelled.'
-    endif
-  enddef
-  def TerminalInit()
-    # NOTE: keymap defined here (terminal [p]aste).
-    if &buftype == 'terminal'
-      setl nonu | setl nornu
-      # vim-jump
-      nmap <buffer> <CR> <Plug>(jump_to_file)
-      vmap <buffer> <CR> <Plug>(jump_to_file)
-      nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
-      nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
-    endif
-  enddef
-  au TerminalOpen * TerminalInit()
+    def TerminalPaste()
+        echo @"
+        if @"[-1 : ] == "\n"
+            echohl WarningMsg
+            echo '<Newline> at end!'
+            echohl NONE
+        endif
+        echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
+        if tolower(nr2char(getchar())) == 'y'
+            feedkeys("i\<C-w>" .. '""', 'n')
+            redraws | echon 'pasted.'
+        else
+            redraws | echon 'cancelled.'
+        endif
+    enddef
+    def TerminalInit()
+        # NOTE: keymap defined here (terminal [p]aste).
+        if &buftype == 'terminal'
+            setl nonu | setl nornu
+            # vim-jump
+            nmap <buffer> <CR> <Plug>(jump_to_file)
+            vmap <buffer> <CR> <Plug>(jump_to_file)
+            nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
+            nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
+        endif
+    enddef
+    au TerminalOpen * TerminalInit()
 augroup END
 
 # statusline {{{2
@@ -162,9 +162,9 @@ augroup END
 
 # set locale {{{2
 if is_unix
-  lang en_US.UTF-8
+    lang en_US.UTF-8
 else
-  $LANG = 'en'
+    $LANG = 'en'
 endif
 
 # disable default plugin {{{2
@@ -201,9 +201,9 @@ set undofile
 
 # create directory if needed
 for t_dir in [&backupdir, &directory, &undodir, &viewdir]
-  if !isdirectory(t_dir)
-    mkdir(t_dir, 'p')
-  endif
+    if !isdirectory(t_dir)
+        mkdir(t_dir, 'p')
+    endif
 endfor
 
 # disable some feature
@@ -213,49 +213,49 @@ set noundofile
 # term & gui (but not colorscheme) {{{2
 # TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
 if has('vim_starting')
-  if has('gui_running')
-    set guioptions=
-    set lines=32
-    set columns=128
-  else
-    if is_unix
-      if $TERM->tolower() == 'linux'
-        # linux tty
-        set bg=dark
-      else
-        # 256color or tgc
-        if exists('&tgc') && $TERM !~ 'xterm'
-          # make tgc work; :help xterm-true-color
-          &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
-          &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
-        endif
-        silent! set termguicolors
-        if $BAT_THEME->tolower() =~ 'light'
-          set bg=light
-        else
-          set bg=dark
-        endif
-      endif
-
-      if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
-        # wsl; fix vim start in replace mode;
-        # Refer: https://superuser.com/a/1525060
-        set t_u7=
-      endif
+    if has('gui_running')
+        set guioptions=
+        set lines=32
+        set columns=128
     else
-      # win32 cmd
-      set nocursorcolumn
+        if is_unix
+            if $TERM->tolower() == 'linux'
+                # linux tty
+                set bg=dark
+            else
+                # 256color or tgc
+                if exists('&tgc') && $TERM !~ 'xterm'
+                    # make tgc work; :help xterm-true-color
+                    &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+                    &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+                endif
+                silent! set termguicolors
+                if $BAT_THEME->tolower() =~ 'light'
+                    set bg=light
+                else
+                    set bg=dark
+                endif
+            endif
+
+            if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
+                # wsl; fix vim start in replace mode;
+                # Refer: https://superuser.com/a/1525060
+                set t_u7=
+            endif
+        else
+            # win32 cmd
+            set nocursorcolumn
+        endif
     endif
-  endif
 endif
 
 # alt key in terminal {{{2
 if !has('gui_running') && is_unix
-  # see ":set-termcap"
-  for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
-    exec printf("set <M-%s>=\<Esc>%s", i, i)
-  endfor
-  set ttimeoutlen=100
+    # see ":set-termcap"
+    for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
+        exec printf("set <M-%s>=\<Esc>%s", i, i)
+    endfor
+    set ttimeoutlen=100
 endif
 
 # plugin {{{1
@@ -265,12 +265,12 @@ LoadScript('rc/pack.vim')
 
 # plugin config. {{{
 def JoinPath(path: string): string
-  return self_dir .. '/' .. path
+    return self_dir .. '/' .. path
 enddef
 
 g:tasks_config_paths = [JoinPath('config/tasks.ini')]
 if filereadable(JoinPath('config/tasks-local.ini'))
-  add(g:tasks_config_paths, JoinPath('config/tasks-local.ini'))
+    add(g:tasks_config_paths, JoinPath('config/tasks-local.ini'))
 endif
 
 g:markdown_folding = 1
@@ -278,11 +278,11 @@ g:markdown_folding = 1
 # keep sync with https://lxhillwind.gitee.io/ highlight.
 # NOTE: zig is not available in hljs right now.
 g:markdown_fenced_languages = [
-  'awk', 'python', 'sh', 'vim',
-  'c', 'go', 'javascript',
-  'dosini', 'json', 'yaml',
-  'zig',
-  ]
+    'awk', 'python', 'sh', 'vim',
+    'c', 'go', 'javascript',
+    'dosini', 'json', 'yaml',
+    'zig',
+    ]
 # }}}
 
 # mime {{{
@@ -304,11 +304,12 @@ g:sneak#target_labels = "qwertasdfgzxcv"
 Pack 'https://github.com/tpope/vim-repeat', {'commit': '24afe922e6a05891756ecf331f39a1f6743d3d5a'}
 Pack 'https://github.com/ciaranm/securemodelines', {'after': 1, 'commit': '9751f29699186a47743ff6c06e689f483058d77a'}
 
-Pack 'https://github.com/masukomi/vim-markdown-folding'
+Pack 'https://github.com/masukomi/vim-markdown-folding', {'commit': '3f35acfb753cc9ea22182400b075c5b6e896ad71'}
 g:markdown_fold_style = 'nested'
 g:markdown_fold_override_foldtext = 0
 
-Pack 'https://github.com/ziglang/zig.vim'
+Pack 'https://github.com/ziglang/zig.vim', {'commit': '0adf3a1407bdf60a6c1446fb6a9a05c9823e4290'}
+Pack 'https://github.com/lacygoill/vim9-syntax', {'commit': '49895457b1fcae6407041a780932387bc681289a', 'skip': 1}
 # }}}
 
 # basic completion {{{
@@ -337,68 +338,68 @@ g:vim_dict_config = {'markdown': 'text'}
 
 # coc; to install it, set var before source this file. {{{
 if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
-  g:apc_enable_ft = {}
+    g:apc_enable_ft = {}
 
-  Pack 'neoclide/coc.nvim', {'branch': 'release'}
+    Pack 'neoclide/coc.nvim', {'branch': 'release'}
 
-  # vim completion
-  Pack 'Shougo/neco-vim'
-  Pack 'neoclide/coc-neco'
+    # vim completion
+    Pack 'Shougo/neco-vim'
+    Pack 'neoclide/coc-neco'
 
-  # run the following vim command to install coc plugins:
-  #   CocInstall coc-go
-  #   CocInstall coc-html
-  #   CocInstall coc-pyright
+    # run the following vim command to install coc plugins:
+    #   CocInstall coc-go
+    #   CocInstall coc-html
+    #   CocInstall coc-pyright
 
-  augroup vimrc
-    au FileType go,html,python,vim InitCocLang()
-  augroup END
+    augroup vimrc
+        au FileType go,html,python,vim InitCocLang()
+    augroup END
 
-  # coc keymap
-  def InitCocLang()
-    # GoTo code navigation.
-    nmap <silent> <buffer> <LocalLeader>d <Plug>(coc-definition)
-    nmap <silent> <buffer> <LocalLeader>y <Plug>(coc-type-definition)
-    nmap <silent> <buffer> <LocalLeader>i <Plug>(coc-implementation)
-    nmap <silent> <buffer> <LocalLeader>r <Plug>(coc-references)
+    # coc keymap
+    def InitCocLang()
+        # GoTo code navigation.
+        nmap <silent> <buffer> <LocalLeader>d <Plug>(coc-definition)
+        nmap <silent> <buffer> <LocalLeader>y <Plug>(coc-type-definition)
+        nmap <silent> <buffer> <LocalLeader>i <Plug>(coc-implementation)
+        nmap <silent> <buffer> <LocalLeader>r <Plug>(coc-references)
 
-    # completion
-    inoremap <silent> <buffer> <expr> <C-Space> coc#refresh()
+        # completion
+        inoremap <silent> <buffer> <expr> <C-Space> coc#refresh()
 
-    # diagnostic
-    nmap <buffer> ]e <cmd>call CocAction('diagnosticNext')<CR>
-    nmap <buffer> [e <cmd>call CocAction('diagnosticPrevious')<CR>
+        # diagnostic
+        nmap <buffer> ]e <cmd>call CocAction('diagnosticNext')<CR>
+        nmap <buffer> [e <cmd>call CocAction('diagnosticPrevious')<CR>
 
-    # Use K to show documentation in preview window.
-    nnoremap <silent> <buffer> K :call <SID>CocShowDocumentation()<CR>
+        # Use K to show documentation in preview window.
+        nnoremap <silent> <buffer> K :call <SID>CocShowDocumentation()<CR>
 
-    nnoremap <silent> <buffer> <C-]> <cmd>call <SID>CocDefinitionWithTagList()<CR>
-  enddef
+        nnoremap <silent> <buffer> <C-]> <cmd>call <SID>CocDefinitionWithTagList()<CR>
+    enddef
 
-  def CocShowDocumentation()
-    if (index(['vim','help'], &filetype) >= 0)
-      execute 'h ' .. expand('<cword>')
-    elseif (coc#rpc#ready())
-      CocActionAsync('doHover')
-    else
-      execute '!' .. &keywordprg .. " " .. expand('<cword>')
-    endif
-  enddef
+    def CocShowDocumentation()
+        if (index(['vim','help'], &filetype) >= 0)
+            execute 'h ' .. expand('<cword>')
+        elseif (coc#rpc#ready())
+            CocActionAsync('doHover')
+        else
+            execute '!' .. &keywordprg .. " " .. expand('<cword>')
+        endif
+    enddef
 
-  # https://github.com/neoclide/coc.nvim/issues/576#issuecomment-632446784
-  def CocDefinitionWithTagList()
-    # Cribbed from :h tagstack-examples
-    var tag = expand('<cword>')
-    var pos = [bufnr()] + getcurpos()[1 :]
-    var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
-    if CocAction('jumpDefinition')
-      " Jump was successful, write previous location to tag stack.
-      var winid = win_getid()
-      var stack = gettagstack(winid)
-      var stack['items'] = [item]
-      settagstack(winid, stack, 't')
-    endif
-  enddef
+    # https://github.com/neoclide/coc.nvim/issues/576#issuecomment-632446784
+    def CocDefinitionWithTagList()
+        # Cribbed from :h tagstack-examples
+        var tag = expand('<cword>')
+        var pos = [bufnr()] + getcurpos()[1 :]
+        var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
+        if CocAction('jumpDefinition')
+            " Jump was successful, write previous location to tag stack.
+            var winid = win_getid()
+            var stack = gettagstack(winid)
+            var stack['items'] = [item]
+            settagstack(winid, stack, 't')
+        endif
+    enddef
 endif
 # }}}
 
@@ -436,14 +437,15 @@ tnoremap <M-t> <C-w>:tabe<CR>
 nnoremap <M-t> :tabe<CR>
 inoremap <M-t> <C-o>:tabe<CR>
 
-for i in range(1, 9)
-  execute printf("tnoremap \<M-%d> \<C-w>%dgt", i, i)
-  execute printf("nnoremap \<M-%d> %dgt", i, i)
-  execute printf("inoremap \<M-%d> \<C-o>\<C-w>%dgt", i, i)
+for i in range(1, 8)
+    execute printf("tnoremap \<M-%d> \<C-w>%dgt", i, i)
+    execute printf("nnoremap \<M-%d> %dgt", i, i)
+    execute printf("inoremap \<M-%d> \<C-o>\<C-w>%dgt", i, i)
 endfor
-execute "tnoremap \<M-0> \<C-w>:tablast<CR>"
-execute "nnoremap \<M-0> :tablast<CR>"
-execute "inoremap \<M-0> \<C-o>:tablast<CR>"
+execute "tnoremap \<M-9> \<C-w>:tablast<CR>"
+execute "nnoremap \<M-9> :tablast<CR>"
+execute "inoremap \<M-9> \<C-o>:tablast<CR>"
+# preserve <M-0> for DE / wm.
 
 # completion
 inoremap <C-Space> <C-x><C-o>
@@ -473,156 +475,155 @@ tnoremap <C-w> <C-w>.
 # filetype {{{1
 filetype plugin indent on
 if !exists('g:syntax_on')
-  syntax on
+    syntax on
 endif
 
 augroup vimrc
-  au BufNewFile,BufRead *.gv setl ft=dot
-  au FileType vim setl sw=2
-  au FileType yaml setl sw=2 indentkeys-=0#
-  au FileType zig setl fp=zig\ fmt\ --stdin
-  au FileType markdown setl tw=78 | MarkdownCheckboxHL()
+    au BufNewFile,BufRead *.gv setl ft=dot
+    au FileType yaml setl indentkeys-=0#
+    au FileType zig setl fp=zig\ fmt\ --stdin
+    au FileType markdown setl tw=78 | MarkdownCheckboxHL()
 
-  def MarkdownCheckboxHL()
-    hi link CheckboxUnchecked Type
-    hi link CheckboxChecked Comment
-    syn match CheckboxUnchecked '\v^\s*- \[ \] '
-    syn match CheckboxChecked '\v^\s*- \[X\] '
-  enddef
+    def MarkdownCheckboxHL()
+        hi link CheckboxUnchecked Type
+        hi link CheckboxChecked Comment
+        syn match CheckboxUnchecked '\v^\s*- \[ \] '
+        syn match CheckboxChecked '\v^\s*- \[X\] '
+    enddef
 
-  # quickfix window
-  au FileType qf let &l:stl = &g:stl
-  au FileType qf nnoremap <buffer> <C-n> <cmd>cnewer<CR>
-  au FileType qf nnoremap <buffer> <C-p> <cmd>colder<CR>
-  au FileType qf nnoremap <buffer> <LocalLeader>l <cmd>chistory<CR>
+    # quickfix window
+    au FileType qf &l:stl = &g:stl
+    au FileType qf nnoremap <buffer> <C-n> <cmd>cnewer<CR>
+    au FileType qf nnoremap <buffer> <C-p> <cmd>colder<CR>
+    au FileType qf nnoremap <buffer> <LocalLeader>l <cmd>chistory<CR>
 
-  # ":h ft-sh-syntax"
-  g:is_posix = 1
+    # ":h ft-sh-syntax"
+    g:is_posix = 1
 
-  # viml completion
-  au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
+    # viml completion
+    au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
 
-  # markdown checkbox {{{
-  def MarkdownToggleTaskStatus()
-    const lineno = line('.')
-    var line = getline(lineno)
-    if line =~ '\v^\s*- \[X\] '
-      line = substitute(line, '\v(^\s*- )@<=\[X\] ', '', '')
-    elseif line =~ '\v^\s*- \[ \] '
-      line = substitute(line, '\v(^\s*- \[)@<= ', 'X', '')
-    elseif line =~ '\v^\s*- '
-      line = substitute(line, '\v(^\s*-)@<= ', ' [ ] ', '')
-    endif
-    setline(lineno, line)
-  enddef
-  # }}}
-  au FileType markdown nnoremap <buffer>
-        \ <LocalLeader>c :call <SID>MarkdownToggleTaskStatus()<CR>
+    # markdown checkbox {{{
+    def MarkdownToggleTaskStatus()
+        const lineno = line('.')
+        var line = getline(lineno)
+        if line =~ '\v^\s*- \[X\] '
+            line = substitute(line, '\v(^\s*- )@<=\[X\] ', '', '')
+        elseif line =~ '\v^\s*- \[ \] '
+            line = substitute(line, '\v(^\s*- \[)@<= ', 'X', '')
+        elseif line =~ '\v^\s*- '
+            line = substitute(line, '\v(^\s*-)@<= ', ' [ ] ', '')
+        endif
+        setline(lineno, line)
+    enddef
+    # }}}
+    au FileType markdown nnoremap <buffer>
+                \ <LocalLeader>c :call <SID>MarkdownToggleTaskStatus()<CR>
 
-  # simple filelist (vim-filelist)
-  def FilelistInit()
-    nmap <buffer> <LocalLeader><CR> <Plug>(filelist_cd)
-    nmap <buffer> <CR> <Plug>(filelist_edit)
-  enddef
-  au FileType filelist FilelistInit()
+    # simple filelist (vim-filelist)
+    def FilelistInit()
+        nmap <buffer> <LocalLeader><CR> <Plug>(filelist_cd)
+        nmap <buffer> <CR> <Plug>(filelist_edit)
+    enddef
+    au FileType filelist FilelistInit()
 
-  # gx related (NOTE: key `gx` overwritten) {{{
-  nnoremap <silent> gx :call <SID>Gx('n')<CR>
-  vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
+    # gx related (NOTE: key `gx` overwritten) {{{
+    nnoremap <silent> gx :call <SID>Gx('n')<CR>
+    vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
 
-  # TODO fix quote / escape
-  def GxOpenCmd(s: string): list<string>
-    if executable('xdg-open')
-      return ['xdg-open', s]
-    elseif executable('open')
-      return ['open', s]
-    elseif is_win32
-      # TODO fix open for win32
-      return ['cmd', '/c', isdirectory(s) ? 'explorer' : 'start', s]
-    else
-      echoerr 'do not know how to open' | return []
-    endif
-  enddef
+    # TODO fix quote / escape
+    def GxOpenCmd(s: string): list<string>
+        if executable('xdg-open')
+            return ['xdg-open', s]
+        elseif executable('open')
+            return ['open', s]
+        elseif is_win32
+            # TODO fix open for win32
+            return ['cmd', '/c', isdirectory(s) ? 'explorer' : 'start', s]
+        else
+            echoerr 'do not know how to open' | return []
+        endif
+    enddef
 
-  # TODO show error?
-  def GxOpen(...arg: list<string>)
-    const text = join(getline(1, '$'), "\n")
-    if empty(text)
-      return
-    endif
-    const open_cmd = empty(arg) ? GxOpenCmd(text) : [arg[0], text]
-    if empty(open_cmd)
-      return
-    endif
-    job_start(open_cmd, {stoponexit: ''})
-  enddef
+    # TODO show error?
+    def GxOpen(...arg: list<string>)
+        const text = join(getline(1, '$'), "\n")
+        if empty(text)
+            return
+        endif
+        const open_cmd = empty(arg) ? GxOpenCmd(text) : [arg[0], text]
+        if empty(open_cmd)
+            return
+        endif
+        job_start(open_cmd, {stoponexit: ''})
+    enddef
 
-  def GxOpenGx(...arg: list<string>)
-    if len(arg) == 1
-      GxOpen(arg[0])
-    else
-      GxOpen()
-    endif
-    const winnr = winnr()
-    wincmd p
-    execute ':' .. winnr .. 'wincmd c'
-  enddef
+    def GxOpenGx(...arg: list<string>)
+        if len(arg) == 1
+            GxOpen(arg[0])
+        else
+            GxOpen()
+        endif
+        const winnr = winnr()
+        wincmd p
+        execute ':' .. winnr .. 'wincmd c'
+    enddef
 
-  def GxVim(...arg: list<string>)
-    # a:1 -> cmd; a:2 -> text modifier; a:3 -> post string.
-    var text = join(getline(1, '$'), "\n")
-    if empty(text)
-      return
-    endif
-    var cmd: string
-    if len(arg) == 0
-      cmd = text
-    else
-      if len(arg) >= 2 && !empty(arg[1])
-        var Fun = arg[1]
-        text = function(Fun)(text)
-      endif
-      cmd = arg[1] .. ' ' .. text
-      if len(arg) >= 3 && !empty(arg[2])
-        cmd ..= arg[2]
-      endif
-    endif
-    exe cmd
-  enddef
+    def GxVim(...arg: list<string>)
+        # a:1 -> cmd; a:2 -> text modifier; a:3 -> post string.
+        var text = join(getline(1, '$'), "\n")
+        if empty(text)
+            return
+        endif
+        var cmd: string
+        if len(arg) == 0
+            cmd = text
+        else
+            if len(arg) >= 2 && !empty(arg[1])
+                var Fun = arg[1]
+                text = function(Fun)(text)
+            endif
+            cmd = arg[1] .. ' ' .. text
+            if len(arg) >= 3 && !empty(arg[2])
+                cmd ..= arg[2]
+            endif
+        endif
+        exe cmd
+    enddef
 
-  def Gx(mode: string)
-    var text: string
-    if mode == 'v'
-      var t = @"
-      silent normal gvy
-      text = @"
-      @" = t
-    else
-      text = expand(get(g:, 'netrw_gx', '<cfile>'))
-    endif
-    exe printf('bel :%dnew', &cwh)
-    # a special filetype
-    setl ft=gx
-    for line in split(text, "\n")
-      append('$', line)
-    endfor
-    norm gg"_dd
-  enddef
+    def Gx(mode: string)
+        var text: string
+        if mode == 'v'
+            var t = @"
+            silent normal gvy
+            text = @"
+            @" = t
+        else
+            text = expand(get(g:, 'netrw_gx', '<cfile>'))
+        endif
+        exe printf('bel :%dnew', &cwh)
+        # a special filetype
+        setl ft=gx
+        for line in split(text, "\n")
+            append('$', line)
+        endfor
+        norm gg"_dd
+    enddef
 
-  def GxInit()
-    setl buftype=nofile noswapfile
-    setl bufhidden=hide
-    if executable('qutebrowser')
-      nnoremap <buffer> <LocalLeader>s :call <SID>GxOpen('qutebrowser')<CR>
-    endif
-    nnoremap <buffer> gx :call <SID>GxOpenGx()<CR>
-    if executable('qutebrowser') && has_gui
-      nnoremap <buffer> gs :call <SID>GxOpenGx('qutebrowser')<CR>
-    endif
-    nnoremap <buffer> <LocalLeader>f :call <SID>GxOpen()<CR>
-    nnoremap <buffer> <LocalLeader>v :call <SID>GxVim("wincmd p \\|")<CR>
-  enddef
-  au FileType gx GxInit()
+    def GxInit()
+        setl buftype=nofile noswapfile
+        setl bufhidden=hide
+        if executable('qutebrowser')
+            nnoremap <buffer> <LocalLeader>s :call <SID>GxOpen('qutebrowser')<CR>
+        endif
+        nnoremap <buffer> gx :call <SID>GxOpenGx()<CR>
+        if executable('qutebrowser') && has_gui
+            nnoremap <buffer> gs :call <SID>GxOpenGx('qutebrowser')<CR>
+        endif
+        nnoremap <buffer> <LocalLeader>f :call <SID>GxOpen()<CR>
+        nnoremap <buffer> <LocalLeader>v :call <SID>GxVim("wincmd p \\|")<CR>
+    enddef
+    au FileType gx GxInit()
 augroup END
 
 # finally {{{2
@@ -637,48 +638,48 @@ execute 'nnoremap <LocalLeader>' ..
 # only set colorscheme if not set yet. {{{2
 # using `trim(execute('color')) == 'default'` is not valid.
 if !exists('g:colors_name')
-  if has('gui_running') || &t_Co->str2nr() >= 256
-    color base16-dynamic
-  else
-    if is_win32
-      # win32 cmd
-      color pablo
+    if has('gui_running') || &t_Co->str2nr() >= 256
+        color base16-dynamic
     else
-      # no 256color
-      color default
+        if is_win32
+            # win32 cmd
+            color pablo
+        else
+            # no 256color
+            color default
+        endif
     endif
-  endif
 endif
 
 # terminal statusline tweak {{{2
 augroup vimrc
-  # colorscheme may not change at startup.
-  au ColorScheme * hi! link StatusLineTermNC StatusLineNC
+    # colorscheme may not change at startup.
+    au ColorScheme * hi! link StatusLineTermNC StatusLineNC
 augroup END
 hi! link StatusLineTermNC StatusLineNC
 
 # terminal 16color {{{2
 def TerminalAnsiColor()
-  if !(has('gui_running') || &tgc)
-    return
-  endif
-  # https://github.com/lxhillwind/base16-dynamic.vim
-  if &bg == 'dark'
-    g:terminal_ansi_colors = ["#263238", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#EEFFFF", "#546E7A", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#FFFFFF"]
-  else
-    g:terminal_ansi_colors = ["#fafafa", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#383a42", "#a0a1a7", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#090a0b"]
-  endif
+    if !(has('gui_running') || &tgc)
+        return
+    endif
+    # https://github.com/lxhillwind/base16-dynamic.vim
+    if &bg == 'dark'
+        g:terminal_ansi_colors = ["#263238", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#EEFFFF", "#546E7A", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#FFFFFF"]
+    else
+        g:terminal_ansi_colors = ["#fafafa", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#383a42", "#a0a1a7", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#090a0b"]
+    endif
 enddef
 
 augroup vimrc
-  au ColorScheme * TerminalAnsiColor()
+    au ColorScheme * TerminalAnsiColor()
 augroup END
 TerminalAnsiColor()
 
 # gui {{{2
 if has('gui_running')
-  set gfn=Hack\ 14
-  set bg=light
+    set gfn=Hack\ 14
+    set bg=light
 endif
 # command {{{1
 # clipboard {{{2
@@ -688,38 +689,38 @@ nnoremap <Leader>y :call <SID>ClipboardCopy("")<CR>
 nnoremap <Leader>p :call <SID>ClipboardPaste("")<CR>
 
 def ClipboardCopy(cmd_: string)
-  var cmd = cmd_
-  if empty(cmd)
-    if executable('pbcopy')
-      cmd = 'pbcopy'
-    elseif has('clipboard')
-      # NOTE: unix: X11 clipboard content will disapper when program exits.
-      @+ = @"
-      return
+    var cmd = cmd_
+    if empty(cmd)
+        if executable('pbcopy')
+            cmd = 'pbcopy'
+        elseif has('clipboard')
+            # NOTE: unix: X11 clipboard content will disapper when program exits.
+            @+ = @"
+            return
+        else
+            throw 'clipboard not found!'
+        endif
+        system(cmd, @")
     else
-      throw 'clipboard not found!'
+        system(cmd, @")
     endif
-    system(cmd, @")
-  else
-    system(cmd, @")
-  endif
 enddef
 
 def ClipboardPaste(cmd_: string)
-  var cmd = cmd_
-  if empty(cmd)
-    if executable('pbpaste')
-      cmd = 'pbpaste'
-    elseif has('clipboard')
-      @" = @+
-      return
+    var cmd = cmd_
+    if empty(cmd)
+        if executable('pbpaste')
+            cmd = 'pbpaste'
+        elseif has('clipboard')
+            @" = @+
+            return
+        else
+            throw 'clipboard not found!'
+        endif
+        @" = system(cmd)
     else
-      throw 'clipboard not found!'
+        @" = system(cmd)
     endif
-    @" = system(cmd)
-  else
-    @" = system(cmd)
-  endif
 enddef
 
 # execute current line (or select lines), comment removed {{{2
@@ -727,54 +728,54 @@ nnoremap <Leader><CR> :call <SID>ExecuteLines('n')<CR>
 vnoremap <Leader><CR> :<C-u>call <SID>ExecuteLines('v')<CR>
 
 def ExecuteLines(mode: string)
-  var lines: list<string>
-  if mode == 'n'
-    lines = [getline('.')]
-  elseif mode == 'v'
-    var t = @"
-    silent normal gvy
-    lines = split(@", "\n")
-    @" = t
-  endif
-  var result_l = []
-  for i in lines
-    # TODO add more comment (or based on filetype).
-    result_l = add(result_l, substitute(i, '\v^\s*(//|#|"|--)+', '', ''))
-  endfor
-  var result: string = join(result_l, "\n")
-  echom result
-  echo 'execute? y/N '
-  if nr2char(getchar())->tolower() == 'y'
-    redraws
-    try
-      execute result
-    finally
-    endtry
-  else
-    redraws | echon 'cancelled.'
-  endif
+    var lines: list<string>
+    if mode == 'n'
+        lines = [getline('.')]
+    elseif mode == 'v'
+        var t = @"
+        silent normal gvy
+        lines = split(@", "\n")
+        @" = t
+    endif
+    var result_l = []
+    for i in lines
+        # TODO add more comment (or based on filetype).
+        result_l = add(result_l, substitute(i, '\v^\s*(//|#|"|--)+', '', ''))
+    endfor
+    var result: string = join(result_l, "\n")
+    echom result
+    echo 'execute? y/N '
+    if nr2char(getchar())->tolower() == 'y'
+        redraws
+        try
+            execute result
+        finally
+        endtry
+    else
+        redraws | echon 'cancelled.'
+    endif
 enddef
 
 # switch number / relativenumber {{{2
 nnoremap <silent> <Leader>n :call <SID>Switch_nu_rnu()<CR>
 
 def Switch_nu_rnu()
-  # no [0, 1]
-  const presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
-  ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
-  const idx = index(presents, [&l:nu, &l:rnu])
-  [&l:nu, &l:rnu] = presents[idx + 1]
+    # no [0, 1]
+    const presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
+    ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
+    const idx = index(presents, [&l:nu, &l:rnu])
+    [&l:nu, &l:rnu] = presents[idx + 1]
 enddef
 
 # switch quickfix window (open / focus or close) {{{2
 nnoremap <silent> <Leader>q :call <SID>SwitchQuickfixWindow()<CR>
 
 def SwitchQuickfixWindow()
-  if &ft == 'qf'
-    cclose
-  else
-    execute 'bot' 'copen' &cwh
-  endif
+    if &ft == 'qf'
+        cclose
+    else
+        execute 'bot' 'copen' &cwh
+    endif
 enddef
 
 # snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{2
@@ -782,19 +783,19 @@ command -nargs=? -complete=filetype Scratch Scratch(<q-args>)
 command! -nargs=? -complete=filetype ScratchNew SnippetInNewWindow(<q-args>)
 
 def Scratch(ft: string)
-  enew | setl buftype=nofile noswapfile bufhidden=hide
-  if !empty(ft)
-    exe 'setl ft=' .. ft
-  endif
+    enew | setl buftype=nofile noswapfile bufhidden=hide
+    if !empty(ft)
+        exe 'setl ft=' .. ft
+    endif
 enddef
 
 def SnippetInNewWindow(ft: string)
-  exe printf('bel %dnew', &cwh)
-  setl buftype=nofile noswapfile
-  setl bufhidden=hide
-  if !empty(ft)
-    exe 'setl ft=' .. ft
-  endif
+    exe printf('bel :%dnew', &cwh)
+    setl buftype=nofile noswapfile
+    setl bufhidden=hide
+    if !empty(ft)
+        exe 'setl ft=' .. ft
+    endif
 enddef
 
 # run vim command; :KvimRun {vim_command}... {{{2
@@ -804,48 +805,48 @@ command! -nargs=+ -complete=command KvimRun ShowOutput(execute(<q-args>))
 command! -nargs=+ -complete=expression KvimExpr ShowOutput(eval(<q-args>))
 
 def ShowOutput(data: string)
-  ScratchNew
-  for line in split(data, "\n")
-    append('$', line)
-  endfor
-  norm gg"_dd
+    ScratchNew
+    for line in split(data, "\n")
+        append('$', line)
+    endfor
+    norm gg"_dd
 enddef
 
 # insert shebang based on filetype; :KshebangInsert [content after "#!/usr/bin/env "] {{{2
 command! -nargs=* -complete=shellcmd KshebangInsert ShebangInsert(<q-args>)
 
 g:vimrc_shebang_lines = {
-  'awk': '/usr/bin/awk -f', 'javascript': 'node', 'lua': 'lua',
-  'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
-  'scheme': 'scheme-run', 'sh': '/bin/sh', 'zsh': 'zsh'
-  }
+    'awk': '/usr/bin/awk -f', 'javascript': 'node', 'lua': 'lua',
+    'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
+    'scheme': 'scheme-run', 'sh': '/bin/sh', 'zsh': 'zsh',
+    }
 
 def ShebangInsert(args: string)
-  const first_line = getline(1)
-  if len(first_line) >= 2 && first_line[0 : 1] == '#!'
-    throw 'shebang exists!'
-  endif
-  var shebang: string
-  if !empty(args)
-    shebang = args
-  elseif has_key(g:vimrc_shebang_lines, &ft)
-    shebang = g:vimrc_shebang_lines[&ft]
-  else
-    throw 'shebang: which interpreter to run?'
-  endif
-  if match(shebang, '^/') >= 0
-    shebang = '#!' .. shebang
-  else
-    shebang = '#!/usr/bin/env ' .. shebang
-  endif
-  # insert at first line and leave cursor here (for further modification)
-  normal ggO<Esc>
-  var ret = setline(1, shebang)
-  if ret == 0  # success
-    normal $
-  else
-    throw 'setting shebang error!'
-  endif
+    const first_line = getline(1)
+    if len(first_line) >= 2 && first_line[0 : 1] == '#!'
+        throw 'shebang exists!'
+    endif
+    var shebang: string
+    if !empty(args)
+        shebang = args
+    elseif has_key(g:vimrc_shebang_lines, &ft)
+        shebang = g:vimrc_shebang_lines[&ft]
+    else
+        throw 'shebang: which interpreter to run?'
+    endif
+    if match(shebang, '^/') >= 0
+        shebang = '#!' .. shebang
+    else
+        shebang = '#!/usr/bin/env ' .. shebang
+    endif
+    # insert at first line and leave cursor here (for further modification)
+    normal ggO<Esc>
+    var ret = setline(1, shebang)
+    if ret == 0  # success
+        normal $
+    else
+        throw 'setting shebang error!'
+    endif
 enddef
 
 # match long line; :KmatchLongLine {number} {{{2
@@ -855,50 +856,50 @@ command! -nargs=1 KmatchLongLine exe '/\%>' .. <args> .. 'v.\+'
 # `J` with custom seperator; <visual>:J sep... {{{2
 command! -nargs=1 -range J JoinLines(<q-args>)
 def JoinLines(sep: string)
-  const buf = @"
-  try
-    norm gv
-    norm x
-    @" = substitute(@", "\n", sep, 'g')
-    norm P
-  finally
-    @" = buf
-  endtry
+    const buf = @"
+    try
+        norm gv
+        norm x
+        @" = substitute(@", "\n", sep, 'g')
+        norm P
+    finally
+        @" = buf
+    endtry
 enddef
 
 # edit selected line / column; :Kjump {{{2
 command! -nargs=+ Kjump JumpToLineCol(<f-args>)
 def JumpToLineCol(line: number, col: number = 0)
-  execute 'normal' line .. 'gg'
-  if col > 1
-    execute 'normal 0' .. (col - 1) .. 'l'
-  endif
+    execute 'normal' line .. 'gg'
+    if col > 1
+        execute 'normal 0' .. (col - 1) .. 'l'
+    endif
 enddef
 
 # Selection() {{{2
 def g:Selection(): string
-  const tmp = @"
-  var result = ''
-  var success = false
-  try
-    silent normal gvy
-    success = true
-  finally
-    result = @"
-    @" = tmp
-    if !success
-      throw 'g:Selection() failed!'
-      # make type check happy.
-      return result
-    else
-      return result
-    endif
-  endtry
+    const tmp = @"
+    var result = ''
+    var success = false
+    try
+        silent normal gvy
+        success = true
+    finally
+        result = @"
+        @" = tmp
+        if !success
+            throw 'g:Selection() failed!'
+            # make type check happy.
+            return result
+        else
+            return result
+        endif
+    endtry
 enddef
 
 # :SetCmdText / SetCmdText() {{{2
 def g:SetCmdText(text: string)
-  feedkeys(':' .. text, 't')
+    feedkeys(':' .. text, 't')
 enddef
 
 command! -nargs=+ SetCmdText g:SetCmdText(<q-args>)
@@ -909,37 +910,37 @@ vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), 
 
 # :KqutebrowserEditCmd {{{2
 if !empty($QUTE_FIFO)
-  command! KqutebrowserEditCmd KqutebrowserEditCmd()
+    command! KqutebrowserEditCmd KqutebrowserEditCmd()
 
-  def KqutebrowserEditCmd()
-    setl buftype=nofile noswapfile
-    setline(1, $QUTE_COMMANDLINE_TEXT[1 :])
-    setline(2, '')
-    setline(3, 'hit `<Space>q` to save cmd (first line) and quit')
-    nnoremap <buffer> <Space>q :call writefile(['set-cmd-text -s :' .. getline(1)], $QUTE_FIFO) \| q<CR>
-  enddef
+    def KqutebrowserEditCmd()
+        setl buftype=nofile noswapfile
+        setline(1, $QUTE_COMMANDLINE_TEXT[1 :])
+        setline(2, '')
+        setline(3, 'hit `<Space>q` to save cmd (first line) and quit')
+        nnoremap <buffer> <Space>q :call writefile(['set-cmd-text -s :' .. getline(1)], $QUTE_FIFO) \| q<CR>
+    enddef
 endif
 
 # :Tmux {{{2
 if exists("$TMUX")
-  command! -nargs=1 -bar Tmux TmuxOpenWindow(<q-args>)
+    command! -nargs=1 -bar Tmux TmuxOpenWindow(<q-args>)
 
-  def TmuxOpenWindow(args: string)
-    const options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
-    var ch = match(args, '\s')
-    var option: string
-    var args: string
-    if ch == -1
-      [option, args] = [a:args, '']
-    else
-      [option, args] = [a:args[:ch], a:args[ch:]]
-    endif
-    option = get(options, trim(option))
-    if empty(option)
-      throw 'unknown option: ' .. args .. '; valid: ' .. join(keys(options), ' / ')
-    endif
-    call system("tmux " .. option .. " -c " .. shellescape(getcwd()) .. args)
-  enddef
+    def TmuxOpenWindow(args: string)
+        const options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
+        var ch = match(args, '\s')
+        var option: string
+        var args: string
+        if ch == -1
+            [option, args] = [a:args, '']
+        else
+            [option, args] = [a:args[:ch], a:args[ch:]]
+        endif
+        option = get(options, trim(option))
+        if empty(option)
+            throw 'unknown option: ' .. args .. '; valid: ' .. join(keys(options), ' / ')
+        endif
+        call system("tmux " .. option .. " -c " .. shellescape(getcwd()) .. args)
+    enddef
 endif
 
 # Cd <path> / :Cdalternate / :Cdhome / :Cdbuffer / :Cdproject [:]cmd... {{{2
@@ -950,113 +951,113 @@ command! -nargs=* -complete=command Cdbuffer Cd('buffer', <q-args>)
 command! -nargs=* -complete=command Cdproject Cd('project', <q-args>)
 
 def Cd(flag: string, args: string)
-  var cmd = args
-  var path: string
-  if flag == 'alternate'
-    path = fnamemodify(bufname('#'), '%:p:h')
-  elseif flag == 'home'
-    path = expand('~')
-  elseif flag == 'project'
-    path = Cd_get_project_dir()
-  elseif flag == 'buffer'
-    path = Cd_get_buf_dir()
-  else
-    if args =~ '^:'
-      throw 'path argument is required!'
-    endif
-    # Cd: split argument as path & cmd
-    path = substitute(args, '\v^(.{}) :.+$', '\1', '')
-    cmd = args[len(path) + 1 :]
-  endif
-
-  if !isdirectory(path)
-    path = expand(path)
-  endif
-  if !isdirectory(path)
-    path = fnamemodify(path, ':h')
-  endif
-  if !isdirectory(path)
-    throw 'not a directory: ' .. args
-  endif
-
-  if !empty(cmd)
-    var old_cwd = getcwd()
-    var buf = bufnr('')
-    try
-      # use buffer variable to store cwd if `exe` switch to new window
-      b:vimrc_old_cwd = old_cwd
-      silent exe 'lcd' fnameescape(path)
-      exe cmd
-    finally
-      if buf == bufnr('')
-        if exists('b:vimrc_old_cwd')
-          unlet b:vimrc_old_cwd
+    var cmd = args
+    var path: string
+    if flag == 'alternate'
+        path = fnamemodify(bufname('#'), '%:p:h')
+    elseif flag == 'home'
+        path = expand('~')
+    elseif flag == 'project'
+        path = Cd_get_project_dir()
+    elseif flag == 'buffer'
+        path = Cd_get_buf_dir()
+    else
+        if args =~ '^:'
+            throw 'path argument is required!'
         endif
-        silent exe 'lcd' fnameescape(old_cwd)
-      endif
-    endtry
-  else
-    silent exe 'lcd' fnameescape(path)
-    if &buftype == 'terminal'
-      term_sendkeys(bufnr(''), 'cd ' .. shellescape(path))
+        # Cd: split argument as path & cmd
+        path = substitute(args, '\v^(.{}) :.+$', '\1', '')
+        cmd = args[len(path) + 1 :]
     endif
-  endif
+
+    if !isdirectory(path)
+        path = expand(path)
+    endif
+    if !isdirectory(path)
+        path = fnamemodify(path, ':h')
+    endif
+    if !isdirectory(path)
+        throw 'not a directory: ' .. args
+    endif
+
+    if !empty(cmd)
+        var old_cwd = getcwd()
+        var buf = bufnr('')
+        try
+            # use buffer variable to store cwd if `exe` switch to new window
+            b:vimrc_old_cwd = old_cwd
+            silent exe 'lcd' fnameescape(path)
+            exe cmd
+        finally
+            if buf == bufnr('')
+                if exists('b:vimrc_old_cwd')
+                    unlet b:vimrc_old_cwd
+                endif
+                silent exe 'lcd' fnameescape(old_cwd)
+            endif
+        endtry
+    else
+        silent exe 'lcd' fnameescape(path)
+        if &buftype == 'terminal'
+            term_sendkeys(bufnr(''), 'cd ' .. shellescape(path))
+        endif
+    endif
 enddef
 
 def Cd_reset()
-  if exists('b:vimrc_old_cwd')
-    try
-      silent exe 'lcd' fnameescape(b:vimrc_old_cwd)
-    finally
-      unlet b:vimrc_old_cwd
-    endtry
-  endif
+    if exists('b:vimrc_old_cwd')
+        try
+            silent exe 'lcd' fnameescape(b:vimrc_old_cwd)
+        finally
+            unlet b:vimrc_old_cwd
+        endtry
+    endif
 enddef
 
 augroup vimrc
-  au BufEnter * Cd_reset()
+    au BufEnter * Cd_reset()
 augroup END
 
 def Cd_get_buf_dir(): string
-  var path = expand('%:p:h')
-  if empty(path) || &buftype == 'terminal'
-    path = getcwd()
-  endif
-  return path
+    var path = expand('%:p:h')
+    if empty(path) || &buftype == 'terminal'
+        path = getcwd()
+    endif
+    return path
 enddef
 
 def Cd_get_project_dir(): string
-  var path = Cd_get_buf_dir()
-  var parent: string
-  while 1
-    if isdirectory(path .. '/.git')
-      return path
-    endif
-    if filereadable(path .. '/.git')
-      # git submodule
-      return path
-    endif
-    parent = fnamemodify(path, ':h')
-    if path == parent
-      return ''
-    endif
-    path = parent
-  endwhile
-  # unrechable
-  return path
+    var path = Cd_get_buf_dir()
+    var parent: string
+    while 1
+        if isdirectory(path .. '/.git')
+            return path
+        endif
+        if filereadable(path .. '/.git')
+            # git submodule
+            return path
+        endif
+        parent = fnamemodify(path, ':h')
+        if path == parent
+            return ''
+        endif
+        path = parent
+    endwhile
+    # unrechable
+    return path
 enddef
 
 # terminal-api related user function {{{2
 # sync terminal path to buffer path.
 # TODO follow cd even when terminal buffer not in focus (with event?).
 def g:Tapi_cd(nr: number, arg: list<string>)
-  if bufnr() == nr
-    var p = arg[0]
-    if is_win32 && match(p, '^/') >= 0
-      p = execute(printf("Sh cygpath -w '%s'", substitute(p, "'", "'\\\\''", 'g')))
+    if bufnr() == nr
+        var p = arg[0]
+        if is_win32 && match(p, '^/') >= 0
+            p = execute(printf("Sh cygpath -w '%s'", substitute(p, "'", "'\\\\''", 'g')))
+        endif
+        silent execute 'lcd' fnameescape(p)
     endif
-    silent execute 'lcd' fnameescape(p)
-  endif
 enddef
 
 # :Jobrun / :Jobstop / :Joblist / :Jobclear {{{2
@@ -1070,118 +1071,117 @@ command! -count Jobclear call JobClear(<count>)
 var job_dict = {}
 
 def JobExitCb(ctx: dict<any>, job: job, ret: number)
-  const buf = ctx.bufnr
-  appendbufline(buf, '$', '')
-  appendbufline(buf, '$', '===========================')
-  appendbufline(buf, '$', 'command finished with code ' .. ret)
+    const buf = ctx.bufnr
+    appendbufline(buf, '$', '')
+    appendbufline(buf, '$', '===========================')
+    appendbufline(buf, '$', 'command finished with code ' .. ret)
 enddef
 
 def JobRun(cmd_a: string, opt: dict<any>)
-  if exists(':Sh') != 2
-    throw 'depends on vim-sh plugin!'
-  endif
-  if exists(':ScratchNew') != 2
-    throw 'depends on `:ScratchNew`!'
-  endif
-  var cmd: string = cmd_a
-  var flag: string = '-n'
-  if match(cmd, '^-') >= 0
-    var tmp = matchlist(cmd, '\v^(-\S+)\s+(.*)$')
-    cmd = tmp[2]
-    flag = tmp[1] .. 'n'
-  endif
-  var cmd_short = cmd
-  if opt.range != 0
-    cmd = printf(':%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
-  else
-    cmd = printf('Sh %s %s', flag, cmd)
-  endif
-  var job_d = json_decode(execute(cmd))
-  ScratchNew
-  var bufnr = bufnr()
-  wincmd p
-  extend(job_dict, {
-    [bufnr]: {
-     job: job_start(
-       job_d.cmd, extend(job_d.opt, {
-         out_io: 'buffer', err_io: 'buffer',
-         out_buf: bufnr, err_buf: bufnr,
-         exit_cb: function(JobExitCb, [{bufnr: bufnr}]),
-       })
-      ),
-     cmd: cmd_short,
-     }
-    })
+    if exists(':Sh') != 2
+        throw 'depends on vim-sh plugin!'
+    endif
+    if exists(':ScratchNew') != 2
+        throw 'depends on `:ScratchNew`!'
+    endif
+    var cmd: string = cmd_a
+    var flag: string = '-n'
+    if match(cmd, '^-') >= 0
+        var tmp = matchlist(cmd, '\v^(-\S+)\s+(.*)$')
+        cmd = tmp[2]
+        flag = tmp[1] .. 'n'
+    endif
+    var cmd_short = cmd
+    if opt.range != 0
+        cmd = printf(':%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
+    else
+        cmd = printf('Sh %s %s', flag, cmd)
+    endif
+    var job_d = json_decode(execute(cmd))
+    ScratchNew
+    var bufnr = bufnr()
+    wincmd p
+    extend(job_dict, {
+        [bufnr]: {
+            job: job_start(job_d.cmd, extend(job_d.opt, {
+                out_io: 'buffer', err_io: 'buffer',
+                out_buf: bufnr, err_buf: bufnr,
+                exit_cb: function(JobExitCb, [{bufnr: bufnr}]),
+                })
+                ),
+            cmd: cmd_short,
+            }
+        })
 enddef
 
 def JobStop(id_a: string, sig: string)
-  var id = empty(id_a) ? bufnr() : str2nr(matchstr(id_a, '\v^\d+'))
-  if has_key(job_dict, id)
-    job_stop(job_dict[id].job, sig)
-  else
-    throw 'job not found: buffer id ' .. id
-  endif
+    var id = empty(id_a) ? bufnr() : str2nr(matchstr(id_a, '\v^\d+'))
+    if has_key(job_dict, id)
+        job_stop(job_dict[id].job, sig)
+    else
+        throw 'job not found: buffer id ' .. id
+    endif
 enddef
 
 def JobStopComp(...arg: list<any>): string
-  var result = []
-  for [k, v] in items(job_dict)
-    if v.job->job_status() == 'run'
-      add(result, printf('%s: %s', k, v.cmd))
-    endif
-  endfor
-  return join(result, "\n")
+    var result = []
+    for [k, v] in items(job_dict)
+        if v.job->job_status() == 'run'
+            add(result, printf('%s: %s', k, v.cmd))
+        endif
+    endfor
+    return join(result, "\n")
 enddef
 
 def JobList()
-  for [k, v] in items(job_dict)
-    echo printf("%s:\t%s\t%s", k, v.job, v.cmd)
-  endfor
+    for [k, v] in items(job_dict)
+        echo printf("%s:\t%s\t%s", k, v.job, v.cmd)
+    endfor
 enddef
 
 def JobClear(num: number)
-  for item in num > 0 ? [num] : keys(job_dict)
-    var job = get(job_dict, item)
-    if !empty(job)
-      if job.job->job_info().status != 'run'
-        remove(job_dict, item)
-      endif
-    endif
-  endfor
+    for item in num > 0 ? [num] : keys(job_dict)
+        var job = get(job_dict, item)
+        if !empty(job)
+            if job.job->job_info().status != 'run'
+                remove(job_dict, item)
+            endif
+        endif
+    endfor
 enddef
 
 # :Mpc {{{2
 if executable('mpc')
-  command! Mpc Mpc()
+    command! Mpc Mpc()
 
-  var mpc_prop_type = 'song'
+    var mpc_prop_type = 'song'
 
-  def Mpc()
-    enew | setl filetype=mpc buftype=nofile noswapfile nobuflisted
-    var buf = bufnr()
-    prop_type_add(mpc_prop_type, {bufnr: buf})
-    var i = 1
-    for line in split(system('mpc playlist'), "\n")
-      setline(i, line)
-      prop_add(i, 1, {type: mpc_prop_type, id: i, bufnr: buf})
-      i += 1
-    endfor
-    const nr = str2nr(system('mpc current -f "%position%"'))
-    execute 'norm' nr .. 'G'
-    nnoremap <buffer> <silent> <CR> <cmd>call <SID>MpcPlay()<CR>
-  enddef
+    def Mpc()
+        enew | setl filetype=mpc buftype=nofile noswapfile nobuflisted
+        var buf = bufnr()
+        prop_type_add(mpc_prop_type, {bufnr: buf})
+        var i = 1
+        for line in split(system('mpc playlist'), "\n")
+            setline(i, line)
+            prop_add(i, 1, {type: mpc_prop_type, id: i, bufnr: buf})
+            i += 1
+        endfor
+        const nr = str2nr(system('mpc current -f "%position%"'))
+        execute 'norm' nr .. 'G'
+        nnoremap <buffer> <silent> <CR> <cmd>call <SID>MpcPlay()<CR>
+    enddef
 
-  def MpcPlay()
-    var props = prop_list(line('.'))
-    if len(props) == 0
-      return
-    endif
+    def MpcPlay()
+        var props = prop_list(line('.'))
+        if len(props) == 0
+            return
+        endif
 
-    var prop = props[-1]
-    if prop['type'] == mpc_prop_type
-      job_start(printf('mpc play %d', prop.id))
-    endif
-  enddef
+        var prop = props[-1]
+        if prop['type'] == mpc_prop_type
+            job_start(printf('mpc play %d', prop.id))
+        endif
+    enddef
 endif
 
 # :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{2
@@ -1189,38 +1189,38 @@ endif
 command! -bang -nargs=* -range=0 ChdirTerminal ChdirTerminal(<bang>false, <range>, <q-args>)
 
 def ChdirTerminal(bang: bool, range: number, path_a: string)
-  var path = path_a ?? ( range > 0 ? g:Selection() : expand('<cfile>') )
-  if match(path, '\v^[~$<%]') >= 0
-    path = expand(path)
-  endif
-  path = fnamemodify(path, ':p')
-  if filereadable(path)
-    path = fnamemodify(path, ':h')
-  endif
-  if !isdirectory(path)
-    throw 'is not directory or not readable: ' .. path
-  endif
+    var path = path_a ?? ( range > 0 ? g:Selection() : expand('<cfile>') )
+    if match(path, '\v^[~$<%]') >= 0
+        path = expand(path)
+    endif
+    path = fnamemodify(path, ':p')
+    if filereadable(path)
+        path = fnamemodify(path, ':h')
+    endif
+    if !isdirectory(path)
+        throw 'is not directory or not readable: ' .. path
+    endif
 
-  const bufs: list<number> = tabpagebuflist()
-  if !bang
-    for i in term_list()->filter(
-      (_, x) => x->term_getstatus() == 'running'
-      )
-      const idx: number = index(bufs, i)
-      if idx >= 0
-        echo printf('chdir in window [%d]? [y/N] ', idx + 1)
-        if nr2char(getchar())->tolower() == 'y'
-          execute ':' .. (idx + 1) 'wincmd w'
-          call feedkeys(printf('%scd %s', mode() == 'n' ? 'i' : '', shellescape(path)), 't')
-        else
-          redrawstatus | echon 'cancelled.'
-        endif
-        return
-      endif
-    endfor
-  endif
-  const cmd = bang ? 'Sh -w' : 'Sh -t'
-  execute 'Cd' path ':' .. cmd
+    const bufs: list<number> = tabpagebuflist()
+    if !bang
+        for i in term_list()->filter(
+            (_, x) => x->term_getstatus() == 'running'
+            )
+            const idx: number = index(bufs, i)
+            if idx >= 0
+                echo printf('chdir in window [%d]? [y/N] ', idx + 1)
+                if nr2char(getchar())->tolower() == 'y'
+                    execute ':' .. (idx + 1) 'wincmd w'
+                    call feedkeys(printf('%scd %s', mode() == 'n' ? 'i' : '', shellescape(path)), 't')
+                else
+                    redrawstatus | echon 'cancelled.'
+                endif
+                return
+            endif
+        endfor
+    endif
+    const cmd = bang ? 'Sh -w' : 'Sh -t'
+    execute 'Cd' path ':' .. cmd
 enddef
 
 # g:Popup(cmd: string, Cb: fn<list<string>>, ctx : dict = {}); {{{2
@@ -1233,86 +1233,86 @@ var popup_win: number
 var tmpfiles_dict: dict<func> = {}
 
 def g:Popup(cmd: string, Cb: func, ...args: list<dict<any>>)
-  var exec_pre: string = 'exec'
-  var range: string = ''
-  var kwargs: dict<any> = args->get(0) ?? {}
-  if kwargs->has_key('input') || kwargs->has_key('ex')
-    const stdin_f: string = tempname()
-    if kwargs->has_key('input')
-      writefile(kwargs.input->split("\n"), stdin_f)
-    else
-      writefile(execute(kwargs.ex)->split("\n"), stdin_f)
+    var exec_pre: string = 'exec'
+    var range: string = ''
+    var kwargs: dict<any> = args->get(0) ?? {}
+    if kwargs->has_key('input') || kwargs->has_key('ex')
+        const stdin_f: string = tempname()
+        if kwargs->has_key('input')
+            writefile(kwargs.input->split("\n"), stdin_f)
+        else
+            writefile(execute(kwargs.ex)->split("\n"), stdin_f)
+        endif
+        exec_pre ..= (' < ' .. shellescape(stdin_f))
     endif
-    exec_pre ..= (' < ' .. shellescape(stdin_f))
-  endif
-  if kwargs->get('range', 0) > 0
-    range = printf(':%d,%d', kwargs.line1, kwargs.line2)
-  endif
-  var tmpfile: string = tempname()
-  exec_pre ..= (' > ' .. shellescape(tmpfile))
-  var res: dict<any> = json_decode(execute(printf('%sSh -n %s; %s', range, exec_pre, cmd)))
+    if kwargs->get('range', 0) > 0
+        range = printf(':%d,%d', kwargs.line1, kwargs.line2)
+    endif
+    var tmpfile: string = tempname()
+    exec_pre ..= (' > ' .. shellescape(tmpfile))
+    var res: dict<any> = json_decode(execute(printf('%sSh -n %s; %s', range, exec_pre, cmd)))
 
-  # use Sh -w as popup, then we set s:tmpfiles_dict.
-  if kwargs->has_key('program')
-    const program: string = kwargs.program
-    if match(program, '\v[^a-z]') >= 0
-      throw printf('invalid program: "%s"', program)
+    # use Sh -w as popup, then we set tmpfiles_dict.
+    if kwargs->has_key('program')
+        const program: string = kwargs.program
+        if match(program, '\v[^a-z]') >= 0
+            throw printf('invalid program: "%s"', program)
+        endif
+
+        if !exists('g:vimserver_env')
+            || match(get(g:vimserver_env, 'VIMSERVER_BIN', '.sh'), '\v\.sh$') >= 0
+            throw 'vimserver-helper (.exe) not available!'
+        endif
+
+        var exe: string = g:vimserver_env['VIMSERVER_BIN']
+        var server: string = g:vimserver_env['VIMSERVER_ID']
+
+        tmpfiles_dict[tmpfile] = Cb
+        exe = shellescape(exe)
+        server = shellescape(server)
+        tmpfile = shellescape(tmpfile)
+        var title: string = kwargs->get('title', '') ?? 'Selection'
+        if match(title, '\v[^a-zA-Z_-]') >= 0
+            # Sh -title=xxx does not accept too many type of char.
+            title = 'Selection'
+        endif
+        execute(printf("%sSh -c,w=%s,title=%s %s; sh -c '\"$@\" && %s %s %s %s' - %s",
+        range, program, title, exec_pre,    exe, server, 'Tapi_popup_cb', tmpfile, cmd))
+        # exit now!
+        return
     endif
 
-    if !exists('g:vimserver_env')
-      || match(get(g:vimserver_env, 'VIMSERVER_BIN', '.sh'), '\v\.sh$') >= 0
-      throw 'vimserver-helper (.exe) not available!'
-    endif
-
-    var exe: string = g:vimserver_env['VIMSERVER_BIN']
-    var server: string = g:vimserver_env['VIMSERVER_ID']
-
-    tmpfiles_dict[tmpfile] = Cb
-    exe = shellescape(exe)
-    server = shellescape(server)
-    tmpfile = shellescape(tmpfile)
-    var title: string = kwargs->get('title', '') ?? 'Selection'
-    if match(title, '\v[^a-zA-Z_-]') >= 0
-      # Sh -title=xxx does not accept too many type of char.
-      title = 'Selection'
-    endif
-    execute(printf("%sSh -c,w=%s,title=%s %s; sh -c '\"$@\" && %s %s %s %s' - %s",
-                    range, program, title, exec_pre,    exe, server, 'Tapi_popup_cb', tmpfile, cmd))
-    # exit now!
-    return
-  endif
-
-  # use builtin popup, then tmpfile can be set safely.
-  # (popup terminal steals focus).
-  popup_tmpfile = tmpfile
-  var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: function(TermExitCb), hidden: 1}))
-  const width: number = min([&columns - 10, 80])
-  const height: number = min([&lines - 5, 24])
-  popup_win = popup_create(buf, {
-    minwidth: width, maxwidth: width, minheight: height, maxheight: height,
-    callback: function(PopupCloseCb, [Cb])
-    })
+    # use builtin popup, then tmpfile can be set safely.
+    # (popup terminal steals focus).
+    popup_tmpfile = tmpfile
+    var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: function(TermExitCb), hidden: 1}))
+    const width: number = min([&columns - 10, 80])
+    const height: number = min([&lines - 5, 24])
+    popup_win = popup_create(buf, {
+        minwidth: width, maxwidth: width, minheight: height, maxheight: height,
+        callback: function(PopupCloseCb, [Cb])
+        })
 enddef
 
 def TermExitCb(_: job, code: number)
-  popup_close(popup_win, code == 0 ? readfile(popup_tmpfile) : [])
+    popup_close(popup_win, code == 0 ? readfile(popup_tmpfile) : [])
 enddef
 
 def PopupCloseCb(Cb: func, _: number, result: list<string>)
-  # TODO is this check required?
-  if !empty(result)
-    call(Cb, [result])
-  endif
+    # TODO is this check required?
+    if !empty(result)
+        call(Cb, [result])
+    endif
 enddef
 
 # it will be called from g:Tapi_popup_cb (also defined in this file).
 def PopupCallback(tmpfile: string)
-  if tmpfiles_dict->has_key(tmpfile)
-    # -1 is random.
-    # TODO check exitcode? (seems not necessary)
-    PopupCloseCb(tmpfiles_dict[tmpfile], -1, readfile(tmpfile))
-    remove(tmpfiles_dict, tmpfile)
-  endif
+    if tmpfiles_dict->has_key(tmpfile)
+        # -1 is random.
+        # TODO check exitcode? (seems not necessary)
+        PopupCloseCb(tmpfiles_dict[tmpfile], -1, readfile(tmpfile))
+        remove(tmpfiles_dict, tmpfile)
+    endif
 enddef
 
 # :Select {buffer|filelist|color} {{{2
@@ -1325,56 +1325,57 @@ const ctx_use_w_program: bool = is_win32
 
 # Select() and it's comp {{{3
 def SelectComp(..._: list<any>): string
-  return popup_sources->keys()->join("\n")
+    return popup_sources->keys()->join("\n")
 enddef
 
 def Select(source: string, ctx: dict<any>)
-  if popup_sources->has_key(source)
-    call(popup_sources[source], [ctx])
-  else
-    throw printf('selection not implemented: "%s"!', source)
-  endif
+    if popup_sources->has_key(source)
+        call(popup_sources[source], [ctx])
+    else
+        throw printf('selection not implemented: "%s"!', source)
+    endif
 enddef
 
 # buffers / LsBuffers() {{{3
 def LsBuffers(ctx: dict<any>)
-  g:Popup(
+    g:Popup(
     'fzf',
     (s: list<string>) => {
-      const bufnr = s[0]->matchstr('\v^\s*\zs(\d+)\ze')
-      execute ':' .. bufnr .. 'b'
-      },
+        const bufnr = s[0]->matchstr('\v^\s*\zs(\d+)\ze')
+        execute ':' .. bufnr .. 'b'
+        },
     extendnew({ex: 'ls', title: 'select-buffer'},
-      ctx_use_w_program ? {program: 'cmd'} : {}),
+    ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef
 
 # color / Color() {{{3
 def Color(ctx: dict<any>)
-  g:Popup(
-  'fzf',
-  (s: list<string>) => {
-    execute 'color' fnameescape(s[0])
+    g:Popup(
+    'fzf',
+    (s: list<string>) => {
+        execute 'color' fnameescape(s[0])
+        },
+    extendnew({
+    title: 'select-color',
+    input: globpath(&rtp, "colors/*.vim", 0, 1)
+    ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")
     },
-  extendnew({
-      title: 'select-color',
-      input: globpath(&rtp, "colors/*.vim", 0, 1)
-        ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")},
     ctx_use_w_program ? {program: 'cmd'} : {}),
     )
 enddef
 
 # filelist / FileList() {{{3
 def FileList(ctx: dict<any>)
-  if ctx.range == 0
-    throw 'range is required!'
-  endif
-  g:Popup(
-  'fzf',
-  (s: list<string>) => {
-    execute 'e' fnameescape(s[0])
-    },
-  extendnew(
+    if ctx.range == 0
+        throw 'range is required!'
+    endif
+    g:Popup(
+    'fzf',
+    (s: list<string>) => {
+        execute 'e' fnameescape(s[0])
+        },
+    extendnew(
     extendnew(ctx, {title: 'select-filelist'}),
     ctx_use_w_program ? {program: 'cmd'} : {}),
     )
@@ -1382,106 +1383,107 @@ enddef
 
 # register new source here! {{{3
 const popup_sources: dict<func> = {
-  buffer: LsBuffers,
-  color: Color,
-  filelist: FileList,
-  }
+    buffer: LsBuffers,
+    color: Color,
+    filelist: FileList,
+    }
 
 # g:Tapi_popup_cb() {{{3
 def g:Tapi_popup_cb(nr: number, arg: list<string>)
-  const tmpfile = arg->get(0, '')
-  if !empty(tmpfile)
-    PopupCallback(tmpfile)
-  endif
+    const tmpfile = arg->get(0, '')
+    if !empty(tmpfile)
+        PopupCallback(tmpfile)
+    endif
 enddef
 
 # sv() helper (in vim embedded terminal) {{{2
 def g:Tapi_shell_sv_helper(...arg: list<any>)
-  feedkeys("\<C-space>")
+    feedkeys("\<C-space>")
 enddef
 
 # <c-n> / <c-p> to switch buffer. {{{2
 nnoremap <C-n> <cmd>call <SID>SwitchBuffer(v:true)<CR>
 nnoremap <C-p> <cmd>call <SID>SwitchBuffer(v:false)<CR>
 def SwitchBuffer(reverse: bool = false)
-  var current: number = bufnr()
+    var current: number = bufnr()
 
-  const single_window: bool = tabpagebuflist()->len() == 1
-  if !single_window
-    tabe
-  endif
+    const single_window: bool = tabpagebuflist()->len() == 1
+    if !single_window
+        tabe
+    endif
 
-  const all_bufs = getbufinfo()
-  ->filter((_, i) => !empty(i.name) && !empty(i.listed))
-  ->mapnew((_, i) => i.bufnr)
+    const all_bufs = getbufinfo()
+    ->filter((_, i) => !empty(i.name) && !empty(i.listed))
+    ->mapnew((_, i) => i.bufnr)
 
-  if empty(all_bufs)
-    # avoid divide zero
-    return
-  endif
+    if empty(all_bufs)
+        # avoid divide zero
+        return
+    endif
 
-  var idx = index(all_bufs, current)
-  if idx < 0 && reverse
-    idx = 0
-  endif
-  if single_window
-    idx += (reverse ? 1 : -1)
-  endif
-  idx = idx % len(all_bufs)
+    var idx = index(all_bufs, current)
+    if idx < 0 && reverse
+        idx = 0
+    endif
+    if single_window
+        idx += (reverse ? 1 : -1)
+    endif
+    idx = idx % len(all_bufs)
 
-  execute ':' string(all_bufs[idx]) 'b'
+    execute ':' string(all_bufs[idx]) 'b'
 enddef
 
 # :Rgbuffer {...} {{{2
 command! -nargs=+ Rgbuffer Rgbuffer(<q-args>)
 
 def Jumpback(buf: number)
-  const buffers = tabpagebuflist()
-  const idx = index(buffers, buf)
-  if idx >= 0
-    execute 'normal' (idx + 1) "\<Plug>(jump_to_file)"
-  else
-    echoerr 'buffer not found!'
-  endif
+    const buffers = tabpagebuflist()
+    const idx = index(buffers, buf)
+    if idx >= 0
+        execute 'normal' (idx + 1) "\<Plug>(jump_to_file)"
+    else
+        echoerr 'buffer not found!'
+    endif
 enddef
 
 def Rgbuffer(arg: string)
-  const buf = bufnr()
-  const result = execute(':%Sh rg -I --column ' .. arg)
-  bel :7sp +enew | setl buftype=nofile
-  put =result
-  norm gg"_dd
-  execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
-  syn match String '\v^[0-9]+'
+    const buf = bufnr()
+    const result = execute(':%Sh rg -I --column ' .. arg)
+    bel :7sp +enew | setl buftype=nofile
+    put =result
+    norm gg"_dd
+    execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
+    syn match String '\v^[0-9]+'
 enddef
 
 # exe {{{2
 augroup vimrc
-  au BufReadCmd *.exe,*.dll ReadBin(expand('<amatch>'))
-  au BufWriteCmd *.exe,*.dll WriteBin(expand('<amatch>'))
+    au BufReadCmd *.exe,*.dll ReadBin(expand('<amatch>'))
+    au BufWriteCmd *.exe,*.dll WriteBin(expand('<amatch>'))
 augroup END
 
 # avoid using busybox xxd.
 const xxd_path = exists($VIM .. '/bin/xxd') ? '"$VIM"/bin/xxd' : 'xxd'
 
 def ReadBin(name: string)
-  execute printf('silent r !%s %s', xxd_path, shellescape(name))
-  normal gg"_dd
+    execute printf('silent r !%s %s', xxd_path, shellescape(name))
+    normal gg"_dd
 enddef
 
 def WriteBin(name: string)
-  if is_win32
-    # returncode check is ignored.
-    job_start('xxd -r', {in_io: 'buffer', in_buf: bufnr(), out_io: 'file', out_name: name})
-  else
-    execute printf(':%w !%s -r > %s', xxd_path, shellescape(name))
-    if !empty(v:shell_error)
-      return
+    if is_win32
+        # returncode check is ignored.
+        job_start('xxd -r', {in_io: 'buffer', in_buf: bufnr(), out_io: 'file', out_name: name})
+    else
+        execute printf(':%w !%s -r > %s', xxd_path, shellescape(name))
+        if !empty(v:shell_error)
+            return
+        endif
     endif
-  endif
-  setl nomodified
-  redrawstatus | echon 'written.'
+    setl nomodified
+    redrawstatus | echon 'written.'
 enddef
 
-# }}}1
-# finish.
+# TODO shortcut for reader mode. (view code / text easily.) {{{2
+
+# finish {{{1 }}}1
