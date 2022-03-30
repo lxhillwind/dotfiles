@@ -293,6 +293,12 @@ Pack 'pyvim'
 g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
 # }}}
 
+# vim dist. {{{
+# use matchit, so vim9 filetype indent work as expected.
+# https://github.com/vim/vim/issues/7628
+Pack 'matchit'
+# }}}
+
 # from network {{{
 Pack 'https://github.com/justinmk/vim-dirvish', {'commit': 'b2b5709'}
 g:loaded_netrwPlugin = 1
@@ -1108,7 +1114,7 @@ def JobRun(cmd_a: string, opt: dict<any>)
                 out_buf: bufnr, err_buf: bufnr,
                 exit_cb: function(JobExitCb, [{bufnr: bufnr}]),
                 })
-                ),
+            ),
             cmd: cmd_short,
             }
         })
@@ -1361,8 +1367,8 @@ def Color(ctx: dict<any>)
     input: globpath(&rtp, "colors/*.vim", 0, 1)
     ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")
     },
-    ctx_use_w_program ? {program: 'cmd'} : {}),
-    )
+ctx_use_w_program ? {program: 'cmd'} : {}),
+)
 enddef
 
 # filelist / FileList() {{{3
