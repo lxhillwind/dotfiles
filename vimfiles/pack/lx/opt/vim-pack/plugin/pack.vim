@@ -49,17 +49,21 @@ if exists(':packadd') != 2
   finish
 endif
 
+function! s:TrSlash(s)
+    return substitute(a:s, '\', '/', 'g')
+endfunction
+
 " clear list on (re)loading vimrc.
 let s:plugins = {}
 " plugin list for local dir; this is to be used in ":PackHelpTags"
 let s:plugins_local = []
 " ensure plugins root is in rtp.
 let s:plugins_root = ''
-let s:rtp = split(&rtp, ',')
-let s:self = expand('<sfile>')
+let s:rtp = map(split(&rtp, ','), 's:TrSlash(v:val)')
+
 for s:root in exists('g:plugins_root') ? [g:plugins_root] : []
-      \ + [fnamemodify(s:self, ':p:h'), fnamemodify(s:self, ':p:h:h')]
-  if index(s:rtp, s:root) >= 0
+      \ + [expand('~/vimfiles'), expand('~/.vim')]
+  if index(s:rtp, s:TrSlash(s:root)) >= 0
     let s:plugins_root =  s:root . '/pack/rc/opt'
     break
   endif
