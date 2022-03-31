@@ -874,7 +874,7 @@ def JoinLines(sep: string)
 enddef
 
 # edit selected line / column; :Kjump {{{2
-command! -nargs=+ Kjump JumpToLineCol(<f-args>)
+command! -nargs=+ Kjump JumpToLineCol(<args>)
 def JumpToLineCol(line: number, col: number = 0)
     execute 'normal' line .. 'gg'
     if col > 1
