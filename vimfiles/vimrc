@@ -1,5 +1,4 @@
 " vim:fdm=marker
-" path: ~/.vimrc
 
 " vim9 header {{{1
 if !has('vim9script')
@@ -87,30 +86,48 @@ const is_win32 = has('win32')
 const has_gui = has('gui_running') || has('mac')
 || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 
-var self = expand('<sfile>:p')
-if is_unix
-    # this file may be symbolic-ed.
-    self = resolve(self)
-endif
-const self_dir = fnamemodify(self, ':h')
-def LoadScript(file: string)
-    exec 'source' fnameescape(self_dir .. '/' .. file)
-enddef
-
-# add this directory to &rtp / &pp
-execute 'set rtp^=' .. fnameescape(self_dir)
-execute 'set rtp+=' .. fnameescape(self_dir .. '/after')
-execute 'set pp^=' .. fnameescape(self_dir)
+# &rtp / &pp
+set rtp=~/vimfiles,$VIMRUNTIME,~/vimfiles/after
+set pp=~/vimfiles,$VIMRUNTIME
 
 # option {{{1
-# unnamed... {{{2
+# win32 environment variable prepare {{{2
 if is_win32
-    # setup env before calling vim-vimserver below.
-    LoadScript('rc/win32.vim')
+    # set $HOME (for unix shell), $PATH, $VIM ...
+    def TrSlash(s: string): string
+        return substitute(s, '\', '/', 'g')
+    enddef
+
+    # make it work in cygwin vim.
+    $VIM = TrSlash($VIM)
+    $VIMRUNTIME = TrSlash($VIMRUNTIME)
+    $MYVIMRC = TrSlash($MYVIMRC)
+
+    if !exists('$HOME')
+        $HOME = TrSlash($USERPROFILE)
+    else
+        $HOME = TrSlash($HOME)
+    endif
+
+    var path = $PATH->split(';')->map((_, i) => TrSlash(i))
+    for i in [
+            expand('~/vimfiles/bin'),
+            expand('~/bin'),
+            ]
+        if index(path, i) < 0 && isdirectory(i)
+            $PATH = i .. ';' .. $PATH
+        endif
+    endfor
+    # cygwin vim -> vim -> others.
+    $PATH = '/usr/bin;/bin;' .. $VIMRUNTIME .. ';' .. $PATH
+
+    # vim-sh config; busybox sh rc
+    $ENV = expand('~/.config/zshrc')
 endif
 
+# unnamed... {{{2
 # vim-vimserver should be called early.
-LoadScript('pack/lx/opt/vim-vimserver/plugin/vimserver.vim')
+packadd vim-vimserver
 
 # map early
 g:mapleader = ' '  # assign before use
@@ -248,7 +265,7 @@ endif
 # plugin {{{1
 # TODO check plugin commmit.
 # first, enable ":Pack" command.
-LoadScript('rc/pack.vim')
+packadd vim-pack
 
 # disable default plugin {{{
 g:loaded_2html_plugin = 1
@@ -264,8 +281,9 @@ g:loaded_zipPlugin = 1
 g:loaded_fzf = 1
 
 # plugin config. {{{
+const rc_dir = expand('~/vimfiles/config')
 def JoinPath(path: string): string
-    return self_dir .. '/' .. path
+    return rc_dir .. '/' .. path
 enddef
 
 g:tasks_config_paths = [JoinPath('config/tasks.ini')]
