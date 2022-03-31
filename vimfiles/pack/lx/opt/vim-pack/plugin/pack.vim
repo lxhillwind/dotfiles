@@ -1,43 +1,62 @@
-" vim: fdm=marker
-" :Pack / :PackStatus / :PackClean / :PackHelpTags; a simple plugin manager (for vim8). {{{1
+" vim: fdm=marker sw=2
+"
+" :Pack / :PackStatus / :PackClean / :PackHelpTags;
+" a simple plugin manager (for vim8). doc: {{{1
 "
 " usage:
 "   Pack [url][, {opt}]
 "   PackStatus
 "   PackClean
 "   PackHelpTags
+"
 " example:
 "   Pack 'tpope/vim-sensible'
+"
 "   " as: install with a different folder name
 "   Pack 'https://github.com/dracula/vim', #{as: 'dracula'}
+"
 "   " branch: tag or branch
 "   Pack 'https://github.com/Shougo/ddc.vim', #{branch: 'v0.14.0'}
+"
 "   " after: install to after sub directory of plugin folder
 "   " commit: checkout a special commit.
 "   Pack 'https://github.com/ciaranm/securemodelines', #{after: 1, commit: '9751f29699186a47743ff6c06e689f483058d77a'}
+"
 "   " skip: do not load plugin.
 "   Pack 'a-plugin-to-packadd-on-demand', #{skip: 1}
+"
+"   " load local dir / file
 "   Pack '~/dir/local'
 "   Pack '$HOME/dir/local'
-"   Pack '~/file/local'  " same as :source
-"   Pack  " output command for install / update (fetch, not pull; merge manually required)
+"   " same as :source
+"   Pack '~/file/local'
 "
-"   PackStatus  " output command to get `git log` summary for each plugin (which plugin requires merge)
-"   PackClean  " prompt to clean not `Pack`ed dir
-"   PackHelpTags  " generate helptags for plugins it knows.
+"   " output command for install / update (fetch, not pull; merge manually required)
+"   Pack
+"
+"   " output command to get `git log` summary for each plugin (which plugin requires merge)
+"   PackStatus
+"
+"   " prompt to clean not `Pack`ed dir
+"   PackClean
+"
+"   " generate helptags for plugins it knows.
+"   PackHelpTags
+"
 " opt:
 "   as; branch; commit; after; skip.
+"
 " complete workflow:
-"   after running `:Pack!`, run the new file with sh with
-"   `:Jobrun sh %`, `:!sh %:S`, or other way to run external command.
+"   after running `:Pack!`, run the new buffer content with sh with
+"   `:%!sh`, or other way to run external command.
 "
 " after vim is started, ":Pack {url}" can be used to load skipped plugin.
 " command completion returns plugins (not loaded) list.
 "
 " ":Pack {url}[, {opt}]" can be re-run for the same url ({opt} can change),
 " once package is not actually available (not downloaded).
-" }}}
 
+" prepare {{{1
 if exists('loaded_pack')
   finish
 endif
@@ -50,11 +69,11 @@ if exists(':packadd') != 2
 endif
 
 function! s:TrSlash(s) abort
-    if has('win32')
-        return substitute(a:s, '\', '/', 'g')
-    else
-        return a:s
-    endif
+  if has('win32')
+    return substitute(a:s, '\', '/', 'g')
+  else
+    return a:s
+  endif
 endfunction
 
 " clear list on (re)loading vimrc.
@@ -180,14 +199,13 @@ function! s:pack(bang, ...) abort
 
     " output report.
     call s:pack_report(a:bang, l:lines,
-            \ ['#!/bin/sh',
-            \ "{ grep -Ev '^(#|$)'" .
-            \ ' | tr "\n" "\0" | xargs -r -0 -n 1 -P 5 sh -c; } <<\EOF']
-            \ + [''],
-            \ ['EOF'])
+          \ ['#!/bin/sh',
+          \ "{ grep -Ev '^(#|$)'" .
+          \ ' | tr "\n" "\0" | xargs -r -0 -n 1 -P 5 sh -c; } <<\EOF']
+          \ + [''],
+          \ ['EOF'])
   endif
 endfunction
-" }}}
 
 " s:pack_status() {{{1
 function! s:pack_status(bang) abort
@@ -212,7 +230,6 @@ function! s:pack_status(bang) abort
 
   call s:pack_report(a:bang, l:lines, ['#!/bin/sh'], [])
 endfunction
-" }}}1
 
 " s:pack_clean() {{{1
 function! s:pack_clean(bang) abort
@@ -270,7 +287,6 @@ function! s:pack_clean(bang) abort
     redraws | echon 'cancelled.'
   endif
 endfunction
-" }}}
 
 " s:pack_help_tags() {{{1
 function! s:pack_help_tags()
@@ -292,7 +308,6 @@ function! s:pack_help_tags()
     endif
   endfor
 endfunction
-" }}}1
 
 " helper functions. {{{1
 function! s:pack_construct_url(name) abort

@@ -875,7 +875,7 @@ enddef
 
 # match long line; :KmatchLongLine {number} {{{2
 # Refer: https://stackoverflow.com/a/1117367
-command! -nargs=1 KmatchLongLine exe '/\%>' .. <args> .. 'v.\+'
+command! -nargs=1 KmatchLongLine exe ':/\%>' .. <args> .. 'v.\+'
 
 # `J` with custom seperator; <visual>:J sep... {{{2
 command! -nargs=1 -range J JoinLines(<q-args>)
