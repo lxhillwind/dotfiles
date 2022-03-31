@@ -49,8 +49,12 @@ if exists(':packadd') != 2
   finish
 endif
 
-function! s:TrSlash(s)
-    return substitute(a:s, '\', '/', 'g')
+function! s:TrSlash(s) abort
+    if has('win32')
+        return substitute(a:s, '\', '/', 'g')
+    else
+        return a:s
+    endif
 endfunction
 
 " clear list on (re)loading vimrc.
