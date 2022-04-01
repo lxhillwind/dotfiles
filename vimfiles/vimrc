@@ -1088,9 +1088,11 @@ def g:Tapi_cd(nr: number, arg: list<string>)
     endif
 enddef
 
-# :Jobrun / :Jobstop / :Joblist / :Jobclear {{{2
+# :Jobrun / :Jobqfrun / :Jobstop / :Joblist / :Jobclear {{{2
 command! -range=0 -nargs=+ Jobrun
-| JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
+| JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: false})
+command! -range=0 -nargs=+ Jobqfrun
+| JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: true})
 command! -nargs=* -bang -complete=custom,JobStopComp Jobstop
 | JobStop(<q-args>, <bang>0 ? 'kill' : 'term')
 command! Joblist call JobList()
@@ -1098,11 +1100,22 @@ command! -count Jobclear call JobClear(<count>)
 
 var job_dict = {}
 
+def JobOutCb(ctx: dict<any>, _: channel, msg: string)
+    const buf = ctx.bufnr
+    setqflist([], 'a', {nr: buf, lines: [msg]})
+enddef
+
 def JobExitCb(ctx: dict<any>, job: job, ret: number)
     const buf = ctx.bufnr
-    appendbufline(buf, '$', '')
-    appendbufline(buf, '$', '===========================')
-    appendbufline(buf, '$', 'command finished with code ' .. ret)
+    var data = []
+    add(data, '')
+    add(data, '===========================')
+    add(data, 'command finished with code ' .. ret)
+    if ctx.qf
+        setqflist([], 'a', {nr: buf, lines: data})
+    else
+        appendbufline(buf, '$', data)
+    endif
 enddef
 
 def JobRun(cmd_a: string, opt: dict<any>)
@@ -1126,17 +1139,31 @@ def JobRun(cmd_a: string, opt: dict<any>)
         cmd = printf('Sh %s %s', flag, cmd)
     endif
     var job_d = json_decode(execute(cmd))
-    ScratchNew
-    var bufnr = bufnr()
-    wincmd p
+    var bufnr: number
+    if opt.qf
+        var current_max = getqflist({nr: '$'}).nr
+        bufnr = current_max + 1
+        setqflist([], ' ', {title: cmd_short, nr: bufnr})
+        extend(job_d.opt, {
+            out_cb: function(JobOutCb, [{bufnr: bufnr}]),
+            err_cb: function(JobOutCb, [{bufnr: bufnr}]),
+            })
+    else
+        ScratchNew
+        bufnr = bufnr()
+        wincmd p
+        extend(job_d.opt, {
+            out_io: 'buffer', err_io: 'buffer',
+            out_buf: bufnr, err_buf: bufnr,
+            })
+    endif
+    extend(job_d.opt, {
+        exit_cb: function(JobExitCb, [{bufnr: bufnr, qf: opt.qf}]),
+        })
+
     extend(job_dict, {
         [bufnr]: {
-            job: job_start(job_d.cmd, extend(job_d.opt, {
-                out_io: 'buffer', err_io: 'buffer',
-                out_buf: bufnr, err_buf: bufnr,
-                exit_cb: function(JobExitCb, [{bufnr: bufnr}]),
-                })
-            ),
+            job: job_start(job_d.cmd, job_d.opt),
             cmd: cmd_short,
             }
         })
