@@ -1100,7 +1100,7 @@ command! -nargs=* -bang -complete=custom,JobStopComp Jobstop
 command! Joblist call JobList()
 command! -count Jobclear call JobClear(<count>)
 
-var job_dict = {}
+var job_dict = exists('job_dict') ? job_dict : {}
 
 def JobOutCb(ctx: dict<any>, _: channel, msg: string)
     const buf = ctx.bufnr
@@ -1145,7 +1145,7 @@ def JobRun(cmd_a: string, opt: dict<any>)
     if opt.qf
         var current_max = getqflist({nr: '$'}).nr
         bufnr = current_max + 1
-        setqflist([], ' ', {title: cmd_short, nr: bufnr})
+        setqflist([], ' ', {title: '(:Joblist to check state) ' .. cmd_short, nr: bufnr})
         extend(job_d.opt, {
             out_cb: function(JobOutCb, [{bufnr: bufnr}]),
             err_cb: function(JobOutCb, [{bufnr: bufnr}]),
@@ -1508,6 +1508,8 @@ def Rg(arg: string, opt: dict<any>)
     const buf = bufnr()
     if opt.range == 0
         exec 'Jobqfrun' 'rg --vimgrep' arg
+        # jump to qf window. (<Leader>q defined in this file.)
+        feedkeys(' q', 't')
     else
         # TODO what to do if range is not %? (line number will be wrong)
         const result = execute(
