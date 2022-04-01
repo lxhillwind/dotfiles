@@ -18,13 +18,6 @@ endif
 
 set nomodeline
 
-if has('vim_starting')
-    " openSUSE set mapping to make <Ctrl-[> look buggy. so we clear it.
-    " /usr/share/vim/vim82/suse.vimrc
-    mapclear
-    mapclear!
-endif
-
 " backspace
 set bs=2
 " expandtab
@@ -129,6 +122,17 @@ endif
 # vim-vimserver should be called early.
 packadd vim-vimserver
 
+# do clear before any mapping.
+if has('vim_starting')
+    && execute('scr')->split("\n")
+    ->filter((_, i) => match(i, "suse.vimrc") >= 0)
+    ->len() > 0
+    # openSUSE set mapping to make <Ctrl-[> look buggy. so we clear it.
+    # /usr/share/vim/vim82/suse.vimrc
+    mapclear
+    mapclear!
+endif
+
 # map early
 g:mapleader = ' '  # assign before use
 g:maplocalleader = ' ;'
@@ -138,7 +142,7 @@ augroup vimrc
     au!
 augroup END
 
-# uniform builtin terminal {{{2
+# builtin terminal enhancement {{{2
 augroup vimrc
     def TerminalPaste()
         echo @"
@@ -263,7 +267,6 @@ if !has('gui_running') && is_unix
 endif
 
 # plugin {{{1
-# TODO check plugin commmit.
 # first, enable ":Pack" command.
 packadd vim-pack
 
@@ -279,6 +282,7 @@ g:loaded_zipPlugin = 1
 
 # some plugin installed by system package manager
 g:loaded_fzf = 1
+# }}}
 
 # plugin config without install. {{{
 g:tasks_config_paths =<< trim END
@@ -517,6 +521,7 @@ augroup vimrc
     au FileType qf &l:stl = &g:stl
     au FileType qf nnoremap <buffer> <C-n> <cmd>cnewer<CR>
     au FileType qf nnoremap <buffer> <C-p> <cmd>colder<CR>
+    au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
     au FileType qf nnoremap <buffer> <LocalLeader>l <cmd>chistory<CR>
 
     # ":h ft-sh-syntax"
