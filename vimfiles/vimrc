@@ -280,16 +280,15 @@ g:loaded_zipPlugin = 1
 # some plugin installed by system package manager
 g:loaded_fzf = 1
 
-# plugin config. {{{
-const rc_dir = expand('~/vimfiles/config')
-def JoinPath(path: string): string
-    return rc_dir .. '/' .. path
-enddef
+# plugin config without install. {{{
+g:tasks_config_paths =<< trim END
+    ~/vimfiles/config/tasks.ini
+    ~/vimfiles/config/tasks-local.ini
+END
 
-g:tasks_config_paths = [JoinPath('config/tasks.ini')]
-if filereadable(JoinPath('config/tasks-local.ini'))
-    add(g:tasks_config_paths, JoinPath('config/tasks-local.ini'))
-endif
+g:tasks_config_paths
+->map((_, i) => expand(i))
+->filter((_, i) => filereadable(i))
 
 g:markdown_folding = 1
 
@@ -323,7 +322,6 @@ g:loaded_netrwPlugin = 1
 
 Pack 'https://github.com/justinmk/vim-sneak', {'commit': '94c2de47ab301d476a2baec9ffda07367046bec9'}
 g:sneak#label = 1
-g:sneak#target_labels = "qwertasdfgzxcv"
 
 Pack 'https://github.com/tpope/vim-repeat', {'commit': '24afe922e6a05891756ecf331f39a1f6743d3d5a'}
 Pack 'https://github.com/ciaranm/securemodelines', {'after': 1, 'commit': '9751f29699186a47743ff6c06e689f483058d77a'}
