@@ -1490,8 +1490,9 @@ def SwitchBuffer(reverse: bool = false)
     execute ':' string(all_bufs[idx]) 'b'
 enddef
 
-# :Rgbuffer {...} {{{2
-command! -nargs=+ Rgbuffer Rgbuffer(<q-args>)
+# :Rg {...} {{{2
+command! -range -nargs=+ Rg
+| Rg(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
 
 def Jumpback(buf: number)
     const buffers = tabpagebuflist()
@@ -1503,14 +1504,22 @@ def Jumpback(buf: number)
     endif
 enddef
 
-def Rgbuffer(arg: string)
+def Rg(arg: string, opt: dict<any>)
     const buf = bufnr()
-    const result = execute(':%Sh rg -I --column ' .. arg)
-    bel :7sp +enew | setl buftype=nofile
-    put =result
-    norm gg"_dd
-    execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
-    syn match String '\v^[0-9]+'
+    if opt.range == 0
+        exec 'Jobqfrun' 'rg --vimgrep' arg
+    else
+        # TODO what to do if range is not %? (line number will be wrong)
+        const result = execute(
+        printf(':%d,%dSh rg -I --column %s', opt.line1, opt.line2, arg)
+        )
+        bel :7sp +enew | setl buftype=nofile
+        put =result
+        norm gg"_dd
+        execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
+        execute printf("nnoremap <buffer> <C-j> <cmd>call <SID>Jumpback(%s)<CR><C-w>p", buf)
+        syn match String '\v^[0-9]+'
+    endif
 enddef
 
 # exe {{{2
