@@ -176,7 +176,9 @@ augroup END
 # statusline {{{2
 &stl = '[%{winnr()},%{mode()}' .. '%{% empty(&buftype) ? "%M%R" : "" %}]'
 .. '%{ empty(&ft) ? "" : " [".&ft."]" }'
-.. ' %<' .. '%{% &ft == "qf" && exists("w:quickfix_title") ? w:quickfix_title : "%F" %}'
+.. ' %<'
+.. '%{ &ft == "qf" && exists("w:quickfix_title") ? w:quickfix_title : "" }'
+.. '%{% &ft == "qf" && exists("w:quickfix_title") ? "" : "%F" %}'
 .. ' %=<%B>'
 .. ' [%l:%{charcol(".")}'
 .. '%{% &buftype == "terminal" ? "" : "/%L" %}' .. ']'
