@@ -328,6 +328,10 @@ g:loaded_netrwPlugin = 1
 
 Pack 'https://github.com/justinmk/vim-sneak', {'commit': '94c2de47ab301d476a2baec9ffda07367046bec9'}
 g:sneak#label = 1
+# I do not use vim-surround, so preserve s / S for vim-sneak.
+vmap S <Plug>Sneak_S
+omap s <Plug>Sneak_s
+omap S <Plug>Sneak_S
 
 Pack 'https://github.com/tpope/vim-repeat', {'commit': '24afe922e6a05891756ecf331f39a1f6743d3d5a'}
 Pack 'https://github.com/ciaranm/securemodelines', {'after': 1, 'commit': '9751f29699186a47743ff6c06e689f483058d77a'}
@@ -1511,11 +1515,27 @@ def Rg(arg: string, opt: dict<any>)
         # jump to qf window. (<Leader>q defined in this file.)
         feedkeys(' q', 't')
     else
-        # TODO what to do if range is not %? (line number will be wrong)
-        const result = execute(
+        var result: string = execute(
         printf(':%d,%dSh rg -I --column %s', opt.line1, opt.line2, arg)
         )
+        if opt.line1 != 1
+            # if range is not % (line number will be wrong), fix it.
+            result = result
+            ->split("\n")
+            ->map((_, i) => {
+                var res = i
+                const colon: number = match(res, ':')
+                if colon >= 0
+                    res = string(str2nr(res[0 : colon]) + opt.line1 - 1) .. res[colon : ]
+                endif
+                return res
+                })
+            ->join("\n")
+        endif
+
         bel :7sp +enew | setl buftype=nofile
+        setl nonu
+        setl nornu
         put =result
         norm gg"_dd
         execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
