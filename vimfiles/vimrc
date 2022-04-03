@@ -26,7 +26,7 @@ if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != $MYVIMRC
     finish
 endif
 
-if empty('$MYVIMRC')
+if !exists('$MYVIMRC')
     # If we use `vim -u ...`, $MYVIMRC will not be set.
     # make ":e $MYVIMRC" work.
     $MYVIMRC = first_vimrc
@@ -109,8 +109,13 @@ set rtp=~/vimfiles,$VIMRUNTIME,~/vimfiles/after
 set pp=~/vimfiles,$VIMRUNTIME
 
 # option {{{1
-# win32 environment variable prepare {{{2
+# win32 environment prepare {{{2
 if is_win32
+    # Let's see if it breaks other plugins...
+    # Set shellslash, so file path completion returns slash based str,
+    # which works in sh environment and win32 shell (cmd is not supported?).
+    set shellslash
+
     # set $HOME (for unix shell), $PATH, $VIM ...
     def TrSlash(s: string): string
         return substitute(s, '\', '/', 'g')
@@ -284,6 +289,11 @@ if !has('gui_running') && is_unix
     set ttimeoutlen=100
 endif
 
+# set env for embedded terminal. {{{2
+if !exists('$FZF_DEFAULT_OPTS')
+    $FZF_DEFAULT_OPTS = '--cycle'
+endif
+
 # plugin {{{1
 # first, enable ":Pack" command.
 packadd vim-pack
@@ -330,6 +340,7 @@ Pack 'vim-jump'
 Pack 'vim-sh'
 Pack 'pyvim'
 g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
+Pack 'vim-tasks'
 # }}}
 
 # vim dist. {{{
@@ -738,10 +749,11 @@ TerminalAnsiColor()
 
 # gui {{{2
 if has('gui_running')
-    set gfn=Hack\ 14
+    # do not set gui font here; set it in gvimrc. (font may be missing)
+    #set gfn=Hack\ 14
     set bg=light
 endif
-# command {{{1
+# Command / Function {{{1
 # clipboard {{{2
 # use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
 # detection is defined there. (~/bin/{pbcopy,pbpaste})
@@ -1310,6 +1322,8 @@ def ChdirTerminal(bang: bool, range: number, path_a: string)
 enddef
 
 # g:Popup(cmd: string, Cb: fn<list<string>>, ctx : dict = {}); {{{2
+# NOTE: this depends on my vim-sh plugin;
+#   g:Popup() cmd param is the shell command to run.
 
 # variable used in popup terminal;
 var popup_tmpfile: string = ''
@@ -1371,11 +1385,11 @@ def g:Popup(cmd: string, Cb: func, ...args: list<dict<any>>)
     # use builtin popup, then tmpfile can be set safely.
     # (popup terminal steals focus).
     popup_tmpfile = tmpfile
-    var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: function(TermExitCb), hidden: 1}))
-    const width: number = min([&columns - 10, 80])
-    const height: number = min([&lines - 5, 24])
+    var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: TermExitCb, hidden: true}))
     popup_win = popup_create(buf, {
-        minwidth: width, maxwidth: width, minheight: height, maxheight: height,
+        border: [1, 1, 1, 1],
+        minwidth: 80, minheight: 24,
+        maxwidth: 80, maxheight: 24,
         callback: function(PopupCloseCb, [Cb])
         })
 enddef
@@ -1401,7 +1415,7 @@ def PopupCallback(tmpfile: string)
     endif
 enddef
 
-# :Select {buffer|filelist|color} {{{2
+# :Select ... {{{2
 command! -nargs=1 -range=0 -complete=custom,SelectComp Select
 | Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
 
@@ -1422,7 +1436,7 @@ def Select(source: string, ctx: dict<any>)
     endif
 enddef
 
-# buffers / LsBuffers() {{{3
+# LsBuffers() {{{3
 def LsBuffers(ctx: dict<any>)
     g:Popup(
     'fzf',
@@ -1435,7 +1449,7 @@ def LsBuffers(ctx: dict<any>)
     )
 enddef
 
-# color / Color() {{{3
+# Color() {{{3
 def Color(ctx: dict<any>)
     g:Popup(
     'fzf',
@@ -1451,11 +1465,42 @@ ctx_use_w_program ? {program: 'cmd'} : {}),
 )
 enddef
 
-# filelist / FileList() {{{3
-def FileList(ctx: dict<any>)
-    if ctx.range == 0
-        throw 'range is required!'
+# HistList() {{{3
+def HistBlacklist(s: string): bool
+    var lists =<< trim END
+        COMMIT_EDITMSG
+        ADD_EDIT.patch
+        addp-hunk-edit.diff
+        git-rebase-todo
+END
+add(lists, $VIMRUNTIME)
+for i in lists
+    if match(s, i) >= 0
+        return true
     endif
+endfor
+return false
+enddef
+
+def HistList(ctx: dict<any>)
+    # TODO use data from vim-filelist plugin.
+    var input = v:oldfiles
+    ->filter((_, i) => !HistBlacklist(i))
+    ->join("\n")
+
+    g:Popup(
+    'fzf',
+    (s: list<string>) => {
+        execute 'e' fnameescape(expand(s[0]))
+        },
+    ctx->extendnew({title: 'select-hist_list'})
+    ->extendnew(ctx_use_w_program ? {program: 'cmd'} : {})
+    ->extendnew({input: input})
+    )
+enddef
+
+# FileList() {{{3
+def FileList(ctx: dict<any>)
     g:Popup(
     'fzf',
     (s: list<string>) => {
@@ -1467,18 +1512,110 @@ def FileList(ctx: dict<any>)
     )
 enddef
 
+# Nnn() (it's nnn.) {{{3
+def Nnn(ctx: dict<any>)
+    g:Popup(
+    # sleep 0.1 before nnn, so term won't get messy. but why?
+    'sleep 0.1; nnn -p -',
+    (s: list<string>) => {
+        execute 'e' fnameescape(s[0])
+        },
+    extendnew(
+    extendnew(ctx, {title: 'nnn'}),
+    ctx_use_w_program ? {program: 'cmd'} : {}),
+    )
+enddef
+
 # register new source here! {{{3
-const popup_sources: dict<func> = {
+var popup_sources: dict<func> = {
     buffer: LsBuffers,
     color: Color,
-    filelist: FileList,
+    fzf: FileList,
+    hist_list: HistList,
     }
+
+if executable('nnn')
+    popup_sources['nnn'] = Nnn
+endif
+
+# (keymap) popup to select from sources. {{{3
+nnoremap <Leader>a <cmd>call <SID>SelectFromSources()<CR>
+
+def SelectFromSources()
+    # TODO highlight
+    const selection = [
+        # [key, popup_sources]
+        ['w', 'nnn'],
+        ['s', 'hist_list'],
+        ['b', 'buffer'],
+        ['f', 'fzf'],
+        ['c', 'color'],
+        ]
+    # some sources may be missing, so check it.
+    ->filter((_, i) => !empty(popup_sources->get(i->get(1))))
+
+    # Is is possible to use ordered dict, so we migrate selection /
+    # selection_dict?
+    var selection_dict = {}
+    var lists = []
+    for [k, v] in selection
+        add(lists, printf('[%s] %s', k, v))
+        selection_dict[k] = v
+    endfor
+    popup_create(lists, {
+        pos: 'center',
+        title: 'Select... (any other key to quit)',
+        minwidth: min([40, &columns / 2]),
+        border: [1, 1, 1, 1],
+        mapping: false,
+        filter: (winid: number, key: string): bool => {
+            const res = get(selection_dict, key)
+            if !empty(res)
+                execute 'Select' res
+            endif
+            # finally.
+            popup_close(winid)
+            return true
+            }
+        }
+    )
+enddef
 
 # g:Tapi_popup_cb() {{{3
 def g:Tapi_popup_cb(nr: number, arg: list<string>)
     const tmpfile = arg->get(0, '')
     if !empty(tmpfile)
         PopupCallback(tmpfile)
+    endif
+enddef
+
+# scratch-mode terminal in popup (keymap: <Leader>t) {{{2
+nnoremap <Leader>t <cmd>call <SID>PopupTerminalSwitch()<CR>
+
+# save state across ":so $MYVIMRC"
+var popup_terminal_state: dict<any> = exists('popup_terminal') ? popup_terminal :
+{winid: -1, buf: -1, shown: false}
+
+def PopupTerminalSwitch()
+    if popup_terminal_state.shown
+        popup_close(popup_terminal_state.winid)
+        popup_terminal_state.shown = false
+    else
+        if popup_terminal_state.buf < 0
+            popup_terminal_state.buf = term_start(&shell, {
+                hidden: true, term_finish: 'close',
+                exit_cb: ((_, _) => {
+                    popup_terminal_state.shown = false
+                    popup_terminal_state.buf = -1
+                    })
+                })
+        endif
+        popup_terminal_state.winid = popup_create(popup_terminal_state.buf, {
+            border: [1, 1, 1, 1],
+            minwidth: 80, minheight: 24,
+            maxwidth: 80, maxheight: 24,
+            })
+        popup_terminal_state.shown = true
     endif
 enddef
 
