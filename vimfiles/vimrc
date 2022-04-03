@@ -1,4 +1,4 @@
-" vim:fdm=marker
+" vim:fdm=marker:tw=78:sw=4
 
 " vim9 header {{{1
 if !has('vim9script')
@@ -6,6 +6,31 @@ if !has('vim9script')
 endif
 
 vim9script noclear
+
+# Error if reading system-vimrc.
+#
+# Some distribution's system-vimrc (like openSUSE) does sth,
+# like set mapping, add autocmd.
+# Some of these settings are good, but we want to keep these setting in vimrc
+# (so it works for other distribution).
+# To avoid duplicate setting, we just disable loading system-vimrc.
+#
+# Suggestion: put `exec /usr/bin/vim -Nu ~/vimfiles/vimrc "$@"` in ~/bin/vim,
+# and add ~/bin in $PATH (before /usr/bin), so ~/bin/vim wins.
+const first_vimrc = execute('scr')->split("\n")->get(0)
+->substitute('\v^.{-}:\s*', '', '')
+->expand()
+
+if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != $MYVIMRC
+    echoerr 'system-vimrc is read. skip loading vimrc!'
+    finish
+endif
+
+if empty('$MYVIMRC')
+    # If we use `vim -u ...`, $MYVIMRC will not be set.
+    # make ":e $MYVIMRC" work.
+    $MYVIMRC = first_vimrc
+endif
 
 # config compatible with vim tiny version. {{{1
 legacy function! s:config_with_legacy_comment() abort
@@ -122,17 +147,6 @@ endif
 # vim-vimserver should be called early.
 packadd vim-vimserver
 
-# do clear before any mapping.
-if has('vim_starting')
-    && execute('scr')->split("\n")
-    ->filter((_, i) => match(i, "suse.vimrc") >= 0)
-    ->len() > 0
-    # openSUSE set mapping to make <Ctrl-[> look buggy. so we clear it.
-    # /usr/share/vim/vim82/suse.vimrc
-    mapclear
-    mapclear!
-endif
-
 # map early
 g:mapleader = ' '  # assign before use
 g:maplocalleader = ' ;'
@@ -159,7 +173,8 @@ augroup vimrc
             redraws | echon 'cancelled.'
         endif
     enddef
-    def TerminalInit()
+
+    au TerminalOpen * {
         # NOTE: keymap defined here (terminal [p]aste).
         if &buftype == 'terminal'
             setl nonu | setl nornu
@@ -168,9 +183,10 @@ augroup vimrc
             vmap <buffer> <CR> <Plug>(jump_to_file)
             nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
             nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
+            # dirvish
+            nnoremap <buffer> - <cmd>execute 'Dirvish' getcwd()<CR>
         endif
-    enddef
-    au TerminalOpen * TerminalInit()
+        }
 augroup END
 
 # statusline {{{2
@@ -511,17 +527,29 @@ if !exists('g:syntax_on')
 endif
 
 augroup vimrc
+    au BufReadPost * {
+        # "Remember the positions in files with some git-specific exceptions"
+        # copied from /usr/share/vim/vim82/suse.vimrc
+        if line("'\"") > 0 && line("'\"") <= line("$")
+                    \ && expand("%") !~ "COMMIT_EDITMSG"
+                    \ && expand("%") !~ "ADD_EDIT.patch"
+                    \ && expand("%") !~ "addp-hunk-edit.diff"
+                    \ && expand("%") !~ "git-rebase-todo"
+            exe "normal g`\""
+        endif
+        }
+
     au BufNewFile,BufRead *.gv setl ft=dot
     au FileType yaml setl indentkeys-=0#
     au FileType zig setl fp=zig\ fmt\ --stdin
-    au FileType markdown setl tw=78 | MarkdownCheckboxHL()
+    au FileType markdown {
+        setl tw=78
 
-    def MarkdownCheckboxHL()
         hi link CheckboxUnchecked Type
         hi link CheckboxChecked Comment
         syn match CheckboxUnchecked '\v^\s*- \[ \] '
         syn match CheckboxChecked '\v^\s*- \[X\] '
-    enddef
+        }
 
     # quickfix window
     au FileType qf &l:stl = &g:stl
@@ -554,11 +582,10 @@ augroup vimrc
                 \ <LocalLeader>c :call <SID>MarkdownToggleTaskStatus()<CR>
 
     # simple filelist (vim-filelist)
-    def FilelistInit()
+    au FileType filelist {
         nmap <buffer> <LocalLeader><CR> <Plug>(filelist_cd)
         nmap <buffer> <CR> <Plug>(filelist_edit)
-    enddef
-    au FileType filelist FilelistInit()
+        }
 
     # gx related (NOTE: key `gx` overwritten) {{{
     nnoremap <silent> gx :call <SID>Gx('n')<CR>
@@ -772,7 +799,6 @@ def ExecuteLines(mode: string)
     endif
     var result_l = []
     for i in lines
-        # TODO add more comment (or based on filetype).
         result_l = add(result_l, substitute(i, '\v^\s*(//|#|"|--)+', '', ''))
     endfor
     var result: string = join(result_l, "\n")
@@ -1038,18 +1064,17 @@ def Cd(flag: string, args: string)
     endif
 enddef
 
-def Cd_reset()
-    if exists('b:vimrc_old_cwd')
-        try
-            silent exe 'lcd' fnameescape(b:vimrc_old_cwd)
-        finally
-            unlet b:vimrc_old_cwd
-        endtry
-    endif
-enddef
-
 augroup vimrc
-    au BufEnter * Cd_reset()
+    au BufEnter * {
+        # reset cd
+        if exists('b:vimrc_old_cwd')
+            try
+                silent exe 'lcd' fnameescape(b:vimrc_old_cwd)
+            finally
+                unlet b:vimrc_old_cwd
+            endtry
+        endif
+        }
 augroup END
 
 def Cd_get_buf_dir(): string
@@ -1495,7 +1520,9 @@ def SwitchBuffer(reverse: bool = false)
 enddef
 
 # :Rg {...} {{{2
-command! -range -nargs=+ Rg
+# TODO qf: support chdir (like :Cdb ...);
+# TODO qf: support stdin;
+command! -range -nargs=+ -complete=file Rg
 | Rg(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
 
 def Jumpback(buf: number)
@@ -1525,8 +1552,8 @@ def Rg(arg: string, opt: dict<any>)
             ->map((_, i) => {
                 var res = i
                 const colon: number = match(res, ':')
-                if colon >= 0
-                    res = string(str2nr(res[0 : colon]) + opt.line1 - 1) .. res[colon : ]
+                if colon >= 0 && res[0 : colon - 1] =~ '\v^\d+$'
+                    res = string(str2nr(res[0 : colon - 1]) + opt.line1 - 1) .. res[colon : ]
                 endif
                 return res
                 })
@@ -1534,8 +1561,6 @@ def Rg(arg: string, opt: dict<any>)
         endif
 
         bel :7sp +enew | setl buftype=nofile
-        setl nonu
-        setl nornu
         put =result
         norm gg"_dd
         execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
