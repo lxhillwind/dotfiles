@@ -527,6 +527,12 @@ onoremap il :<C-u>normal! ^vg_<CR>
 nmap <Leader>r <Plug>(tasks-select)
 vmap <Leader>r <Plug>(tasks-select)
 
+# filelist (HistList)
+nmap <Leader>f <Leader>as
+
+# project list (ProjectList)
+nmap <Leader>o <Leader>ae
+
 # terminal escape
 tnoremap <C-Space> <C-\><C-n>
 tnoremap <C-w> <C-w>.
@@ -1063,7 +1069,7 @@ def Cd(flag: string, args: string)
             endif
         endtry
     else
-        silent exe 'lcd' fnameescape(path)
+        exe 'lcd' fnameescape(path)
         if &buftype == 'terminal'
             term_sendkeys(bufnr(''), 'cd ' .. shellescape(path))
         endif
@@ -1519,12 +1525,32 @@ def Nnn(ctx: dict<any>)
     )
 enddef
 
+# ProjectList() {{{3
+# NOTE: this variable is directly put after `find` command,
+# using shell syntax. QUOTE IT IF NECESSARY!
+g:project_dirs = '~/repos'
+def ProjectList(ctx: dict<any>)
+    g:Popup(
+    printf(
+    'find %s -name .git 2>/dev/null | sed -E "s/\/.git\$//" | fzf',
+    g:project_dirs,
+    ),
+    (s: list<string>) => {
+        execute 'lcd' fnameescape(s[0])
+        },
+    extendnew(
+    extendnew(ctx, {title: 'project'}),
+    ctx_use_w_program ? {program: 'cmd'} : {}),
+    )
+enddef
+
 # register new source here! {{{3
 var popup_sources: dict<func> = {
     buffer: LsBuffers,
     color: Color,
     fzf: FileList,
     hist_list: HistList,
+    project: ProjectList,
     }
 
 if executable('nnn')
@@ -1541,6 +1567,7 @@ def SelectFromSources()
         ['w', 'nnn'],
         ['s', 'hist_list'],
         ['b', 'buffer'],
+        ['e', 'project'],
         ['f', 'fzf'],
         ['c', 'color'],
         ]
@@ -1583,6 +1610,7 @@ def g:Tapi_popup_cb(nr: number, arg: list<string>)
 enddef
 
 # scratch-mode terminal in popup (keymap: <Leader>t) {{{2
+# TODO: support jump to buffer dir.
 nnoremap <Leader>t <cmd>call <SID>PopupTerminalSwitch()<CR>
 
 # save state across ":so $MYVIMRC"
@@ -1727,6 +1755,41 @@ def WriteBin(name: string)
     redrawstatus | echon 'written.'
 enddef
 
-# TODO shortcut for reader mode. (view code / text easily.) {{{2
+# shortcut for reader mode. (view code / text easily.) {{{2
+# TODO map more key (one hand); provide help page (double ? to enter search mode).
+nnoremap <Leader>v <cmd>call <SID>SwitchReaderMode()<CR>
+var reader_mode = exists('reader_mode') ? reader_mode :
+{on: false, winid: -1}
+
+def SwitchReaderMode()
+    if reader_mode.on
+        nunmap q
+        nunmap f
+        nunmap b
+        nunmap d
+        nunmap u
+        nunmap e
+        nunmap w
+        reader_mode.on = false
+        popup_close(reader_mode.winid)
+    else
+        reader_mode.winid = popup_create(
+        ['reader mode'], {
+            line: &lines,
+            mapping: false,
+            highlight: 'Special',
+            tabpage: -1,  # show in all tabs.
+            }
+        )
+        nnoremap q <cmd>call <SID>SwitchReaderMode()<CR>
+        nnoremap f <C-f>
+        nnoremap b <C-b>
+        nnoremap d <C-d>
+        nnoremap u <C-u>
+        nnoremap e gt
+        nnoremap w gT
+        reader_mode.on = true
+    endif
+enddef
 
 # finish {{{1 }}}1
