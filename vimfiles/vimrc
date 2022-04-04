@@ -189,7 +189,9 @@ augroup vimrc
             nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
             nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
             # dirvish
-            nnoremap <buffer> - <cmd>execute 'Dirvish' getcwd()<CR>
+            if exists('Dirvish') == 2
+                nnoremap <buffer> - <cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
+            endif
         endif
         }
 augroup END
@@ -291,7 +293,7 @@ endif
 
 # set env for embedded terminal. {{{2
 if !exists('$FZF_DEFAULT_OPTS')
-    $FZF_DEFAULT_OPTS = '--cycle'
+    $FZF_DEFAULT_OPTS = '--cycle --color=16'
 endif
 
 # plugin {{{1
@@ -1528,7 +1530,7 @@ enddef
 # ProjectList() {{{3
 # NOTE: this variable is directly put after `find` command,
 # using shell syntax. QUOTE IT IF NECESSARY!
-g:project_dirs = '~/repos'
+g:project_dirs = '~/repos ~/vimfiles'
 def ProjectList(ctx: dict<any>)
     g:Popup(
     printf(
@@ -1537,6 +1539,9 @@ def ProjectList(ctx: dict<any>)
     ),
     (s: list<string>) => {
         execute 'lcd' fnameescape(s[0])
+        if exists(':Dirvish') == 2
+            execute 'Dirvish' fnameescape(s[0])
+        endif
         },
     extendnew(
     extendnew(ctx, {title: 'project'}),
@@ -1656,8 +1661,10 @@ def SwitchBuffer(reverse: bool = false)
         tabe
     endif
 
+    const term_list = term_list()
     const all_bufs = getbufinfo()
-    ->filter((_, i) => !empty(i.name) && !empty(i.listed))
+    ->filter((_, i) => !empty(i.name) && !empty(i.listed)
+    && index(term_list, i.bufnr) < 0)
     ->mapnew((_, i) => i.bufnr)
 
     if empty(all_bufs)
@@ -1679,6 +1686,7 @@ enddef
 
 # :Rg {...} {{{2
 # TODO qf: support chdir (like :Cdb ...);
+# TODO qf: fix chdir (e.g. :Cdb and then :Rg ... % may fail);
 # TODO qf: support stdin;
 command! -range -nargs=+ -complete=file Rg
 | Rg(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
@@ -1757,6 +1765,7 @@ enddef
 
 # shortcut for reader mode. (view code / text easily.) {{{2
 # TODO map more key (one hand); provide help page (double ? to enter search mode).
+# TODO use here-doc to define map. (no unmap / map in different places.)
 nnoremap <Leader>v <cmd>call <SID>SwitchReaderMode()<CR>
 var reader_mode = exists('reader_mode') ? reader_mode :
 {on: false, winid: -1}
@@ -1770,6 +1779,9 @@ def SwitchReaderMode()
         nunmap u
         nunmap e
         nunmap w
+        nunmap j
+        nunmap k
+        nunmap x
         reader_mode.on = false
         popup_close(reader_mode.winid)
     else
@@ -1788,8 +1800,12 @@ def SwitchReaderMode()
         nnoremap u <C-u>
         nnoremap e gt
         nnoremap w gT
+        nnoremap j <C-e>
+        nnoremap k <C-y>
+        nnoremap x <C-w>c
         reader_mode.on = true
     endif
 enddef
 
 # finish {{{1 }}}1
+defc  # show error in this file early.

@@ -93,6 +93,13 @@ endfunction
 " handle reloading
 let s:clients = get(s:, 'clients', {})
 
+function! s:server_clients_cleaner_new(id)
+  if !empty(get(s:clients, a:id))
+    call s:clients[a:id]()
+    call remove(s:clients, a:id)
+  endif
+endfunction
+
 function! s:server_clients_cleaner(...)
   for key in keys(s:clients)
     if winbufnr(key) == -1
@@ -186,7 +193,11 @@ function! s:server() abort
 
   augroup vimserver_clients_cleaner
     au!
-    au WinEnter * call s:server_clients_cleaner()
+    if exists('##WinClosed')
+      au WinClosed * call s:server_clients_cleaner_new(expand('<amatch>'))
+    else
+      au WinEnter * call s:server_clients_cleaner()
+    endif
   augroup END
 endfunction
 
@@ -224,4 +235,4 @@ endfunction
 
 call s:main()
 
-" vim:fdm=marker
+" vim:fdm=marker sw=2
