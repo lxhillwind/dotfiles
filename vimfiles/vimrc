@@ -1619,7 +1619,7 @@ enddef
 nnoremap <Leader>t <cmd>call <SID>PopupTerminalSwitch()<CR>
 
 # save state across ":so $MYVIMRC"
-var popup_terminal_state: dict<any> = exists('popup_terminal') ? popup_terminal :
+var popup_terminal_state: dict<any> = exists('popup_terminal_state') ? popup_terminal_state :
 {winid: -1, buf: -1, shown: false}
 
 def PopupTerminalSwitch()
@@ -1765,26 +1765,40 @@ enddef
 
 # shortcut for reader mode. (view code / text easily.) {{{2
 # TODO map more key (one hand); provide help page (double ? to enter search mode).
-# TODO use here-doc to define map. (no unmap / map in different places.)
 nnoremap <Leader>v <cmd>call <SID>SwitchReaderMode()<CR>
 var reader_mode = exists('reader_mode') ? reader_mode :
 {on: false, winid: -1}
 
 def SwitchReaderMode()
+    const mapping =<< trim END
+        q <cmd>call <SID>SwitchReaderMode()<CR>
+        f <C-f>
+        b <C-b>
+        d <C-d>
+        u <C-u>
+        e <C-e>
+        y <C-y>
+        x <C-w>c
+        1 1gt
+        2 2gt
+        3 3gt
+        4 4gt
+        5 5gt
+        6 6gt
+        7 7gt
+        8 8gt
+        9 <cmd>tablast<CR>
+    END
     if reader_mode.on
-        nunmap q
-        nunmap f
-        nunmap b
-        nunmap d
-        nunmap u
-        nunmap e
-        nunmap w
-        nunmap j
-        nunmap k
-        nunmap x
+        mapping->mapnew((_, i) => {
+            execute 'nunmap' i->split(' ')[0]
+            })
         reader_mode.on = false
         popup_close(reader_mode.winid)
     else
+        mapping->mapnew((_, i) => {
+            execute 'nnoremap' i
+            })
         reader_mode.winid = popup_create(
         ['reader mode'], {
             line: &lines,
@@ -1793,16 +1807,6 @@ def SwitchReaderMode()
             tabpage: -1,  # show in all tabs.
             }
         )
-        nnoremap q <cmd>call <SID>SwitchReaderMode()<CR>
-        nnoremap f <C-f>
-        nnoremap b <C-b>
-        nnoremap d <C-d>
-        nnoremap u <C-u>
-        nnoremap e gt
-        nnoremap w gT
-        nnoremap j <C-e>
-        nnoremap k <C-y>
-        nnoremap x <C-w>c
         reader_mode.on = true
     endif
 enddef
