@@ -258,7 +258,7 @@ function! s:sh(cmd, opt) abort " {{{2
     call s:echoerr('pipe to empty cmd is not allowed!') | return
   endif
 
-  if empty(cmd) && !opt.tty && !opt.window
+  if empty(cmd) && !opt.tty && !opt.window && !opt.dryrun
     call s:echoerr('empty cmd (without tty) is not allowed!') | return
   endif
 

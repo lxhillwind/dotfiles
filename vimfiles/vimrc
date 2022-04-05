@@ -186,6 +186,8 @@ augroup vimrc
             # vim-jump
             nmap <buffer> <CR> <Plug>(jump_to_file)
             vmap <buffer> <CR> <Plug>(jump_to_file)
+
+            # clipboard
             nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
             nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
             # dirvish
@@ -539,6 +541,27 @@ nmap <Leader>o <Leader>ae
 tnoremap <C-Space> <C-\><C-n>
 tnoremap <C-w> <C-w>.
 
+# I don't use t / T, so use them to do other things.
+nnoremap t <cmd>call <SID>TabOpenOrClose()<CR>
+
+def TabOpenOrClose()
+    if empty(&buftype) && empty(bufname()) && &swapfile && !&modified
+        # avoid closing last tab.
+        && tabpagenr('$') != 1
+        wincmd c
+    else
+        tabe
+    endif
+enddef
+
+# getcwd
+nnoremap <Leader>c <cmd>pwd<CR>
+nnoremap <Leader>C <cmd>call <SID>GotoBufferDir()<CR>
+def GotoBufferDir()
+    Cdbuffer
+    pwd
+enddef
+
 # filetype {{{1
 filetype plugin indent on
 if !exists('g:syntax_on')
@@ -877,7 +900,9 @@ command! -nargs=+ -complete=command KvimRun ShowOutput(execute(<q-args>))
 # vim expr; :KvimExpr {vim_expr}... {{{2
 command! -nargs=+ -complete=expression KvimExpr ShowOutput(eval(<q-args>))
 
-def ShowOutput(data: string)
+def ShowOutput(...data_: list<any>)
+    # eval() return type may not be string, so use list<any> here.
+    const data = type(data_[0]) == type('') ? data_[0] : string(data_[0])
     ScratchNew
     for line in split(data, "\n")
         append('$', line)
@@ -1033,6 +1058,9 @@ def Cd(flag: string, args: string)
         path = expand('~')
     elseif flag == 'project'
         path = Cd_get_project_dir()
+        if empty(path)
+            throw 'project dir not found!'
+        endif
     elseif flag == 'buffer'
         path = Cd_get_buf_dir()
     else
@@ -1184,11 +1212,18 @@ def JobRun(cmd_a: string, opt: dict<any>)
         cmd = printf('Sh %s %s', flag, cmd)
     endif
     var job_d = json_decode(execute(cmd))
+
+    # in case running with ":Cd... [path]"
+    extend(job_d.opt, {cwd: getcwd()})
+
     var bufnr: number
     if opt.qf
         var current_max = getqflist({nr: '$'}).nr
         bufnr = current_max + 1
-        setqflist([], ' ', {title: '(:Joblist to check state) ' .. cmd_short, nr: bufnr})
+        setqflist([], ' ',
+        {
+                title: '(:Joblist to check state) ' .. cmd_short, nr: bufnr,
+        })
         extend(job_d.opt, {
             out_cb: function(JobOutCb, [{bufnr: bufnr}]),
             err_cb: function(JobOutCb, [{bufnr: bufnr}]),
@@ -1331,9 +1366,6 @@ enddef
 var popup_tmpfile: string = ''
 var popup_win: number
 
-# variable used in Sh -w popup program;
-var tmpfiles_dict: dict<func> = {}
-
 def g:Popup(cmd: string, Cb: func, ...args: list<dict<any>>)
     var exec_pre: string = 'exec'
     var range: string = ''
@@ -1353,36 +1385,6 @@ def g:Popup(cmd: string, Cb: func, ...args: list<dict<any>>)
     var tmpfile: string = tempname()
     exec_pre ..= (' > ' .. shellescape(tmpfile))
     var res: dict<any> = json_decode(execute(printf('%sSh -n %s; %s', range, exec_pre, cmd)))
-
-    # use Sh -w as popup, then we set tmpfiles_dict.
-    if kwargs->has_key('program')
-        const program: string = kwargs.program
-        if match(program, '\v[^a-z]') >= 0
-            throw printf('invalid program: "%s"', program)
-        endif
-
-        if !exists('g:vimserver_env')
-            || match(get(g:vimserver_env, 'VIMSERVER_BIN', '.sh'), '\v\.sh$') >= 0
-            throw 'vimserver-helper (.exe) not available!'
-        endif
-
-        var exe: string = g:vimserver_env['VIMSERVER_BIN']
-        var server: string = g:vimserver_env['VIMSERVER_ID']
-
-        tmpfiles_dict[tmpfile] = Cb
-        exe = shellescape(exe)
-        server = shellescape(server)
-        tmpfile = shellescape(tmpfile)
-        var title: string = kwargs->get('title', '') ?? 'Selection'
-        if match(title, '\v[^a-zA-Z_-]') >= 0
-            # Sh -title=xxx does not accept too many type of char.
-            title = 'Selection'
-        endif
-        execute(printf("%sSh -c,w=%s,title=%s %s; sh -c '\"$@\" && %s %s %s %s' - %s",
-        range, program, title, exec_pre,    exe, server, 'Tapi_popup_cb', tmpfile, cmd))
-        # exit now!
-        return
-    endif
 
     # use builtin popup, then tmpfile can be set safely.
     # (popup terminal steals focus).
@@ -1407,23 +1409,9 @@ def PopupCloseCb(Cb: func, _: number, result: list<string>)
     endif
 enddef
 
-# it will be called from g:Tapi_popup_cb (also defined in this file).
-def PopupCallback(tmpfile: string)
-    if tmpfiles_dict->has_key(tmpfile)
-        # -1 is random.
-        # TODO check exitcode? (seems not necessary)
-        PopupCloseCb(tmpfiles_dict[tmpfile], -1, readfile(tmpfile))
-        remove(tmpfiles_dict, tmpfile)
-    endif
-enddef
-
 # :Select ... {{{2
 command! -nargs=1 -range=0 -complete=custom,SelectComp Select
 | Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
-
-# platform dependent setting
-# TODO win32: check if tty is available (conpty or winpty)
-const ctx_use_w_program: bool = is_win32
 
 # Select() and it's comp {{{3
 def SelectComp(..._: list<any>): string
@@ -1446,8 +1434,7 @@ def LsBuffers(ctx: dict<any>)
         const bufnr = s[0]->matchstr('\v^\s*\zs(\d+)\ze')
         execute ':' .. bufnr .. 'b'
         },
-    extendnew({ex: 'ls', title: 'select-buffer'},
-    ctx_use_w_program ? {program: 'cmd'} : {}),
+    {ex: 'ls', title: 'select-buffer'}
     )
 enddef
 
@@ -1458,13 +1445,12 @@ def Color(ctx: dict<any>)
     (s: list<string>) => {
         execute 'color' fnameescape(s[0])
         },
-    extendnew({
-    title: 'select-color',
-    input: globpath(&rtp, "colors/*.vim", 0, 1)
-    ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")
-    },
-ctx_use_w_program ? {program: 'cmd'} : {}),
-)
+    {
+            title: 'select-color',
+            input: globpath(&rtp, "colors/*.vim", 0, 1)
+            ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")
+    }
+    )
 enddef
 
 # HistList() {{{3
@@ -1492,11 +1478,11 @@ def HistList(ctx: dict<any>)
     g:Popup(
     'fzf',
     (s: list<string>) => {
-        execute 'e' fnameescape(expand(s[0]))
+        execute 'E' fnameescape(expand(s[0]))
         },
-    ctx->extendnew({title: 'select-hist_list'})
-    ->extendnew(ctx_use_w_program ? {program: 'cmd'} : {})
-    ->extendnew({input: input})
+    ctx
+    ->extendnew({title: 'select-hist_list'})
+    ->extend({input: input})
     )
 enddef
 
@@ -1505,11 +1491,10 @@ def FileList(ctx: dict<any>)
     g:Popup(
     'fzf',
     (s: list<string>) => {
-        execute 'e' fnameescape(s[0])
+        execute 'E' fnameescape(s[0])
         },
-    extendnew(
-    extendnew(ctx, {title: 'select-filelist'}),
-    ctx_use_w_program ? {program: 'cmd'} : {}),
+    ctx
+    ->extendnew({title: 'select-filelist'})
     )
 enddef
 
@@ -1519,11 +1504,10 @@ def Nnn(ctx: dict<any>)
     # sleep 0.1 before nnn, so term won't get messy. but why?
     'sleep 0.1; nnn -o -p -',
     (s: list<string>) => {
-        execute 'e' fnameescape(s[0])
+        execute 'E' fnameescape(s[0])
         },
-    extendnew(
-    extendnew(ctx, {title: 'nnn'}),
-    ctx_use_w_program ? {program: 'cmd'} : {}),
+    ctx
+    ->extendnew({title: 'nnn'})
     )
 enddef
 
@@ -1543,9 +1527,8 @@ def ProjectList(ctx: dict<any>)
             execute 'Dirvish' fnameescape(s[0])
         endif
         },
-    extendnew(
-    extendnew(ctx, {title: 'project'}),
-    ctx_use_w_program ? {program: 'cmd'} : {}),
+    ctx
+    ->extendnew({title: 'project'})
     )
 enddef
 
@@ -1606,14 +1589,6 @@ def SelectFromSources()
     )
 enddef
 
-# g:Tapi_popup_cb() {{{3
-def g:Tapi_popup_cb(nr: number, arg: list<string>)
-    const tmpfile = arg->get(0, '')
-    if !empty(tmpfile)
-        PopupCallback(tmpfile)
-    endif
-enddef
-
 # scratch-mode terminal in popup (keymap: <Leader>t) {{{2
 # TODO: support jump to buffer dir.
 nnoremap <Leader>t <cmd>call <SID>PopupTerminalSwitch()<CR>
@@ -1628,7 +1603,11 @@ def PopupTerminalSwitch()
         popup_terminal_state.shown = false
     else
         if popup_terminal_state.buf < 0
-            popup_terminal_state.buf = term_start(&shell, {
+            const cmd = is_win32 && exists(':Sh') == 2 ?
+            execute('Sh -n')->json_decode().cmd :
+            &shell
+
+            popup_terminal_state.buf = term_start(cmd, {
                 hidden: true, term_finish: 'close',
                 exit_cb: ((_, _) => {
                     popup_terminal_state.shown = false
@@ -1811,5 +1790,16 @@ def SwitchReaderMode()
     endif
 enddef
 
+# ":E", better ":e" (check &modified). {{{2
+command -nargs=+ E {
+    if &modified
+        if &columns >= 140
+            wincmd v
+        else
+            wincmd s
+        endif
+    endif
+    execute 'e' <q-args>
+    }
 # finish {{{1 }}}1
 defc  # show error in this file early.
