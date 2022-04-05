@@ -550,12 +550,65 @@ def TabOpenOrClose()
 enddef
 
 # getcwd
-nnoremap <Leader>c <cmd>pwd<CR>
-nnoremap <Leader>C <cmd>call <SID>GotoBufferDir()<CR>
-def GotoBufferDir()
-    Cdbuffer
-    pwd
+nnoremap <Leader>c <cmd>call <SID>GotoWhichDir()<CR>
+
+def GotoWhichDir()  # {{{
+    const dir_buffer: string = Cd_get_buf_dir()
+    var dir_project: string
+    try
+        dir_project = Cd_get_project_dir()
+    catch
+    endtry
+    const dir_home: string = expand('~')
+    const dir_cwd: string = getcwd()
+
+    # echo {{{
+    if dir_cwd == dir_home
+        echon '*'
+    endif
+    echohl Directory
+    echon '[a] home' | echohl None | echon ' '
+
+    if dir_cwd == dir_project
+        echon '*'
+    endif
+    if empty(dir_project)
+        echohl WarningMsg
+    else
+        echohl Directory
+    endif
+    echon '[d] project' | echohl None | echon ' '
+
+    if dir_cwd == dir_buffer
+        echon '*'
+    endif
+    echohl Directory
+    echon '[f] buffer' | echohl None | echon ' '
+    # }}}
+
+    echon dir_cwd .. ' >'
+    const ch = getcharstr()
+    # avoid press enter to continue msg.
+    echo "\n" | redrawstatus
+
+    if ch == 'a'
+        Cdhome
+    elseif ch == 'd'
+        if !empty(dir_project)
+            Cdproject
+        else
+            echohl Error
+            echon 'project dir not available!'
+            echohl None
+        endif
+    elseif ch == 'f'
+        Cdbuffer
+    else
+        # sneak like behavior.
+        feedkeys(ch, 't')
+    endif
 enddef
+# }}}
 
 # filetype {{{1
 filetype plugin indent on
