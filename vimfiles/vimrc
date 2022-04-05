@@ -1508,12 +1508,32 @@ enddef
 # ProjectList() {{{3
 # NOTE: this variable is directly put after `find` command,
 # using shell syntax. QUOTE IT IF NECESSARY!
-g:project_dirs = '~/repos ~/vimfiles'
+g:project_dirs = get(g:, 'project_dirs', '~/repos ~/vimfiles')
+
+# accept list<string>; every item is put after -name (or -path, if / included)
+g:project_blacklist = get(g:, 'project_blacklist', ['venv', 'node_modules'])
+
 def ProjectList(ctx: dict<any>)
+    if empty(g:project_dirs)
+        throw '`g:project_dirs` is not set or empty!'
+    endif
+    if type(g:project_blacklist) != type([])
+        throw '`g:project_blacklist` should be list<string>!'
+    endif
+
+    var blacklist = ''
+    for i in g:project_blacklist
+        if match(i, is_win32 ? '\v[/\\]' : '/') >= 0
+            blacklist ..= printf('-path %s -prune -o ', shellescape(i))
+        else
+            blacklist ..= printf('-name %s -prune -o ', shellescape(i))
+        endif
+    endfor
     g:Popup(
     printf(
-    'find %s -name .git 2>/dev/null | sed -E "s/\/.git\$//" | fzf',
-    g:project_dirs,
+    'find %s %s -name .git -prune -print 2>/dev/null | sed -E "s/\/.git\$//"'
+    .. ' | fzf',
+    g:project_dirs, blacklist,
     ),
     (s: list<string>) => {
         execute 'lcd' fnameescape(s[0])
