@@ -247,6 +247,7 @@ set noundofile
 
 # term & gui (but not colorscheme) {{{2
 # TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
+# NOTE: no `set bg`; seems that terminal theme (dark / light) can be detected.
 if has('vim_starting')
     if has('gui_running')
         set guioptions=
@@ -256,7 +257,6 @@ if has('vim_starting')
         if is_unix
             if $TERM->tolower() == 'linux'
                 # linux tty
-                set bg=dark
             else
                 # 256color or tgc
                 if exists('&tgc') && $TERM !~ 'xterm'
@@ -265,11 +265,6 @@ if has('vim_starting')
                     &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
                 endif
                 silent! set termguicolors
-                if $BAT_THEME->tolower() =~ 'light'
-                    set bg=light
-                else
-                    set bg=dark
-                endif
             endif
 
             if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
@@ -776,7 +771,6 @@ TerminalAnsiColor()
 if has('gui_running')
     # do not set gui font here; set it in gvimrc. (font may be missing)
     #set gfn=Hack\ 14
-    set bg=light
 endif
 # Command / Function {{{1
 # clipboard {{{2

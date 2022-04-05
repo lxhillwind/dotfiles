@@ -92,7 +92,7 @@ for s:root in exists('g:plugins_root') ? [g:plugins_root] : []
   endif
 endfor
 if empty(s:plugins_root)
-  throw '`g:plugins_root` / `(parent) dir of pack.vim` is not in runtimepath!'
+  throw '`g:plugins_root` is not in runtimepath!'
 endif
 
 command! -bar -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang>0, <args>)
