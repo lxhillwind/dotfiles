@@ -586,7 +586,7 @@ def GotoWhichDir()  # {{{
     echon '[f] buffer' | echohl None | echon ' '
     # }}}
 
-    echon dir_cwd .. ' >'
+    echon dir_cwd .. ' > '
     const ch = getcharstr()
     # avoid press enter to continue msg.
     echo "\n" | redrawstatus
@@ -1071,15 +1071,15 @@ endif
 if exists("$TMUX")
     command! -nargs=1 -bar Tmux TmuxOpenWindow(<q-args>)
 
-    def TmuxOpenWindow(args: string)
+    def TmuxOpenWindow(args_: string)
+        var args: string = args_
         const options = {'c': 'neww', 's': 'splitw -v', 'v': 'splitw -h'}
         var ch = match(args, '\s')
         var option: string
-        var args: string
         if ch == -1
-            [option, args] = [a:args, '']
+            [option, args] = [args, '']
         else
-            [option, args] = [a:args[:ch], a:args[ch:]]
+            [option, args] = [args[: ch], args[ch :]]
         endif
         option = get(options, trim(option))
         if empty(option)
