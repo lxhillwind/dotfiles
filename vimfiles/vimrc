@@ -537,6 +537,7 @@ tnoremap <C-Space> <C-\><C-n>
 tnoremap <C-w> <C-w>.
 
 # I don't use t / T, so use them to do other things.
+nmap T <Leader>at
 nnoremap t <cmd>call <SID>TabOpenOrClose()<CR>
 
 def TabOpenOrClose()
@@ -1599,6 +1600,33 @@ def ProjectList(ctx: dict<any>)
     )
 enddef
 
+# TabWin() {{{3
+def TabWin(ctx: dict<any>)
+    var buf_list = []  # preserve order
+    var key: string
+    for i in range(tabpagenr('$'))
+        var j = 0
+        for buf in tabpagebuflist(i + 1)
+            key = printf('%d %d', i + 1, j + 1)
+            buf_list->add(key .. ' ' .. bufname(buf))
+            j = j + 1
+        endfor
+    endfor
+    g:Popup(
+    'fzf --tac',
+    (s: list<string>) => {
+        const res = s[0]->split(' ')
+        const [tab, win] = [res[0], res[1]]
+        execute printf(':%stabn', tab)
+        execute printf(':%swincmd w', win)
+        },
+    {
+            title: 'select-win',
+            input: buf_list->join("\n"),
+    }
+    )
+enddef
+
 # register new source here! {{{3
 var popup_sources: dict<func> = {
     buffer: LsBuffers,
@@ -1606,6 +1634,7 @@ var popup_sources: dict<func> = {
     fzf: FileList,
     hist_list: HistList,
     project: ProjectList,
+    tab_win: TabWin,
     }
 
 if executable('nnn')
@@ -1621,9 +1650,10 @@ def SelectFromSources()
         # [key, popup_sources]
         ['w', 'nnn'],
         ['s', 'hist_list'],
-        ['b', 'buffer'],
-        ['e', 'project'],
         ['f', 'fzf'],
+        ['e', 'project'],
+        ['b', 'buffer'],
+        ['t', 'tab_win'],
         ['c', 'color'],
         ]
     # some sources may be missing, so check it.
