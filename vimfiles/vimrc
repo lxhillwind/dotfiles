@@ -592,7 +592,9 @@ def GotoWhichDir()  # {{{
     # avoid press enter to continue msg.
     echo "\n" | redrawstatus
 
-    if ch == 'a'
+    if ch == ' '
+        # use <Space> key as escape (like vim-sneak).
+    elseif ch == 'a'
         Cdhome
     elseif ch == 'd'
         if !empty(dir_project)
