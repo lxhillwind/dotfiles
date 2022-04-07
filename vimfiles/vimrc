@@ -428,8 +428,8 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
         inoremap <silent> <buffer> <expr> <C-Space> coc#refresh()
 
         # diagnostic
-        nmap <buffer> ]e <cmd>call CocAction('diagnosticNext')<CR>
-        nmap <buffer> [e <cmd>call CocAction('diagnosticPrevious')<CR>
+        nmap <buffer> ]e <cmd>call g:CocAction('diagnosticNext')<CR>
+        nmap <buffer> [e <cmd>call g:CocAction('diagnosticPrevious')<CR>
 
         # Use K to show documentation in preview window.
         nnoremap <silent> <buffer> K :call <SID>CocShowDocumentation()<CR>
@@ -438,10 +438,10 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
     enddef
 
     def CocShowDocumentation()
-        if (index(['vim','help'], &filetype) >= 0)
+        if (index(['vim', 'help'], &filetype) >= 0)
             execute 'h ' .. expand('<cword>')
         elseif (coc#rpc#ready())
-            CocActionAsync('doHover')
+            g:CocActionAsync('doHover')
         else
             execute '!' .. &keywordprg .. " " .. expand('<cword>')
         endif
@@ -453,11 +453,11 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
         var tag = expand('<cword>')
         var pos = [bufnr()] + getcurpos()[1 :]
         var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
-        if CocAction('jumpDefinition')
-            " Jump was successful, write previous location to tag stack.
+        if g:CocAction('jumpDefinition')
+            # Jump was successful, write previous location to tag stack.
             var winid = win_getid()
             var stack = gettagstack(winid)
-            var stack['items'] = [item]
+            stack['items'] = [item]
             settagstack(winid, stack, 't')
         endif
     enddef
