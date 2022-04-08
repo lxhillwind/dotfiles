@@ -413,11 +413,11 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
     #   CocInstall coc-pyright
 
     augroup vimrc
-        au FileType go,html,python,vim InitCocLang()
+        au FileType go,html,python,vim g:InitCocLang()
     augroup END
 
-    # coc keymap
-    def InitCocLang()
+    # coc keymap; define as global function, so it can be called outside.
+    def g:InitCocLang()
         # GoTo code navigation.
         nmap <silent> <buffer> <LocalLeader>d <Plug>(coc-definition)
         nmap <silent> <buffer> <LocalLeader>y <Plug>(coc-type-definition)
