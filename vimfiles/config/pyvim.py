@@ -32,7 +32,7 @@ class Worker(BaseWorker):
         f_exists = config_file.exists()
         f_escaped = await vim.fnameescape(str(config_file))
         f_editcmd = 'e' if bang else 'tabe'
-        await vim.executecute(f_editcmd + ' ' + f_escaped)
+        await vim.execute(f_editcmd + ' ' + f_escaped)
         if not f_exists:
             content = textwrap.dedent('''\
                 # This file is generated from "worker.py.example";
@@ -74,7 +74,7 @@ class Worker(BaseWorker):
             await vim.execute('echohl WarningMsg | echomsg "file not exists!" | echohl None')
             return
         if not path.is_dir():
-            await vim.execute(f'e %s' % await vim.fn.fnameescape(str(path)))
+            await vim.execute(f'e %s' % await vim.fnameescape(str(path)))
             return
         result = [
                 f'{i}/' if i.is_dir() else f'{i}'
