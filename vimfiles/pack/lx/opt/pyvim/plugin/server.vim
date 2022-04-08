@@ -66,14 +66,6 @@ def ServerHandler(stdout: bool, msg: string)
         echohl None
       endtry
       return
-    elseif data.op == 'cmd'
-      execute 'legacy' data.cmd
-    elseif data.op == 'key'
-      feedkeys(data.cmd, 't')
-    elseif data.op == 'execute'
-      resp = split(execute('legacy ' .. data.cmd), "\n")
-    elseif data.op == 'eval'
-      resp = eval(data.cmd)
     elseif data.op == 'fn'
       resp = call(data.cmd, data.args)
     endif

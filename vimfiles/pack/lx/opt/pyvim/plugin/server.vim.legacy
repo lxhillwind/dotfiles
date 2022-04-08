@@ -74,14 +74,6 @@ function! s:ServerHandler(stdout, msg)
         echohl None
       endtry
       return
-    elseif data.op == 'cmd'
-      execute data.cmd
-    elseif data.op == 'key'
-      call feedkeys(data.cmd, 't')
-    elseif data.op == 'execute'
-      let resp = split(execute(data.cmd), "\n")
-    elseif data.op == 'eval'
-      let resp = eval(data.cmd)
     elseif data.op == 'fn'
       let resp = call(data.cmd, data.args)
     endif

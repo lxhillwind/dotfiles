@@ -30,9 +30,9 @@ class Worker(BaseWorker):
         if PYVIM_RC:
             config_file = pathlib.Path(PYVIM_RC)
         f_exists = config_file.exists()
-        f_escaped = await vim.fn.fnameescape(str(config_file))
+        f_escaped = await vim.fnameescape(str(config_file))
         f_editcmd = 'e' if bang else 'tabe'
-        await vim.cmd(f_editcmd + ' ' + f_escaped)
+        await vim.executecute(f_editcmd + ' ' + f_escaped)
         if not f_exists:
             content = textwrap.dedent('''\
                 # This file is generated from "worker.py.example";
@@ -42,54 +42,54 @@ class Worker(BaseWorker):
             content += '\n'
             with CWD.joinpath('worker.py.example').open() as f:
                 content += f.read()
-            await vim.fn.append('$', content.rstrip('\n').split('\n'))
+            await vim.append('$', content.rstrip('\n').split('\n'))
 
     async def eval(self, args: str, range: int = 0, line1: int = 0, line2: int = 0):
         """eval range selection or string after `:Py3 eval`."""
         if range in (1, 2):
-            args = '\n'.join(await vim.fn.getline(line1, line2))
+            args = '\n'.join(await vim.getline(line1, line2))
         func = 'async def _local():\n' + textwrap.indent(args, ' ' * 4)
         exec(func)
         await locals()['_local']()
 
     async def dirlist(self, args, **kwargs):
         if await vim.eval('&ft') != 'dirlist':
-            await vim.cmd('setl buftype=nofile')
-            await vim.cmd('setl ft=dirlist')
-            await vim.cmd('nnoremap <buffer> - <cmd>Py3 dirlist %:h<CR>')
-            await vim.cmd('nnoremap <buffer> i <cmd>Py3 dirlist <line><CR>')
+            await vim.execute('setl buftype=nofile')
+            await vim.execute('setl ft=dirlist')
+            await vim.execute('nnoremap <buffer> - <cmd>Py3 dirlist %:h<CR>')
+            await vim.execute('nnoremap <buffer> i <cmd>Py3 dirlist <line><CR>')
         if len(args) > 0:
             dirname = args
         else:
             dirname = '%'
 
         if dirname == '<line>':
-            path = await vim.fn.fnamemodify(await vim.fn.getline('.'), ':p')
+            path = await vim.fnamemodify(await vim.getline('.'), ':p')
         else:
-            path = await vim.fn.fnamemodify(await vim.fn.expand(dirname), ':p')
+            path = await vim.fnamemodify(await vim.expand(dirname), ':p')
 
         import pathlib
         path = pathlib.Path(path)
         if not path.exists():
-            await vim.cmd('echohl WarningMsg | echomsg "file not exists!" | echohl None')
+            await vim.execute('echohl WarningMsg | echomsg "file not exists!" | echohl None')
             return
         if not path.is_dir():
-            await vim.cmd(f'e %s' % await vim.fn.fnameescape(str(path)))
+            await vim.execute(f'e %s' % await vim.fn.fnameescape(str(path)))
             return
         result = [
                 f'{i}/' if i.is_dir() else f'{i}'
                 for i in path.iterdir()
                 ]
-        await vim.cmd('noswapfile file %s' % await vim.fn.fnameescape(str(path)))
-        await vim.fn.deletebufline('', 1, '$')
-        await vim.fn.append(0, result)
-        await vim.fn.deletebufline('', '$')
+        await vim.execute('noswapfile file %s' % await vim.fnameescape(str(path)))
+        await vim.deletebufline('', 1, '$')
+        await vim.append(0, result)
+        await vim.deletebufline('', '$')
 
     async def term(self, args):
-        buf = await vim.fn.term_start(shlex.split(args) if args else ['/bin/zsh'], {
+        buf = await vim.term_start(shlex.split(args) if args else ['/bin/zsh'], {
             'hidden': 1, 'term_finish': 'close'
             })
-        await vim.fn.popup_create(buf, {
+        await vim.popup_create(buf, {
             'minwidth': 80, 'minheight': 24,
             'maxwidth': 80, 'maxheight': 24,
             'border': [],
@@ -101,10 +101,10 @@ async def test_performance(self: Worker, arg):
     now = datetime.datetime.now()
     import json
     arg = int(arg)
-    print(len(json.dumps(await vim.fn.range(arg), ensure_ascii=False)))
-    await vim.cmd('let g:MyFoo = 0')
-    for i in await vim.fn.range(arg):
-        await vim.cmd('let g:MyFoo += %s' % i)
+    print(len(json.dumps(await vim.range(arg), ensure_ascii=False)))
+    await vim.execute('legacy let g:MyFoo = 0')
+    for i in await vim.range(arg):
+        await vim.execute('legacy let g:MyFoo += %s' % i)
     now_1 = datetime.datetime.now()
     print(now, await vim.eval('g:MyFoo'), now_1 - now)
 

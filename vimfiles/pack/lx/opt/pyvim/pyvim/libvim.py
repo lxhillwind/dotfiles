@@ -31,18 +31,6 @@ class VimException(Exception):
     pass
 
 
-class _Cmd:
-    def __init__(self, c):
-        self.c = c
-
-    async def __call__(self, cmd: str, *args) -> None:
-        payload = {'op': 'cmd', 'cmd': ' '.join([cmd, *args])}
-        await self.c._eval(payload)
-
-    async def __getattr__(self, key):
-        return await functools.partial(self.__call__, key)
-
-
 class _Fn:
     def __init__(self, c):
         self.c = c
@@ -154,28 +142,8 @@ class Client:
         self._print(dict(obj, id=id_))
         return await fut
 
-    @property
-    def cmd(self):
-        """return None"""
-        return _Cmd(self)
-
-    async def key(self, cmd: str) -> None:
-        payload = {'op': 'key', 'cmd': cmd}
-        await self._eval(payload)
-
-    async def eval(self, cmd: str):
-        """return Any"""
-        payload = {'op': 'eval', 'cmd': cmd}
-        return await self._eval(payload)
-
-    async def execute(self, cmd: str) -> typing.List[str]:
-        payload = {'op': 'execute', 'cmd': cmd}
-        return await self._eval(payload)
-
-    @property
-    def fn(self):
-        """return Any"""
-        return _Fn(self)
+    def __getattr__(self, fn: str):
+        return getattr(_Fn(self), fn)
 
 
 class Worker:
