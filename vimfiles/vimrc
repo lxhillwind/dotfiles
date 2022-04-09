@@ -346,9 +346,13 @@ Pack 'vim-tasks'
 # }}}
 
 # vim dist. {{{
+# plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
+# not have enough permission to gen tag for them.
+# use ":packadd!" (with !) to only add them to &rtp.
+#
 # use matchit, so vim9 filetype indent work as expected.
 # https://github.com/vim/vim/issues/7628
-Pack 'matchit'
+packadd! matchit
 # }}}
 
 # from network {{{
@@ -1866,27 +1870,27 @@ def SwitchReaderMode()
         7 7gt
         8 8gt
         9 <cmd>tablast<CR>
-    END
-    if reader_mode.on
-        mapping->mapnew((_, i) => {
-            execute 'nunmap' i->split(' ')[0]
-            })
-        reader_mode.on = false
-        popup_close(reader_mode.winid)
-    else
-        mapping->mapnew((_, i) => {
-            execute 'nnoremap' i
-            })
-        reader_mode.winid = popup_create(
-        ['reader mode'], {
-            line: &lines,
-            mapping: false,
-            highlight: 'Special',
-            tabpage: -1,  # show in all tabs.
-            }
-        )
-        reader_mode.on = true
-    endif
+END
+if reader_mode.on
+    mapping->mapnew((_, i) => {
+        execute 'nunmap' i->split(' ')[0]
+        })
+    reader_mode.on = false
+    popup_close(reader_mode.winid)
+else
+    mapping->mapnew((_, i) => {
+        execute 'nnoremap' i
+        })
+    reader_mode.winid = popup_create(
+    ['reader mode'], {
+        line: &lines,
+        mapping: false,
+        highlight: 'Special',
+        tabpage: -1,  # show in all tabs.
+        }
+    )
+    reader_mode.on = true
+endif
 enddef
 
 # ":E", better ":e" (check &modified). {{{2
