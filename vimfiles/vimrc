@@ -530,11 +530,11 @@ onoremap il :<C-u>normal! ^vg_<CR>
 nmap <Leader>r <Plug>(tasks-select)
 vmap <Leader>r <Plug>(tasks-select)
 
-# filelist (HistList)
+# file list (HistList)
 nmap <Leader>f <Leader>as
 
-# project list (ProjectList)
-nmap <Leader>o <Leader>ae
+# dir list (CdHistory)
+nmap <Leader>o <Leader>ac
 
 # terminal escape
 tnoremap <C-Space> <C-\><C-n>
@@ -617,25 +617,19 @@ def GotoWhichDir()  # {{{
 enddef
 # }}}
 
-# filetype {{{1
+# better gF / v_gF. (handle column nr; v_gF handle line / column nr)
+# using my plugin vim-jump.
+nmap gF <Plug>(jump_to_file)
+vmap gF <Plug>(jump_to_file)
+
+# filetype & autocmd {{{1
 filetype plugin indent on
 if !exists('g:syntax_on')
     syntax on
 endif
 
 augroup vimrc
-    au BufReadPost * {
-        # "Remember the positions in files with some git-specific exceptions"
-        # copied from /usr/share/vim/vim82/suse.vimrc
-        if line("'\"") > 0 && line("'\"") <= line("$")
-                    \ && expand("%") !~ "COMMIT_EDITMSG"
-                    \ && expand("%") !~ "ADD_EDIT.patch"
-                    \ && expand("%") !~ "addp-hunk-edit.diff"
-                    \ && expand("%") !~ "git-rebase-todo"
-            exe "normal g`\""
-        endif
-        }
-
+    # misc (filetype related) {{{2
     au BufNewFile,BufRead *.gv setl ft=dot
     au FileType yaml setl indentkeys-=0#
     au FileType zig setl fp=zig\ fmt\ --stdin
@@ -678,7 +672,7 @@ augroup vimrc
     au FileType markdown nnoremap <buffer>
                 \ <LocalLeader>c :call <SID>MarkdownToggleTaskStatus()<CR>
 
-    # gx related (NOTE: key `gx` overwritten) {{{
+    # gx related (NOTE: key `gx` overwritten) {{{2
     nnoremap <silent> gx :call <SID>Gx('n')<CR>
     vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
 
@@ -775,9 +769,32 @@ augroup vimrc
         nnoremap <buffer> <LocalLeader>v :call <SID>GxVim("wincmd p \\|")<CR>
     enddef
     au FileType gx GxInit()
+    # Remember the positions in files with some git-specific exceptions {{{2
+    au BufReadPost * {
+        # copied from /usr/share/vim/vim82/suse.vimrc
+        if line("'\"") > 0 && line("'\"") <= line("$")
+                    \ && expand("%") !~ "COMMIT_EDITMSG"
+                    \ && expand("%") !~ "ADD_EDIT.patch"
+                    \ && expand("%") !~ "addp-hunk-edit.diff"
+                    \ && expand("%") !~ "git-rebase-todo"
+            exe "normal g`\""
+        endif
+        }
+
+    # filelist (viminfo only saves 100 files) {{{2
+    au BufNewFile,BufRead * {
+        const name = expand('%:p')
+        if !empty(name) && !HistBlacklist(name)
+            if !isdirectory(expand('~/.cache'))
+                mkdir(expand('~/.cache'))
+            endif
+            writefile([name], '~/.cache/file_history', 'a')
+        endif
+        }
+    # fin {{{2
 augroup END
 
-# finally {{{2
+# finally {{{1
 # e.g. <Space><Space>
 nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
 # e.g. <Space>;; / \\
@@ -1526,6 +1543,10 @@ enddef
 
 def HistList(ctx: dict<any>)
     var input = v:oldfiles
+    ->extendnew(
+    execute('Sh sort ~/.cache/file_history 2>/dev/null | uniq -c | sort -n | sed -E "s/^\s+[0-9]+\s+//"')
+    ->split("\n")
+    )
     ->filter((_, i) => !HistBlacklist(i))
     ->join("\n")
 
@@ -1555,8 +1576,8 @@ enddef
 # Nnn() (it's nnn.) {{{3
 def Nnn(ctx: dict<any>)
     g:Popup(
-    # sleep 0.1 before nnn, so term won't get messy. but why?
-    'sleep 0.1; nnn -o -p -',
+    # wrap nnn with `sh -i`, so term won't get messy.
+    'sh -ic "nnn -o -p -"',
     (s: list<string>) => {
         execute 'E' fnameescape(s[0])
         },
@@ -1633,6 +1654,26 @@ def TabWin(ctx: dict<any>)
     )
 enddef
 
+# CdHistory {{{3
+def CdHistory(ctx: dict<any>)
+    g:Popup(
+    'zsh -ic j',
+    (s: list<string>) => {
+        if s[0]->isdirectory()
+            execute 'lcd' fnameescape(s[0])
+            if exists(':Dirvish') == 2
+                execute 'Dirvish' fnameescape(s[0])
+            endif
+        else
+            echoerr 'dir not valid!'
+        endif
+        },
+    {
+            title: 'select-dir-to-cd',
+    }
+    )
+enddef
+
 # register new source here! {{{3
 var popup_sources: dict<func> = {
     buffer: LsBuffers,
@@ -1642,6 +1683,10 @@ var popup_sources: dict<func> = {
     project: ProjectList,
     tab_win: TabWin,
     }
+
+if executable('zsh')
+    popup_sources['cd'] = CdHistory
+endif
 
 if executable('nnn')
     popup_sources['nnn'] = Nnn
@@ -1660,7 +1705,7 @@ def SelectFromSources()
         ['e', 'project'],
         ['b', 'buffer'],
         ['t', 'tab_win'],
-        ['c', 'color'],
+        ['c', 'cd'],
         ]
     # some sources may be missing, so check it.
     ->filter((_, i) => !empty(popup_sources->get(i->get(1))))

@@ -2,7 +2,8 @@
 # vim:fdm=marker
 # path: ~/.zshrc
 
-# # Description {{{
+# info {{{1
+# # Description
 # shell env | rc file.
 #
 # # Usage
@@ -17,9 +18,9 @@
 # (it will return only if it meets feature which is not available).
 #
 # If `ls` alias does not work (BSD ls, for example),
-# just unalias / re-alias it after source this file. }}}
+# just unalias / re-alias it after source this file.
 
-# env {{{
+# env {{{1
 export EDITOR=vim
 
 case "$PATH" in
@@ -37,14 +38,14 @@ case "$PYTHONPATH" in
     *) export PYTHONPATH=~/lib/python:$PYTHONPATH ;;
 esac
 
-# }}}
+# finish if not interactive {{{1
 case "$-" in
     *i*) ;;
     *) return 2>/dev/null || exit 1 ;;
 esac
 
-# rc {{{
-# colorful man
+# rc {{{1
+# colorful man {{{2
 man() {
     # openSUSE requires MAN_POSIXLY_CORRECT to display without prompt.
     # openSUSE requires GROFF_NO_SGR to display color (but why?).
@@ -63,36 +64,37 @@ man() {
     man "$@"
 }
 
-# alias & functions
+# some short alias & functions {{{2
 alias exa='exa -F --color=always'
 alias less='less -R'
 alias diff='diff --color=auto'
 alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
-# }}}
+alias pq='proxychains -q'
 
-# busybox can only set rc by $ENV, so source local config if exists.
+# busybox can only set rc by $ENV, so source local config if exists. {{{2
 if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
     source "$SH_RC_LOCAL"
 fi
 
-# simple PS1 (zsh re-defines it)
+# simple PS1 (zsh re-defines it) {{{2
 PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date +%Y-%m-%d\ %H:%M:%S)] \[\e[33m\]\w'$'\n''\[\e[32m\]\$\[\e[0m\] '
 
-# load vimserver related setting after PS1.
+# load vim-vimserver related setting after PS1. {{{2
 # see lxhillwind/vim-vimserver
 if [ -f "$VIMSERVER_SH_SOURCE" ]; then
     source "$VIMSERVER_SH_SOURCE"
 fi
 
+# finish if not zsh {{{2
 # Following code may cause syntax error in strict POSIX shell
 # (like array construction), so return early.
 if ! command -v zstyle >/dev/null; then
     return
 fi
-# {{{ zshrc
 
-# Command completion
+# zshrc {{{1
+# Command completion {{{2
 typeset -U fpath
 fpath=(~/.zsh_comp $fpath[@])
 autoload -Uz compinit promptinit
@@ -100,9 +102,66 @@ autoload -Uz compinit promptinit
 # arrow-key driven autocompletion
 zstyle ':completion:*' menu select
 
-# cd
+# history; TODO allow skip history {{{2
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE=~/.zsh_history
+
+# cd {{{2
 export DIRSTACKSIZE=16
 setopt auto_pushd pushd_ignore_dups pushd_minus
+
+# cd enhancement; with function j() {{{2
+_cd_history() {
+    if [[ $PWD != $_cd_history_last ]]; then
+        if [[ -v _cd_history_last ]]; then
+            printf '%s\n' "$PWD" >> ~/.cache/cd_history
+        fi
+        _cd_history_last="$PWD"
+    fi
+}
+
+precmd_functions+=(_cd_history)
+
+j() {
+    prefix=$1
+    if [ -n "$prefix" ]; then
+        prefix=$({ cd "$prefix" && pwd; } 2>&1)
+    fi
+    if [[ $(wc -l ~/.cache/cd_history | awk '{ print $1 }') -gt 10000 ]]; then
+        echo 'warning: cd history (~/.cache/cd_history) too large!' >&2
+    fi
+    s=$(sort ~/.cache/cd_history | uniq -c | sort -nk1 | sed -E 's/^\s*[0-9]+\s*//' \
+        | grep -F "$prefix" \
+        | { while read x; do if [ -d "$x" ]; then echo "$x"; fi; done; } \
+        | fzf --tac +s -0)
+
+    # return if <C-d> / <C-c>.
+    if [ $? -eq 130 ]; then
+        return 0
+    fi
+
+    if ! [ -t 1 ]; then
+        if [ -n "$s" ]; then
+            printf '%s\n' "$s"
+        fi
+        return
+    fi
+
+    if [ -n "$s" ]; then
+        cd "$s"
+    else
+        printf 'not found; using fzf? (from ~/) [y/N] ' >&2
+        if read -q >&/dev/null; then
+            prefix="${prefix:-$HOME}"
+            file=$(cd "$prefix" && fzf)
+            file="$prefix/${file%/*}"
+            if [ -e "$file" ]; then
+                cd "$file"
+            fi
+        fi
+    fi
+}
 
 # vi insert mode {{{2
 bindkey -v \^A beginning-of-line
@@ -132,56 +191,28 @@ _fix_cursor()
 {
     print -n '\e[1 q'
 }
-# }}}2
 
-# readline keybindings
+# readline keybindings {{{2
 bindkey -e
 bindkey \^U backward-kill-line
 
 # '#' at begin-of-line as comment
 setopt interactivecomments
 
-# simple PS1
+# simple PS1 {{{2
 PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
 
-# edit command line
+# edit command line (C-x C-e) {{{2
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey \^x\^e edit-command-line
 
-compinit
-
-# }}}
-
-# TODO merge into zshrc block above. {{{1
-alias o=xdg-open
-
-export MPD_HOST=~/.mpd/socket
-
-mpc-fzf()
-{
-    mpc playlist | awk 'begin { i=0 } { print(++i, ")", $0) }' | fzf | awk '{ print $1 }' | xargs -r mpc play
-}
-
-# capture tmux output to put in vim (easy jump to file of rg / grep output)
+# capture term output, pipe to vim (easy jump); func: sv() {{{2
 # optional $1: start line from visible top; default: 1000
 if [ -n "$TMUX" ]; then
 sv()
 {
     tmux capture -e -p -S -${1:-0} -E $(tmux display -p "#{cursor_y}") | vim - -c 'set buftype=nofile noswapfile | %Terminal cat'
-}
-
-# capture tmux output to fzf (for cd)
-# optional $1: start line from visible top; default: 1
-# TODO use vim's jump feature.
-sc()
-{
-    result=$(tmux capture -p -S -${1:-1} -E $(tmux display -p "#{cursor_y}") | fzf)
-    if [ -d "$result" ]; then
-        cd "$result"
-    else
-        printf "\x1b[31mfile not reachable:\x1b[0m $result\n" >&2
-    fi
 }
 fi
 
@@ -199,7 +230,15 @@ sv()
 }
 fi
 
-# x11 / wayland env {{{
+# finish. {{{2
+compinit
+
+# TODO merge into zshrc block above. {{{1
+alias o=xdg-open
+
+export MPD_HOST=~/.mpd/socket
+
+# x11 / wayland; func: s() or x() {{{2
 if [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
     _common() {
         export GTK_IM_MODULE=fcitx
@@ -231,66 +270,3 @@ if [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
         (_s)
     }
 fi
-# }}}
-
-# wayland as sandbox {{{
-if [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
-    # TODO network is slow;
-    # TODO pcmanfm-qt does not work;
-    # TODO fcitx5;
-    s-sandbox() {
-
-    local args=(
-    --clearenv
-    --setenv XDG_RUNTIME_DIR "$XDG_RUNTIME_DIR"
-    --setenv HOME "$HOME" --setenv USER "$USER"
-
-    # sandbox
-    --ro-bind / /
-    --perms 0700 --tmpfs "$XDG_RUNTIME_DIR"
-    --perms 0777 --tmpfs /tmp
-    --tmpfs ~
-
-    # sound (pipewire)
-    --ro-bind /run/user/"$UID"/pipewire-0 /run/user/"$UID"/pipewire-0
-    # sound (pulseaudio); use it even if using pipewire-pulse.
-    --ro-bind /run/user/"$UID"/pulse /run/user/"$UID"/pulse
-
-    # special dir
-    --bind /sys /sys --proc /proc --dev-bind /dev /dev
-    --unshare-all --share-net
-
-    # qt
-    --setenv QT_QPA_PLATFORM wayland
-
-    # qutebrowser
-    --ro-bind ~/.config/qutebrowser/config.py ~/.config/qutebrowser/config.py
-    --ro-bind ~/.config/qutebrowser/rc/ ~/.config/qutebrowser/rc/
-    --ro-bind ~/.config/qutebrowser/userscripts/ ~/.config/qutebrowser/userscripts/
-    --ro-bind ~/.config/qutebrowser/greasemonkey/ ~/.config/qutebrowser/greasemonkey/
-
-    # qemu
-    --ro-bind ~/bin/vm-list ~/bin/vm-list
-    --ro-bind ~/bin/vm-start ~/bin/vm-start
-    --ro-bind ~/bin/launch-qemu.py ~/bin/launch-qemu.py
-    --bind ~/qemu/ ~/qemu/
-    --ro-bind ~/qemu/config.yml ~/qemu/config.yml
-
-    # start compositor
-    --ro-bind ~/.config/sway ~/.config/sway
-    sway
-)
-
-bwrap "${args[@]}"
-}
-fi
-# }}}
-
-# tmux sandbox
-if [ -z "$TMUX" ]; then
-    :
-    # cmd (works, but tweak needed):
-    # bwrap --ro-bind / / --tmpfs /tmp --tmpfs ~ --ro-bind ~/.config/tmux ~/.config/tmux --dev /dev --proc /proc --clearenv --setenv TERM "$TERM" --unshare-all --share-net tmux
-fi
-
-alias pq='proxychains -q'
