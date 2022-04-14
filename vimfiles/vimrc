@@ -631,6 +631,7 @@ endif
 augroup vimrc
     # misc (filetype related) {{{2
     au BufNewFile,BufRead *.gv setl ft=dot
+    au FileType vim,zsh,sh,tmux setl fdm=marker
     au FileType yaml setl indentkeys-=0#
     au FileType zig setl fp=zig\ fmt\ --stdin
     au FileType markdown {
@@ -788,7 +789,7 @@ augroup vimrc
             if !isdirectory(expand('~/.cache'))
                 mkdir(expand('~/.cache'))
             endif
-            writefile([name], '~/.cache/file_history', 'a')
+            writefile([name], expand('~/.cache/file_history'), 'a')
         endif
         }
     # fin {{{2
@@ -850,6 +851,17 @@ if has('gui_running')
     #set gfn=Hack\ 14
 endif
 # Command / Function {{{1
+# misc {{{2
+def PopupSize(): dict<number>
+    const width = max([&columns - 80, 80])
+    const height = max([&lines - 24, 24])
+    # NOTE: maxwidth / maxheight is not the initial window size!
+    return {
+        maxwidth: width, maxheight: height,
+        minwidth: width, minheight: height,
+        }
+enddef
+
 # clipboard {{{2
 # use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
 # detection is defined there. (~/bin/{pbcopy,pbpaste})
@@ -1463,10 +1475,8 @@ def g:Popup(cmd: string, Cb: func, ...args: list<dict<any>>)
     var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: TermExitCb, hidden: true}))
     popup_win = popup_create(buf, {
         border: [1, 1, 1, 1],
-        minwidth: 80, minheight: 24,
-        maxwidth: 80, maxheight: 24,
         callback: function(PopupCloseCb, [Cb])
-        })
+        }->extendnew(PopupSize()))
 enddef
 
 def TermExitCb(_: job, code: number)
@@ -1526,6 +1536,9 @@ enddef
 
 # HistList() {{{3
 def HistBlacklist(s: string): bool
+    if !filereadable(s) && !filereadable(expand(s))
+        return true
+    endif
     var lists =<< trim END
         COMMIT_EDITMSG
         ADD_EDIT.patch
@@ -1765,9 +1778,7 @@ def PopupTerminalSwitch()
         endif
         popup_terminal_state.winid = popup_create(popup_terminal_state.buf, {
             border: [1, 1, 1, 1],
-            minwidth: 80, minheight: 24,
-            maxwidth: 80, maxheight: 24,
-            })
+            }->extendnew(PopupSize()))
         popup_terminal_state.shown = true
     endif
 enddef
