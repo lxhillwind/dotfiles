@@ -1590,7 +1590,9 @@ enddef
 def Nnn(ctx: dict<any>)
     g:Popup(
     # wrap nnn with `sh -i`, so term won't get messy.
-    'sh -ic "nnn -o -p -"',
+    # seems like a bug in busybox sh and macos bash.
+    (executable('zsh') ? 'zsh' : 'sh')
+    .. ' -ic "nnn -o -p -"',
     (s: list<string>) => {
         execute 'E' fnameescape(s[0])
         },
