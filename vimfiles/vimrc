@@ -152,9 +152,13 @@ endif
 # vim-vimserver should be called early.
 packadd vim-vimserver
 
-# map early
-g:mapleader = ' '  # assign before use
-g:maplocalleader = ' ;'
+# set leader / localleader to unused key, so plugin is hardly to clash with
+# our key.
+# Refer: lacygoill's vimrc.
+g:mapleader = "\<S-F10>"
+g:maplocalleader = "\<S-F11>"
+
+# use <Space> as *true* leader key.
 noremap <Space> <Nop>
 
 augroup vimrc
@@ -179,7 +183,8 @@ augroup vimrc
         endif
     enddef
 
-    au TerminalOpen * {
+    # define a function, so it can also be used in popup terminal.
+    def TerminalSetup()
         # NOTE: keymap defined here (terminal [p]aste).
         if &buftype == 'terminal'
             setl nonu | setl nornu
@@ -195,7 +200,8 @@ augroup vimrc
                 nnoremap <buffer> - <cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
             endif
         endif
-        }
+    enddef
+    au TerminalWinOpen * TerminalSetup()
 augroup END
 
 # statusline {{{2
@@ -290,7 +296,7 @@ endif
 
 # set env for embedded terminal. {{{2
 if !exists('$FZF_DEFAULT_OPTS')
-    $FZF_DEFAULT_OPTS = '--cycle --color=16'
+    $FZF_DEFAULT_OPTS = '--cycle --no-sort --color=16'
 endif
 
 # plugin {{{1
@@ -334,7 +340,7 @@ g:markdown_fenced_languages = [
 # }}}
 
 # mime {{{
-# try <Leader>as
+# try <Space>as
 # TODO archive vim-filelist?
 #Pack 'vim-filelist'
 
@@ -423,10 +429,10 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
     # coc keymap; define as global function, so it can be called outside.
     def g:InitCocLang()
         # GoTo code navigation.
-        nmap <silent> <buffer> <LocalLeader>d <Plug>(coc-definition)
-        nmap <silent> <buffer> <LocalLeader>y <Plug>(coc-type-definition)
-        nmap <silent> <buffer> <LocalLeader>i <Plug>(coc-implementation)
-        nmap <silent> <buffer> <LocalLeader>r <Plug>(coc-references)
+        nmap <silent> <buffer> <Space>;d <Plug>(coc-definition)
+        nmap <silent> <buffer> <Space>;y <Plug>(coc-type-definition)
+        nmap <silent> <buffer> <Space>;i <Plug>(coc-implementation)
+        nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
 
         # completion
         inoremap <silent> <buffer> <expr> <C-Space> coc#refresh()
@@ -516,7 +522,7 @@ execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 inoremap <C-Space> <C-x><C-o>
 
 # clear hlsearch
-nnoremap <silent> <Leader>l :noh<CR>
+nnoremap <silent> <Space>l :noh<CR>
 
 # custom text object
 vnoremap aa :<C-u>normal! ggVG<CR>
@@ -527,21 +533,21 @@ vnoremap il :<C-u>normal! ^vg_<CR>
 onoremap il :<C-u>normal! ^vg_<CR>
 
 # simple tasks: tasks.vim
-nmap <Leader>r <Plug>(tasks-select)
-vmap <Leader>r <Plug>(tasks-select)
+nmap <Space>r <Plug>(tasks-select)
+vmap <Space>r <Plug>(tasks-select)
 
 # file list (HistList)
-nmap <Leader>f <Leader>as
+nmap <Space>f <Space>as
 
 # dir list (CdHistory)
-nmap <Leader>o <Leader>ac
+nmap <Space>o <Space>ac
 
 # terminal escape
 tnoremap <C-Space> <C-\><C-n>
 tnoremap <C-w> <C-w>.
 
 # I don't use t / T, so use them to do other things.
-nmap T <Leader>at
+nmap T <Space>at
 nnoremap t <cmd>call <SID>TabOpenOrClose()<CR>
 
 def TabOpenOrClose()
@@ -555,7 +561,7 @@ def TabOpenOrClose()
 enddef
 
 # getcwd
-nnoremap <Leader>c <cmd>call <SID>GotoWhichDir()<CR>
+nnoremap <Space>c <cmd>call <SID>GotoWhichDir()<CR>
 
 def GotoWhichDir()  # {{{
     const dir_buffer: string = Cd_get_buf_dir()
@@ -648,7 +654,7 @@ augroup vimrc
     au FileType qf nnoremap <buffer> <C-n> <cmd>cnewer<CR>
     au FileType qf nnoremap <buffer> <C-p> <cmd>colder<CR>
     au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
-    au FileType qf nnoremap <buffer> <LocalLeader>l <cmd>chistory<CR>
+    au FileType qf nnoremap <buffer> <Space>;l <cmd>chistory<CR>
 
     # ":h ft-sh-syntax"
     g:is_posix = 1
@@ -671,7 +677,7 @@ augroup vimrc
     enddef
     # }}}
     au FileType markdown nnoremap <buffer>
-                \ <LocalLeader>c :call <SID>MarkdownToggleTaskStatus()<CR>
+                \ <Space>;c :call <SID>MarkdownToggleTaskStatus()<CR>
 
     # gx related (NOTE: key `gx` overwritten) {{{2
     nnoremap <silent> gx :call <SID>Gx('n')<CR>
@@ -693,9 +699,13 @@ augroup vimrc
 
     # TODO show error?
     def GxOpen(...arg: list<string>)
-        const text = join(getline(1, '$'), "\n")
+        var text = join(getline(1, '$'), "\n")
         if empty(text)
             return
+        endif
+        if text->match('\v^[~$]') >= 0
+            # expand ~ and $ (env).
+            text = expand(text)
         endif
         const open_cmd = empty(arg) ? GxOpenCmd(text) : [arg[0], text]
         if empty(open_cmd)
@@ -760,14 +770,14 @@ augroup vimrc
         setl buftype=nofile noswapfile
         setl bufhidden=hide
         if executable('qutebrowser')
-            nnoremap <buffer> <LocalLeader>s :call <SID>GxOpen('qutebrowser')<CR>
+            nnoremap <buffer> <Space>;s :call <SID>GxOpen('qutebrowser')<CR>
         endif
         nnoremap <buffer> gx :call <SID>GxOpenGx()<CR>
         if executable('qutebrowser') && has_gui
             nnoremap <buffer> gs :call <SID>GxOpenGx('qutebrowser')<CR>
         endif
-        nnoremap <buffer> <LocalLeader>f :call <SID>GxOpen()<CR>
-        nnoremap <buffer> <LocalLeader>v :call <SID>GxVim("wincmd p \\|")<CR>
+        nnoremap <buffer> <Space>;f :call <SID>GxOpen()<CR>
+        nnoremap <buffer> <Space>;v :call <SID>GxVim("wincmd p \\|")<CR>
     enddef
     au FileType gx GxInit()
     # Remember the positions in files with some git-specific exceptions {{{2
@@ -796,12 +806,8 @@ augroup vimrc
 augroup END
 
 # finally {{{1
-# e.g. <Space><Space>
-nnoremap <Leader><Leader> :nmap <Char-60>Leader<Char-62><CR>
-# e.g. <Space>;; / \\
-execute 'nnoremap <LocalLeader>' ..
-(len(g:maplocalleader) > 1 ? matchstr(g:maplocalleader, '.$') : '<LocalLeader>') ..
-' :nmap <Char-60>LocalLeader<Char-62><CR>'
+nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
+nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
 
 # colorscheme {{{1
 # only set colorscheme if not set yet. {{{2
@@ -865,8 +871,8 @@ enddef
 # clipboard {{{2
 # use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
 # detection is defined there. (~/bin/{pbcopy,pbpaste})
-nnoremap <Leader>y :call <SID>ClipboardCopy("")<CR>
-nnoremap <Leader>p :call <SID>ClipboardPaste("")<CR>
+nnoremap <Space>y :call <SID>ClipboardCopy("")<CR>
+nnoremap <Space>p :call <SID>ClipboardPaste("")<CR>
 
 def ClipboardCopy(cmd_: string)
     var cmd = cmd_
@@ -904,8 +910,8 @@ def ClipboardPaste(cmd_: string)
 enddef
 
 # execute current line (or select lines), comment removed {{{2
-nnoremap <Leader><CR> :call <SID>ExecuteLines('n')<CR>
-vnoremap <Leader><CR> :<C-u>call <SID>ExecuteLines('v')<CR>
+nnoremap <Space><CR> :call <SID>ExecuteLines('n')<CR>
+vnoremap <Space><CR> :<C-u>call <SID>ExecuteLines('v')<CR>
 
 def ExecuteLines(mode: string)
     var lines: list<string>
@@ -936,7 +942,7 @@ def ExecuteLines(mode: string)
 enddef
 
 # switch number / relativenumber {{{2
-nnoremap <silent> <Leader>n :call <SID>Switch_nu_rnu()<CR>
+nnoremap <silent> <Space>n :call <SID>Switch_nu_rnu()<CR>
 
 def Switch_nu_rnu()
     # no [0, 1]
@@ -947,7 +953,7 @@ def Switch_nu_rnu()
 enddef
 
 # switch quickfix window (open / focus or close) {{{2
-nnoremap <silent> <Leader>q :call <SID>SwitchQuickfixWindow()<CR>
+nnoremap <silent> <Space>q :call <SID>SwitchQuickfixWindow()<CR>
 
 def SwitchQuickfixWindow()
     if &ft == 'qf'
@@ -1708,7 +1714,7 @@ if executable('nnn')
 endif
 
 # (keymap) popup to select from sources. {{{3
-nnoremap <Leader>a <cmd>call <SID>SelectFromSources()<CR>
+nnoremap <Space>a <cmd>call <SID>SelectFromSources()<CR>
 
 def SelectFromSources()
     # TODO highlight
@@ -1752,9 +1758,9 @@ def SelectFromSources()
     )
 enddef
 
-# scratch-mode terminal in popup (keymap: <Leader>t) {{{2
+# scratch-mode terminal in popup (keymap: <Space>t) {{{2
 # TODO: support jump to buffer dir.
-nnoremap <Leader>t <cmd>call <SID>PopupTerminalSwitch()<CR>
+nnoremap <Space>t <cmd>call <SID>PopupTerminalSwitch()<CR>
 
 # save state across ":so $MYVIMRC"
 var popup_terminal_state: dict<any> = exists('popup_terminal_state') ? popup_terminal_state :
@@ -1781,6 +1787,7 @@ def PopupTerminalSwitch()
         popup_terminal_state.winid = popup_create(popup_terminal_state.buf, {
             border: [1, 1, 1, 1],
             }->extendnew(PopupSize()))
+        TerminalSetup()
         popup_terminal_state.shown = true
     endif
 enddef
@@ -1845,7 +1852,7 @@ def Rg(arg: string, opt: dict<any>)
     const buf = bufnr()
     if opt.range == 0
         exec 'Jobqfrun' 'rg --vimgrep' arg
-        # jump to qf window. (<Leader>q defined in this file.)
+        # jump to qf window. (<Space>q defined in this file.)
         feedkeys(' q', 't')
     else
         var result: string = execute(
@@ -1905,7 +1912,7 @@ enddef
 
 # shortcut for reader mode. (view code / text easily.) {{{2
 # TODO map more key (one hand); provide help page (double ? to enter search mode).
-nnoremap <Leader>v <cmd>call <SID>SwitchReaderMode()<CR>
+nnoremap <Space>v <cmd>call <SID>SwitchReaderMode()<CR>
 var reader_mode = exists('reader_mode') ? reader_mode :
 {on: false, winid: -1}
 

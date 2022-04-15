@@ -38,6 +38,9 @@ case "$PYTHONPATH" in
     *) export PYTHONPATH=~/lib/python:$PYTHONPATH ;;
 esac
 
+# fzf
+export FZF_DEFAULT_OPTS='--cycle --no-sort --color=16'
+
 # finish if not interactive {{{1
 case "$-" in
     *i*) ;;
