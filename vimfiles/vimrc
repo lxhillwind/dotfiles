@@ -1562,6 +1562,8 @@ enddef
 
 def HistList(ctx: dict<any>)
     var input = v:oldfiles
+    # expand ~, so it works with "fzf -q" option.
+    ->mapnew((_, i) => expand(i))
     ->extendnew(
     execute('Sh sort ~/.cache/file_history 2>/dev/null | uniq -c | sort -n | sed -E "s/^\s+[0-9]+\s+//"')
     ->split("\n")
@@ -1570,7 +1572,10 @@ def HistList(ctx: dict<any>)
     ->join("\n")
 
     g:Popup(
-    'fzf',
+    # -q STR: start with query (limit to cwd).
+    # leading ^ and following / to make query more precise;
+    # final space to make additional query work as expected.
+    printf('fzf -q "^"%s/" "', shellescape(getcwd())),
     (s: list<string>) => {
         execute 'E' fnameescape(expand(s[0]))
         },

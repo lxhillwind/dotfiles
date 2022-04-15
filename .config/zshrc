@@ -130,14 +130,18 @@ j() {
     prefix=$1
     if [ -n "$prefix" ]; then
         prefix=$({ cd "$prefix" && pwd; } 2>&1)
+        # prefix may be invalid path, so check here.
+        # BUT this may not be necessary? (fzf below uses -0 option.)
+        if [ -n "$prefix" ]; then
+            prefix="^${prefix}/ "
+        fi
     fi
     if [[ $(wc -l ~/.cache/cd_history | awk '{ print $1 }') -gt 10000 ]]; then
         echo 'warning: cd history (~/.cache/cd_history) too large!' >&2
     fi
     s=$(sort ~/.cache/cd_history | uniq -c | sort -nk1 | sed -E 's/^\s*[0-9]+\s*//' \
-        | grep -F "$prefix" \
         | { while read x; do if [ -d "$x" ]; then echo "$x"; fi; done; } \
-        | fzf --tac +s -0)
+        | fzf -q "$prefix" --tac +s -0)
 
     # return if <C-d> / <C-c>.
     if [ $? -eq 130 ]; then
@@ -156,12 +160,15 @@ j() {
     else
         printf 'not found; using fzf? (from ~/) [y/N] ' >&2
         if read -q >&/dev/null; then
+            echo
             prefix="${prefix:-$HOME}"
             file=$(cd "$prefix" && fzf)
             file="$prefix/${file%/*}"
             if [ -e "$file" ]; then
                 cd "$file"
             fi
+        else
+            echo
         fi
     fi
 }
