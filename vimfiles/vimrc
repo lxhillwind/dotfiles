@@ -296,7 +296,7 @@ endif
 
 # set env for embedded terminal. {{{2
 if !exists('$FZF_DEFAULT_OPTS')
-    $FZF_DEFAULT_OPTS = '--cycle --no-sort --color=16'
+    $FZF_DEFAULT_OPTS = '--cycle --no-sort --no-mouse --color=16'
 endif
 
 # plugin {{{1

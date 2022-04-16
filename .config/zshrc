@@ -39,7 +39,7 @@ case "$PYTHONPATH" in
 esac
 
 # fzf
-export FZF_DEFAULT_OPTS='--cycle --no-sort --color=16'
+export FZF_DEFAULT_OPTS='--cycle --no-sort --no-mouse --color=16'
 
 # finish if not interactive {{{1
 case "$-" in
@@ -89,6 +89,24 @@ fi
 if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
     source "$SH_RC_LOCAL"
 fi
+
+# }}}2
+# xargs runs a seperate process, so builtin cmd like `cd` won't work.
+# xargs-sh() trys to fix it. {{{2
+# difference from xargs:
+#   always use -r;
+#   always quote param;
+#   param is newline delimited;
+# TODO: add more flag? (like -P, -I)
+# example:
+#   \ls | fzf | xargs-sh cd
+xargs-sh()
+{
+    local s
+    while read s; do
+        "${@:-echo}" "$s"
+    done
+}
 
 # finish if not zsh {{{2
 # Following code may cause syntax error in strict POSIX shell
@@ -256,6 +274,12 @@ sv()
     "$VIMSERVER_BIN" "$VIMSERVER_ID" Tapi_shell_sv_helper
 }
 fi
+
+# put fzf result to zle buffer. fz() {{{2
+fz()
+{
+    command fzf | xargs-sh print -z
+}
 
 # finish. {{{2
 compinit
