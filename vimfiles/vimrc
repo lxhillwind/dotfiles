@@ -299,6 +299,11 @@ if !exists('$FZF_DEFAULT_OPTS')
     $FZF_DEFAULT_OPTS = '--cycle --no-sort --no-mouse --color=16'
 endif
 
+# enable mouse support. {{{2
+# only set it in desktop OS, not server;
+# vim in server is usually controlled by tmux, and less functional.
+set mouse=a
+
 # plugin {{{1
 # first, enable ":Pack" command.
 packadd vim-pack
@@ -950,6 +955,17 @@ def Switch_nu_rnu()
     ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
     const idx = index(presents, [&l:nu, &l:rnu])
     [&l:nu, &l:rnu] = presents[idx + 1]
+enddef
+
+# switch mouse {{{2
+nnoremap <silent> <Space>m :call <SID>Switch_mouse()<CR>
+
+def Switch_mouse()
+    if &mouse == 'a'
+        set mouse=
+    else
+        set mouse=a
+    endif
 enddef
 
 # switch quickfix window (open / focus or close) {{{2
