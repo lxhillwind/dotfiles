@@ -1409,6 +1409,8 @@ if executable('mpc')
         const nr = str2nr(system('mpc current -f "%position%"'))
         execute 'norm' nr .. 'G'
         nnoremap <buffer> <silent> <CR> <cmd>call <SID>MpcPlay()<CR>
+        # should we map <2-LeftMouse> to <CR> globally?
+        nnoremap <buffer> <silent> <2-LeftMouse> <cmd>call <SID>MpcPlay()<CR>
     enddef
 
     def MpcPlay()
