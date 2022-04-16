@@ -75,18 +75,19 @@ alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
 alias pq='proxychains -q'
 
-# busybox can only set rc by $ENV, so source local config if exists. {{{2
-if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
-    source "$SH_RC_LOCAL"
-fi
-
 # simple PS1 (zsh re-defines it) {{{2
+# TODO openSUSE busybox-static sh handle PS1 buggy?
 PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date +%Y-%m-%d\ %H:%M:%S)] \[\e[33m\]\w'$'\n''\[\e[32m\]\$\[\e[0m\] '
 
 # load vim-vimserver related setting after PS1. {{{2
 # see lxhillwind/vim-vimserver
 if [ -f "$VIMSERVER_SH_SOURCE" ]; then
     source "$VIMSERVER_SH_SOURCE"
+fi
+
+# busybox can only set rc by $ENV, so source local config if exists. {{{2
+if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
+    source "$SH_RC_LOCAL"
 fi
 
 # finish if not zsh {{{2
@@ -105,16 +106,32 @@ autoload -Uz compinit promptinit
 # arrow-key driven autocompletion
 zstyle ':completion:*' menu select
 
-# history; TODO allow skip history {{{2
+# history {{{2
 HISTSIZE=10000
-SAVEHIST=10000
+# let's see if the performance is accessible.
+SAVEHIST=1000000
 HISTFILE=~/.zsh_history
+
+# history enhancement. put history search result in zle; hh() {{{2
+hh() {
+    if ! command -v fzf &>/dev/null; then
+        echo 'fzf not found!' >&2
+        return 1
+    fi
+    local result=$(fc -l -i 0 -1 | fzf --tac --cycle --no-sort)
+    if [ -n "$result" ]; then
+        # trim leading number and time. (NOTE the double space)
+        # TODO handle multiline history.
+        # TODO in openSUSE, event timestamp seems wrong.
+        print -z ${result#  * *  }
+    fi
+}
 
 # cd {{{2
 export DIRSTACKSIZE=16
 setopt auto_pushd pushd_ignore_dups pushd_minus
 
-# cd enhancement; with function j() {{{2
+# cd enhancement; j() {{{2
 _cd_history() {
     if [[ $PWD != $_cd_history_last ]]; then
         if [[ -v _cd_history_last ]]; then
