@@ -136,12 +136,10 @@ hh() {
         echo 'fzf not found!' >&2
         return 1
     fi
-    local result=$(fc -l -i 0 -1 | fzf --tac --cycle --no-sort)
+    local result=$(fc -l -n 0 -1 | fzf --tac --cycle --no-sort)
     if [ -n "$result" ]; then
-        # trim leading number and time. (NOTE the double space)
         # TODO handle multiline history.
-        # TODO in openSUSE, event timestamp seems wrong.
-        print -z ${result#  * *  }
+        print -z "$result"
     fi
 }
 
