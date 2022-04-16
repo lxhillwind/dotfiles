@@ -196,7 +196,7 @@ augroup vimrc
             nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
             nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
             # dirvish
-            if exists('Dirvish') == 2
+            if exists(':Dirvish') == 2
                 nnoremap <buffer> - <cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
             endif
         endif
