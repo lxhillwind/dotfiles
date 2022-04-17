@@ -7,6 +7,15 @@ nnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file(v:count)<CR>
 vnoremap <Plug>(jump_to_file) :<C-u>call <SID>jump_to_file(v:count, 'v')<CR>
 
 " impl {{{
+" when key is pressed in popup terminal, it will cause trouble to start new
+" buffer.
+" so use User autocmd to handle it (from user side).
+function! s:check_autocmd() abort
+  if exists('#User#vim-jump')
+    doautocmd <nomodeline> User vim-jump
+  endif
+endfunction
+
 function! s:jump_to_file(nr, ...) abort
   if a:0 > 0
     try
@@ -36,6 +45,7 @@ function! s:jump_to_file(nr, ...) abort
     if !empty(line)
       let nr = a:nr
       if nr <= len(tabpagebuflist())
+        call s:check_autocmd()
         execute nr . 'wincmd w'
       else
         wincmd p
@@ -180,6 +190,7 @@ function! s:open_file(name) abort
     redraws | echon 'cancelled.'
     return 0
   else
+    call s:check_autocmd()
     redraws | execute cmd
   endif
   execute 'e' fnameescape(name)
@@ -228,4 +239,4 @@ endfunction
 
 " }}}
 
-" vim:fdm=marker
+" vim:fdm=marker sw=2

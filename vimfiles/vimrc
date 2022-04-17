@@ -1789,7 +1789,15 @@ nnoremap <Space>t <cmd>call <SID>PopupTerminalSwitch()<CR>
 var popup_terminal_state: dict<any> = exists('popup_terminal_state') ? popup_terminal_state :
 {winid: -1, buf: -1, shown: false}
 
-def PopupTerminalSwitch()
+augroup vimrc
+    au User vim-jump {
+        if expand('<abuf>')->str2nr() == popup_terminal_state.buf
+            PopupTerminalSwitch()
+        endif
+        }
+augroup END
+
+def PopupTerminalSwitch()  # {{{
     if popup_terminal_state.shown
         popup_close(popup_terminal_state.winid)
         popup_terminal_state.shown = false
@@ -1799,7 +1807,15 @@ def PopupTerminalSwitch()
             execute('Sh -n')->json_decode().cmd :
             &shell
 
+            var env = exists('g:vimserver_env') ? g:vimserver_env : {}
+            # avoid setting original variables.
+            env = env->copy()
+            # in ~/.config/zshrc, we check $VIMSERVER_POPUP to un-export
+            # vimserver related env, so vim won't be recognized as client
+            # (which causes trouble in popup window).
+            env['VIMSERVER_POPUP'] = '1'
             popup_terminal_state.buf = term_start(cmd, {
+                env: env,
                 hidden: true, term_finish: 'close',
                 exit_cb: ((_, _) => {
                     popup_terminal_state.shown = false
@@ -1813,7 +1829,7 @@ def PopupTerminalSwitch()
         TerminalSetup()
         popup_terminal_state.shown = true
     endif
-enddef
+enddef  # }}}
 
 # sv() helper (in vim embedded terminal) {{{2
 def g:Tapi_shell_sv_helper(...arg: list<any>)
