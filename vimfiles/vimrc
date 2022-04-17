@@ -1207,6 +1207,9 @@ def Cd(flag: string, args: string)
         exe 'lcd' fnameescape(path)
         if &buftype == 'terminal'
             term_sendkeys(bufnr(''), 'cd ' .. shellescape(path))
+            if mode() == 'n'
+                feedkeys('i', 't')
+            endif
         endif
     endif
 enddef
@@ -1832,6 +1835,9 @@ def PopupTerminalSwitch()  # {{{
             popup_terminal_state.buf, 'cd ' .. shellescape(
             fnamemodify(bufname(popup_terminal_state.buf_last), ':p:h')
             ))
+            if mode() == 'n'
+                feedkeys('i', 't')
+            endif
             }
         command! -buffer Cda Cdalternate
         TerminalSetup()
