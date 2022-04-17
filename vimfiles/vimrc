@@ -1787,7 +1787,7 @@ nnoremap <Space>t <cmd>call <SID>PopupTerminalSwitch()<CR>
 
 # save state across ":so $MYVIMRC"
 var popup_terminal_state: dict<any> = exists('popup_terminal_state') ? popup_terminal_state :
-{winid: -1, buf: -1, shown: false}
+{winid: -1, buf: -1, shown: false, buf_last: -1}
 
 augroup vimrc
     au User vim-jump {
@@ -1823,9 +1823,17 @@ def PopupTerminalSwitch()  # {{{
                     })
                 })
         endif
+        popup_terminal_state.buf_last = bufnr()
         popup_terminal_state.winid = popup_create(popup_terminal_state.buf, {
             border: [1, 1, 1, 1],
             }->extendnew(PopupSize()))
+        command! -buffer Cdalternate {
+            term_sendkeys(
+            popup_terminal_state.buf, 'cd ' .. shellescape(
+            fnamemodify(bufname(popup_terminal_state.buf_last), ':p:h')
+            ))
+            }
+        command! -buffer Cda Cdalternate
         TerminalSetup()
         popup_terminal_state.shown = true
     endif
