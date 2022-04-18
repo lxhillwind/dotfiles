@@ -1702,13 +1702,17 @@ def CdHistory(ctx: dict<any>)
     g:Popup(
     'zsh -ic j',
     (s: list<string>) => {
-        if s[0]->isdirectory()
-            execute 'lcd' fnameescape(s[0])
+        var path = s[-1]
+        if path->trim()->empty()
+            return
+        endif
+        if path->isdirectory()
+            execute 'lcd' fnameescape(path)
             if exists(':Dirvish') == 2
-                execute 'Dirvish' fnameescape(s[0])
+                execute 'Dirvish' fnameescape(path)
             endif
         else
-            echoerr 'dir not valid!'
+            echoerr 'dir not valid: ' .. path
         endif
         },
     {

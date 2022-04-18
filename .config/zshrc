@@ -192,24 +192,29 @@ j() {
         return 0
     fi
 
-    if ! [ -t 1 ]; then
-        if [ -n "$s" ]; then
+    if [ -n "$s" ]; then
+        if ! [ -t 1 ]; then
             printf '%s\n' "$s"
+        else
+            cd "$s"
         fi
         return
-    fi
-
-    if [ -n "$s" ]; then
-        cd "$s"
     else
+        if ! [ -t 0 ]; then
+            return
+        fi
         printf 'not found; using fzf? (from ~/) [y/N] ' >&2
         if read -q >&/dev/null; then
             echo
             prefix="${prefix:-$HOME}"
-            file=$(cd "$prefix" && fzf)
+            file=$(cd "$prefix" && fzf --header='goto dir of file' --header-first)
             file="$prefix/${file%/*}"
             if [ -e "$file" ]; then
-                cd "$file"
+                if ! [ -t 1 ]; then
+                    printf '%s\n' "$file"
+                else
+                    cd "$file"
+                fi
             fi
         else
             echo
