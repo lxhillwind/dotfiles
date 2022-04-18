@@ -55,10 +55,6 @@ set rnu
 " hlsearch
 set hls
 
-" belloff
-if exists('&bo')
-    set bo=all
-endif
 " incsearch
 set is
 " timeoutlen

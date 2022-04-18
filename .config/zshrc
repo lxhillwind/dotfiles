@@ -136,9 +136,9 @@ autoload -Uz compinit promptinit
 zstyle ':completion:*' menu select
 
 # history {{{2
-HISTSIZE=10000
 # let's see if the performance is accessible.
 SAVEHIST=1000000
+HISTSIZE=$SAVEHIST
 HISTFILE=~/.zsh_history
 
 # history enhancement. put history search result in zle; hh() {{{2
