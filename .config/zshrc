@@ -101,24 +101,6 @@ if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
     source "$SH_RC_LOCAL"
 fi
 
-# xargs-sh() {{{2
-# xargs runs a seperate process, so builtin cmd like `cd` won't work.
-# xargs-sh() trys to fix it.
-# difference from xargs:
-#   always use -r;
-#   always quote param;
-#   param is newline delimited;
-# TODO: add more flag? (like -P, -I)
-# example:
-#   \ls | fzf | xargs-sh cd
-xargs-sh()
-{
-    local s
-    while read s; do
-        "${@:-echo}" "$s"
-    done
-}
-
 # finish if not zsh {{{2
 # Following code may cause syntax error in strict POSIX shell
 # (like array construction), so return early.
@@ -220,6 +202,26 @@ j() {
             echo
         fi
     fi
+}
+
+# xargs-sh() {{{2
+# xargs runs a seperate process, so builtin cmd like `cd` won't work.
+# xargs-sh() trys to fix it.
+# difference from xargs:
+#   always use -r;
+#   always quote param;
+#   param is newline delimited;
+# TODO: add more flag? (like -P, -I)
+# example:
+#   \ls | fzf | xargs-sh cd
+# since xargs-sh is not a valid function name for busybox sh,
+# just put it here (in zshrc).
+xargs-sh()
+{
+    local s
+    while read s; do
+        "${@:-echo}" "$s"
+    done
 }
 
 # vi insert mode {{{2
