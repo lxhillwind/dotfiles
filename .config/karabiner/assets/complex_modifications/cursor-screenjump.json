@@ -1,0 +1,81 @@
+{
+  "title": "cursor screenjump (super+m)",
+  "rules": [
+    {
+      "manipulators": [
+        {
+          "description": "cursor screenjump (super+m)",
+          "conditions": [
+            {
+              "name": "cursor_screenjump",
+              "type": "variable_unless",
+              "value": 1
+            }
+          ],
+          "from": {
+            "key_code": "m",
+            "modifiers": {
+              "mandatory": [
+                "option"
+              ]
+            }
+          },
+          "to": [
+            {
+              "set_variable": {
+                "name": "cursor_screenjump",
+                "value": 1
+              }
+            },
+            {
+                "software_function": {
+                    "set_mouse_cursor_position": {
+                        "x": "50%",
+                        "y": "50%",
+                        "screen": 1
+                    }
+                }
+            }
+          ],
+          "type": "basic"
+        },
+        {
+          "description": "cursor screenjump (super+m)",
+          "conditions": [
+            {
+              "name": "cursor_screenjump",
+              "type": "variable_if",
+              "value": 1
+            }
+          ],
+          "from": {
+            "key_code": "m",
+            "modifiers": {
+              "mandatory": [
+                "option"
+              ]
+            }
+          },
+          "to": [
+            {
+              "set_variable": {
+                "name": "cursor_screenjump",
+                "value": 0
+              }
+            },
+            {
+                "software_function": {
+                    "set_mouse_cursor_position": {
+                        "x": "50%",
+                        "y": "50%",
+                        "screen": 0
+                    }
+                }
+            }
+          ],
+          "type": "basic"
+        }
+      ]
+    }
+  ]
+}

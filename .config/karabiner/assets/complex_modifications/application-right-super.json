@@ -1,0 +1,21 @@
+{
+    "title": "Change application key to right super (right option)",
+    "rules": [
+        {
+            "description": "Change application key to right super (right option)",
+            "manipulators": [
+                {
+                    "from": {
+                        "key_code": "application"
+                    },
+                    "to": [
+                        {
+                            "key_code": "right_option"
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        }
+    ]
+}
