@@ -425,6 +425,8 @@ function! s:sh(cmd, opt) abort " {{{2
         execute opt_dict.t[-1]
       elseif opt.newwin
         execute 'bel' &cmdwinheight . 'split'
+        setl winfixheight
+        setl winfixwidth
       endif
     endif
 
