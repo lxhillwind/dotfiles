@@ -273,14 +273,14 @@ bindkey \^x\^e edit-command-line
 if [ -n "$TMUX" ]; then
 sv()
 {
-    tmux capture -e -p -S -${1:-0} -E $(tmux display -p "#{cursor_y}") | vim - -c 'set buftype=nofile noswapfile | %Terminal cat'
+    tmux capture -e -p -S -${1:-0} -E $(tmux display -p "#{cursor_y}") | vim - -c 'set buftype=nofile | %Terminal cat'
 }
 fi
 
 if [ -n "$DTACH_SESSION_FILE" ]; then
 sv()
 {
-    dtach-session $1 | vim - -c 'set buftype=nofile noswapfile | %Terminal cat'
+    dtach-session $1 | vim - -c 'set buftype=nofile | %Terminal cat'
 }
 fi
 
