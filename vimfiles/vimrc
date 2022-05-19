@@ -212,7 +212,8 @@ augroup END
 
 # set locale {{{2
 if is_unix
-    lang en_US.UTF-8
+    # some environment cannot set lang, like in minimal container (fedora).
+    silent! lang en_US.UTF-8
 else
     $LANG = 'en'
 endif
