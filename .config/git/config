@@ -21,6 +21,11 @@
 	dcw = diff --cached --color-words=.
 
 	tag-ver = tag --sort=-version:refname
+
+	# messy.
+	s = status
+	co = checkout
+	br = branch
 [mergetool]
 	keepBackup = false
 [pull]
