@@ -885,6 +885,14 @@ def PopupFilter(id: number, key: string): bool #{{{2
         endif
         return true
 
+    # erase one word from the filter text
+    elseif key == "\<C-W>"
+        if strlen(filter_text) >= 1
+            filter_text = filter_text->substitute('\v\S+\s*$', '', '')
+            UpdatePopups()
+        endif
+        return true
+
     # select a neighboring line
     elseif ["\<Down>", "\<Up>", "\<C-N>", "\<C-P>"]->index(key) >= 0
         var curline: number = line('.', menu_winid)
