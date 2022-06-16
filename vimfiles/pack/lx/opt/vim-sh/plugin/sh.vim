@@ -11,7 +11,12 @@ let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
 let s:is_nvim = has('nvim')
 let s:has_job = exists('*jobstart') || exists('*job_start')
-
+" use job instead of system()
+" on macos, job is much slower than system() when output contains many lines.
+" e.g. :echo execute('Sh seq 1 1000')->split("\n")->len()
+" will take several seconds to complete.
+let s:use_job = !s:is_nvim && s:has_job && exists('*bufadd')
+            \ && !has('mac')
 function! s:echoerr(msg)
   echohl ErrorMsg
   echon a:msg
@@ -271,15 +276,9 @@ function! s:sh(cmd, opt) abort " {{{2
   let shell_arg_patch = (match(shell, '\vbusybox(.exe|)$') >= 0) ? ['sh'] : []
 
   " using system() in vim with stdin will cause writing temp file.
-  " but on macos, system() is faster than job when result contains many lines
-  " (~0.5k?). e.g.
-  "   echo execute('Sh seq 1 1000')->split("\n")->len()
-  " may take several seconds to finish.
-  " don't know why; just use system() here.
-  "
   " on win32, system() will open a new cmd window.
   " so do not use system() if possible.
-  if !opt.tty && !opt.window && !opt.dryrun " {{{
+  if !opt.tty && !opt.window && !s:use_job && !opt.dryrun " {{{
     if s:is_win32
       " use new variable is required for old version vim (like 7.2.051),
       " since it has strong type checking for variable redeclare.
