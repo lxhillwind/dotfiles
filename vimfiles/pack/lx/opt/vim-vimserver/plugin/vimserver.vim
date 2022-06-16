@@ -22,16 +22,22 @@ if !executable(s:vimserver_exe)
 endif
 " fallback to vimserver-helper.zsh
 if !executable(s:vimserver_exe)
-  let s:vimserver_exe = expand('<sfile>:p:h:h') . '/bin/vimserver-helper.zsh'
+  if (!s:is_win32 && executable('zsh')) ||
+        \ (s:is_win32 && exists('g:vimserver_zsh_path'))
+    let s:vimserver_exe = expand('<sfile>:p:h:h') . '/bin/vimserver-helper.zsh'
+  else
+    " TODO report error?
+    finish
+  endif
 endif
 
 function! s:cmd_server(id) abort
-  let sh = match(s:vimserver_exe, '\.zsh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
+  let sh = match(s:vimserver_exe, '\.zsh$') >= 0 && s:is_win32 ? [g:vimserver_zsh_path] : []
   return sh + [s:vimserver_exe, a:id, 'listen']
 endfunction
 
 function! s:cmd_client(id) abort
-  let sh = match(s:vimserver_exe, '\.zsh$') >= 0 && s:is_win32 ? [g:vimserver_sh_path] : []
+  let sh = match(s:vimserver_exe, '\.zsh$') >= 0 && s:is_win32 ? [g:vimserver_zsh_path] : []
   return sh + [s:vimserver_exe, a:id]
 endfunction
 

@@ -35,7 +35,7 @@ let $VIMSERVER_SH_SOURCE = g:vimserver_env['VIMSERVER_SH_SOURCE']
 ```
 
 To use bundled shell script (`vimserver-helper.zsh`) in win32, variable
-`g:vimserver_sh_path` need to be set to path to zsh.
+`g:vimserver_zsh_path` need to be set to path to zsh.
 
 Define variable `g:loaded_vimserver` to skip loading this plugin.
 
