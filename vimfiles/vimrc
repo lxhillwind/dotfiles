@@ -380,7 +380,10 @@ omap S <Plug>Sneak_S
 
 Pack 'https://github.com/tpope/vim-repeat', {'commit': '24afe922e6a05891756ecf331f39a1f6743d3d5a'}
 Pack 'https://github.com/ciaranm/securemodelines', {'after': 1, 'commit': '9751f29699186a47743ff6c06e689f483058d77a'}
-Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
+
+# use vendor
+# Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
+Pack 'vim-fuzzy'
 
 Pack 'https://github.com/masukomi/vim-markdown-folding', {'commit': '3f35acfb753cc9ea22182400b075c5b6e896ad71'}
 g:markdown_fold_style = 'nested'

@@ -407,6 +407,9 @@ def InitSource() #{{{2
         # General settings should be written in: `~/.config/ripgreprc`.
         #}}}
         var cmd: string = executable('rg') ? "rg --line-number '.*' ." : 'grep -RHIins'
+        if has('win32') && !executable('rg') && !executable('grep')
+            cmd = 'grep -RHIinsE ".*" .'
+        endif
         Job_start(cmd)
 
     elseif sourcetype == 'HelpTags'
@@ -691,7 +694,10 @@ def Job_start(cmd: string) #{{{2
 #    - press `SPC ff`
 #}}}
     source_is_being_computed = true
-    myjob = job_start([&shell, &shellcmdflag, cmd], {
+    const cmds = (has('win32') && executable('busybox'))
+    ? ['busybox', 'sh', '-c', cmd]
+    : [&shell, &shellcmdflag, cmd]
+    myjob = job_start(cmds, {
         out_cb: SetIntermediateSource,
         close_cb: SetFinalSource,
         mode: 'raw',
@@ -1798,6 +1804,7 @@ enddef
 def UtilityIsMissing(): bool #{{{2
     if sourcetype == 'HelpTags'
         if !(executable('rg') || executable('grep')) || !(executable('perl') || executable('awk'))
+            && !executable('busybox')
             Error('Require rg/grep and perl/awk')
             return true
         endif
@@ -1808,11 +1815,13 @@ def UtilityIsMissing(): bool #{{{2
         # equivalent of `-prune` is `--prune`.
         #}}}
         if !executable('find')
+            && !executable('busybox')
             Error('Require find')
             return true
         endif
     elseif sourcetype == 'Grep'
         if !executable('rg') && !executable('grep')
+            && !executable('busybox')
             Error('Require rg/grep')
             return true
         endif
