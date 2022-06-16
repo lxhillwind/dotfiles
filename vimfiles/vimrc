@@ -543,12 +543,6 @@ onoremap il :<C-u>normal! ^vg_<CR>
 nmap <Space>r <Plug>(tasks-select)
 vmap <Space>r <Plug>(tasks-select)
 
-# file list (HistList)
-nmap <Space>f <Space>as
-
-# dir list (CdHistory)
-nmap <Space>o <Space>ac
-
 # terminal escape
 tnoremap <C-Space> <C-\><C-n>
 tnoremap <C-w> <C-w>.
