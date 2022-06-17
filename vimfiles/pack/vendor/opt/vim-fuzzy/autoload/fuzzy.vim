@@ -231,6 +231,10 @@ var source: list<dict<string>>
 var source_is_being_computed: bool = false
 var sourcetype: string
 
+# TODO check alpine linux
+var busybox_as_shell: bool = (has('win32') && executable('busybox'))
+? true : false
+
 const SNIPPETS_DIR: string = globpath(&rtp, 'UltiSnips')
 
 # Interface {{{1
@@ -407,7 +411,7 @@ def InitSource() #{{{2
         # General settings should be written in: `~/.config/ripgreprc`.
         #}}}
         var cmd: string = executable('rg') ? "rg --line-number '.*' ." : 'grep -RHIins'
-        if has('win32') && !executable('rg') && !executable('grep')
+        if !executable('rg') && busybox_as_shell
             cmd = 'grep -RHIinsE ".*" .'
         endif
         Job_start(cmd)
@@ -595,6 +599,13 @@ def GetHelpTagsCmd(): string #{{{2
             }
         END
         formatting_cmd = 'awk ' .. awkpgm->join('')->shellescape()
+        if busybox_as_shell
+            # busybox awk doesn't support match() with 3 args.
+            formatting_cmd = printf("sed -E '%s'",
+                # busybox-w32 set drive name in path, like C:/pathname.
+                # so use '([A-Z]:|)' here.
+                's#([A-Z]:|)[^:]*:([^\t]*)\t([^\t]*)\t#\2\t\3#')
+        endif
     endif
 
     # No need to use `rg(1)`; `grep(1)` is faster here.{{{
@@ -694,7 +705,7 @@ def Job_start(cmd: string) #{{{2
 #    - press `SPC ff`
 #}}}
     source_is_being_computed = true
-    const cmds = (has('win32') && executable('busybox'))
+    const cmds = (has('win32') && busybox_as_shell)
     ? ['busybox', 'sh', '-c', cmd]
     : [&shell, &shellcmdflag, cmd]
     myjob = job_start(cmds, {
@@ -953,12 +964,13 @@ def PopupFilter(id: number, key: string): bool #{{{2
         ToggleSelectedRegisterType()
         return true
 
-    elseif ["\<C-S>", "\<C-T>", "\<C-V>"]->index(key) >= 0
+    elseif ["\<C-S>", "\<C-T>", "\<C-V>", "\<C-L>"]->index(key) >= 0
         popup_close(menu_winid, {
             howtoopen: {
                 ["\<C-S>"]: 'insplit',
                 ["\<C-T>"]: 'intab',
-                ["\<C-V>"]: 'invertsplit'
+                ["\<C-V>"]: 'invertsplit',
+                ["\<C-L>"]: 'setcmdline',
                 }[key],
             idx: line('.', menu_winid),
         })
@@ -1690,6 +1702,10 @@ def ExitCallback( #{{{2
             execute 'help ' .. chosen
 
         elseif type == 'Commands' || type =~ '^Mappings'
+            if howtoopen == 'setcmdline' && type == 'Commands'
+                feedkeys(':' .. chosen->substitute('\v\s+.*$', '', ''), 't')
+                return
+            endif
             get(filtered_source ?? source, idx - 1, {})
                 ->get('location')
                 ->matchlist('Last set from \(.*\) line \(\d\+\)$')
@@ -1803,8 +1819,8 @@ enddef
 
 def UtilityIsMissing(): bool #{{{2
     if sourcetype == 'HelpTags'
-        if !(executable('rg') || executable('grep')) || !(executable('perl') || executable('awk'))
-            && !executable('busybox')
+        if (!(executable('rg') || executable('grep')) || !(executable('perl') || executable('awk'))
+            ) && !busybox_as_shell
             Error('Require rg/grep and perl/awk')
             return true
         endif
@@ -1815,13 +1831,13 @@ def UtilityIsMissing(): bool #{{{2
         # equivalent of `-prune` is `--prune`.
         #}}}
         if !executable('find')
-            && !executable('busybox')
+            && !busybox_as_shell
             Error('Require find')
             return true
         endif
     elseif sourcetype == 'Grep'
         if !executable('rg') && !executable('grep')
-            && !executable('busybox')
+            && !busybox_as_shell
             Error('Require rg/grep')
             return true
         endif

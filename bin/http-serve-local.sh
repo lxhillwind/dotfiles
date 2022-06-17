@@ -1,4 +1,10 @@
 #!/bin/sh
+
+if [ "$PWD" = "$HOME" ]; then
+    echo 'at $HOME. exiting...'
+    exit 1
+fi
+
 echo
 pwd
 echo
