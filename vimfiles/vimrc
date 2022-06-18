@@ -17,11 +17,20 @@ vim9script noclear
 #
 # Suggestion: put `exec /usr/bin/vim -Nu ~/vimfiles/vimrc "$@"` in ~/bin/vim,
 # and add ~/bin in $PATH (before /usr/bin), so ~/bin/vim wins.
+def TrSlash(s: string): string
+    if has('win32')
+        return substitute(s, '\', '/', 'g')
+    else
+        return s
+    endif
+enddef
+
 const first_vimrc = execute('scr')->split("\n")->get(0)
 ->substitute('\v^.{-}:\s*', '', '')
 ->expand()
+->TrSlash()
 
-if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != $MYVIMRC
+if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != TrSlash($MYVIMRC)
     echoerr 'system-vimrc is read. skip loading vimrc!'
     finish
 endif
@@ -110,12 +119,10 @@ if is_win32
     # Let's see if it breaks other plugins...
     # Set shellslash, so file path completion returns slash based str,
     # which works in sh environment and win32 shell (cmd is not supported?).
+    # - plugin vim-fuzzy requires it.
     set shellslash
 
     # set $HOME (for unix shell), $PATH, $VIM ...
-    def TrSlash(s: string): string
-        return substitute(s, '\', '/', 'g')
-    enddef
 
     # make it work in cygwin vim.
     $VIM = TrSlash($VIM)
@@ -885,12 +892,12 @@ nnoremap <Space>p :call <SID>ClipboardPaste("")<CR>
 def ClipboardCopy(cmd_: string)
     var cmd = cmd_
     if empty(cmd)
-        if executable('pbcopy')
-            cmd = 'pbcopy'
-        elseif has('clipboard')
+        if has('clipboard') && is_win32
             # NOTE: unix: X11 clipboard content will disapper when program exits.
             @+ = @"
             return
+        elseif executable('pbcopy')
+            cmd = 'pbcopy'
         else
             throw 'clipboard not found!'
         endif
@@ -903,11 +910,11 @@ enddef
 def ClipboardPaste(cmd_: string)
     var cmd = cmd_
     if empty(cmd)
-        if executable('pbpaste')
-            cmd = 'pbpaste'
-        elseif has('clipboard')
+        if has('clipboard') && is_win32
             @" = @+
             return
+        elseif executable('pbpaste')
+            cmd = 'pbpaste'
         else
             throw 'clipboard not found!'
         endif
@@ -933,7 +940,7 @@ def ExecuteLines(mode: string)
     endif
     var result_l = []
     for i in lines
-        result_l = add(result_l, substitute(i, '\v^\s*(//|#|"|--)+', '', ''))
+        result_l = add(result_l, substitute(i, '\v^\s*(//|#|"|--|;)+', '', ''))
     endfor
     var result: string = join(result_l, "\n")
     echom result

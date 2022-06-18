@@ -1,119 +1,51 @@
-if get(g:, 'loaded_sh') || v:version < 703
+" vim:fdm=marker sw=2
+
+if get(g:, 'loaded_sh') || !has('vim9script')
   finish
 endif
 let g:loaded_sh = 1
 
-let s:sh_programs = ['alacritty', 'urxvt', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv', 'konsole']
+let s:sh_programs = ['alacritty', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv', 'konsole']
 
 " main {{{1
 " common var def {{{2
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
-let s:is_nvim = has('nvim')
-let s:has_job = exists('*jobstart') || exists('*job_start')
-" use job instead of system()
-" on macos, job is much slower than system() when output contains many lines.
+" TODO on macos, job is much slower than system() when output contains many lines.
 " e.g. :echo execute('Sh seq 1 1000')->split("\n")->len()
 " will take several seconds to complete.
-let s:use_job = !s:is_nvim && s:has_job && exists('*bufadd')
-            \ && !has('mac')
+
 function! s:echoerr(msg)
   echohl ErrorMsg
   echon a:msg
   echohl None
 endfunction
 
-let s:job_start = s:is_nvim ? 'jobstart' : 'job_start'
-let s:term_start = s:is_nvim ? 'termopen' : 'term_start'
-
-let s:file = expand('<sfile>')
-
 " :command def {{{2
-" patch-8.0.1089: <range> support.
-let s:range_native = has('nvim') || has('patch-8.0.1089')
-
-if s:range_native
-  if s:is_win32
-    command! -bang -range=0 -nargs=* -complete=custom,s:win32_cmd_list Sh
-          \ call s:sh(<q-args>, {'bang': <bang>0,
-          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-    command! -range=0 -nargs=* -complete=custom,s:win32_cmd_list Terminal
-          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
-          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-  else
-    command! -bang -range=0 -nargs=* -complete=shellcmd Sh
-          \ call s:sh(<q-args>, {'bang': <bang>0,
-          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-    command! -range=0 -nargs=* -complete=shellcmd Terminal
-          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
-          \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-  endif
+if s:is_win32
+  command! -bang -range=0 -nargs=* -complete=custom,s:win32_cmd_list Sh
+        \ call s:sh(<q-args>, {'bang': <bang>0,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  command! -range=0 -nargs=* -complete=custom,s:win32_cmd_list Terminal
+        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 else
-  if s:is_win32
-    command! -bang -range=0 -nargs=* -complete=custom,s:win32_cmd_list Sh
-          \ call s:sh(<q-args>, {'bang': <bang>0,
-          \ 'line1': <line1>, 'line2': <line2>})
-    command! -range=0 -nargs=* -complete=custom,s:win32_cmd_list Terminal
-          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
-          \ 'line1': <line1>, 'line2': <line2>})
-  else
-    command! -bang -range=0 -nargs=* -complete=shellcmd Sh
-          \ call s:sh(<q-args>, {'bang': <bang>0,
-          \ 'line1': <line1>, 'line2': <line2>})
-    command! -range=0 -nargs=* -complete=shellcmd Terminal
-          \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
-          \ 'line1': <line1>, 'line2': <line2>})
-  endif
+  command! -bang -range=0 -nargs=* -complete=shellcmd Sh
+        \ call s:sh(<q-args>, {'bang': <bang>0,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
+  command! -range=0 -nargs=* -complete=shellcmd Terminal
+        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
+        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 endif
 
 " polyfill {{{2
-function! s:trim(s, p) abort
-  if exists('*trim')
-    return trim(a:s, a:p)
-  else
-    let end = match(a:s, '\V' . escape(a:p, '\/') . '\+\$')
-    if end >= 0
-      return a:s[0:end-1]
-    else
-      return a:s
-    endif
-  endif
-endfunction
-
-function! s:nvim_exit_cb(...) dict
-  if self.buffer_nr == winbufnr(0) && mode() == 't'
-    " vim 8 behavior: exit to normal mode after TermClose.
-    call feedkeys("\<C-\>\<C-n>", 'n')
-  endif
-  if self.close
-    let buffers = tabpagebuflist()
-    let idx = index(buffers, self.buffer_nr)
-    if idx >= 0
-      if len(buffers) == 1 && tabpagenr('$') == 1
-        quit
-      else
-        execute idx+1 'wincmd c'
-      endif
-    endif
-  endif
-endfunction
-
 function! s:get_fin_term_buffer() abort
   let result = []
-  if has('nvim')
-    for buffer in getbufinfo()
-      let jid = get(buffer.variables, 'terminal_job_id', 0)
-      if jid > 0 && jobwait([jid], 0)[0] != -1
-        let result = add(result, buffer.bufnr)
-      endif
-    endfor
-  else
-    for bufnr in term_list()
-      if match(term_getstatus(bufnr), 'finished') >= 0
-        let result = add(result, bufnr)
-      endif
-    endfor
-  endif
+  for bufnr in term_list()
+    if match(term_getstatus(bufnr), 'finished') >= 0
+      let result = add(result, bufnr)
+    endif
+  endfor
   return result
 endfunction
 
@@ -178,7 +110,7 @@ function! s:sh(cmd, opt) abort " {{{2
   call add(help, '  r: like ":[range]read !cmd"')
   let opt.read_cmd = match(opt_string, 'r') >= 0
 
-  call add(help, '  n: dry run (echo options passed to job_start / jobstart)')
+  call add(help, '  n: dry run (echo options passed to job_start)')
   let opt.dryrun = match(opt_string, 'n') >= 0
   if opt.dryrun && !exists('*json_encode')
     throw '-n flag is not supported: function json_encode is missing!'
@@ -207,15 +139,6 @@ function! s:sh(cmd, opt) abort " {{{2
   if opt.help
     echo join(help, "\n")
     return
-  endif
-
-  if !s:range_native
-    " TODO differ no range / current-line range.
-    " use opt.line1 < opt.line2 (instead of !=) since in some version of vim,
-    " <line2> is 1 (or 0) unless specified.
-    let opt.range = opt.line1 < opt.line2 ?
-          \ 2
-          \ : (opt.line1 != line('.') ? 1 : 0)
   endif
   " }}}
 
@@ -275,42 +198,10 @@ function! s:sh(cmd, opt) abort " {{{2
   " if set shell to busybox, then call sh with `busybox sh`
   let shell_arg_patch = (match(shell, '\vbusybox(.exe|)$') >= 0) ? ['sh'] : []
 
-  " using system() in vim with stdin will cause writing temp file.
-  " on win32, system() will open a new cmd window.
-  " so do not use system() if possible.
-  if !opt.tty && !opt.window && !s:use_job && !opt.dryrun " {{{
-    if s:is_win32
-      " use new variable is required for old version vim (like 7.2.051),
-      " since it has strong type checking for variable redeclare.
-      " see tag 7.4.1546
-      let cmd_new = s:win32_sh_replace(shell, shell_arg_patch, ['sh', '-c', cmd])
-      if s:is_nvim
-        let cmd = cmd_new
-      else
-        " ^" is required for system().
-        " e.g. system('"busybox" "sh" "-c" "echo"') won't work,
-        " but system('^""busybox" "sh" "-c" "echo"') would.
-        let cmd = '^"' . s:win32_cmd_list_to_str(cmd_new)
-      endif
-      unlet cmd_new
-    endif
-
-    if stdin_flag is# 0
-      return s:post_func(system(cmd), opt)
-    else
-      " add final [''] to add final newline
-      return s:post_func(system(cmd,
-            \ has('patch-7.4.247') ? stdin : join(stdin, "\n")
-            \ ), opt)
-    endif
-  endif
-  " }}}
-
   " opt.visual: yank text by `norm gv`;
   " opt.window: communicate stdin by file;
-  " s:is_nvim: no in_buf job-option;
   " opt.tty && !opt.newwin: buffer would be destroyed before using;
-  if !opt.visual && !opt.window && !s:is_nvim && !(opt.tty && !opt.newwin)
+  if !opt.visual && !opt.window && !(opt.tty && !opt.newwin)
     let stdin_flag = get(opt, 'range') != 0 ? 2 : stdin_flag
   endif
   let job_opt = {}
@@ -403,7 +294,7 @@ function! s:sh(cmd, opt) abort " {{{2
     let cmd = s:win32_sh_replace(shell, shell_arg_patch, cmd)
   endif
 
-  if s:is_win32 && !s:is_nvim
+  if s:is_win32
     let cmd_new = s:win32_cmd_list_to_str(cmd)
     unlet cmd
     let cmd = cmd_new
@@ -439,22 +330,7 @@ function! s:sh(cmd, opt) abort " {{{2
     endif
     " use g:vimserver_env (set in vim-vimserver)
     let job_opt = extend(job_opt, {'env': exists('g:vimserver_env') ? g:vimserver_env : {}})
-    if s:is_nvim
-      enew
-      let job_opt = extend(job_opt,
-            \{'buffer_nr': winbufnr(0),
-            \'close': opt.close,
-            \'on_exit': function('s:nvim_exit_cb')})
-    endif
-    let job = function(s:term_start)(cmd, job_opt)
-    if s:is_nvim
-      if opt.background
-        " use au to trigger entering insert mode.
-        let b:sh_enter_insert_mode = 1
-      else
-        startinsert " comment to fix hl
-      endif
-    endif
+    let job = term_start(cmd, job_opt)
     if opt.background
       wincmd p
     endif
@@ -526,12 +402,7 @@ function! s:stop_job(job, ...) abort
 endfunction
 
 function! s:unix_start(cmdlist, ...) abort
-  if s:has_job
-    call function(s:job_start)(a:cmdlist)
-  else
-    let cmdlist = ['sh', '-c', '"$@" >/dev/null 2>&1 &', ''] + a:cmdlist
-    call system(join(map(cmdlist, 'shellescape(v:val)'), ' '))
-  endif
+  call job_start(a:cmdlist)
 endfunction
 
 function! s:post_func(result, opt) abort
@@ -545,7 +416,7 @@ function! s:post_func(result, opt) abort
     endif
   else
     let result = type(a:result) == type([]) ? join(a:result, "\n") : a:result
-    redraws | echon s:trim(result, "\n")
+    redraws | echon trim(result, "\n")
     return 0
   endif
 endfunction
@@ -613,6 +484,37 @@ function! s:program_cmd(context) abort
   return 1
 endfunction
 
+function! s:program_WindowsTerminal(context) abort
+  if s:is_unix | return 0 | endif
+  if !executable('wt') | return 0 | endif
+  " NOTE win32 vim seems to resolve path on exepath();
+  " wt is located here (according to `busybox which`):
+  "   ~/AppData/Local/Microsoft/WindowsApps/wt.exe
+  " but in vim, exepath('wt') gives another result (`:p` of which is not even
+  " in $PATH).
+  " we can even get wt version from exepath().
+  if exepath('wt')->match('WindowsTerminal') < 0 | return 0 | endif
+
+  " wt.exe cannot handle this:
+  "   wt -- busybox sh -c '"$@";' '' sh
+  " because wt use ; as its own seperator.
+  " TODO skip this check once
+  "   https://github.com/microsoft/terminal/issues/13264
+  " is resolved. (use exepath() to extract wt version, then compare)
+  if a:context.cmd->match(';') >= 0 | return 0 | endif
+
+  call a:context.start_fn(['wt', 'nt', '--title', a:context.term_name] + a:context.cmd)
+  return 1
+endfunction
+
+function! s:program_ConEmu(context) abort
+  if s:is_unix | return 0 | endif
+  if !executable('conemu') | return 0 | endif
+
+  call a:context.start_fn(['conemu', '-title', a:context.term_name, '-run'] + a:context.cmd)
+  return 1
+endfunction
+
 function! s:program_mintty(context) abort
   let [shell, cmd] = [a:context.shell, a:context.cmd]
   " prefer mintty in the same dir of shell.
@@ -635,21 +537,6 @@ function! s:program_konsole(context) abort
     return 1
   endif
 endfunction
-
-" nvim polyfill {{{2
-if s:is_nvim
-  augroup sh_insert_mode_patch
-    function! s:insert_mode_patch()
-      if exists('b:sh_enter_insert_mode')
-        unlet b:sh_enter_insert_mode
-        startinsert
-      endif
-    endfunction
-
-    au!
-    au BufEnter term://* call s:insert_mode_patch()
-  augroup END
-endif
 
 function! s:filter(result, opt) abort " {{{2
   let opt = a:opt
@@ -722,14 +609,9 @@ endfunction
 
 function! s:win32_start(cmdlist, ...) abort
   let cmd = s:win32_cmd_list_to_str(a:cmdlist)
-  let term_name = a:0 > 0 ? get(a:1, 'term_name', '') : ''
-  " cmd.exe start <title> <program>: quote in <title> seems buggy, so just
-  " remove " from it.
-  let term_name = substitute(term_name, '"', '', 'g')
-  let term_name = s:win32_quote(term_name)
-  " use " start" since "start" does not work for old version vim, like 7.3.
-  " "start" is handled by vim internally.
-  call system(printf(' start %s %s', term_name, s:win32_cmd_exe_quote(cmd)))
+  " "!start" is handled by vim internally; not affected by &shell related
+  " setting.
+  silent execute printf('!start %s', cmd)
 endfunction
 
 function! s:win32_cmd_list_to_str(arg)
@@ -751,11 +633,6 @@ function! s:win32_quote(arg)
   return cmd
 endfunction
 
-function! s:win32_cmd_exe_quote(arg)
-  " escape for cmd.exe
-  return substitute(a:arg, '\v[<>^|&()"]', '^&', 'g')
-endfunction
-
 " win32 completion {{{2
 function! s:win32_cmd_list(A, L, P)
   " use busybox cmd list even when the shell is not busybox, {{{
@@ -765,110 +642,7 @@ function! s:win32_cmd_list(A, L, P)
   "   busybox | sed -n '/^Cur/,$ p' | tail +2 | tr -d '\n'
   let data = '[, [[, acpid, addgroup, adduser, adjtimex, ar, arch, arp, arping, ash,	awk, base32, base64, basename, bbconfig, bc, beep, blkdiscard, blkid,	blockdev, bootchartd, brctl, bunzip2, busybox, bzcat, bzip2, cal, cat,	chat, chattr, chgrp, chmod, chown, chpasswd, chpst, chroot, chrt, chvt,	cksum, clear, cmp, comm, cp, cpio, crond, crontab, cryptpw, cttyhack,	cut, date, dc, dd, deallocvt, delgroup, deluser, depmod, df, dhcprelay,	diff, dirname, dmesg, dnsd, dnsdomainname, dos2unix, du, dumpkmap,	dumpleases, echo, ed, egrep, eject, env, envdir, envuidgid, ether-wake,	expand, expr, factor, fakeidentd, fallocate, false, fatattr, fbset,	fbsplash, fdflush, fdformat, fdisk, fgconsole, fgrep, find, findfs,	flock, fold, free, freeramdisk, fsck, fsck.minix, fsfreeze, fstrim,	fsync, ftpd, ftpget, ftpput, fuser, getopt, getty, grep, groups,	gunzip, gzip, halt, hd, hdparm, head, hexdump, hexedit, hostid,	hostname, httpd, hwclock, i2cdetect, i2cdump, i2cget, i2cset,	i2ctransfer, id, ifconfig, ifdown, ifenslave, ifplugd, ifup, inetd,	init, inotifyd, insmod, install, ionice, iostat, ip, ipaddr, ipcalc,	ipcrm, ipcs, iplink, ipneigh, iproute, iprule, iptunnel, kbd_mode,	kill, killall, killall5, klogd, less, link, linux32, linux64, linuxrc,	ln, loadfont, loadkmap, logger, login, logname, logread, losetup, lpd,	lpq, lpr, ls, lsattr, lsmod, lsof, lspci, lsscsi, lsusb, lzcat, lzma,	lzopcat, makedevs, makemime, man, md5sum, mdev, mesg, microcom, mkdir,	mkdosfs, mke2fs, mkfifo, mkfs.ext2, mkfs.minix, mkfs.vfat, mknod,	mkpasswd, mkswap, mktemp, modinfo, modprobe, more, mount, mountpoint,	mpstat, mt, mv, nameif, nbd-client, nc, netstat, nice, nl, nmeter,	nohup, nproc, nsenter, nslookup, ntpd, od, openvt, partprobe, passwd,	paste, patch, pgrep, pidof, ping, ping6, pipe_progress, pivot_root,	pkill, pmap, popmaildir, poweroff, powertop, printenv, printf, ps,	pscan, pstree, pwd, pwdx, raidautorun, rdate, rdev, readahead,	readlink, readprofile, realpath, reboot, reformime, renice, reset,	resize, resume, rev, rfkill, rm, rmdir, rmmod, route, rpm2cpio,	rtcwake, run-init, run-parts, runsv, runsvdir, rx, script,	scriptreplay, sed, sendmail, seq, setarch, setconsole, setfattr,	setfont, setkeycodes, setlogcons, setpriv, setserial, setsid,	setuidgid, sh, sha1sum, sha256sum, sha3sum, sha512sum, showkey, shred,	shuf, slattach, sleep, smemcap, softlimit, sort, split, ssl_client,	start-stop-daemon, stat, strings, stty, su, sulogin, sum, sv, svc,	svlogd, svok, swapoff, swapon, switch_root, sync, sysctl, syslogd, tac,	tail, tar, taskset, tc, tcpsvd, tee, telnet, telnetd, test, tftp,	tftpd, time, timeout, top, touch, tr, traceroute, traceroute6, true,	truncate, ts, tty, ttysize, tunctl, tune2fs, ubiattach, ubidetach,	ubimkvol, ubirename, ubirmvol, ubirsvol, ubiupdatevol, udhcpc, udhcpc6,	udhcpd, udpsvd, uevent, umount, uname, uncompress, unexpand, uniq,	unix2dos, unlink, unlzma, unlzop, unshare, unxz, unzip, uptime, usleep,	uudecode, uuencode, vconfig, vi, vlock, volname, watch, watchdog, wc,	wget, which, whoami, whois, xargs, xxd, xz, xzcat, yes, zcat, zcip'
   " }}}
-  let exe = s:globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
+  let exe = globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
   call map(exe, 'substitute(v:val, ".*\\", "", "")')
   return join(sort(extend(exe, split(data, ',\s*'))), "\n")
 endfunction
-
-function! s:globpath(a, b, c, d) abort
-  if has('patch-7.4.654')
-    return globpath(a:a, a:b, a:c, a:d)
-  else
-    return split(globpath(a:a, a:b), "\n")
-  endif
-endfunction
-
-" win32 vim from unix shell will set &shell incorrectly, so restore it
-if match(&shell, '\v(pw)@<!sh(|.exe)$') >= 0
-  let &shell = 'cmd.exe'
-  let &shellcmdflag = '/s /c'
-  let &shellquote = ''
-  silent! let &shellxquote = ''
-endif
-
-" cmap <CR> {{{2
-if exists('g:sh_win32_cr') && !empty(g:sh_win32_cr)
-  cnoremap <CR> <C-\>e<SID>shell_replace()<CR><CR>
-else
-  finish
-endif
-
-" cmdline shell_replace impl {{{2
-function! s:shell_replace()
-  let cmd = getcmdline()
-
-  if getcmdtype() != ':'
-    return cmd
-  endif
-
-  if match(cmd, '\v^\s+') >= 0
-    " keep if begin with space
-    return cmd
-  endif
-
-  if match(cmd, '\v^!') >= 0
-    let cmd = 'Sh ' . cmd[1:]
-  elseif match(cmd, '\v^(r|re|rea|read) !') >= 0
-    let idx = matchend(cmd, '\v^(r|re|rea|read) !')
-    " whitespace in "cmd[idx :]" is required for old version vim
-    let cmd = 'Sh -r ' . cmd[idx :]
-  else
-    " /{pattern}[/] and ?{pattern}[?] are not always matched since they may be
-    " too complex.
-    "
-    " old version vim (before v8.1.0369) does not support comment in cross line expr;
-    " so doc it in one place: {{{
-    "
-    " ```
-    " let range_str = '('
-    "       \ . '('
-    "       "\ number
-    "       \ . '[0-9]+'
-    "       "\ . $ %
-    "       \ . '|\.|\$|\%'
-    "       "\ 't 'T
-    "       \ . "|'[a-zA-Z<>]"
-    "       "\ \/ \? \&
-    "       \ . '|\\\/|\\\?|\\\&'
-    "       "\ /{pattern}/ / ?{pattern}?, simple case
-    "       \ . '|/.{-}[^\\]/|\?.{-}[^\\]\?'
-    "       "\ empty (as .)
-    "       \ . '|'
-    "       \ . ')'
-    "       "\ optional [+-][num]* after range above.
-    "       \ . '([+-][0-9]*)?'
-    "       \ . ')'
-    " let l:range = matchstr(cmd,
-    "       \ '\v^\s*' . range_str
-    "       "\ (optional,(optional range))
-    "       \ . '(,(' . range_str . '|))?'
-    "       \ . '\!')
-    " ```
-    " }}}
-    let range_str = '('
-          \ . '('
-          \ . '[0-9]+'
-          \ . '|\.|\$|\%'
-          \ . "|'[a-zA-Z<>]"
-          \ . '|\\\/|\\\?|\\\&'
-          \ . '|/.{-}[^\\]/|\?.{-}[^\\]\?'
-          \ . '|'
-          \ . ')'
-          \ . '([+-][0-9]*)?'
-          \ . ')'
-    let l:range = matchstr(cmd,
-          \ '\v^\s*' . range_str
-          \ . '(,(' . range_str . '|))?'
-          \ . '\ze(r !|re !|rea !|read !|!)')
-    if !empty(l:range)
-      let cmd = cmd[len(l:range):]
-      let flag = match(cmd, '!') == 0 ? '-f' : '-r'
-      let cmd = cmd[match(cmd, '!')+1 :]
-      let cmd = printf('%sSh %s %s', l:range, flag, cmd)
-    endif
-  endif
-  return cmd
-endfunction
-" }}}
-
-" vim:fdm=marker
