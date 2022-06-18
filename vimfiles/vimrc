@@ -136,10 +136,14 @@ if is_win32
     endif
 
     var path = $PATH->split(';')->map((_, i) => TrSlash(i))
-    for i in [
-            expand('~/vimfiles/bin'),
-            expand('~/bin'),
-            ]
+    const present =<< trim END
+        ~/app/MinGit/cmd
+        ~/app/ConEmu
+        ~/vimfiles/bin
+        ~/bin
+    END
+    for j in present
+        const i = expand(j)
         if index(path, i) < 0 && isdirectory(i)
             $PATH = i .. ';' .. $PATH
         endif
@@ -2036,5 +2040,45 @@ command -nargs=+ E {
     endif
     execute 'e' <q-args>
     }
+
+# :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
+command Start Start()
+
+def Start()
+    def Quote(s: string): string
+        if is_unix
+            return shellescape(s)
+        else
+            # <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+            var res = s
+            # double all \ before "
+            res = substitute(res, '\v\\([\\]*")@=', '\\\\', 'g')
+            # double trailing \
+            res = substitute(res, '\v\\([\\]*$)@=', '\\\\', 'g')
+            # escape " with \
+            res = escape(res, '"')
+            # quote it
+            res = '"' .. res .. '"'
+            return res
+        endif
+    enddef
+
+    const filename = expand('%:p')
+    if is_unix
+        var cmd = 'xdg-open'
+        if has('mac')
+            cmd = 'open'
+        endif
+        if !executable(cmd)
+            throw 'xdg-open not found!'
+        endif
+        job_start([cmd, '--', filename], {
+            in_io: 'null', out_io: 'null', err_io: 'null',
+            stoponexit: '',
+            })
+    else
+        silent execute '!start' Quote(filename)
+    endif
+enddef
 # finish {{{1 }}}1
 defc  # show error in this file early.
