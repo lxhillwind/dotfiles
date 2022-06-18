@@ -355,10 +355,18 @@ function! s:sh(cmd, opt) abort " {{{2
   let job = job_start(cmd, job_opt)
 
   try
+    " :help dos-CTRL-Break
+    " win32 cannot use Ctrl-C to interrupt :sleep, so we run getchar(0)
+    " periodically to check if Ctrl-C is pressed. (getchar(0) is non-blocking)
+    "
+    " TODO feed input into job.
     while job_status(job) ==# 'run'
       sleep 1m
+      if getchar(0) == 3
+        throw 'Interrupt'
+      endif
     endwhile
-  catch /^Vim:Interrupt$/
+  catch /\v^(Vim\:|)Interrupt$/
     call s:stop_job(job)
   endtry
   if job_status(job) ==# 'run'
@@ -368,9 +376,12 @@ function! s:sh(cmd, opt) abort " {{{2
       try
         while job_status(job) ==# 'run'
           sleep 1m
+          if getchar(0) == 3
+            throw 'Interrupt'
+          endif
         endwhile
         redrawstatus | echon ' job finished.'
-      catch /^Vim:Interrupt$/
+      catch /\v^(Vim\:|)Interrupt$/
         call s:stop_job(job, 1)
         redrawstatus | echon ' job force killed.'
       endtry
