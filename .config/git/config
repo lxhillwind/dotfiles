@@ -31,7 +31,11 @@
 [pull]
 	rebase = false
 [core]
+	# show cjk char correctly in file path.
 	quotepath = off
+	# git for windows (MinGit) set core.autocrlf to true by default, which is not
+	# what I want.
+	autocrlf = false
 [tag]
 	sort = -creatordate
 [log]
