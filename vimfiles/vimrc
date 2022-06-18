@@ -709,8 +709,8 @@ augroup vimrc
         elseif executable('open')
             return ['open', s]
         elseif is_win32
-            # TODO fix open for win32
-            return ['cmd', '/c', isdirectory(s) ? 'explorer' : 'start', s]
+            # use "!start" to open.
+            return [s]
         else
             echoerr 'do not know how to open' | return []
         endif
@@ -730,7 +730,11 @@ augroup vimrc
         if empty(open_cmd)
             return
         endif
-        job_start(open_cmd, {stoponexit: ''})
+        if is_win32
+            execute '!start' open_cmd->mapnew((_, s) => ShellQuoteNative(s))->join(' ')
+        else
+            job_start(open_cmd, {stoponexit: ''})
+        endif
     enddef
 
     def GxOpenGx(...arg: list<string>)
@@ -2044,25 +2048,26 @@ command -nargs=+ E {
 # :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
 command Start Start()
 
-def Start()
-    def Quote(s: string): string
-        if is_unix
-            return shellescape(s)
-        else
-            # <https://daviddeley.com/autohotkey/parameters/parameters.htm>
-            var res = s
-            # double all \ before "
-            res = substitute(res, '\v\\([\\]*")@=', '\\\\', 'g')
-            # double trailing \
-            res = substitute(res, '\v\\([\\]*$)@=', '\\\\', 'g')
-            # escape " with \
-            res = escape(res, '"')
-            # quote it
-            res = '"' .. res .. '"'
-            return res
-        endif
-    enddef
+# like shellescape(), but not affected by &shellslash option (on win32).
+def ShellQuoteNative(s: string): string
+    if is_unix
+        return shellescape(s)
+    else
+        # <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+        var res = s
+        # double all \ before "
+        res = substitute(res, '\v\\([\\]*")@=', '\\\\', 'g')
+        # double trailing \
+        res = substitute(res, '\v\\([\\]*$)@=', '\\\\', 'g')
+        # escape " with \
+        res = escape(res, '"')
+        # quote it
+        res = '"' .. res .. '"'
+        return res
+    endif
+enddef
 
+def Start()
     const filename = expand('%:p')
     if is_unix
         var cmd = 'xdg-open'
@@ -2077,7 +2082,7 @@ def Start()
             stoponexit: '',
             })
     else
-        silent execute '!start' Quote(filename)
+        silent execute '!start' ShellQuoteNative(filename)
     endif
 enddef
 # finish {{{1 }}}1
