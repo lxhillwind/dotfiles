@@ -1,5 +1,8 @@
 # vim-sh
 
+Since commit [5b829c9799c458ef4956009a747925b141b3a373](https://github.com/lxhillwind/vim-sh/tree/5b829c9799c458ef4956009a747925b141b3a373),
+only vim with `has('vim9script')` will be supported.
+
 ## Usage
 Two commands are provided:
 
@@ -75,17 +78,6 @@ default is like: `['alacritty', 'urxvt', ...]`
 
 (all available values can be viewed by executing `:Sh -h`)
 
-### `g:sh_win32_cr`
-
-win32 only (`has('win32') == 1`);
-
-remap `<CR>` in command line mode; then `:[range]!{cmd}` / `:read !{cmd}` will
-be rewritten as `Sh`.
-
-example: `:!ls -l` will be translated to `:Sh ls -l`.
-
-default: `0`; set to `1` to enable it.
-
 #### experimental
 
 element of `g:sh_programs` can be function, like this:
@@ -98,18 +90,6 @@ let g:sh_programs = [{x -> !empty(job_start(['alacritty', '-e'] + x.cmd))}]
 If the function returns 0, then try the next element.
 
 ## Feature
-
-### support vim (7.3+) / neovim
-
-- uniform experience in all mainstream vim distribution.
-
-NOTE: before `patch-8.0.1089`, there is no way to differ 'no range' / 'current
-line'. Since the former is used more frequently, this plugin will always
-prefer it.
-
-example: `:.Sh wc -l` is the same as `:Sh wc -l`;
-
-to use current line as stdin, try this: `<Shift-v>:Sh -v {cmd}`.
 
 ### always use shell
 
@@ -148,5 +128,3 @@ let g:sh_path = 'C:/Program Files (x86)/Git/usr/bin/bash'
 ```
 
 - `:terminal ++shell` with unix shell syntax.
-
-- Replace `:!` and `!` (filter) with unix shell (see `g:sh_win32_cr` above).
