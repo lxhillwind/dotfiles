@@ -116,10 +116,21 @@ set pp=~/vimfiles,$VIMRUNTIME
 # option {{{1
 # win32 environment prepare {{{2
 if is_win32
-    # Let's see if it breaks other plugins...
+    # make ":!" in gui work like in unix: no external cmd window.
+    # set go+=! is also ok, but it requires pty.
+    #
+    # to get shell output as variable:
+    #   - use system(); but multiple stmt is not handled correctly when &shell
+    #   is unix shell.
+    #   - use ":Sh" from my vim-sh plugin; but it depends on unix shell.
+    #   - DO NOT use execute("!xxx"), since it also contains excmd in output.
+    set noshelltemp
+
     # Set shellslash, so file path completion returns slash based str,
     # which works in sh environment and win32 shell (cmd is not supported?).
-    # - plugin vim-fuzzy requires it.
+    #   - plugin vim-fuzzy also requires it.
+    # Windows XP does not like slash path; let's handle it in ":Start"
+    # UserCommand.
     set shellslash
 
     # set $HOME (for unix shell), $PATH, $VIM ...
@@ -153,6 +164,28 @@ if is_win32
 
     # vim-sh config; busybox sh rc
     $ENV = expand('~/.config/zshrc')
+
+    # set &shell after setting $PATH, then it can be found without setting
+    # Environment Variable in OS GUI.
+    #
+    # NOTE: to use '"' correctly, all '"' should be escaped with '\'.
+    # like this:
+    #   :!echo \"hello world\"
+    # (so just use :Sh if possible: it is more user friendly, and does not
+    # depends on &shell related setting)
+    if executable('busybox')
+        # these settings are from vim_faq, modified.
+        # https://vimhelp.org/vim_faq.txt.html#faq-33.6
+        &shell = 'busybox sh'
+        &shellcmdflag = '-c'
+        # shq seems to modify excmd very early; use sxq instead.
+        &shellquote = ''
+        &shellxquote = '"'
+        # sxe take effect even when sxq is not "(", so set it to empty.
+        # see vim-sh (search ":!start") for details.
+        &shellxescape = ''
+        # shellpipe / shellredir seems not required.
+    endif
 endif
 
 # unnamed... {{{2
