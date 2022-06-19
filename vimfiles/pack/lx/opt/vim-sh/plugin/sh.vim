@@ -420,6 +420,14 @@ function! s:post_func(result, opt) abort
   let opt = a:opt
   if opt.filter || opt.read_cmd
     let result = type(a:result) == type('') ? split(a:result, "\n") : a:result
+
+    " fix encoding for non-utf-8
+    if s:is_win32 && !empty(&tenc)
+      " unable to get tenc in console version vim;
+      " just use ":!{cmd}" / ":range!{cmd}" then.
+      call map(result, 'iconv(v:val, &tenc, &enc)')
+    endif
+
     if opt.filter
       call s:filter(result, opt)
     elseif opt.read_cmd
@@ -427,6 +435,9 @@ function! s:post_func(result, opt) abort
     endif
   else
     let result = type(a:result) == type([]) ? join(a:result, "\n") : a:result
+    if s:is_win32 && !empty(&tenc)
+      let result = iconv(result, &tenc, &enc)
+    endif
     redraws | echon trim(result, "\n")
     return 0
   endif
