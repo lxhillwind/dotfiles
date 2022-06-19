@@ -1,4 +1,14 @@
 " vim:fdm=marker sw=2
+"
+" TODO:
+"   - Sh -S (skip_shell) needs more test.
+"     - win32 chcp has no output (.com not runnable?);
+"     - win32 other command (not existed, like ls) error is also not available;
+"     - win32 notepad hang (gui app; though can be interrupted).
+"   - translate to vim9script.
+"   - on macos, job is much slower than system() when output contains many lines.
+"     e.g. :echo execute('Sh seq 1 1000')->split("\n")->len()
+"     will take several seconds to complete.
 
 if get(g:, 'loaded_sh') || !has('vim9script')
   finish
@@ -11,9 +21,6 @@ let s:sh_programs = ['alacritty', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty'
 " common var def {{{2
 let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
-" TODO on macos, job is much slower than system() when output contains many lines.
-" e.g. :echo execute('Sh seq 1 1000')->split("\n")->len()
-" will take several seconds to complete.
 
 function! s:echoerr(msg)
   echohl ErrorMsg
@@ -116,6 +123,9 @@ function! s:sh(cmd, opt) abort " {{{2
     throw '-n flag is not supported: function json_encode is missing!'
   endif
 
+  call add(help, '  S: run command directly, skipping shell')
+  let opt.skip_shell = match(opt_string, 'S') >= 0
+
   if (opt.tty || opt.window)
     if opt.filter || opt.read_cmd || opt.dryrun
       throw '-t / -w flag is conflict with -f / -r / -n!'
@@ -191,7 +201,7 @@ function! s:sh(cmd, opt) abort " {{{2
   let shell = exists('g:sh_path') ? g:sh_path :
         \ (s:is_win32 ? 'busybox' : &shell)
 
-  if !executable(shell)
+  if !executable(shell) && !opt.skip_shell
     call s:echoerr(printf('shell is not found! (`%s`)', shell)) | return
   endif
 
@@ -216,8 +226,19 @@ function! s:sh(cmd, opt) abort " {{{2
 
   let tmpfile = '' " {{{
   if stdin_flag is# 1
+    if opt.window && opt.skip_shell
+      throw '-w / -S option with char-level-input cannot be used together!'
+    endif
+
     let tmpfile = tempname()
     call writefile(stdin, tmpfile, 'b')
+
+    if opt.skip_shell
+      let job_opt = extend(job_opt, #{
+            \ in_io: 'file',
+            \ in_name: tmpfile,
+            \ })
+    endif
   endif
 
   let interactive_shell = empty(cmd)
@@ -233,16 +254,20 @@ function! s:sh(cmd, opt) abort " {{{2
       let cmd_new = [shell]
     endif
   else
-    if !empty(tmpfile)
-      if s:is_unix
-        let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
-              \ shellescape(cmd), shellescape(tmpfile))]
-      else
-        let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
-              \ s:shellescape(cmd), s:shellescape(s:tr_slash(tmpfile)))]
-      endif
+    if opt.skip_shell
+      let cmd_new = ShellSplitUnix(cmd)
     else
-      let cmd_new = ['sh', '-c', cmd]
+      if !empty(tmpfile)
+        if s:is_unix
+          let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
+                \ shellescape(cmd), shellescape(tmpfile))]
+        else
+          let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
+                \ s:shellescape(cmd), s:shellescape(s:tr_slash(tmpfile)))]
+        endif
+      else
+        let cmd_new = ['sh', '-c', cmd]
+      endif
     endif
   endif
   unlet cmd
@@ -251,8 +276,9 @@ function! s:sh(cmd, opt) abort " {{{2
   " }}}
 
   if opt.window " {{{
-    let cmd = opt.close ? cmd : s:cmdlist_keep_window(cmd)
-    if s:is_win32
+    " skip_shell does not care of close option, since it is complex.
+    let cmd = opt.close || opt.skip_shell ? cmd : s:cmdlist_keep_window(cmd)
+    if s:is_win32 && !opt.skip_shell
       let cmd = s:win32_sh_replace(shell, shell_arg_patch, cmd)
     endif
     let context = {'shell': shell,
@@ -290,11 +316,11 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
-  if s:is_win32
+  if s:is_win32 && !opt.skip_shell
     let cmd = s:win32_sh_replace(shell, shell_arg_patch, cmd)
   endif
 
-  if s:is_win32
+  if s:is_win32 && !opt.skip_shell
     let cmd_new = s:win32_cmd_list_to_str(cmd)
     unlet cmd
     let cmd = cmd_new
@@ -400,6 +426,94 @@ function! s:sh(cmd, opt) abort " {{{2
 endfunction
 
 " util func {{{2
+def ShellSplitUnix(s: string): list<string>
+  # shlex.split() with unix rule for unix and win32.
+  var state: string = 'whitespace'
+  var idx = 0
+  var ch: string
+  var token: string = ''
+  var result: list<string> = []
+
+  while idx < len(s)
+    ch = s[idx]
+    idx += 1
+
+    if ch == "'"
+      if state == 'raw' || state == 'whitespace'
+        state = 'quote_single'
+      elseif state == 'quote_single'
+        state = 'raw'
+      else
+        token ..= ch
+        if state == 'backslash'
+          state = 'raw'
+        endif
+      endif
+    elseif ch == '"'
+      if state == 'raw' || state == 'whitespace'
+        state = 'quote_double'
+      elseif state == 'quote_double'
+        state = 'raw'
+      elseif state == 'quote_backslash'
+        token ..= ch
+        state = 'quote_double'
+      else
+        token ..= ch
+        if state == 'backslash'
+          state = 'raw'
+        endif
+      endif
+    elseif ch == '\'
+      if state == 'quote_double'
+        state = 'quote_backslash'
+      elseif state == 'raw' || state == 'whitespace'
+        state = 'backslash'
+      elseif state == 'backslash'
+        token ..= '\'
+        state = 'raw'
+      elseif state == 'quote_single'
+        token ..= '\'
+      else
+        throw 'vim-sh: invalid state: \'
+      endif
+    elseif ch =~ '\s'
+      if state == 'whitespace'
+        # nop
+      elseif index(
+        ['quote_double', 'quote_single', 'quote_backslash', 'backslash'],
+        state) >= 0
+        token ..= ch
+        if state == 'backslash'
+          state = 'raw'
+        elseif state == 'quote_backslash'
+          state = 'quote_double'
+        endif
+      elseif state == 'raw'
+        add(result, token)
+        token = ''
+        state = 'whitespace'
+      else
+        throw 'vim-sh: invalid state: \s'
+      endif
+    else
+      if state == 'whitespace'
+        state = 'raw'
+      endif
+      token ..= ch
+    endif
+  endwhile
+
+  if state == 'raw'
+    add(result, token)
+  elseif state == 'whitespace'
+    # nop
+  else
+    throw 'input not legal: state at finish: ' .. state
+  endif
+
+  return result
+enddef
+
 function! s:trim_S(modifier) abort
   return substitute(a:modifier, ':S$', '', '')
 endfunction
