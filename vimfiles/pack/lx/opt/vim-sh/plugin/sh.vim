@@ -416,16 +416,32 @@ function! s:unix_start(cmdlist, ...) abort
   call job_start(a:cmdlist)
 endfunction
 
+" win32 console version does not set tenc; so we try to get it via command.
+let s:tenc = ''
+let s:tenc_checked = 0
+
 function! s:post_func(result, opt) abort
   let opt = a:opt
+
+  " TODO check cp utf-8?
+  if s:is_win32 && !has('gui_running') && empty(&tenc)
+        \ && empty(s:tenc) && empty(s:tenc_checked) && !get(opt, 'chcp')
+    " set s:tenc_checked first to avoid repeated possibly failed chcp call.
+    let s:tenc_checked = 1
+    " use opt.chcp to avoid recursive call to s:sh().
+    let s:tenc = 'cp' .. s:sh('chcp', #{chcp: 1})->matchstr('\v\d+$')
+  endif
+
+  let tenc = !empty(&tenc) ? &tenc : s:tenc
+
   if opt.filter || opt.read_cmd
     let result = type(a:result) == type('') ? split(a:result, "\n") : a:result
 
     " fix encoding for non-utf-8
-    if s:is_win32 && !empty(&tenc)
+    if s:is_win32 && !empty(tenc)
       " unable to get tenc in console version vim;
       " just use ":!{cmd}" / ":range!{cmd}" then.
-      call map(result, 'iconv(v:val, &tenc, &enc)')
+      call map(result, 'iconv(v:val, tenc, &enc)')
     endif
 
     if opt.filter
@@ -435,8 +451,13 @@ function! s:post_func(result, opt) abort
     endif
   else
     let result = type(a:result) == type([]) ? join(a:result, "\n") : a:result
-    if s:is_win32 && !empty(&tenc)
-      let result = iconv(result, &tenc, &enc)
+
+    if s:is_win32 && get(opt, 'chcp')
+      return result
+    endif
+
+    if s:is_win32 && !empty(tenc)
+      let result = iconv(result, tenc, &enc)
     endif
     redraws | echon trim(result, "\n")
     return 0
