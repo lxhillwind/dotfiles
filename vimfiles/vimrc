@@ -2101,7 +2101,11 @@ def ShellQuoteNative(s: string): string
 enddef
 
 def Start()
-    const filename = expand('%:p')
+    var filename: string = expand('%:p')
+    # Windows XP does not like / in path.
+    if is_win32 && windowsversion() == '5.1'
+        filename = substitute(filename, '/', '\', 'g')
+    endif
     if is_unix
         var cmd = 'xdg-open'
         if has('mac')
