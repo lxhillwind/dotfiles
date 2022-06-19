@@ -500,7 +500,7 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
         nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
 
         # completion
-        inoremap <silent> <buffer> <expr> <C-Space> coc#refresh()
+        inoremap <silent> <buffer> <expr> <Plug>VimTab coc#refresh()
 
         # diagnostic
         nmap <buffer> ]e <cmd>call g:CocAction('diagnosticNext')<CR>
@@ -540,11 +540,6 @@ endif
 # }}}
 
 # keymap {{{1
-# terminal <C-Space>
-map <Nul> <C-Space>
-map! <Nul> <C-Space>
-tmap <Nul> <C-Space>
-
 tnoremap <M-h> <C-w>h
 tnoremap <M-j> <C-w>j
 tnoremap <M-k> <C-w>k
@@ -583,8 +578,24 @@ execute "nnoremap \<M-9> :tablast<CR>"
 execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 # preserve <M-0> for DE / wm.
 
+# vim-auto-popmenu plugin may imap <Tab>; disable it.
+g:apc_enable_tab = 0
+
+imap <expr> <Tab> VimTab()
+inoremap <S-Tab> <C-p>
+
+# use key <Plug>VimTab as a fake key, so it can be mapped in different
+# contexts, like coc#refresh(), vim command completion.
+def VimTab(): string
+    if pumvisible() != 0
+        return "\<C-n>"
+    else
+        return "\<Plug>VimTab"
+    endif
+enddef
+
 # completion
-inoremap <C-Space> <C-x><C-o>
+inoremap <Plug>VimTab <C-x><C-o>
 
 # clear hlsearch
 nnoremap <silent> <Space>l :noh<CR>
@@ -601,8 +612,10 @@ onoremap il :<C-u>normal! ^vg_<CR>
 nmap <Space>r <Plug>(tasks-select)
 vmap <Space>r <Plug>(tasks-select)
 
-# terminal escape
-tnoremap <C-Space> <C-\><C-n>
+# terminal escape; {{{
+# used to use <C-Space>, but it may be occupied by DE / OS.
+# I don't use <C-t> key in terminal, so it's ok to map it. }}}
+tnoremap <C-t> <C-\><C-n>
 tnoremap <C-w> <C-w>.
 
 # I don't use t / T, so use them to do other things.
@@ -719,7 +732,7 @@ augroup vimrc
     g:is_posix = 1
 
     # viml completion
-    au FileType vim inoremap <buffer> <C-Space> <C-x><C-v>
+    au FileType vim inoremap <buffer> <Plug>VimTab <C-x><C-v>
 
     # markdown checkbox {{{
     def MarkdownToggleTaskStatus()
