@@ -3,7 +3,9 @@
 " TODO:
 "   - Sh -S (skip_shell) needs more test.
 "     - win32 chcp has no output (.com not runnable?);
-"     - win32 other command (not existed, like ls) error is also not available;
+"         (.com should be added, otherwise it won't run)
+"     - win32 other command (not existed, like ls) error info is also not
+"     available;
 "     - win32 notepad hang (gui app; though can be interrupted).
 "   - translate to vim9script.
 "   - on macos, job is much slower than system() when output contains many lines.
