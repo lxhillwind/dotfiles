@@ -744,8 +744,11 @@ augroup vimrc
         elseif is_win32
             # use "!start" to open.
             if is_win32 && windowsversion() == '5.1'
-                # Windows XP does not like / in path.
-                return [substitute(s, '/', '\', 'g')]
+                if isdirectory(s) || filereadable(s)
+                    # Windows XP does not like / in path.
+                    # check isdirectory / filereadable, since s may be url.
+                    return [substitute(s, '/', '\', 'g')]
+                endif
             endif
             return [s]
         else
