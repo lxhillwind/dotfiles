@@ -620,8 +620,25 @@ endfunction
 
 function! s:win32_start(cmdlist, ...) abort
   let cmd = s:win32_cmd_list_to_str(a:cmdlist)
+
   " "!start" is handled by vim internally; not affected by &shell related
   " setting.
+  "
+  " but in vim internal:
+  "   - escape &sxe (with "^") in user-input-excmd only when &sxq is "(";
+  "   - un-escape &sxe in result above unconditionally (&sxq is not checked)
+  " so we need to escape &sxe in user-input-excmd manually when &sxq IS NOT
+  " "(", then the un-escape step won't un-escape unexpected char.
+  "
+  " example (before this patch):
+  "   set sxq=
+  "   " do not reset sxe; keep sxe not empty.
+  "   Sh -w printf 'a^@b'  # a^@b is expected, but got a@b
+  "   Sh printf 'a^@b'  # got a^@b, since we don't use "!start" here.
+  if &sxq !=# "(" && !empty(&sxe)
+    let cmd = substitute(cmd, '\v[' .. escape(&sxe, '\]') .. ']', '^&', 'g')
+  endif
+
   silent execute printf('!start %s', cmd)
 endfunction
 

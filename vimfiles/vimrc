@@ -2082,6 +2082,8 @@ def Start()
             stoponexit: '',
             })
     else
+        # filename in win32 is unlikely to include char in &sxe following "^".
+        # so patch in my plugin vim-sh is not needed here. (search "!start")
         silent execute '!start' ShellQuoteNative(filename)
     endif
 enddef
