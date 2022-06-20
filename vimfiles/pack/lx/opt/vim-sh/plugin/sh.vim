@@ -545,7 +545,7 @@ function! s:post_func(result, opt) abort
     " set s:tenc_checked first to avoid repeated possibly failed chcp call.
     let s:tenc_checked = 1
     " use opt.chcp to avoid recursive call to s:sh().
-    let s:tenc = 'cp' .. s:sh('chcp', #{chcp: 1})->matchstr('\v\d+$')
+    let s:tenc = 'cp' .. s:sh('-S chcp.com', #{chcp: 1})->matchstr('\v\d+$')
   endif
 
   let tenc = !empty(&tenc) ? &tenc : s:tenc
