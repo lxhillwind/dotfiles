@@ -428,6 +428,18 @@ g:loaded_netrwPlugin = 1
 
 Pack 'https://github.com/justinmk/vim-sneak', {'commit': '94c2de47ab301d476a2baec9ffda07367046bec9'}
 g:sneak#label = 1
+# sneak unmap f / t when one of them is pressed after sneak key. {{{
+# MRE:
+#   :map t <Nop><CR>
+#   sssff
+#   :map t
+# then mapping for t disappeared.
+#
+# since I only map t / T (f / F not mapped), only set t / T below.
+# }}}
+g:sneak#f_reset = 1
+g:sneak#t_reset = 0
+
 # I do not use vim-surround, so preserve s / S for vim-sneak.
 vmap S <Plug>Sneak_S
 omap s <Plug>Sneak_s
