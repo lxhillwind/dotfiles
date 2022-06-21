@@ -1,14 +1,9 @@
-" vim:fdm=marker:tw=78:sw=4
-
-" vim9 header {{{1
-if !has('vim9script')
-    throw 'vim9script feature not detected!'
-endif
-
+if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
-
-# Error if reading system-vimrc.
-#
+# TODO {{{1
+# - replace g:Popup() / :Select with vim-fuzzy.
+# vimrc detection. {{{1
+# Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
 # like set mapping, add autocmd.
 # Some of these settings are good, but we want to keep these setting in vimrc
@@ -17,6 +12,7 @@ vim9script noclear
 #
 # Suggestion: put `exec /usr/bin/vim -Nu ~/vimfiles/vimrc "$@"` in ~/bin/vim,
 # and add ~/bin in $PATH (before /usr/bin), so ~/bin/vim wins.
+# }}}
 def TrSlash(s: string): string
     if has('win32')
         return substitute(s, '\', '/', 'g')
@@ -2108,3 +2104,4 @@ command -nargs=+ E {
 command Start Sh -g %
 # finish {{{1 }}}1
 defc  # show error in this file early.
+# vim:fdm=marker:tw=78:sw=4
