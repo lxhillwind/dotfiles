@@ -2,6 +2,8 @@ if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
 # TODO {{{1
 # - replace g:Popup() / :Select with vim-fuzzy.
+# - :Sh -r speedup; case: e app/bin/less.exe
+
 # vimrc detection. {{{1
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
@@ -125,6 +127,7 @@ if is_win32
 
     # Set shellslash, so file path completion returns slash based str, {{{
     # which works in sh environment and win32 shell (cmd is not supported?).
+    # shellescape() also returns unix-shell-friendly string.
     #   - plugin vim-fuzzy also requires it.
     # Windows XP does not like slash path; let's handle it in ":Start"
     # UserCommand. }}}
@@ -781,7 +784,7 @@ augroup vimrc
         if empty(open_cmd)
             return
         endif
-        execute 'Sh -g' open_cmd->mapnew((_, s) => ShellQuoteUnix(s))->join(' ')
+        execute 'Sh -g' open_cmd->mapnew((_, s) => shellescape(s))->join(' ')
     enddef
 
     def GxOpenGx(...arg: list<string>)
@@ -936,14 +939,6 @@ def PopupSize(): dict<number>
         maxwidth: width, maxheight: height,
         minwidth: width, minheight: height,
         }
-enddef
-
-def ShellQuoteUnix(s: string): string
-    if is_unix || &shellslash
-        return shellescape(s)
-    else
-        return "'" .. substitute(s, "'", "'\"'\"'", 'g') .. "'"
-    endif
 enddef
 
 # clipboard {{{2
@@ -2022,7 +2017,7 @@ augroup END
 const xxd_path = exists($VIM .. '/bin/xxd') ? '"$VIM"/bin/xxd' : 'xxd'
 
 def ReadBin(name: string)
-    execute printf('silent r !%s %s', xxd_path, shellescape(name))
+    execute printf('silent Sh -r %s %s', xxd_path, shellescape(name))
     normal gg"_dd
 enddef
 
