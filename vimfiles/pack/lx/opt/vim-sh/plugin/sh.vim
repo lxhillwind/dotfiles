@@ -301,7 +301,7 @@ function! s:sh(cmd, opt) abort " {{{2
           " Windows XP does not like / in path.
           " check isdirectory / filereadable, since s may be url.
           let name = substitute(name, '/', '\', 'g')
-          let cmd = add(cmd[ : -1], name)
+          let cmd = add(cmd[ : -2], name)
         endif
       endif
       call s:win32_start(cmd)
