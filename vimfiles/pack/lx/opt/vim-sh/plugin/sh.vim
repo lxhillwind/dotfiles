@@ -309,16 +309,23 @@ function! s:sh(cmd, opt) abort " {{{2
     endif
 
     if len(cmd) == 1
-      if has('mac')
-        let cmd = add(['open', '--'], cmd)
-      elseif executable('xdg-open')
-        let cmd = add(['xdg-open', '--'], cmd)
-      else
-        call s:echoerr("don't know how to open. (xdg-open is missing)")
-        return
+      let cmd_0 = cmd[0]
+      if !(executable(cmd_0) && match(cmd_0, '^/') < 0)
+        " avoid add open / xdg-open for executable;
+        "   like this: Sh -g xfce4-terminal
+        if has('mac')
+          let cmd = add(['open', '--'], cmd_0)
+        elseif executable('xdg-open') && match(cmd_0, '^-') < 0
+          " xdg-open does not support --; so let's check if cmd_0 is started
+          " with -.
+          let cmd = add(['xdg-open'], cmd_0)
+        else
+          call s:echoerr("don't know how to open. (xdg-open is missing)")
+          return
+        endif
       endif
     endif
-    call job_start(cmd, #{stoponexit: ''})
+    call job_start(cmd, #{stoponexit: '', in_io: 'null', out_io: 'null', err_io: 'null'})
 
     return
   endif
