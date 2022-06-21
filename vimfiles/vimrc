@@ -267,6 +267,11 @@ else
     $LANG = 'en'
 endif
 
+# foldmethod {{{2
+# it's too easy to use vim style folder in various text file.
+# just set fdm=marker as default.
+set fdm=marker
+
 # various vim dir & file {{{2
 # copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
 # backup files
@@ -721,7 +726,6 @@ endif
 augroup vimrc
     # misc (filetype related) {{{2
     au BufNewFile,BufRead *.gv setl ft=dot
-    au FileType vim,zsh,sh,tmux setl fdm=marker
     au FileType yaml setl indentkeys-=0#
     au FileType zig setl fp=zig\ fmt\ --stdin
     au FileType markdown {
@@ -767,27 +771,6 @@ augroup vimrc
     nnoremap <silent> gx :call <SID>Gx('n')<CR>
     vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
 
-    # TODO fix quote / escape
-    def GxOpenCmd(s: string): list<string>
-        if executable('xdg-open')
-            return ['xdg-open', s]
-        elseif executable('open')
-            return ['open', s]
-        elseif is_win32
-            # use "!start" to open.
-            if is_win32 && windowsversion() == '5.1'
-                if isdirectory(s) || filereadable(s)
-                    # Windows XP does not like / in path.
-                    # check isdirectory / filereadable, since s may be url.
-                    return [substitute(s, '/', '\', 'g')]
-                endif
-            endif
-            return [s]
-        else
-            echoerr 'do not know how to open' | return []
-        endif
-    enddef
-
     # TODO show error?
     def GxOpen(...arg: list<string>)
         var text = join(getline(1, '$'), "\n")
@@ -798,15 +781,11 @@ augroup vimrc
             # expand ~ and $ (env).
             text = expand(text)
         endif
-        const open_cmd = empty(arg) ? GxOpenCmd(text) : [arg[0], text]
+        const open_cmd = empty(arg) ? [text] : [arg[0], text]
         if empty(open_cmd)
             return
         endif
-        if is_win32
-            execute '!start' open_cmd->mapnew((_, s) => ShellQuoteNative(s))->join(' ')
-        else
-            job_start(open_cmd, {stoponexit: ''})
-        endif
+        execute 'Sh -g' open_cmd->mapnew((_, s) => ShellQuoteUnix(s))->join(' ')
     enddef
 
     def GxOpenGx(...arg: list<string>)
@@ -961,6 +940,14 @@ def PopupSize(): dict<number>
         maxwidth: width, maxheight: height,
         minwidth: width, minheight: height,
         }
+enddef
+
+def ShellQuoteUnix(s: string): string
+    if is_unix || &shellslash
+        return shellescape(s)
+    else
+        return "'" .. substitute(s, "'", "'\"'\"'", 'g') .. "'"
+    endif
 enddef
 
 # clipboard {{{2
@@ -2118,50 +2105,6 @@ command -nargs=+ E {
     }
 
 # :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
-command Start Start()
-
-# like shellescape(), but not affected by &shellslash option (on win32).
-def ShellQuoteNative(s: string): string
-    if is_unix
-        return shellescape(s)
-    else
-        # <https://daviddeley.com/autohotkey/parameters/parameters.htm>
-        var res = s
-        # double all \ before "
-        res = substitute(res, '\v\\([\\]*")@=', '\\\\', 'g')
-        # double trailing \
-        res = substitute(res, '\v\\([\\]*$)@=', '\\\\', 'g')
-        # escape " with \
-        res = escape(res, '"')
-        # quote it
-        res = '"' .. res .. '"'
-        return res
-    endif
-enddef
-
-def Start()
-    var filename: string = expand('%:p')
-    # Windows XP does not like / in path.
-    if is_win32 && windowsversion() == '5.1'
-        filename = substitute(filename, '/', '\', 'g')
-    endif
-    if is_unix
-        var cmd = 'xdg-open'
-        if has('mac')
-            cmd = 'open'
-        endif
-        if !executable(cmd)
-            throw 'xdg-open not found!'
-        endif
-        job_start([cmd, '--', filename], {
-            in_io: 'null', out_io: 'null', err_io: 'null',
-            stoponexit: '',
-            })
-    else
-        # filename in win32 is unlikely to include char in &sxe following "^".
-        # so patch in my plugin vim-sh is not needed here. (search "!start")
-        silent execute '!start' ShellQuoteNative(filename)
-    endif
-enddef
+command Start Sh -g %
 # finish {{{1 }}}1
 defc  # show error in this file early.

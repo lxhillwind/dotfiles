@@ -2,20 +2,16 @@
 "
 " TODO:
 "   - Sh -S (skip_shell) needs more test.
-"     - win32 chcp has no output (.com not runnable?);
-"         (.com should be added, otherwise it won't run)
-"     - win32 other command (not existed, like ls) error info is also not
-"     available;
-"     - win32 notepad hang (gui app; though can be interrupted).
+"     - win32 not-existed command (including .com file without suffix) error
+"     info is not available;
 "   - translate to vim9script.
-"   - on macos, job is much slower than system() when output contains many lines.
-"     e.g. :echo execute('Sh seq 1 1000')->split("\n")->len()
-"     will take several seconds to complete.
 
 if get(g:, 'loaded_sh') || !has('vim9script')
   finish
 endif
 let g:loaded_sh = 1
+
+import '../lib/sh.vim' as lib
 
 let s:sh_programs = ['alacritty', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv', 'konsole']
 
@@ -128,6 +124,15 @@ function! s:sh(cmd, opt) abort " {{{2
   call add(help, '  S: run command directly, skipping shell')
   let opt.skip_shell = match(opt_string, 'S') >= 0
 
+  call add(help, '  g: open file or run command in background / gui context')
+  call add(help, '     implies -S / -w option; use ":!start" in win32, job_start in other systems')
+  call add(help, '     when using job_start, open / xdg-open is used when only one arg given.')
+  let opt.gui = match(opt_string, 'g') >= 0
+  if opt.gui
+    let opt.skip_shell = 1
+    let opt.window = 1
+  endif
+
   if (opt.tty || opt.window)
     if opt.filter || opt.read_cmd || opt.dryrun
       throw '-t / -w flag is conflict with -f / -r / -n!'
@@ -181,23 +186,34 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
+  " remove leading whitespace before setting title.
+  " trailing whitespace will be trimmed by shell. no need to trim here.
+  let cmd = substitute(cmd, '\v^\s+', '', '')
   let l:term_name = has_key(opt_dict, 'title') ? opt_dict.title[-1] : cmd
+
+  " win32 :!start is run without cwd, so give full path.
+  " other systems may or may not; but adding :p is not bad.
+  if opt.gui && cmd == '%'
+    let cmd = '%:p'
+  endif
+
   " expand %
   let cmd = substitute(cmd, '\v%(^|\s)\zs(\%(\:[phtreS])*)\ze%($|\s)',
         \ s:is_win32 ?
         \'\=s:shellescape(s:tr_slash(expand(s:trim_S(submatch(1)))))' :
         \'\=shellescape(expand(s:trim_S(submatch(1))))',
         \ 'g')
-  let cmd = substitute(cmd, '\v^\s+', '', '')
-  " remove trailing whitespace
-  let cmd = substitute(cmd, '\v^(.{-})\s*$', '\1', '')
 
-  if empty(cmd) && stdin_flag isnot# 0
-    call s:echoerr('pipe to empty cmd is not allowed!') | return
-  endif
-
-  if empty(cmd) && !opt.tty && !opt.window && !opt.dryrun
-    call s:echoerr('empty cmd (without tty) is not allowed!') | return
+  if empty(cmd)
+    if stdin_flag isnot# 0
+      call s:echoerr('pipe to empty cmd is not allowed!') | return
+    endif
+    if !opt.tty && !opt.window && !opt.dryrun
+      call s:echoerr('empty cmd (without tty) is not allowed!') | return
+    endif
+    if opt.gui
+      call s:echoerr('empty cmd (with -g option) is not allowed!') | return
+    endif
   endif
 
   let shell = exists('g:sh_path') ? g:sh_path :
@@ -257,7 +273,7 @@ function! s:sh(cmd, opt) abort " {{{2
     endif
   else
     if opt.skip_shell
-      let cmd_new = ShellSplitUnix(cmd)
+      let cmd_new = s:lib.ShellSplitUnix(cmd)
     else
       if !empty(tmpfile)
         if s:is_unix
@@ -277,6 +293,37 @@ function! s:sh(cmd, opt) abort " {{{2
   unlet cmd_new
   " }}}
 
+  if opt.gui " {{{
+    if s:is_win32
+      if windowsversion() == '5.1'
+        let name = cmd[-1]
+        if isdirectory(name) || filereadable(name)
+          " Windows XP does not like / in path.
+          " check isdirectory / filereadable, since s may be url.
+          let name = substitute(name, '/', '\', 'g')
+          let cmd = add(cmd[ : -1], name)
+        endif
+      endif
+      call s:win32_start(cmd)
+      return
+    endif
+
+    if len(cmd) == 1
+      if has('mac')
+        let cmd = add(['open', '--'], cmd)
+      elseif executable('xdg-open')
+        let cmd = add(['xdg-open', '--'], cmd)
+      else
+        call s:echoerr("don't know how to open. (xdg-open is missing)")
+        return
+      endif
+    endif
+    call job_start(cmd, #{stoponexit: ''})
+
+    return
+  endif
+  " }}}
+
   if opt.window " {{{
     " skip_shell does not care of close option, since it is complex.
     let cmd = opt.close || opt.skip_shell ? cmd : s:cmdlist_keep_window(cmd)
@@ -291,6 +338,8 @@ function! s:sh(cmd, opt) abort " {{{2
 
     let program_set = []
     if has_key(opt_dict, 'w')
+      " opt_dict value is list; so here use opt_dict.w instead of
+      " [opt_dict.w].
       let program_set = opt_dict.w
     elseif exists('g:sh_programs')
       let program_set = g:sh_programs
@@ -428,94 +477,6 @@ function! s:sh(cmd, opt) abort " {{{2
 endfunction
 
 " util func {{{2
-def ShellSplitUnix(s: string): list<string>
-  # shlex.split() with unix rule for unix and win32.
-  var state: string = 'whitespace'
-  var idx = 0
-  var ch: string
-  var token: string = ''
-  var result: list<string> = []
-
-  while idx < len(s)
-    ch = s[idx]
-    idx += 1
-
-    if ch == "'"
-      if state == 'raw' || state == 'whitespace'
-        state = 'quote_single'
-      elseif state == 'quote_single'
-        state = 'raw'
-      else
-        token ..= ch
-        if state == 'backslash'
-          state = 'raw'
-        endif
-      endif
-    elseif ch == '"'
-      if state == 'raw' || state == 'whitespace'
-        state = 'quote_double'
-      elseif state == 'quote_double'
-        state = 'raw'
-      elseif state == 'quote_backslash'
-        token ..= ch
-        state = 'quote_double'
-      else
-        token ..= ch
-        if state == 'backslash'
-          state = 'raw'
-        endif
-      endif
-    elseif ch == '\'
-      if state == 'quote_double'
-        state = 'quote_backslash'
-      elseif state == 'raw' || state == 'whitespace'
-        state = 'backslash'
-      elseif state == 'backslash'
-        token ..= '\'
-        state = 'raw'
-      elseif state == 'quote_single'
-        token ..= '\'
-      else
-        throw 'vim-sh: invalid state: \'
-      endif
-    elseif ch =~ '\s'
-      if state == 'whitespace'
-        # nop
-      elseif index(
-        ['quote_double', 'quote_single', 'quote_backslash', 'backslash'],
-        state) >= 0
-        token ..= ch
-        if state == 'backslash'
-          state = 'raw'
-        elseif state == 'quote_backslash'
-          state = 'quote_double'
-        endif
-      elseif state == 'raw'
-        add(result, token)
-        token = ''
-        state = 'whitespace'
-      else
-        throw 'vim-sh: invalid state: \s'
-      endif
-    else
-      if state == 'whitespace'
-        state = 'raw'
-      endif
-      token ..= ch
-    endif
-  endwhile
-
-  if state == 'raw'
-    add(result, token)
-  elseif state == 'whitespace'
-    # nop
-  else
-    throw 'input not legal: state at finish: ' .. state
-  endif
-
-  return result
-enddef
-
 function! s:trim_S(modifier) abort
   return substitute(a:modifier, ':S$', '', '')
 endfunction
