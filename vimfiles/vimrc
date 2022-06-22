@@ -1,9 +1,5 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
-# TODO {{{1
-# - replace g:Popup() / :Select with vim-fuzzy.
-# - :Sh -r speedup; case: e app/bin/less.exe
-
 # vimrc detection. {{{1
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
@@ -47,9 +43,7 @@ legacy function! s:config_with_legacy_comment() abort
 if &compatible
     set nocompatible
 endif
-
 set nomodeline
-
 " backspace
 set bs=2
 " expandtab
@@ -61,7 +55,6 @@ set nu
 set rnu
 " hlsearch
 set hls
-
 " incsearch
 set is
 " timeoutlen
@@ -83,35 +76,35 @@ set cot-=preview
 set shm-=S
 " sessionoptions; better :mksession option.
 set ssop=blank,curdir,folds,tabpages,winsize
-
 " set locale in vimrc.vim, since vim tiny doesn't support :if.
-
 " menu
 set enc=utf-8
 " fileencodings
 " See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
 set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
-
 " runtimepath
 " for tiny version, set rtp to empty string to avoid loading any file.
 "set rtp=
-
 " finish. }}}2
 endfunction
 
 legacy call s:config_with_legacy_comment()
 
-# common definition & setting {{{1
+# common definition {{{1
 const is_unix = has('unix')
 const is_win32 = has('win32')
 const has_gui = has('gui_running') || has('mac')
 || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 
-# &rtp / &pp
+augroup vimrc
+    au!
+augroup END
+
+# option {{{1
+# &rtp / &pp {{{2
 set rtp=~/vimfiles,$VIMRUNTIME,~/vimfiles/after
 set pp=~/vimfiles,$VIMRUNTIME
 
-# option {{{1
 # win32 environment prepare {{{2
 if is_win32
     # make ":!" in gui work like in unix: no external cmd window. {{{
@@ -200,10 +193,8 @@ g:maplocalleader = "\<S-F11>"
 
 # use <Space> as *true* leader key.
 noremap <Space> <Nop>
-
-augroup vimrc
-    au!
-augroup END
+nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
+nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
 
 # shell {{{2
 if executable('zsh') && is_unix
@@ -301,40 +292,6 @@ endfor
 set nobackup
 set noundofile
 
-# term & gui (but not colorscheme) {{{2
-# TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
-# NOTE: no `set bg`; seems that terminal theme (dark / light) can be detected.
-if has('vim_starting')
-    if has('gui_running')
-        set guioptions=
-        set lines=32
-        set columns=128
-    else
-        if is_unix
-            if $TERM->tolower() == 'linux'
-                # linux tty
-            else
-                # 256color or tgc
-                if exists('&tgc') && $TERM !~ 'xterm'
-                    # make tgc work; :help xterm-true-color
-                    &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
-                    &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
-                endif
-                silent! set termguicolors
-            endif
-
-            if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
-                # wsl; fix vim start in replace mode;
-                # Refer: https://superuser.com/a/1525060
-                set t_u7=
-            endif
-        else
-            # win32 cmd
-            set nocursorcolumn
-        endif
-    endif
-endif
-
 # alt key in terminal {{{2
 if !has('gui_running') && is_unix
     # see ":set-termcap"
@@ -360,200 +317,37 @@ if is_win32
     set iminsert=2
 endif
 
-# plugin {{{1
-# first, enable ":Pack" command.
-packadd vim-pack
-
-# disable default plugin {{{
-g:loaded_2html_plugin = 1
-g:loaded_getscriptPlugin = 1
-g:loaded_gzip = 1
-g:loaded_logiPat = 1
-g:loaded_netrwPlugin = 1
-g:loaded_tarPlugin = 1
-g:loaded_vimballPlugin = 1
-g:loaded_zipPlugin = 1
-
-# some plugin installed by system package manager
-g:loaded_fzf = 1
-# }}}
-
-# plugin config without install. {{{
-g:tasks_config_paths =<< trim END
-    ~/vimfiles/config/tasks.ini
-    ~/vimfiles/config/tasks-local.ini
-END
-
-g:tasks_config_paths
-->map((_, i) => expand(i))
-->filter((_, i) => filereadable(i))
-
-g:markdown_folding = 1
-
-# keep sync with https://lxhillwind.gitee.io/ highlight.
-# NOTE: zig is not available in hljs right now.
-g:markdown_fenced_languages = [
-    'awk', 'python', 'sh', 'vim',
-    'c', 'go', 'javascript',
-    'dosini', 'json', 'yaml',
-    'zig',
-    ]
-# }}}
-
-# mime {{{
-# TODO archive vim-filelist?
-#Pack 'vim-filelist'
-
-Pack 'vim-jump'
-Pack 'vim-sh'
-Pack 'pyvim'
-g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
-Pack 'vim-tasks'
-
-if windowsversion() == '5.1'
-    # Windows XP: use old, small icon before v8.2.4545
-    Pack 'vim-old-ico'
-endif
-# }}}
-
-# vim dist. {{{
-# plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
-# not have enough permission to gen tag for them.
-# use ":packadd!" (with !) to only add them to &rtp.
-#
-# use matchit, so vim9 filetype indent work as expected.
-# https://github.com/vim/vim/issues/7628
-packadd! matchit
-# }}}
-
-# from network {{{
-Pack 'https://github.com/justinmk/vim-dirvish', {'commit': 'b2b5709'}
-g:loaded_netrwPlugin = 1
-
-Pack 'https://github.com/justinmk/vim-sneak', {'commit': '94c2de47ab301d476a2baec9ffda07367046bec9'}
-g:sneak#label = 1
-# sneak unmap f / t when one of them is pressed after sneak key. {{{
-# MRE:
-#   :map t <Nop><CR>
-#   sssff
-#   :map t
-# then mapping for t disappeared.
-#
-# since I only map t / T (f / F not mapped), only set t / T below.
-# }}}
-g:sneak#f_reset = 1
-g:sneak#t_reset = 0
-
-# I do not use vim-surround, so preserve s / S for vim-sneak.
-vmap S <Plug>Sneak_S
-omap s <Plug>Sneak_s
-omap S <Plug>Sneak_S
-
-Pack 'https://github.com/tpope/vim-repeat', {'commit': '24afe922e6a05891756ecf331f39a1f6743d3d5a'}
-Pack 'https://github.com/ciaranm/securemodelines', {'after': 1, 'commit': '9751f29699186a47743ff6c06e689f483058d77a'}
-
-# use vendor
-# Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
-Pack 'vim-fuzzy'
-
-Pack 'https://github.com/masukomi/vim-markdown-folding', {'commit': '3f35acfb753cc9ea22182400b075c5b6e896ad71'}
-g:markdown_fold_style = 'nested'
-g:markdown_fold_override_foldtext = 0
-
-Pack 'https://github.com/ziglang/zig.vim', {'commit': '0adf3a1407bdf60a6c1446fb6a9a05c9823e4290'}
-Pack 'https://github.com/lacygoill/vim9-syntax', {'commit': '49895457b1fcae6407041a780932387bc681289a', 'skip': 1}
-# }}}
-
-# basic completion {{{
-Pack 'https://github.com/skywind3000/vim-auto-popmenu', {'commit': 'ea64a79b23401f48e95b9bce65ba39c6c020a291'}
-# enable this plugin for filetypes, '*' for all files.
-#g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
-g:apc_enable_ft = {'*': 1}
-
-# source for dictionary, current or other loaded buffers, see ':help cpt'
-set cpt=.,k,w,b
-
-# don't select the first item.
-set completeopt=menu,menuone,noselect
-
-# suppress annoy messages.
-set shortmess+=c
-
-Pack 'https://github.com/skywind3000/vim-dict', {'commit': 'b73128b'}
-# File type override
-#g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
-g:vim_dict_config = {'markdown': 'text'}
-
-# Disable certain types
-#g:vim_dict_config = {'text': ''}
-# }}}
-
-# coc; to install it, set var before source this file. {{{
-if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
-    g:apc_enable_ft = {}
-
-    Pack 'neoclide/coc.nvim', {'branch': 'release'}
-
-    # vim completion
-    Pack 'Shougo/neco-vim'
-    Pack 'neoclide/coc-neco'
-
-    # run the following vim command to install coc plugins:
-    #   CocInstall coc-go
-    #   CocInstall coc-html
-    #   CocInstall coc-pyright
-
-    augroup vimrc
-        au FileType go,html,python,vim g:InitCocLang()
-    augroup END
-
-    # coc keymap; define as global function, so it can be called outside.
-    def g:InitCocLang()
-        # GoTo code navigation.
-        nmap <silent> <buffer> <Space>;d <Plug>(coc-definition)
-        nmap <silent> <buffer> <Space>;y <Plug>(coc-type-definition)
-        nmap <silent> <buffer> <Space>;i <Plug>(coc-implementation)
-        nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
-
-        # completion
-        inoremap <silent> <buffer> <expr> <Plug>VimTab coc#refresh()
-
-        # diagnostic
-        nmap <buffer> ]e <cmd>call g:CocAction('diagnosticNext')<CR>
-        nmap <buffer> [e <cmd>call g:CocAction('diagnosticPrevious')<CR>
-
-        # Use K to show documentation in preview window.
-        nnoremap <silent> <buffer> K :call <SID>CocShowDocumentation()<CR>
-
-        nnoremap <silent> <buffer> <C-]> <cmd>call <SID>CocDefinitionWithTagList()<CR>
-    enddef
-
-    def CocShowDocumentation()
-        if (index(['vim', 'help'], &filetype) >= 0)
-            execute 'h ' .. expand('<cword>')
-        elseif (coc#rpc#ready())
-            g:CocActionAsync('doHover')
+# term & gui (but not colorscheme) {{{2
+# TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
+# NOTE: no `set bg`; seems that terminal theme (dark / light) can be detected.
+if has('gui_running')
+    set guioptions=
+    set lines=32
+    set columns=128
+else
+    if is_unix
+        if $TERM->tolower() == 'linux'
+            # linux tty
         else
-            execute '!' .. &keywordprg .. " " .. expand('<cword>')
+            # 256color or tgc
+            if exists('&tgc') && $TERM !~ 'xterm'
+                # make tgc work; :help xterm-true-color
+                &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+                &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+            endif
+            silent! set termguicolors
         endif
-    enddef
 
-    # https://github.com/neoclide/coc.nvim/issues/576#issuecomment-632446784
-    def CocDefinitionWithTagList()
-        # Cribbed from :h tagstack-examples
-        var tag = expand('<cword>')
-        var pos = [bufnr()] + getcurpos()[1 :]
-        var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
-        if g:CocAction('jumpDefinition')
-            # Jump was successful, write previous location to tag stack.
-            var winid = win_getid()
-            var stack = gettagstack(winid)
-            stack['items'] = [item]
-            settagstack(winid, stack, 't')
+        if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
+            # wsl; fix vim start in replace mode;
+            # Refer: https://superuser.com/a/1525060
+            set t_u7=
         endif
-    enddef
+    else
+        # win32 cmd
+        set nocursorcolumn
+    endif
 endif
-# }}}
 
 # keymap {{{1
 tnoremap <M-h> <C-w>h
@@ -593,9 +387,6 @@ execute "tnoremap \<M-9> \<C-w>:tablast<CR>"
 execute "nnoremap \<M-9> :tablast<CR>"
 execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 # preserve <M-0> for DE / wm.
-
-# vim-auto-popmenu plugin may imap <Tab>; disable it.
-g:apc_enable_tab = 0
 
 imap <expr> <Tab> VimTab()
 inoremap <S-Tab> <C-p>
@@ -715,6 +506,183 @@ enddef
 # using my plugin vim-jump.
 nmap gF <Plug>(jump_to_file)
 vmap gF <Plug>(jump_to_file)
+
+# plugin {{{1
+# first, enable ":Pack" command.
+packadd vim-pack
+
+# disable default plugin {{{2
+g:loaded_2html_plugin = 1
+g:loaded_getscriptPlugin = 1
+g:loaded_gzip = 1
+g:loaded_logiPat = 1
+g:loaded_netrwPlugin = 1
+g:loaded_tarPlugin = 1
+g:loaded_vimballPlugin = 1
+g:loaded_zipPlugin = 1
+
+# some plugin installed by system package manager
+g:loaded_fzf = 1
+# bundled plugin config. {{{2
+g:tasks_config_paths =<< trim END
+    ~/vimfiles/config/tasks.ini
+    ~/vimfiles/config/tasks-local.ini
+END
+
+g:tasks_config_paths
+->map((_, i) => expand(i))
+->filter((_, i) => filereadable(i))
+
+g:markdown_folding = 1
+
+# keep sync with https://lxhillwind.gitee.io/ highlight.
+# NOTE: zig is not available in hljs right now.
+g:markdown_fenced_languages = [
+    'awk', 'python', 'sh', 'vim',
+    'c', 'go', 'javascript',
+    'dosini', 'json', 'yaml',
+    'zig',
+    ]
+
+# mime {{{2
+# TODO archive vim-filelist?
+#Pack 'vim-filelist'
+
+Pack 'vim-jump'
+Pack 'vim-sh'
+Pack 'pyvim'
+g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
+Pack 'vim-tasks'
+
+if windowsversion() == '5.1'
+    # Windows XP: use old, small icon before v8.2.4545
+    Pack 'vim-old-ico'
+endif
+
+# vim dist. {{{2
+# plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
+# not have enough permission to gen tag for them.
+# use ":packadd!" (with !) to only add them to &rtp.
+#
+# use matchit, so vim9 filetype indent work as expected.
+# https://github.com/vim/vim/issues/7628
+packadd! matchit
+
+# vender. {{{2
+# Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
+Pack 'vim-fuzzy'
+
+# from network {{{2
+Pack 'https://github.com/justinmk/vim-dirvish', {'commit': 'b2b5709'}
+g:loaded_netrwPlugin = 1
+Pack 'https://github.com/justinmk/vim-sneak', {'commit': '94c2de47ab301d476a2baec9ffda07367046bec9'}
+g:sneak#label = 1
+# sneak unmap f / t when one of them is pressed after sneak key. {{{
+# MRE:
+#   :map t <Nop><CR>
+#   sssff
+#   :map t
+# then mapping for t disappeared.
+#
+# since I only map t / T (f / F not mapped), only set t / T below.
+# }}}
+g:sneak#f_reset = 1
+g:sneak#t_reset = 0
+# I do not use vim-surround, so preserve s / S for vim-sneak.
+vmap S <Plug>Sneak_S
+omap s <Plug>Sneak_s
+omap S <Plug>Sneak_S
+Pack 'https://github.com/tpope/vim-repeat', {'commit': '24afe922e6a05891756ecf331f39a1f6743d3d5a'}
+Pack 'https://github.com/ciaranm/securemodelines', {'after': 1, 'commit': '9751f29699186a47743ff6c06e689f483058d77a'}
+Pack 'https://github.com/masukomi/vim-markdown-folding', {'commit': '3f35acfb753cc9ea22182400b075c5b6e896ad71'}
+g:markdown_fold_style = 'nested'
+g:markdown_fold_override_foldtext = 0
+Pack 'https://github.com/ziglang/zig.vim', {'commit': '0adf3a1407bdf60a6c1446fb6a9a05c9823e4290'}
+Pack 'https://github.com/lacygoill/vim9-syntax', {'commit': '49895457b1fcae6407041a780932387bc681289a', 'skip': 1}
+
+# basic completion {{{2
+Pack 'https://github.com/skywind3000/vim-auto-popmenu', {'commit': 'ea64a79b23401f48e95b9bce65ba39c6c020a291'}
+# disable its imap <Tab>
+g:apc_enable_tab = 0
+# enable this plugin for filetypes, '*' for all files.
+#g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
+g:apc_enable_ft = {'*': 1}
+
+# source for dictionary, current or other loaded buffers, see ':help cpt'
+set cpt=.,k,w,b
+# don't select the first item.
+set completeopt=menu,menuone,noselect
+# suppress annoy messages.
+set shortmess+=c
+Pack 'https://github.com/skywind3000/vim-dict', {'commit': 'b73128b'}
+# File type override
+#g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
+g:vim_dict_config = {'markdown': 'text'}
+# Disable certain types
+#g:vim_dict_config = {'text': ''}
+
+# coc; to install it, set var before source this file. {{{2
+if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
+    g:apc_enable_ft = {}
+    Pack 'neoclide/coc.nvim', {'branch': 'release'}
+    # vim completion
+    Pack 'Shougo/neco-vim'
+    Pack 'neoclide/coc-neco'
+    # run the following vim command to install coc plugins:
+    #   CocInstall coc-go
+    #   CocInstall coc-html
+    #   CocInstall coc-pyright
+
+    augroup vimrc
+        au FileType go,html,python,vim g:InitCocLang()
+    augroup END
+
+    # coc keymap; define as global function, so it can be called outside.
+    def g:InitCocLang()
+        # GoTo code navigation.
+        nmap <silent> <buffer> <Space>;d <Plug>(coc-definition)
+        nmap <silent> <buffer> <Space>;y <Plug>(coc-type-definition)
+        nmap <silent> <buffer> <Space>;i <Plug>(coc-implementation)
+        nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
+
+        # completion
+        inoremap <silent> <buffer> <expr> <Plug>VimTab coc#refresh()
+
+        # diagnostic
+        nmap <buffer> ]e <cmd>call g:CocAction('diagnosticNext')<CR>
+        nmap <buffer> [e <cmd>call g:CocAction('diagnosticPrevious')<CR>
+
+        # Use K to show documentation in preview window.
+        nnoremap <silent> <buffer> K :call <SID>CocShowDocumentation()<CR>
+
+        nnoremap <silent> <buffer> <C-]> <cmd>call <SID>CocDefinitionWithTagList()<CR>
+    enddef
+
+    def CocShowDocumentation()
+        if (index(['vim', 'help'], &filetype) >= 0)
+            execute 'h ' .. expand('<cword>')
+        elseif (coc#rpc#ready())
+            g:CocActionAsync('doHover')
+        else
+            execute '!' .. &keywordprg .. " " .. expand('<cword>')
+        endif
+    enddef
+
+    # https://github.com/neoclide/coc.nvim/issues/576#issuecomment-632446784
+    def CocDefinitionWithTagList()
+        # Cribbed from :h tagstack-examples
+        var tag = expand('<cword>')
+        var pos = [bufnr()] + getcurpos()[1 :]
+        var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
+        if g:CocAction('jumpDefinition')
+            # Jump was successful, write previous location to tag stack.
+            var winid = win_getid()
+            var stack = gettagstack(winid)
+            stack['items'] = [item]
+            settagstack(winid, stack, 't')
+        endif
+    enddef
+endif
 
 # filetype & autocmd {{{1
 filetype plugin indent on
@@ -878,10 +846,6 @@ augroup vimrc
     # fin {{{2
 augroup END
 
-# finally {{{1
-nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
-nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
-
 # colorscheme {{{1
 # only set colorscheme if not set yet. {{{2
 # using `trim(execute('color')) == 'default'` is not valid.
@@ -924,11 +888,6 @@ augroup vimrc
 augroup END
 TerminalAnsiColor()
 
-# gui {{{2
-if has('gui_running')
-    # do not set gui font here; set it in gvimrc. (font may be missing)
-    #set gfn=Hack\ 14
-endif
 # Command / Function {{{1
 # misc {{{2
 def PopupSize(): dict<number>
@@ -2099,4 +2058,8 @@ command -nargs=+ E {
 command Start Sh -g %
 # finish {{{1 }}}1
 defc  # show error in this file early.
+# TODO {{{1
+# - replace g:Popup() / :Select with vim-fuzzy.
+# - :Sh -r speedup; case: e app/bin/less.exe
+
 # vim:fdm=marker:tw=78:sw=4
