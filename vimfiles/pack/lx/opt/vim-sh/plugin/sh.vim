@@ -755,6 +755,10 @@ function! s:win32_start(cmdlist, ...) abort
     let cmd = substitute(cmd, '\v[' .. escape(&sxe, '\]') .. ']', '^&', 'g')
   endif
 
+  " finally, ":!" will interpret '!', '%', '#' specially. let's escape them.
+  " :help :!
+  let cmd = substitute(cmd, '\v[!%#]', '\\&', 'g')
+
   silent execute printf('!start %s', cmd)
 endfunction
 
