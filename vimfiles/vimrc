@@ -889,7 +889,7 @@ augroup END
 TerminalAnsiColor()
 
 # Command / Function {{{1
-# misc {{{2
+# utils function. internal {{{2
 def PopupSize(): dict<number>
     const width = max([&columns - 80, 80])
     const height = max([&lines - 24, 24])
@@ -965,7 +965,7 @@ def ExecuteLines(mode: string)
     if nr2char(getchar())->tolower() == 'y'
         redraws
         try
-            execute result
+            execute 'legacy' result
         finally
         endtry
     else
@@ -1625,7 +1625,7 @@ def HistList(ctx: dict<any>)
     # final space to make additional query work as expected.
     printf('fzf -q "^"%s/" "', shellescape(getcwd())),
     (s: list<string>) => {
-        execute 'E' fnameescape(expand(s[0]))
+        execute 'e' fnameescape(expand(s[0]))
         },
     ctx
     ->extendnew({title: 'select-hist_list'})
@@ -1638,7 +1638,7 @@ def FileList(ctx: dict<any>)
     g:Popup(
     'fzf',
     (s: list<string>) => {
-        execute 'E' fnameescape(s[0])
+        execute 'e' fnameescape(s[0])
         },
     ctx
     ->extendnew({title: 'select-filelist'})
@@ -1653,7 +1653,7 @@ def Nnn(ctx: dict<any>)
     (executable('zsh') ? 'zsh' : 'sh')
     .. ' -ic "nnn -o -p -"',
     (s: list<string>) => {
-        execute 'E' fnameescape(s[0])
+        execute 'e' fnameescape(s[0])
         },
     ctx
     ->extendnew({title: 'nnn'})
@@ -1915,57 +1915,6 @@ def SwitchBuffer(reverse: bool = false)
     execute ':' string(all_bufs[idx]) 'b'
 enddef
 
-# :Rg {...} {{{2
-# TODO qf: support chdir (like :Cdb ...);
-# TODO qf: fix chdir (e.g. :Cdb and then :Rg ... % may fail);
-# TODO qf: support stdin;
-command! -range -nargs=+ -complete=file Rg
-| Rg(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
-
-def Jumpback(buf: number)
-    const buffers = tabpagebuflist()
-    const idx = index(buffers, buf)
-    if idx >= 0
-        execute 'normal' (idx + 1) "\<Plug>(jump_to_file)"
-    else
-        echoerr 'buffer not found!'
-    endif
-enddef
-
-def Rg(arg: string, opt: dict<any>)
-    const buf = bufnr()
-    if opt.range == 0
-        exec 'Jobqfrun' 'rg --vimgrep' arg
-        # jump to qf window. (<Space>q defined in this file.)
-        feedkeys(' q', 't')
-    else
-        var result: string = execute(
-        printf(':%d,%dSh rg -I --column %s', opt.line1, opt.line2, arg)
-        )
-        if opt.line1 != 1
-            # if range is not % (line number will be wrong), fix it.
-            result = result
-            ->split("\n")
-            ->map((_, i) => {
-                var res = i
-                const colon: number = match(res, ':')
-                if colon >= 0 && res[0 : colon - 1] =~ '\v^\d+$'
-                    res = string(str2nr(res[0 : colon - 1]) + opt.line1 - 1) .. res[colon : ]
-                endif
-                return res
-                })
-            ->join("\n")
-        endif
-
-        bel :7sp +enew | setl buftype=nofile
-        put =result
-        norm gg"_dd
-        execute printf("nnoremap <buffer> <CR> <cmd>call <SID>Jumpback(%s)<CR>", buf)
-        execute printf("nnoremap <buffer> <C-j> <cmd>call <SID>Jumpback(%s)<CR><C-w>p", buf)
-        syn match String '\v^[0-9]+'
-    endif
-enddef
-
 # exe {{{2
 augroup vimrc
     au BufReadCmd *.exe,*.dll ReadBin(expand('<amatch>'))
@@ -2041,18 +1990,6 @@ else
     reader_mode.on = true
 endif
 enddef
-
-# ":E", better ":e" (check &modified). {{{2
-command -nargs=+ E {
-    if &modified
-        if &columns >= 140
-            wincmd v
-        else
-            wincmd s
-        endif
-    endif
-    execute 'e' <q-args>
-    }
 
 # :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
 command Start Sh -g %
