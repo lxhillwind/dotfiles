@@ -25,8 +25,7 @@ const first_vimrc = execute('scr')->split("\n")->get(0)
 ->TrSlash()
 
 if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != TrSlash($MYVIMRC)
-    echoerr 'system-vimrc is read. skip loading vimrc!'
-    finish
+    throw 'system-vimrc is read. skip loading vimrc!'
 endif
 
 if !exists('$MYVIMRC')
