@@ -50,7 +50,7 @@ Directory will NOT be created.
 
 filelist path priority:
 
-`g:filelist_path` -> `&viminfofile` dir -> [cache/](cache/) in repo dir.
+`g:filelist_path` -> `&viminfofile` dir -> ~/.cache/.
 
 ## impl
 

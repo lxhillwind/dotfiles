@@ -79,7 +79,7 @@ function! s:filelist_path()
 endfunction
 let s:filelist_path_default =
       \ ( empty(&viminfofile) ?
-      \   ( expand('<sfile>:p:h:h') . '/cache' ) :
+      \   expand('~/.cache') :
       \   fnamemodify(&viminfofile, ':h') )
       \ . '/filelist_path.cache'
 
