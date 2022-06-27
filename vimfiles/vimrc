@@ -199,6 +199,9 @@ nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
 if executable('zsh') && is_unix
     &shell = exepath('zsh')
 endif
+# cmdline completion {{{2
+# defined here instead of legacy, since it is available only after version 8.x
+set wildoptions=pum
 # builtin terminal enhancement {{{2
 augroup vimrc
     def TerminalPaste()
@@ -348,6 +351,24 @@ else
     endif
 endif
 
+# internal helper function. {{{1
+# expand() should NOT be used to expand arbitrary file (like containing
+# "[b-a]" in filename).
+def ExpandHead(s: string): string
+    if match(s, '\v^[%#<]') == 0
+        return expand(s)
+    elseif match(s, '\v^\~') == 0
+        return substitute(s, '\v^\~', expand('~'), '')
+    elseif match(s, '\v^\$\ze[a-zA-Z_]') == 0
+        const idx = match(s, '\v([^a-zA-Z_]|$)', 1)
+        return substitute(s, s[: idx - 1], expand(s[: idx - 1]), '')
+    endif
+    return s
+enddef
+
+def g:ExpandHead(s: string): string
+    return ExpandHead(s)
+enddef
 # keymap {{{1
 tnoremap <M-h> <C-w>h
 tnoremap <M-j> <C-w>j
@@ -745,7 +766,7 @@ augroup vimrc
         endif
         if text->match('\v^[~$]') >= 0
             # expand ~ and $ (env).
-            text = expand(text)
+            text = ExpandHead(text)
         endif
         const open_cmd = empty(arg) ? [text] : [arg[0], text]
         if empty(open_cmd)
@@ -1204,7 +1225,7 @@ def Cd(flag: string, args: string)
     endif
 
     if !isdirectory(path)
-        path = expand(path)
+        path = ExpandHead(path)
     endif
     if !isdirectory(path)
         path = fnamemodify(path, ':h')
@@ -1462,7 +1483,7 @@ command! -bang -nargs=* -range=0 ChdirTerminal ChdirTerminal(<bang>false, <range
 def ChdirTerminal(bang: bool, range: number, path_a: string)
     var path = path_a ?? ( range > 0 ? g:Selection() : expand('<cfile>') )
     if match(path, '\v^[~$<%]') >= 0
-        path = expand(path)
+        path = ExpandHead(path)
     endif
     path = fnamemodify(path, ':p')
     if filereadable(path)
@@ -1589,7 +1610,7 @@ enddef
 
 # HistList() {{{3
 def HistBlacklist(s: string): bool
-    if !filereadable(s) && !filereadable(expand(s))
+    if !filereadable(s) && !filereadable(ExpandHead(s))
         return true
     endif
     var lists =<< trim END
@@ -1610,7 +1631,7 @@ enddef
 def HistList(ctx: dict<any>)
     var input = v:oldfiles
     # expand ~, so it works with "fzf -q" option.
-    ->mapnew((_, i) => expand(i))
+    ->mapnew((_, i) => ExpandHead(i))
     ->extendnew(
     execute('Sh sort ~/.cache/file_history 2>/dev/null | uniq -c | sort -n | sed -E "s/^\s+[0-9]+\s+//"')
     ->split("\n")
@@ -1624,7 +1645,7 @@ def HistList(ctx: dict<any>)
     # final space to make additional query work as expected.
     printf('fzf -q "^"%s/" "', shellescape(getcwd())),
     (s: list<string>) => {
-        execute 'e' fnameescape(expand(s[0]))
+        execute 'e' fnameescape(s[0])
         },
     ctx
     ->extendnew({title: 'select-hist_list'})
