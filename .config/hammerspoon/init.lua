@@ -28,8 +28,12 @@ function toggleWindowMaximized()
 
 hs.hotkey.bind(hyper_shift, ";", hs.reload)
 
-function bindApp(char, app)
-    hs.hotkey.bind(hyper, char, function()
+function bindApp(char, app, with_shift)
+    local key = hyper
+    if with_shift ~= nil then
+        key = hyper_shift
+    end
+    hs.hotkey.bind(key, char, function()
         hs.application.launchOrFocus(app)
     end)
 end
@@ -126,12 +130,11 @@ function terminalIsFun()
     ):start()
 end
 
-bindApp(",", "Google Chrome")
+-- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
+-- 然后此处设置带 shift 的.
+bindApp(",", "Google Chrome", true)
 bindApp(".", "Visual Studio Code")
--- iterm 反馈不够显眼. 其通知中心相关功能好像挂了.
--- https://gitlab.com/gnachman/iterm2/-/issues/10305
---bindApp("/", "iTerm")
-bindApp("/", "alacritty")
+bindApp("/", "iTerm")
 
 hs.hotkey.bind(hyper, ";", showWindowFuzzy) -- all windows
 hs.hotkey.bind(hyper, "'", function() showWindowFuzzy(true) end) -- app windows
