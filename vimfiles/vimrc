@@ -1224,16 +1224,6 @@ def Cd(flag: string, args: string)
         cmd = args[len(path) + 1 :]
     endif
 
-    if !isdirectory(path)
-        path = ExpandHead(path)
-    endif
-    if !isdirectory(path)
-        path = fnamemodify(path, ':h')
-    endif
-    if !isdirectory(path)
-        throw 'not a directory: ' .. args
-    endif
-
     if !empty(cmd)
         var old_cwd = getcwd()
         var buf = bufnr('')
