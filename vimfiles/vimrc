@@ -459,8 +459,9 @@ tnoremap <C-t> <C-\><C-n>
 tnoremap <C-w> <C-w>.
 
 # I don't use t / T, so use them to do other things.
-nmap T <Space>at
 nnoremap t <cmd>call <SID>TabOpenOrClose()<CR>
+# TODO impl tab switch with vim-fuzzy.
+nmap T <Nop>
 
 def TabOpenOrClose()
     if empty(&buftype) && empty(bufname()) && &swapfile && !&modified
@@ -539,6 +540,12 @@ enddef
 # using my plugin vim-jump.
 nmap gF <Plug>(jump_to_file)
 vmap gF <Plug>(jump_to_file)
+
+# mksession.
+nnoremap <Space>sl :so ~/.vim/sessions/
+nnoremap <expr> <Space>ss
+            \ $':mksession{empty(v:this_session) ? "" : "!"}'
+            \ .. $' {v:this_session ?? "~/.vim/sessions/"}'
 
 # plugin {{{1
 # first, enable ":Pack" command.
