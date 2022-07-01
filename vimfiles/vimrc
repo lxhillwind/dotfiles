@@ -251,6 +251,16 @@ augroup END
 .. ' [%l:%{charcol(".")}'
 .. '%{% &buftype == "terminal" ? "" : "/%L" %}' .. ']'
 
+# viminfo {{{2
+# &viminfo should be set with ^= (the first match will be used) {{{
+# according to source code.
+# (in file src/viminfo.c, function find_viminfo_parameter())
+#
+# if option is already present (like '1000), reset (like :so $MYVIMRC) would
+# do nothing.
+# }}}
+set viminfo^='1000
+
 # set locale {{{2
 if is_unix
     # some environment cannot set lang, like in minimal container (fedora).
@@ -284,7 +294,10 @@ set undofile
 &viminfofile = expand('~/.vim/files/viminfo')
 
 # create directory if needed
-for t_dir in [&backupdir, &directory, &undodir, &viewdir]
+for t_dir in [
+        &backupdir, &directory, &undodir, &viewdir,
+        expand('~/.vim/sessions/'),
+        ]
     if !isdirectory(t_dir)
         mkdir(t_dir, 'p')
     endif
