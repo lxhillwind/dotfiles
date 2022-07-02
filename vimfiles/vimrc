@@ -140,10 +140,10 @@ if is_win32
 
     var path = $PATH->split(';')->map((_, i) => TrSlash(i))
     const present =<< trim END
-        ~/app/MinGit/cmd
-        ~/app/ConEmu
-        ~/vimfiles/bin
-        ~/bin
+    ~/app/MinGit/cmd
+    ~/app/ConEmu
+    ~/vimfiles/bin
+    ~/bin
     END
     for j in present
         const i = expand(j)
@@ -565,8 +565,8 @@ g:loaded_zipPlugin = 1
 g:loaded_fzf = 1
 # bundled plugin config. {{{2
 g:tasks_config_paths =<< trim END
-    ~/vimfiles/config/tasks.ini
-    ~/vimfiles/config/tasks-local.ini
+~/vimfiles/config/tasks.ini
+~/vimfiles/config/tasks-local.ini
 END
 
 g:tasks_config_paths
@@ -638,7 +638,7 @@ Pack 'https://github.com/masukomi/vim-markdown-folding', {'commit': '3f35acfb753
 g:markdown_fold_style = 'nested'
 g:markdown_fold_override_foldtext = 0
 Pack 'https://github.com/ziglang/zig.vim', {'commit': '0adf3a1407bdf60a6c1446fb6a9a05c9823e4290'}
-Pack 'https://github.com/lacygoill/vim9-syntax', {'commit': '49895457b1fcae6407041a780932387bc681289a', 'skip': 1}
+Pack 'https://github.com/lacygoill/vim9-syntax', {'commit': '49895457b1fcae6407041a780932387bc681289a'}
 
 # basic completion {{{2
 Pack 'https://github.com/skywind3000/vim-auto-popmenu', {'commit': 'ea64a79b23401f48e95b9bce65ba39c6c020a291'}
@@ -1624,18 +1624,18 @@ def HistBlacklist(s: string): bool
         return true
     endif
     var lists =<< trim END
-        COMMIT_EDITMSG
-        ADD_EDIT.patch
-        addp-hunk-edit.diff
-        git-rebase-todo
-END
-add(lists, $VIMRUNTIME)
-for i in lists
-    if match(s, i) >= 0
-        return true
-    endif
-endfor
-return false
+    COMMIT_EDITMSG
+    ADD_EDIT.patch
+    addp-hunk-edit.diff
+    git-rebase-todo
+    END
+    add(lists, $VIMRUNTIME)
+    for i in lists
+        if match(s, i) >= 0
+            return true
+        endif
+    endfor
+    return false
 enddef
 
 def HistList(ctx: dict<any>)
@@ -1981,44 +1981,44 @@ var reader_mode = exists('reader_mode') ? reader_mode :
 
 def SwitchReaderMode()
     const mapping =<< trim END
-        q <cmd>call <SID>SwitchReaderMode()<CR>
-        f <C-f>
-        b <C-b>
-        d <C-d>
-        u <C-u>
-        e <C-e>
-        y <C-y>
-        x <C-w>c
-        1 1gt
-        2 2gt
-        3 3gt
-        4 4gt
-        5 5gt
-        6 6gt
-        7 7gt
-        8 8gt
-        9 <cmd>tablast<CR>
-END
-if reader_mode.on
-    mapping->mapnew((_, i) => {
-        execute 'nunmap' i->split(' ')[0]
-        })
-    reader_mode.on = false
-    popup_close(reader_mode.winid)
-else
-    mapping->mapnew((_, i) => {
-        execute 'nnoremap' i
-        })
-    reader_mode.winid = popup_create(
-    ['reader mode'], {
-        line: &lines,
-        mapping: false,
-        highlight: 'Special',
-        tabpage: -1,  # show in all tabs.
-        }
-    )
-    reader_mode.on = true
-endif
+    q <cmd>call <SID>SwitchReaderMode()<CR>
+    f <C-f>
+    b <C-b>
+    d <C-d>
+    u <C-u>
+    e <C-e>
+    y <C-y>
+    x <C-w>c
+    1 1gt
+    2 2gt
+    3 3gt
+    4 4gt
+    5 5gt
+    6 6gt
+    7 7gt
+    8 8gt
+    9 <cmd>tablast<CR>
+    END
+    if reader_mode.on
+        mapping->mapnew((_, i) => {
+            execute 'nunmap' i->split(' ')[0]
+            })
+        reader_mode.on = false
+        popup_close(reader_mode.winid)
+    else
+        mapping->mapnew((_, i) => {
+            execute 'nnoremap' i
+            })
+        reader_mode.winid = popup_create(
+        ['reader mode'], {
+            line: &lines,
+            mapping: false,
+            highlight: 'Special',
+            tabpage: -1,  # show in all tabs.
+            }
+        )
+        reader_mode.on = true
+    endif
 enddef
 
 # :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
