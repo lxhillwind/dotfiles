@@ -32,30 +32,25 @@ $!+h::
 return
 
 ; map alt-1 to alt-9. {{{1
+; generation vim command ( i_ctrl-r=F() ) {{{
+; def! g:F(): string
+;   var result = ''
+;   var data =<< trim END
+;   $!{n}::
+;       if WinActive("ahk_exe msedge.exe")
+;           Send ^{n}
+;       else
+;           Send !{n}
+;   return
+;   END
 ;
-; " generation vim9 script: {{{2
-; vim9script
-;
-; var data =<< trim END
-; $!{n}::
-;     if WinActive("ahk_exe msedge.exe")
-;         Send ^{n}
-;     else
-;         Send !{n}
-; return
-; END
-;
-; @" = ""
-; for i in range(1, 9)
-;   @" ..= data->join("\n")->substitute('\V{n}', i, 'g')
-;   @" ..= "\n"
-; endfor
-;
-; # after leading comment removed, run with %so
-; # data is saved in @", so save it before running.
-; # }}}2
-;
-; auto generated: {{{2
+;   for i in range(1, 9)
+;     result ..= data->join("\n")->substitute('\V{n}', i, 'g')
+;     result ..= "\n"
+;   endfor
+;   return result
+; enddef
+; generated {{{2
 $!1::
     if WinActive("ahk_exe msedge.exe")
         Send ^1
@@ -110,4 +105,3 @@ $!9::
     else
         Send !9
 return
-; }}}2

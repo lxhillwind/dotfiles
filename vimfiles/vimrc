@@ -443,10 +443,18 @@ nnoremap <silent> <Space>l :noh<CR>
 # custom text object
 vnoremap aa :<C-u>normal! ggVG<CR>
 onoremap aa :<C-u>normal! ggVG<CR>
+
 vnoremap al :<C-u>normal! 0v$h<CR>
 onoremap al :<C-u>normal! 0v$h<CR>
+
 vnoremap il :<C-u>normal! ^vg_<CR>
 onoremap il :<C-u>normal! ^vg_<CR>
+
+vnoremap az V]zo[zo
+onoremap az :<C-u>normal! V]zo[zo<CR>
+
+vnoremap iz V]zo[zjo
+onoremap iz :<C-u>normal! V]zo[zjo<CR>
 
 # simple tasks: tasks.vim
 nmap <Space>r <Plug>(tasks-select)
