@@ -383,6 +383,25 @@ def g:ExpandHead(s: string): string
     return ExpandHead(s)
 enddef
 # keymap {{{1
+# custom text object {{{2
+# all
+vnoremap aa :<C-u>normal! ggVG<CR>
+onoremap aa :<C-u>normal! ggVG<CR>
+# line
+vnoremap al :<C-u>normal! 0v$h<CR>
+onoremap al :<C-u>normal! 0v$h<CR>
+# line, strip space
+vnoremap il :<C-u>normal! ^vg_<CR>
+onoremap il :<C-u>normal! ^vg_<CR>
+# fold
+vnoremap az V]zo[zo
+onoremap az :<C-u>normal! V]zo[zo<CR>
+# fold, without marker. (trailing marker is not un-select. press k if it
+# exists.)
+vnoremap iz V]zo[zjo
+onoremap iz :<C-u>normal! V]zo[zjo<CR>
+
+# <M-hjkl> {{{2
 tnoremap <M-h> <C-w>h
 tnoremap <M-j> <C-w>j
 tnoremap <M-k> <C-w>k
@@ -398,6 +417,7 @@ inoremap <M-j> <C-o><C-w>j
 inoremap <M-k> <C-o><C-w>k
 inoremap <M-l> <C-o><C-w>l
 
+# <C-tab>; <M-t> {{{2
 tnoremap <C-Tab> <C-w>gt
 tnoremap <S-C-Tab> <C-w>gT
 
@@ -411,6 +431,7 @@ tnoremap <M-t> <C-w>:tabe<CR>
 nnoremap <M-t> :tabe<CR>
 inoremap <M-t> <C-o>:tabe<CR>
 
+# <M-1> - <M-9> {{{2
 for i in range(1, 8)
     execute printf("tnoremap \<M-%d> \<C-w>%dgt", i, i)
     execute printf("nnoremap \<M-%d> %dgt", i, i)
@@ -421,6 +442,7 @@ execute "nnoremap \<M-9> :tablast<CR>"
 execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 # preserve <M-0> for DE / wm.
 
+# i_<tab> {{{2
 imap <expr> <Tab> VimTab()
 inoremap <S-Tab> <C-p>
 
@@ -437,35 +459,7 @@ enddef
 # completion
 inoremap <Plug>VimTab <C-x><C-o>
 
-# clear hlsearch
-nnoremap <silent> <Space>l :noh<CR>
-
-# custom text object
-vnoremap aa :<C-u>normal! ggVG<CR>
-onoremap aa :<C-u>normal! ggVG<CR>
-
-vnoremap al :<C-u>normal! 0v$h<CR>
-onoremap al :<C-u>normal! 0v$h<CR>
-
-vnoremap il :<C-u>normal! ^vg_<CR>
-onoremap il :<C-u>normal! ^vg_<CR>
-
-vnoremap az V]zo[zo
-onoremap az :<C-u>normal! V]zo[zo<CR>
-
-vnoremap iz V]zo[zjo
-onoremap iz :<C-u>normal! V]zo[zjo<CR>
-
-# simple tasks: tasks.vim
-nmap <Space>r <Plug>(tasks-select)
-vmap <Space>r <Plug>(tasks-select)
-
-# terminal escape; {{{
-# used to use <C-Space>, but it may be occupied by DE / OS.
-# I don't use <C-t> key in terminal, so it's ok to map it. }}}
-tnoremap <C-t> <C-\><C-n>
-tnoremap <C-w> <C-w>.
-
+# t / T {{{2
 # I don't use t / T, so use them to do other things.
 nnoremap t <cmd>call <SID>TabOpenOrClose()<CR>
 # TODO impl tab switch with vim-fuzzy.
@@ -481,7 +475,64 @@ def TabOpenOrClose()
     endif
 enddef
 
-# getcwd
+# v_* / v_#; like `g*` / `g#`, dep: Selection() {{{2
+vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
+vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
+
+# <c-n> / <c-p> to switch buffer. {{{2
+nnoremap <C-n> <cmd>call <SID>SwitchBuffer(v:true)<CR>
+nnoremap <C-p> <cmd>call <SID>SwitchBuffer(v:false)<CR>
+def SwitchBuffer(reverse: bool = false)
+    var current: number = bufnr()
+
+    const single_window: bool = tabpagebuflist()->len() == 1
+    if !single_window
+        tabe
+    endif
+
+    const term_list = term_list()
+    const all_bufs = getbufinfo()
+    ->filter((_, i) => !empty(i.name) && !empty(i.listed)
+    && index(term_list, i.bufnr) < 0)
+    ->mapnew((_, i) => i.bufnr)
+
+    if empty(all_bufs)
+        # avoid divide zero
+        return
+    endif
+
+    var idx = index(all_bufs, current)
+    if idx < 0 && reverse
+        idx = 0
+    endif
+    if single_window
+        idx += (reverse ? 1 : -1)
+    endif
+    idx = idx % len(all_bufs)
+
+    execute ':' string(all_bufs[idx]) 'b'
+enddef
+
+# gF / v_gF {{{2
+# (handle column nr; v_gF handle line / column nr)
+# using my plugin vim-jump.
+nmap gF <Plug>(jump_to_file)
+vmap gF <Plug>(jump_to_file)
+
+# terminal escape; {{{2
+# used to use <C-Space>, but it may be occupied by DE / OS. {{{
+# I don't use <C-t> key in terminal, so it's ok to map it. }}}
+tnoremap <C-t> <C-\><C-n>
+tnoremap <C-w> <C-w>.
+
+# <Space>l {{{2
+nnoremap <silent> <Space>l :noh<CR>
+
+# <Space>r; simple tasks: tasks.vim {{{2
+nmap <Space>r <Plug>(tasks-select)
+vmap <Space>r <Plug>(tasks-select)
+
+# <Space>c; getcwd {{{2
 nnoremap <Space>c <cmd>call <SID>GotoWhichDir()<CR>
 
 def GotoWhichDir()  # {{{
@@ -544,16 +595,165 @@ def GotoWhichDir()  # {{{
 enddef
 # }}}
 
-# better gF / v_gF. (handle column nr; v_gF handle line / column nr)
-# using my plugin vim-jump.
-nmap gF <Plug>(jump_to_file)
-vmap gF <Plug>(jump_to_file)
-
-# mksession.
+# <Space>sl / <Space>ss; mksession. {{{2
 nnoremap <Space>sl :so ~/.vim/sessions/
 nnoremap <expr> <Space>ss
             \ $':mksession{empty(v:this_session) ? "" : "!"}'
             \ .. $' {v:this_session ?? "~/.vim/sessions/"}'
+
+# <Space>y / <Space>p; clipboard {{{2
+# use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
+# detection is defined there. (~/bin/{pbcopy,pbpaste})
+nnoremap <Space>y :call <SID>ClipboardCopy("")<CR>
+nnoremap <Space>p :call <SID>ClipboardPaste("")<CR>
+
+def ClipboardCopy(cmd_: string)
+    var cmd = cmd_
+    if empty(cmd)
+        if has('clipboard') && is_win32
+            # NOTE: unix: X11 clipboard content will disapper when program exits.
+            @+ = @"
+            return
+        elseif executable('pbcopy')
+            cmd = 'pbcopy'
+        else
+            throw 'clipboard not found!'
+        endif
+        system(cmd, @")
+    else
+        system(cmd, @")
+    endif
+enddef
+
+def ClipboardPaste(cmd_: string)
+    var cmd = cmd_
+    if empty(cmd)
+        if has('clipboard') && is_win32
+            @" = @+
+            return
+        elseif executable('pbpaste')
+            cmd = 'pbpaste'
+        else
+            throw 'clipboard not found!'
+        endif
+        @" = system(cmd)
+    else
+        @" = system(cmd)
+    endif
+enddef
+
+# <Space><CR>; execute current line (or select lines), comment removed {{{2
+nnoremap <Space><CR> :call <SID>ExecuteLines('n')<CR>
+vnoremap <Space><CR> :<C-u>call <SID>ExecuteLines('v')<CR>
+
+def ExecuteLines(mode: string)
+    var lines: list<string>
+    if mode == 'n'
+        lines = [getline('.')]
+    elseif mode == 'v'
+        var t = @"
+        silent normal gvy
+        lines = split(@", "\n")
+        @" = t
+    endif
+    var result_l = []
+    for i in lines
+        result_l = add(result_l, substitute(i, '\v^\s*(//|#|"|--|;)+', '', ''))
+    endfor
+    var result: string = join(result_l, "\n")
+    echom result
+    echo 'execute? y/N '
+    if nr2char(getchar())->tolower() == 'y'
+        redraws
+        try
+            execute 'legacy' result
+        finally
+        endtry
+    else
+        redraws | echon 'cancelled.'
+    endif
+enddef
+
+# <Space>n; switch number / relativenumber {{{2
+nnoremap <silent> <Space>n :call <SID>Switch_nu_rnu()<CR>
+
+def Switch_nu_rnu()
+    # no [0, 1]
+    const presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
+    ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
+    const idx = index(presents, [&l:nu, &l:rnu])
+    [&l:nu, &l:rnu] = presents[idx + 1]
+enddef
+
+# <Space>m; switch mouse {{{2
+nnoremap <silent> <Space>m :call <SID>Switch_mouse()<CR>
+
+def Switch_mouse()
+    if &mouse == 'a'
+        set mouse=
+    else
+        set mouse=a
+    endif
+enddef
+
+# <Space>q; switch quickfix window (open / focus or close) {{{2
+nnoremap <silent> <Space>q :call <SID>SwitchQuickfixWindow()<CR>
+
+def SwitchQuickfixWindow()
+    if &ft == 'qf'
+        cclose
+    else
+        execute 'bot' 'copen' &cwh
+    endif
+enddef
+
+# <Space>v; shortcut for reader mode. (view code / text easily.) {{{2
+# TODO map more key (one hand); provide help page (double ? to enter search mode).
+nnoremap <Space>v <cmd>call <SID>SwitchReaderMode()<CR>
+var reader_mode = exists('reader_mode') ? reader_mode :
+{on: false, winid: -1}
+
+def SwitchReaderMode()
+    const mapping =<< trim END
+    q <cmd>call <SID>SwitchReaderMode()<CR>
+    f <C-f>
+    b <C-b>
+    d <C-d>
+    u <C-u>
+    e <C-e>
+    y <C-y>
+    x <C-w>c
+    1 1gt
+    2 2gt
+    3 3gt
+    4 4gt
+    5 5gt
+    6 6gt
+    7 7gt
+    8 8gt
+    9 <cmd>tablast<CR>
+    END
+    if reader_mode.on
+        mapping->mapnew((_, i) => {
+            execute 'nunmap' i->split(' ')[0]
+            })
+        reader_mode.on = false
+        popup_close(reader_mode.winid)
+    else
+        mapping->mapnew((_, i) => {
+            execute 'nnoremap' i
+            })
+        reader_mode.winid = popup_create(
+        ['reader mode'], {
+            line: &lines,
+            mapping: false,
+            highlight: 'Special',
+            tabpage: -1,  # show in all tabs.
+            }
+        )
+        reader_mode.on = true
+    endif
+enddef
 
 # plugin {{{1
 # first, enable ":Pack" command.
@@ -782,6 +982,32 @@ augroup vimrc
     au FileType markdown nnoremap <buffer>
                 \ <Space>;c :call <SID>MarkdownToggleTaskStatus()<CR>
 
+    # ReadBin / WriteBin impl {{{
+    # avoid using busybox xxd.
+    const xxd_path = exists($VIM .. '/bin/xxd') ? '"$VIM"/bin/xxd' : 'xxd'
+
+    def ReadBin(name: string)
+        execute printf('silent Sh -r %s %s', xxd_path, shellescape(name))
+        normal gg"_dd
+    enddef
+
+    def WriteBin(name: string)
+        if is_win32
+            # returncode check is ignored.
+            job_start('xxd -r', {in_io: 'buffer', in_buf: bufnr(), out_io: 'file', out_name: name})
+        else
+            execute printf(':%w !%s -r > %s', xxd_path, shellescape(name))
+            if !empty(v:shell_error)
+                return
+            endif
+        endif
+        setl nomodified
+        redrawstatus | echon 'written.'
+    enddef
+    # }}}
+    au BufReadCmd *.exe,*.dll ReadBin(expand('<amatch>'))
+    au BufWriteCmd *.exe,*.dll WriteBin(expand('<amatch>'))
+
     # gx related (NOTE: key `gx` overwritten) {{{2
     nnoremap <silent> gx :call <SID>Gx('n')<CR>
     vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
@@ -948,112 +1174,6 @@ def PopupSize(): dict<number>
         }
 enddef
 
-# clipboard {{{2
-# use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
-# detection is defined there. (~/bin/{pbcopy,pbpaste})
-nnoremap <Space>y :call <SID>ClipboardCopy("")<CR>
-nnoremap <Space>p :call <SID>ClipboardPaste("")<CR>
-
-def ClipboardCopy(cmd_: string)
-    var cmd = cmd_
-    if empty(cmd)
-        if has('clipboard') && is_win32
-            # NOTE: unix: X11 clipboard content will disapper when program exits.
-            @+ = @"
-            return
-        elseif executable('pbcopy')
-            cmd = 'pbcopy'
-        else
-            throw 'clipboard not found!'
-        endif
-        system(cmd, @")
-    else
-        system(cmd, @")
-    endif
-enddef
-
-def ClipboardPaste(cmd_: string)
-    var cmd = cmd_
-    if empty(cmd)
-        if has('clipboard') && is_win32
-            @" = @+
-            return
-        elseif executable('pbpaste')
-            cmd = 'pbpaste'
-        else
-            throw 'clipboard not found!'
-        endif
-        @" = system(cmd)
-    else
-        @" = system(cmd)
-    endif
-enddef
-
-# execute current line (or select lines), comment removed {{{2
-nnoremap <Space><CR> :call <SID>ExecuteLines('n')<CR>
-vnoremap <Space><CR> :<C-u>call <SID>ExecuteLines('v')<CR>
-
-def ExecuteLines(mode: string)
-    var lines: list<string>
-    if mode == 'n'
-        lines = [getline('.')]
-    elseif mode == 'v'
-        var t = @"
-        silent normal gvy
-        lines = split(@", "\n")
-        @" = t
-    endif
-    var result_l = []
-    for i in lines
-        result_l = add(result_l, substitute(i, '\v^\s*(//|#|"|--|;)+', '', ''))
-    endfor
-    var result: string = join(result_l, "\n")
-    echom result
-    echo 'execute? y/N '
-    if nr2char(getchar())->tolower() == 'y'
-        redraws
-        try
-            execute 'legacy' result
-        finally
-        endtry
-    else
-        redraws | echon 'cancelled.'
-    endif
-enddef
-
-# switch number / relativenumber {{{2
-nnoremap <silent> <Space>n :call <SID>Switch_nu_rnu()<CR>
-
-def Switch_nu_rnu()
-    # no [0, 1]
-    const presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
-    ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
-    const idx = index(presents, [&l:nu, &l:rnu])
-    [&l:nu, &l:rnu] = presents[idx + 1]
-enddef
-
-# switch mouse {{{2
-nnoremap <silent> <Space>m :call <SID>Switch_mouse()<CR>
-
-def Switch_mouse()
-    if &mouse == 'a'
-        set mouse=
-    else
-        set mouse=a
-    endif
-enddef
-
-# switch quickfix window (open / focus or close) {{{2
-nnoremap <silent> <Space>q :call <SID>SwitchQuickfixWindow()<CR>
-
-def SwitchQuickfixWindow()
-    if &ft == 'qf'
-        cclose
-    else
-        execute 'bot' 'copen' &cwh
-    endif
-enddef
-
 # snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{2
 command -nargs=? -complete=filetype Scratch Scratch(<q-args>)
 command! -nargs=? -complete=filetype ScratchNew SnippetInNewWindow(<q-args>)
@@ -1181,10 +1301,6 @@ def g:SetCmdText(text: string)
 enddef
 
 command! -nargs=+ SetCmdText g:SetCmdText(<q-args>)
-
-# `*` / `#` in visual mode (like `g*` / `g#`); dep: Selection() {{{2
-vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
-vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 
 # :KqutebrowserEditCmd {{{2
 if !empty($QUTE_FIFO)
@@ -1917,116 +2033,6 @@ enddef  # }}}
 # sv() helper (in vim embedded terminal) {{{2
 def g:Tapi_shell_sv_helper(...arg: list<any>)
     feedkeys("\<C-space>")
-enddef
-
-# <c-n> / <c-p> to switch buffer. {{{2
-nnoremap <C-n> <cmd>call <SID>SwitchBuffer(v:true)<CR>
-nnoremap <C-p> <cmd>call <SID>SwitchBuffer(v:false)<CR>
-def SwitchBuffer(reverse: bool = false)
-    var current: number = bufnr()
-
-    const single_window: bool = tabpagebuflist()->len() == 1
-    if !single_window
-        tabe
-    endif
-
-    const term_list = term_list()
-    const all_bufs = getbufinfo()
-    ->filter((_, i) => !empty(i.name) && !empty(i.listed)
-    && index(term_list, i.bufnr) < 0)
-    ->mapnew((_, i) => i.bufnr)
-
-    if empty(all_bufs)
-        # avoid divide zero
-        return
-    endif
-
-    var idx = index(all_bufs, current)
-    if idx < 0 && reverse
-        idx = 0
-    endif
-    if single_window
-        idx += (reverse ? 1 : -1)
-    endif
-    idx = idx % len(all_bufs)
-
-    execute ':' string(all_bufs[idx]) 'b'
-enddef
-
-# exe {{{2
-augroup vimrc
-    au BufReadCmd *.exe,*.dll ReadBin(expand('<amatch>'))
-    au BufWriteCmd *.exe,*.dll WriteBin(expand('<amatch>'))
-augroup END
-
-# avoid using busybox xxd.
-const xxd_path = exists($VIM .. '/bin/xxd') ? '"$VIM"/bin/xxd' : 'xxd'
-
-def ReadBin(name: string)
-    execute printf('silent Sh -r %s %s', xxd_path, shellescape(name))
-    normal gg"_dd
-enddef
-
-def WriteBin(name: string)
-    if is_win32
-        # returncode check is ignored.
-        job_start('xxd -r', {in_io: 'buffer', in_buf: bufnr(), out_io: 'file', out_name: name})
-    else
-        execute printf(':%w !%s -r > %s', xxd_path, shellescape(name))
-        if !empty(v:shell_error)
-            return
-        endif
-    endif
-    setl nomodified
-    redrawstatus | echon 'written.'
-enddef
-
-# shortcut for reader mode. (view code / text easily.) {{{2
-# TODO map more key (one hand); provide help page (double ? to enter search mode).
-nnoremap <Space>v <cmd>call <SID>SwitchReaderMode()<CR>
-var reader_mode = exists('reader_mode') ? reader_mode :
-{on: false, winid: -1}
-
-def SwitchReaderMode()
-    const mapping =<< trim END
-    q <cmd>call <SID>SwitchReaderMode()<CR>
-    f <C-f>
-    b <C-b>
-    d <C-d>
-    u <C-u>
-    e <C-e>
-    y <C-y>
-    x <C-w>c
-    1 1gt
-    2 2gt
-    3 3gt
-    4 4gt
-    5 5gt
-    6 6gt
-    7 7gt
-    8 8gt
-    9 <cmd>tablast<CR>
-    END
-    if reader_mode.on
-        mapping->mapnew((_, i) => {
-            execute 'nunmap' i->split(' ')[0]
-            })
-        reader_mode.on = false
-        popup_close(reader_mode.winid)
-    else
-        mapping->mapnew((_, i) => {
-            execute 'nnoremap' i
-            })
-        reader_mode.winid = popup_create(
-        ['reader mode'], {
-            line: &lines,
-            mapping: false,
-            highlight: 'Special',
-            tabpage: -1,  # show in all tabs.
-            }
-        )
-        reader_mode.on = true
-    endif
 enddef
 
 # :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
