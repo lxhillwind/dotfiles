@@ -234,7 +234,7 @@ augroup vimrc
             nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
             # dirvish
             if exists(':Dirvish') == 2
-                nnoremap <buffer> - <cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
+                nnoremap <buffer> - <Cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
             endif
         endif
     enddef
@@ -242,7 +242,7 @@ augroup vimrc
 augroup END
 
 # statusline {{{2
-&stl = '[%{winnr()},%{mode()}' .. '%{% empty(&buftype) ? "%M%R" : "" %}]'
+&stl = '[%{winnr()},%{mode()}%M%R]'
 .. '%{ empty(&ft) ? "" : " [".&ft."]" }'
 .. ' %<'
 .. '%{ &ft == "qf" && exists("w:quickfix_title") ? w:quickfix_title : "" }'
@@ -461,7 +461,7 @@ inoremap <Plug>VimTab <C-x><C-o>
 
 # t / T {{{2
 # I don't use t / T, so use them to do other things.
-nnoremap t <cmd>call <SID>TabOpenOrClose()<CR>
+nnoremap t <Cmd>call <SID>TabOpenOrClose()<CR>
 # TODO impl tab switch with vim-fuzzy.
 nmap T <Nop>
 
@@ -480,8 +480,8 @@ vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), 
 vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 
 # <c-n> / <c-p> to switch buffer. {{{2
-nnoremap <C-n> <cmd>call <SID>SwitchBuffer(v:true)<CR>
-nnoremap <C-p> <cmd>call <SID>SwitchBuffer(v:false)<CR>
+nnoremap <C-n> <Cmd>call <SID>SwitchBuffer(v:true)<CR>
+nnoremap <C-p> <Cmd>call <SID>SwitchBuffer(v:false)<CR>
 def SwitchBuffer(reverse: bool = false)
     var current: number = bufnr()
 
@@ -533,7 +533,7 @@ nmap <Space>r <Plug>(tasks-select)
 vmap <Space>r <Plug>(tasks-select)
 
 # <Space>c; getcwd {{{2
-nnoremap <Space>c <cmd>call <SID>GotoWhichDir()<CR>
+nnoremap <Space>c <Cmd>call <SID>GotoWhichDir()<CR>
 
 def GotoWhichDir()  # {{{
     const dir_buffer: string = Cd_get_buf_dir()
@@ -604,8 +604,8 @@ nnoremap <expr> <Space>ss
 # <Space>y / <Space>p; clipboard {{{2
 # use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
 # detection is defined there. (~/bin/{pbcopy,pbpaste})
-nnoremap <Space>y :call <SID>ClipboardCopy("")<CR>
-nnoremap <Space>p :call <SID>ClipboardPaste("")<CR>
+nnoremap <Space>y <Cmd>call <SID>ClipboardCopy("")<CR>
+nnoremap <Space>p <Cmd>call <SID>ClipboardPaste("")<CR>
 
 def ClipboardCopy(cmd_: string)
     var cmd = cmd_
@@ -643,7 +643,7 @@ def ClipboardPaste(cmd_: string)
 enddef
 
 # <Space><CR>; execute current line (or select lines), comment removed {{{2
-nnoremap <Space><CR> :call <SID>ExecuteLines('n')<CR>
+nnoremap <Space><CR> <Cmd>call <SID>ExecuteLines('n')<CR>
 vnoremap <Space><CR> :<C-u>call <SID>ExecuteLines('v')<CR>
 
 def ExecuteLines(mode: string)
@@ -651,10 +651,7 @@ def ExecuteLines(mode: string)
     if mode == 'n'
         lines = [getline('.')]
     elseif mode == 'v'
-        var t = @"
-        silent normal gvy
-        lines = split(@", "\n")
-        @" = t
+        lines = getline("'<", "'>")
     endif
     var result_l = []
     for i in lines
@@ -675,7 +672,7 @@ def ExecuteLines(mode: string)
 enddef
 
 # <Space>n; switch number / relativenumber {{{2
-nnoremap <silent> <Space>n :call <SID>Switch_nu_rnu()<CR>
+nnoremap <silent> <Space>n <Cmd>call <SID>Switch_nu_rnu()<CR>
 
 def Switch_nu_rnu()
     # no [0, 1]
@@ -686,7 +683,7 @@ def Switch_nu_rnu()
 enddef
 
 # <Space>m; switch mouse {{{2
-nnoremap <silent> <Space>m :call <SID>Switch_mouse()<CR>
+nnoremap <silent> <Space>m <Cmd>call <SID>Switch_mouse()<CR>
 
 def Switch_mouse()
     if &mouse == 'a'
@@ -697,7 +694,7 @@ def Switch_mouse()
 enddef
 
 # <Space>q; switch quickfix window (open / focus or close) {{{2
-nnoremap <silent> <Space>q :call <SID>SwitchQuickfixWindow()<CR>
+nnoremap <silent> <Space>q <Cmd>call <SID>SwitchQuickfixWindow()<CR>
 
 def SwitchQuickfixWindow()
     if &ft == 'qf'
@@ -709,13 +706,13 @@ enddef
 
 # <Space>v; shortcut for reader mode. (view code / text easily.) {{{2
 # TODO map more key (one hand); provide help page (double ? to enter search mode).
-nnoremap <Space>v <cmd>call <SID>SwitchReaderMode()<CR>
+nnoremap <Space>v <Cmd>call <SID>SwitchReaderMode()<CR>
 var reader_mode = exists('reader_mode') ? reader_mode :
 {on: false, winid: -1}
 
 def SwitchReaderMode()
     const mapping =<< trim END
-    q <cmd>call <SID>SwitchReaderMode()<CR>
+    q <Cmd>call <SID>SwitchReaderMode()<CR>
     f <C-f>
     b <C-b>
     d <C-d>
@@ -731,7 +728,7 @@ def SwitchReaderMode()
     6 6gt
     7 7gt
     8 8gt
-    9 <cmd>tablast<CR>
+    9 <Cmd>tablast<CR>
     END
     if reader_mode.on
         mapping->mapnew((_, i) => {
@@ -897,13 +894,13 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
         inoremap <silent> <buffer> <expr> <Plug>VimTab coc#refresh()
 
         # diagnostic
-        nmap <buffer> ]e <cmd>call g:CocAction('diagnosticNext')<CR>
-        nmap <buffer> [e <cmd>call g:CocAction('diagnosticPrevious')<CR>
+        nmap <buffer> ]e <Cmd>call g:CocAction('diagnosticNext')<CR>
+        nmap <buffer> [e <Cmd>call g:CocAction('diagnosticPrevious')<CR>
 
         # Use K to show documentation in preview window.
-        nnoremap <silent> <buffer> K :call <SID>CocShowDocumentation()<CR>
+        nnoremap <silent> <buffer> K <Cmd>call <SID>CocShowDocumentation()<CR>
 
-        nnoremap <silent> <buffer> <C-]> <cmd>call <SID>CocDefinitionWithTagList()<CR>
+        nnoremap <silent> <buffer> <C-]> <Cmd>call <SID>CocDefinitionWithTagList()<CR>
     enddef
 
     def CocShowDocumentation()
@@ -954,10 +951,10 @@ augroup vimrc
 
     # quickfix window
     au FileType qf &l:stl = &g:stl
-    au FileType qf nnoremap <buffer> <C-n> <cmd>cnewer<CR>
-    au FileType qf nnoremap <buffer> <C-p> <cmd>colder<CR>
+    au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
+    au FileType qf nnoremap <buffer> <C-p> <Cmd>colder<CR>
     au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
-    au FileType qf nnoremap <buffer> <Space>;l <cmd>chistory<CR>
+    au FileType qf nnoremap <buffer> <Space>;l <Cmd>chistory<CR>
 
     # ":h ft-sh-syntax"
     g:is_posix = 1
@@ -980,7 +977,7 @@ augroup vimrc
     enddef
     # }}}
     au FileType markdown nnoremap <buffer>
-                \ <Space>;c :call <SID>MarkdownToggleTaskStatus()<CR>
+                \ <Space>;c <Cmd>call <SID>MarkdownToggleTaskStatus()<CR>
 
     # ReadBin / WriteBin impl {{{
     # avoid using busybox xxd.
@@ -1009,7 +1006,7 @@ augroup vimrc
     au BufWriteCmd *.exe,*.dll WriteBin(expand('<amatch>'))
 
     # gx related (NOTE: key `gx` overwritten) {{{2
-    nnoremap <silent> gx :call <SID>Gx('n')<CR>
+    nnoremap <silent> gx <Cmd>call <SID>Gx('n')<CR>
     vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
 
     # TODO show error?
@@ -1085,14 +1082,14 @@ augroup vimrc
         setl buftype=nofile noswapfile
         setl bufhidden=hide
         if executable('qutebrowser')
-            nnoremap <buffer> <Space>;s :call <SID>GxOpen('qutebrowser')<CR>
+            nnoremap <buffer> <Space>;s <Cmd>call <SID>GxOpen('qutebrowser')<CR>
         endif
-        nnoremap <buffer> gx :call <SID>GxOpenGx()<CR>
+        nnoremap <buffer> gx <Cmd>call <SID>GxOpenGx()<CR>
         if executable('qutebrowser') && has_gui
-            nnoremap <buffer> gs :call <SID>GxOpenGx('qutebrowser')<CR>
+            nnoremap <buffer> gs <Cmd>call <SID>GxOpenGx('qutebrowser')<CR>
         endif
-        nnoremap <buffer> <Space>;f :call <SID>GxOpen()<CR>
-        nnoremap <buffer> <Space>;v :call <SID>GxVim("wincmd p \\|")<CR>
+        nnoremap <buffer> <Space>;f <Cmd>call <SID>GxOpen()<CR>
+        nnoremap <buffer> <Space>;v <Cmd>call <SID>GxVim("wincmd p \\|")<CR>
     enddef
     au FileType gx GxInit()
     # Remember the positions in files with some git-specific exceptions {{{2
@@ -1592,9 +1589,9 @@ if executable('mpc')
         endfor
         const nr = str2nr(system('mpc current -f "%position%"'))
         execute 'norm' nr .. 'G'
-        nnoremap <buffer> <silent> <CR> <cmd>call <SID>MpcPlay()<CR>
+        nnoremap <buffer> <silent> <CR> <Cmd>call <SID>MpcPlay()<CR>
         # should we map <2-LeftMouse> to <CR> globally?
-        nnoremap <buffer> <silent> <2-LeftMouse> <cmd>call <SID>MpcPlay()<CR>
+        nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call <SID>MpcPlay()<CR>
     enddef
 
     def MpcPlay()
@@ -1925,7 +1922,7 @@ if executable('nnn')
 endif
 
 # (keymap) popup to select from sources. {{{3
-nnoremap <Space>a <cmd>call <SID>SelectFromSources()<CR>
+nnoremap <Space>a <Cmd>call <SID>SelectFromSources()<CR>
 
 def SelectFromSources()
     # TODO highlight
@@ -1971,7 +1968,7 @@ enddef
 
 # scratch-mode terminal in popup (keymap: <Space>t) {{{2
 # TODO: support jump to buffer dir.
-nnoremap <Space>t <cmd>call <SID>PopupTerminalSwitch()<CR>
+nnoremap <Space>t <Cmd>call <SID>PopupTerminalSwitch()<CR>
 
 # save state across ":so $MYVIMRC"
 var popup_terminal_state: dict<any> = exists('popup_terminal_state') ? popup_terminal_state :
