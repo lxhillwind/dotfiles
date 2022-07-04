@@ -199,9 +199,11 @@ nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
 if executable('zsh') && is_unix
     &shell = exepath('zsh')
 endif
+
 # cmdline completion {{{2
 # defined here instead of legacy, since it is available only after version 8.x
 set wildoptions=pum
+
 # builtin terminal enhancement {{{2
 augroup vimrc
     def TerminalPaste()
@@ -382,6 +384,7 @@ enddef
 def g:ExpandHead(s: string): string
     return ExpandHead(s)
 enddef
+
 # keymap {{{1
 # custom text object {{{2
 # all
@@ -770,8 +773,6 @@ g:loaded_tarPlugin = 1
 g:loaded_vimballPlugin = 1
 g:loaded_zipPlugin = 1
 
-# some plugin installed by system package manager
-g:loaded_fzf = 1
 # bundled plugin config. {{{2
 g:tasks_config_paths =<< trim END
 ~/vimfiles/config/tasks.ini
@@ -1096,6 +1097,7 @@ augroup vimrc
         nnoremap <buffer> <Space>;v <Cmd>call <SID>GxVim("wincmd p \\|")<CR>
     enddef
     au FileType gx GxInit()
+
     # Remember the positions in files with some git-specific exceptions {{{2
     au BufReadPost * {
         # copied from /usr/share/vim/vim82/suse.vimrc
@@ -1125,6 +1127,7 @@ augroup vimrc
             writefile([name], expand('~/.cache/file_history'), 'a')
         endif
         }
+
     # fin {{{2
 augroup END
 
@@ -2040,7 +2043,7 @@ enddef  # }}}
 
 # sv() helper (in vim embedded terminal) {{{2
 def g:Tapi_shell_sv_helper(...arg: list<any>)
-    feedkeys("\<C-space>")
+    feedkeys("\<C-\>\<C-n>", 'n')
 enddef
 
 # :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
