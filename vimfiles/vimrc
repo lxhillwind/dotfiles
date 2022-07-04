@@ -459,6 +459,10 @@ enddef
 # completion
 inoremap <Plug>VimTab <C-x><C-o>
 
+# i_<C-u> {{{2
+# from defaults.vim
+inoremap <C-U> <C-G>u<C-U>
+
 # t / T {{{2
 # I don't use t / T, so use them to do other things.
 nnoremap t <Cmd>call <SID>TabOpenOrClose()<CR>
@@ -598,7 +602,7 @@ enddef
 # <Space>sl / <Space>ss; mksession. {{{2
 nnoremap <Space>sl :so ~/.vim/sessions/
 nnoremap <expr> <Space>ss
-            \ $':mksession{empty(v:this_session) ? "" : "!"}'
+            \ $':wall \| mksession{empty(v:this_session) ? "" : "!"}'
             \ .. $' {v:this_session ?? "~/.vim/sessions/"}'
 
 # <Space>y / <Space>p; clipboard {{{2
@@ -1101,6 +1105,13 @@ augroup vimrc
                     \ && expand("%") !~ "addp-hunk-edit.diff"
                     \ && expand("%") !~ "git-rebase-todo"
             exe "normal g`\""
+        endif
+        }
+
+    # fix % in cmdwin when matchit plugin enabled. {{{2
+    au BufEnter * {
+        if win_gettype() == 'command' && maparg('%', 'x') =~ 'Matchit'
+            xnoremap <buffer> % %
         endif
         }
 
