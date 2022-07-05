@@ -35,59 +35,55 @@ if !exists('$MYVIMRC')
 endif
 
 # config compatible with vim tiny version. {{{1
-legacy function! s:config_with_legacy_comment() abort
-" main {{{2
-" if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
-" lines between `:if` and `:endif` will be ignored by vim tiny.
+# (replace leading # with " when in legacy context)
+#
+# if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
+# lines between `:if` and `:endif` will be ignored by vim tiny.
 if &compatible
     set nocompatible
 endif
 set nomodeline
-" backspace
+# backspace
 set bs=2
-" expandtab
+# expandtab
 set et
-" shiftwidth
+# shiftwidth
 set sw=4
-" (relative)number
+# (relative)number
 set nu
 set rnu
-" hlsearch
+# hlsearch
 set hls
-" incsearch
+# incsearch
 set is
-" timeoutlen
+# timeoutlen
 set tm=5000
-" ttimeoutlen
+# ttimeoutlen
 set ttm=0
-" cursorcolumn & cursorline
+# cursorcolumn & cursorline
 set cuc
 set cul
-" laststatus
+# laststatus
 set ls=2
-" showcmd
+# showcmd
 set sc
-" wildmenu
+# wildmenu
 set wmnu
-" completeopt
+# completeopt
 set cot-=preview
-" shortmess; show search count message (default in neovim)
+# shortmess; show search count message (default in neovim)
 set shm-=S
-" sessionoptions; better :mksession option.
+# sessionoptions; better :mksession option.
 set ssop=blank,curdir,folds,help,options,tabpages,winsize,terminal
-" set locale in vimrc.vim, since vim tiny doesn't support :if.
-" menu
+# set locale in vimrc.vim, since vim tiny doesn't support :if.
+# menu
 set enc=utf-8
-" fileencodings
-" See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
+# fileencodings
+# See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
 set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
-" runtimepath
-" for tiny version, set rtp to empty string to avoid loading any file.
-"set rtp=
-" finish. }}}2
-endfunction
-
-legacy call s:config_with_legacy_comment()
+# runtimepath
+# for tiny version, set rtp to empty string to avoid loading any file.
+#set rtp=
 
 # common definition {{{1
 const is_unix = has('unix')
