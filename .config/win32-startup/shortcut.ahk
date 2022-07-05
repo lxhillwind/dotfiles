@@ -1,22 +1,28 @@
 ; to run at startup, just create shortcut of this file (with explorer), and
 ; move it to `shell:startup` dir.
 
+#NoEnv
+
+EnvGet Home, USERPROFILE
+
 ; run or raise (impl). {{{1
-RunOrRaise(class, run)
+; seems that inside function cannot access outside variable, so pass it as
+; argument.
+RunOrRaise(class, run, where)
 {
     if WinExist(class) {
         WinActivate, %class%
     }
     else {
-        Run, %run%
+        Run, %run%, %where%
     }
 }
 
 ; run or raise list. {{{1
-!,::RunOrRaise("ahk_exe msedge.exe", "msedge")
+!,::RunOrRaise("ahk_exe msedge.exe", "msedge", Home)
 ; it's required to add gvim to $PATH
-!.::RunOrRaise("ahk_exe gvim.exe", "gvim")
-!/::RunOrRaise("ahk_exe WindowsTerminal.exe", "wt")
+!.::RunOrRaise("ahk_exe gvim.exe", "gvim", Home)
+!/::RunOrRaise("ahk_exe WindowsTerminal.exe", "wt", Home)
 
 ; multimedia key. {{{1
 #,::Send {Media_Prev}
