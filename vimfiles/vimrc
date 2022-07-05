@@ -74,7 +74,7 @@ set cot-=preview
 " shortmess; show search count message (default in neovim)
 set shm-=S
 " sessionoptions; better :mksession option.
-set ssop=blank,curdir,folds,tabpages,winsize
+set ssop=blank,curdir,folds,help,options,tabpages,winsize,terminal
 " set locale in vimrc.vim, since vim tiny doesn't support :if.
 " menu
 set enc=utf-8
@@ -339,20 +339,29 @@ endif
 # NOTE: no `set bg`; seems that terminal theme (dark / light) can be detected.
 if has('gui_running')
     set guioptions=
-    set lines=32
-    set columns=128
+    set lines=30
+    set columns=120
+    if is_win32
+        # use builtin font.
+        set gfn=Consolas:h18:cANSI:qDRAFT
+    endif
 else
-    if is_unix
+    if is_win32
+        # Try to set termguicolors; if success, &t_Co will be changed to 256,
+        # then we can use better looking colorscheme.
+        # At least works in windows 10 (1809+?).
+        silent! set tgc
+    else
         if $TERM->tolower() == 'linux'
             # linux tty
         else
             # 256color or tgc
-            if exists('&tgc') && $TERM !~ 'xterm'
+            if $TERM !~ 'xterm'
                 # make tgc work; :help xterm-true-color
                 &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
                 &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
             endif
-            silent! set termguicolors
+            silent! set tgc
         endif
 
         if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
@@ -360,9 +369,6 @@ else
             # Refer: https://superuser.com/a/1525060
             set t_u7=
         endif
-    else
-        # win32 cmd
-        set nocursorcolumn
     endif
 endif
 
@@ -1137,12 +1143,15 @@ augroup END
 if !exists('g:colors_name')
     if has('gui_running') || &t_Co->str2nr() >= 256
         color base16-dynamic
+        if is_win32 && has('gui_running')
+            set bg=light
+        endif
     else
         if is_win32
             # win32 cmd
             color pablo
+            set nocursorcolumn
         else
-            # no 256color
             color default
         endif
     endif
