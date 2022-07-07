@@ -1,6 +1,7 @@
 " vim: fdm=marker sw=2
 "
-" :Pack / :PackStatus / :PackClean / :PackHelpTags;
+" :Pack / :PackStatus / :PackClean / :PackHelpTags / :PackCommitGen /
+" :PackCommitApply;
 " a simple plugin manager (for vim8). doc: {{{1
 "
 " usage:
@@ -42,6 +43,12 @@
 "
 "   " generate helptags for plugins it knows.
 "   PackHelpTags
+"
+"   " generate Pack cmd specifing plugin commit info.
+"   PackCommitGen
+"
+"   " output command for plugins reset to specified commits.
+"   PackCommitApply
 "
 " opt:
 "   as; branch; commit; after; skip.
@@ -99,6 +106,8 @@ command! -bar -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang
 command! -bar -bang PackStatus call s:pack_status(<bang>0)
 command! -bar -bang PackClean call s:pack_clean(<bang>0)
 command! -bar PackHelpTags call s:pack_help_tags()
+command! -bar PackCommitGen call s:pack_commit_gen()
+command! -bar PackCommitApply call s:pack_commit_apply()
 
 " s:pack() {{{1
 function! s:pack(bang, ...) abort
@@ -178,6 +187,7 @@ function! s:pack(bang, ...) abort
           call add(l:lines, '# is not git repository, skip.')
         endif
       else
+        " l:v.path is not available if plugin is not installed yet.
         let l:real_dir = l:v.after ? printf('%s/after', l:v.dir) : l:v.dir
         if !empty(l:v.commit)
           call add(l:lines,
@@ -289,7 +299,7 @@ function! s:pack_clean(bang) abort
 endfunction
 
 " s:pack_help_tags() {{{1
-function! s:pack_help_tags()
+function! s:pack_help_tags() abort
   let l:paths = []
   for l:v in values(s:plugins)
     if l:v.after
@@ -307,6 +317,37 @@ function! s:pack_help_tags()
       execute 'helptags' fnameescape(l:path)
     endif
   endfor
+endfunction
+
+" s:pack_commit_gen() {{{1
+function! s:pack_commit_gen() abort
+  call s:pack_check_exists()
+  let l:lines = []
+  for [l:k, l:v] in items(s:plugins)
+    if has_key(l:v, 'path')
+          \ && (isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git'))
+      call add(l:lines, printf('printf %%s %s',
+            \ shellescape("Pack '" .. l:k .. "', {'commit': '")))
+      call add(l:lines, printf('git -C %s log -n 1 --format=%%H%s',
+            \ shellescape(l:v.path), shellescape("'}")))
+    endif
+  endfor
+  call s:pack_report(1, l:lines, ['#!/bin/sh', '{'], ['}'])
+endfunction
+
+" s:pack_commit_apply() {{{1
+function! s:pack_commit_apply() abort
+  call s:pack_check_exists()
+  let l:lines = []
+  for [l:k, l:v] in items(s:plugins)
+    if has_key(l:v, 'path')
+          \ && (isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git'))
+          \ && has_key(l:v, 'commit')
+      call add(l:lines, printf('git -C %s checkout %s',
+            \ shellescape(l:v.path), shellescape(l:v.commit)))
+    endif
+  endfor
+  call s:pack_report(1, l:lines, ['#!/bin/sh', '{'], ['}'])
 endfunction
 
 " helper functions. {{{1
