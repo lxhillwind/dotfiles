@@ -193,8 +193,8 @@ function! s:sh(cmd, opt) abort " {{{2
 
   " win32 :!start is run without cwd, so give full path.
   " other systems may or may not; but adding :p is not bad.
-  if opt.gui && cmd == '%'
-    let cmd = '%:p'
+  if opt.gui && match(cmd, '\v^\%(\:[htreS])*\s*$') >= 0
+    let cmd = '%:p' .. matchstr(cmd, '\v^\%\zs(\:[htreS])*\ze\s*$')
   endif
 
   " expand %

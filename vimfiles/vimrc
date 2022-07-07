@@ -73,8 +73,6 @@ set wmnu
 set cot-=preview
 # shortmess; show search count message (default in neovim)
 set shm-=S
-# sessionoptions; better :mksession option.
-set ssop=blank,curdir,folds,help,options,tabpages,winsize,terminal
 # set locale in vimrc.vim, since vim tiny doesn't support :if.
 # menu
 set enc=utf-8
@@ -271,6 +269,13 @@ endif
 # it's too easy to use vim style folder in various text file.
 # just set fdm=marker as default.
 set fdm=marker
+
+# sessionoptions; better ":mksession" option. {{{2
+# do not include options in ssop; {{{
+# since it breaks mapping with <ScriptCmd>. (like vim-fuzzy)
+# Maybe we can use other way to dump mapping.
+# }}}
+set ssop=blank,curdir,folds,help,tabpages,winsize,terminal
 
 # various vim dir & file {{{2
 # copy from https://github.com/mhinz/vim-galore#temporary-files (modified)
@@ -2051,8 +2056,6 @@ def g:Tapi_shell_sv_helper(...arg: list<any>)
     feedkeys("\<C-\>\<C-n>", 'n')
 enddef
 
-# :Start; cross-platform `:!start %:S`; not affected by &shell. {{{2
-command Start Sh -g %
 # finish {{{1 }}}1
 defc  # show error in this file early.
 # TODO {{{1
