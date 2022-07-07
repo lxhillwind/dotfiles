@@ -87,6 +87,7 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   let help = ['Usage: [range]Sh [-flags] [cmd...]']
   call extend(help, ['', 'Example:', '  Sh uname -o'])
+  call extend(help, ['', 'flags parsing rule:', '  "," delimited; if item contains "=", it is used as sub opt; else it is combination of flags'])
   call extend(help, ['', 'Supported flags:'])
 
   call add(help, '  h: display this help')
