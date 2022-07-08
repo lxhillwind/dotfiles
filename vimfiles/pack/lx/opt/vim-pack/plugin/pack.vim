@@ -96,11 +96,11 @@ function! s:pack(...) abort
       echon v.help
       echon "\n"
     endfor
-    echo '(press any other key to cancel) > '
+    echon '(press any other key to cancel) > '
     let l:input = tolower(nr2char(getchar()))
     if has_key(s:function_dict, l:input)
-      call call(function(s:function_dict[l:input].fn), [])
       redrawstatus
+      call call(function(s:function_dict[l:input].fn), [])
     else
       redrawstatus | echon 'cancelled.'
     endif
@@ -263,7 +263,7 @@ function! s:pack_status() abort
     endif
   endfor
 
-  call s:pack_report(l:lines, ['#!/bin/sh'], [])
+  call s:pack_report(l:lines, ['#!/bin/sh', '{'], ['', '}'])
 endfunction
 
 " s:pack_clean() {{{1
@@ -289,7 +289,7 @@ function! s:pack_clean() abort
     endif
   endfor
   if empty(l:dir_clean)
-    echo 'no dir / file to clean.'
+    echon 'no dir / file to clean.'
     return
   endif
 
