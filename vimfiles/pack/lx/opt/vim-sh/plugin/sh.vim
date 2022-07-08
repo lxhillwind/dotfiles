@@ -152,6 +152,10 @@ function! s:sh(cmd, opt) abort " {{{2
 
   let opt = extend(opt, a:opt)
 
+  " if run s:sh() directly (like chcp check), some opt will be missing.
+  let opt.range = get(opt, 'range', 0)
+  let opt.bang = get(opt, 'bang', 0)
+
   if opt.bang
     let opt.tty = 1
   endif
