@@ -136,8 +136,17 @@ function! s:pack(bang, ...) abort
       return
     endif
 
-    let l:url = s:pack_construct_url(l:plugin)
     let l:opt = a:0 > 1 ? a:2 : {}
+    if type(l:opt) == type('')
+      if !has_key(s:plugins, l:plugin)
+        return
+      endif
+      let l:opt = {'commit': l:opt}
+    endif
+    if has_key(s:plugins, l:plugin)
+      let l:opt = extend(s:plugins[l:plugin], l:opt)
+    endif
+    let l:url = s:pack_construct_url(l:plugin)
     let l:dir = get(l:opt, 'as', s:pack_extract_git_dir(l:url))
     let l:opt.branch = get(l:opt, 'branch', '')
     let l:opt.commit = get(l:opt, 'commit', '')
@@ -228,8 +237,10 @@ function! s:pack_status(bang) abort
     if has_key(l:v, 'path')
       if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
         call add(l:lines, printf('printf "%%s\n" %s', shellescape(l:v.path)))
-        call add(l:lines, printf('git -C %s log -n 1 --oneline; echo', shellescape(l:v.path)))
-        call add(l:lines, printf('git -C %s log ..FETCH_HEAD --oneline; echo', shellescape(l:v.path)))
+        call add(l:lines, printf('git -C %s log %s --oneline; echo',
+              \ shellescape(l:v.path),
+              \ shellescape('..origin/' .. (empty(l:v.branch) ? 'head' : l:v.branch))
+              \ ))
       else
         call add(l:lines, '# is not git repository, skip.')
       endif
@@ -327,9 +338,9 @@ function! s:pack_commit_gen() abort
     if has_key(l:v, 'path')
           \ && (isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git'))
       call add(l:lines, printf('printf %%s %s',
-            \ shellescape("Pack '" .. l:k .. "', {'commit': '")))
+            \ shellescape("Pack '" .. l:k .. "', '")))
       call add(l:lines, printf('git -C %s log -n 1 --format=%%H%s',
-            \ shellescape(l:v.path), shellescape("'}")))
+            \ shellescape(l:v.path), shellescape("'")))
     endif
   endfor
   call s:pack_report(1, l:lines, ['#!/bin/sh', '{'], ['}'])
