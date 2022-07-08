@@ -85,13 +85,15 @@ function! s:sh(cmd, opt) abort " {{{2
       endif
     endfor
   endif
-  let help = ['Usage: [range]Sh [-flags] [cmd...]']
+  let help = ['Usage: [range]Sh[!] [-flags] [cmd...]']
   call extend(help, ['', 'Example:', '  Sh uname -o'])
   call extend(help, ['', 'flags parsing rule:', '  "," delimited; if item contains "=", it is used as sub opt; else it is combination of flags'])
   call extend(help, ['', 'Supported flags:'])
 
   call add(help, '  h: display this help')
   let opt.help = match(opt_string, 'h') >= 0
+
+  call add(help, '  !: (:Sh! ...); try to reuse terminal window')
 
   call add(help, '  v: visual mode (char level)')
   let opt.visual = match(opt_string, 'v') >= 0
@@ -152,6 +154,10 @@ function! s:sh(cmd, opt) abort " {{{2
 
   if opt.bang
     let opt.tty = 1
+  endif
+
+  if empty(opt.range) && empty(a:cmd)
+    let opt.help = 1
   endif
 
   if opt.help
