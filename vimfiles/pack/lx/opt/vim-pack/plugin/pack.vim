@@ -1,14 +1,10 @@
 " vim: fdm=marker sw=2
 "
-" :Pack / :PackStatus / :PackClean / :PackHelpTags / :PackCommitGen /
-" :PackCommitApply;
+" :Pack
 " a simple plugin manager (for vim8). doc: {{{1
 "
 " usage:
 "   Pack [url][, {opt}]
-"   PackStatus
-"   PackClean
-"   PackHelpTags
 "
 " example:
 "   Pack 'tpope/vim-sensible'
@@ -32,29 +28,14 @@
 "   " same as :source
 "   Pack '~/file/local'
 "
-"   " output command for install / update (fetch, not pull; merge manually required)
+"   " management (interactive): select function.
 "   Pack
-"
-"   " output command to get `git log` summary for each plugin (which plugin requires merge)
-"   PackStatus
-"
-"   " prompt to clean not `Pack`ed dir
-"   PackClean
-"
-"   " generate helptags for plugins it knows.
-"   PackHelpTags
-"
-"   " generate Pack cmd specifing plugin commit info.
-"   PackCommitGen
-"
-"   " output command for plugins reset to specified commits.
-"   PackCommitApply
 "
 " opt:
 "   as; branch; commit; after; skip.
 "
 " complete workflow:
-"   after running `:Pack!`, run the new buffer content with sh with
+"   after running `:Pack`, run the new buffer content with sh with
 "   `:%!sh`, or other way to run external command.
 "
 " after vim is started, ":Pack {url}" can be used to load skipped plugin.
@@ -71,7 +52,7 @@ let g:loaded_pack = 1
 
 if exists(':packadd') != 2
   " ignore old version vim.
-  command! -bar -nargs=* -bang Pack
+  command! -bar -nargs=* Pack
   finish
 endif
 
@@ -102,132 +83,165 @@ if empty(s:plugins_root)
   throw '`g:plugins_root` is not in runtimepath!'
 endif
 
-command! -bar -nargs=* -bang -complete=custom,s:pack_comp Pack call s:pack(<bang>0, <args>)
-command! -bar -bang PackStatus call s:pack_status(<bang>0)
-command! -bar -bang PackClean call s:pack_clean(<bang>0)
-command! -bar PackHelpTags call s:pack_help_tags()
-command! -bar PackCommitGen call s:pack_commit_gen()
-command! -bar PackCommitApply call s:pack_commit_apply()
+" entrypoint {{{1
+command! -bar -nargs=* -complete=custom,s:pack_comp Pack call s:pack(<args>)
 
 " s:pack() {{{1
-function! s:pack(bang, ...) abort
-  if a:0 > 0
-    " TODO check input.
-    let l:plugin = a:1
-
-    if match(l:plugin, '\v^[~$]') >= 0
-      let l:path = expand(l:plugin)
-    else
-      let l:path = fnamemodify(l:plugin, ':p')
-    endif
-    " local dir; it is hard to inject path to correct place in &rtp,
-    " so just insert it at begin.
-    if isdirectory(l:path)
-      exec 'set rtp^=' .. fnameescape(l:path)
-      if isdirectory(l:path .. '/after')
-        exec 'set rtp+=' .. fnameescape(l:path) .. '/after'
-      endif
-      call add(s:plugins_local, l:path)
-      return
-    endif
-    " local file; source it immediately.
-    if filereadable(l:path)
-      exec 'source' fnameescape(l:path)
-      return
-    endif
-
-    let l:opt = a:0 > 1 ? a:2 : {}
-    if type(l:opt) == type('')
-      if !has_key(s:plugins, l:plugin)
-        return
-      endif
-      let l:opt = {'commit': l:opt}
-    endif
-    if has_key(s:plugins, l:plugin)
-      let l:opt = extend(s:plugins[l:plugin], l:opt)
-    endif
-    let l:url = s:pack_construct_url(l:plugin)
-    let l:dir = get(l:opt, 'as', s:pack_extract_git_dir(l:url))
-    let l:opt.branch = get(l:opt, 'branch', '')
-    let l:opt.commit = get(l:opt, 'commit', '')
-    let l:opt.skip = get(l:opt, 'skip', 0)
-    let l:opt.after = get(l:opt, 'after', 0)
-    let l:opt.dir = l:dir
-    let l:opt.url = l:url
-    if !l:opt.skip
-      if has('vim_starting')
-        silent! execute 'packadd!' l:dir
-        call s:pack_ftdetect(l:opt.after, l:dir)
-      else
-        if index(map(split(&rtp, ','), {_, i -> split(i, '\v[\/]')[-1]}), l:opt.dir) < 0
-          " only load if not in rtp.
-          execute 'packadd' l:dir
-          call s:pack_ftdetect(l:opt.after, l:dir)
-        endif
-      endif
-    endif
-    let s:plugins[l:plugin] = l:opt
-  else
-    let l:lines = []
-    if !isdirectory(s:plugins_root)
-      echo printf('plugin directory `%s` is not created;', s:plugins_root)
-      echo 'create it? [y/N] '
-      let l:yes = nr2char(getchar()) ==? 'y'
-      if l:yes
-        if mkdir(s:plugins_root, 'p') != 1
-          throw 'create dir failed!'
-        endif
-      else
-        redraws | echon 'cancelled.'
-        return
-      endif
-    endif
-
-    call s:pack_check_exists()
-
-    " generate command.
-    for [l:k, l:v] in items(s:plugins)
-      " TODO check quote in various fields.
-      call add(l:lines, printf('## %s', l:k))
-      if has_key(l:v, 'path')
-        if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
-          call add(l:lines, printf('git -C %s fetch --update-shallow', shellescape(l:v.path)))
-        else
-          call add(l:lines, '# is not git repository, skip.')
-        endif
-      else
-        " l:v.path is not available if plugin is not installed yet.
-        let l:real_dir = l:v.after ? printf('%s/after', l:v.dir) : l:v.dir
-        if !empty(l:v.commit)
-          call add(l:lines,
-                \ printf('git -C %s clone -n %s %s && git -C %s/%s checkout %s',
-                \ shellescape(s:plugins_root), l:v.url, l:real_dir,
-                \ shellescape(s:plugins_root), l:real_dir, l:v.commit,
-                \ ))
-        elseif !empty(l:v.branch)
-          call add(l:lines,
-                \ printf('git -C %s clone --depth 1 -b %s %s %s',
-                \ shellescape(s:plugins_root), l:v.branch, l:v.url, l:real_dir))
-        else
-          call add(l:lines, printf('git -C %s clone --depth 1 %s %s',
-                \ shellescape(s:plugins_root), l:v.url, l:real_dir))
-        endif
-      endif
-      call add(l:lines, '')
+function! s:pack(...) abort
+  if a:0 == 0
+    for [k, v] in items(s:function_dict)
+      echon '['
+      echohl Special | echon k | echohl None
+      echon '] '
+      echon v.help
+      echon "\n"
     endfor
-
-    " output report.
-    call s:pack_report(a:bang, l:lines,
-          \ ['#!/bin/sh',
-          \ "{ grep -Ev '^(#|$)'" .
-          \ ' | tr "\n" "\0" | xargs -r -0 -n 1 -P 5 sh -c; } <<\EOF']
-          \ + [''],
-          \ ['EOF'])
+    echo '(press any other key to cancel) > '
+    let l:input = tolower(nr2char(getchar()))
+    if has_key(s:function_dict, l:input)
+      call call(function(s:function_dict[l:input].fn), [])
+      redrawstatus
+    else
+      redrawstatus | echon 'cancelled.'
+    endif
+  else
+    call call(function('s:pack_add'), a:000)
   endif
 endfunction
 
+let s:function_dict = #{
+      \ s: #{fn: 's:pack_status', help: 'generate command to get plugin repo status'},
+      \ u: #{fn: 's:pack_update', help: 'generate command to do "git fetch"'},
+      \ c: #{fn: 's:pack_clean', help: 'prompt to cleanup unused repo'},
+      \ h: #{fn: 's:pack_help_tags', help: 'run :helptags for managed plugins'},
+      \ g: #{fn: 's:pack_commit_gen', help: 'generate command to get plugin commits (snapshot)'},
+      \ a: #{fn: 's:pack_commit_apply', help: 'generate command to do "git checkout"'},
+      \ }
+
+" s:pack_add() {{{1
+function! s:pack_add(url, ...) abort
+  " TODO check input.
+  let l:plugin = a:url
+
+  if match(l:plugin, '\v^[~$]') >= 0
+    let l:path = expand(l:plugin)
+  else
+    let l:path = fnamemodify(l:plugin, ':p')
+  endif
+  " local dir; it is hard to inject path to correct place in &rtp,
+  " so just insert it at begin.
+  if isdirectory(l:path)
+    exec 'set rtp^=' .. fnameescape(l:path)
+    if isdirectory(l:path .. '/after')
+      exec 'set rtp+=' .. fnameescape(l:path) .. '/after'
+    endif
+    call add(s:plugins_local, l:path)
+    return
+  endif
+  " local file; source it immediately.
+  if filereadable(l:path)
+    exec 'source' fnameescape(l:path)
+    return
+  endif
+
+  let l:opt = a:0 > 0 ? a:1 : {}
+  if type(l:opt) == type('')
+    if !has_key(s:plugins, l:plugin)
+      return
+    endif
+    let l:opt = {'commit': l:opt}
+  else
+    " only set when l:opt is not string (":Pack url, commit")
+    if !has_key(l:opt, 'skip')
+      let l:opt.skip = 0
+    endif
+  endif
+  if has_key(s:plugins, l:plugin)
+    let l:opt = extend(s:plugins[l:plugin], l:opt)
+  endif
+  let l:url = s:pack_construct_url(l:plugin)
+  let l:dir = get(l:opt, 'as', s:pack_extract_git_dir(l:url))
+  let l:opt.branch = get(l:opt, 'branch', '')
+  let l:opt.commit = get(l:opt, 'commit', '')
+  let l:opt.after = get(l:opt, 'after', 0)
+  let l:opt.dir = l:dir
+  let l:opt.url = l:url
+  if !l:opt.skip
+    if has('vim_starting')
+      silent! execute 'packadd!' l:dir
+      call s:pack_ftdetect(l:opt.after, l:dir)
+    else
+      if index(map(split(&rtp, ','), {_, i -> split(i, '\v[\/]')[-1]}), l:opt.dir) < 0
+        " only load if not in rtp.
+        execute 'packadd' l:dir
+        call s:pack_ftdetect(l:opt.after, l:dir)
+      endif
+    endif
+  endif
+  let s:plugins[l:plugin] = l:opt
+endfunction
+
+" s:pack_update() {{{1
+function! s:pack_update() abort
+  let l:lines = []
+  if !isdirectory(s:plugins_root)
+    echo printf('plugin directory `%s` is not created;', s:plugins_root)
+    echo 'create it? [y/N] '
+    let l:yes = nr2char(getchar()) ==? 'y'
+    if l:yes
+      if mkdir(s:plugins_root, 'p') != 1
+        throw 'create dir failed!'
+      endif
+    else
+      redraws | echon 'cancelled.'
+      return
+    endif
+  endif
+
+  call s:pack_check_exists()
+
+  " generate command.
+  for [l:k, l:v] in items(s:plugins)
+    " TODO check quote in various fields.
+    call add(l:lines, printf('## %s', l:k))
+    if has_key(l:v, 'path')
+      if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
+        call add(l:lines, printf('git -C %s fetch --update-shallow', shellescape(l:v.path)))
+      else
+        call add(l:lines, '# is not git repository, skip.')
+      endif
+    else
+      " l:v.path is not available if plugin is not installed yet.
+      let l:real_dir = l:v.after ? printf('%s/after', l:v.dir) : l:v.dir
+      if !empty(l:v.commit)
+        call add(l:lines,
+              \ printf('git -C %s clone -n %s %s && git -C %s/%s checkout %s',
+              \ shellescape(s:plugins_root), l:v.url, l:real_dir,
+              \ shellescape(s:plugins_root), l:real_dir, l:v.commit,
+              \ ))
+      elseif !empty(l:v.branch)
+        call add(l:lines,
+              \ printf('git -C %s clone --depth 1 -b %s %s %s',
+              \ shellescape(s:plugins_root), l:v.branch, l:v.url, l:real_dir))
+      else
+        call add(l:lines, printf('git -C %s clone --depth 1 %s %s',
+              \ shellescape(s:plugins_root), l:v.url, l:real_dir))
+      endif
+    endif
+    call add(l:lines, '')
+  endfor
+
+  " output report.
+  call s:pack_report(l:lines,
+        \ ['#!/bin/sh',
+        \ "{ grep -Ev '^(#|$)'" .
+        \ ' | tr "\n" "\0" | xargs -r -0 -n 1 -P 5 sh -c; } <<\EOF']
+        \ + [''],
+        \ ['EOF'])
+endfunction
+
 " s:pack_status() {{{1
-function! s:pack_status(bang) abort
+function! s:pack_status() abort
   call s:pack_check_exists()
   let l:lines = []
   for [l:k, l:v] in items(s:plugins)
@@ -249,11 +263,11 @@ function! s:pack_status(bang) abort
     endif
   endfor
 
-  call s:pack_report(a:bang, l:lines, ['#!/bin/sh'], [])
+  call s:pack_report(l:lines, ['#!/bin/sh'], [])
 endfunction
 
 " s:pack_clean() {{{1
-function! s:pack_clean(bang) abort
+function! s:pack_clean() abort
   let l:keep = {}
   " it actually matches both files and dirs.
   let l:dir_clean = []
@@ -279,23 +293,10 @@ function! s:pack_clean(bang) abort
     return
   endif
 
-  if a:bang
-    enew | setl buftype=nofile
-    let l:lines = ['#!/bin/sh', 'set -e', '', '{', '']
-    for l:i in l:dir_clean
-      call add(l:lines, printf('rm -rf -- %s', shellescape(l:i)))
-    endfor
-    let l:lines = l:lines + ['', '} && echo "delete success." || echo "delete failed."']
-    setl ft=sh
-    call setline(1, l:lines)
-    return
-  endif
-
   echo 'dir / file to clean:'
   for l:i in l:dir_clean
     echohl WarningMsg | echo l:i | echohl None
   endfor
-  echohl Special | echo 'run with bang (:PackClean!) to generate a shellscript.' | echohl None
   echo 'clean them? [y/N] '
   let l:yes = nr2char(getchar()) ==? 'y'
   let l:failed = 0
@@ -343,7 +344,7 @@ function! s:pack_commit_gen() abort
             \ shellescape(l:v.path), shellescape("'")))
     endif
   endfor
-  call s:pack_report(1, l:lines, ['#!/bin/sh', '{'], ['}'])
+  call s:pack_report(l:lines, ['#!/bin/sh', '{'], ['}'])
 endfunction
 
 " s:pack_commit_apply() {{{1
@@ -358,7 +359,7 @@ function! s:pack_commit_apply() abort
             \ shellescape(l:v.path), shellescape(l:v.commit)))
     endif
   endfor
-  call s:pack_report(1, l:lines, ['#!/bin/sh', '{'], ['}'])
+  call s:pack_report(l:lines, ['#!/bin/sh', '{'], ['}'])
 endfunction
 
 " helper functions. {{{1
@@ -414,27 +415,12 @@ function! s:pack_check_exists() abort
 endfunction
 
 " used in Pack / PackStatus
-function! s:pack_report(bang, lines, pre, post) abort
+function! s:pack_report(lines, pre, post) abort
   let l:lines = a:lines
-  if a:bang
-    enew | setl buftype=nofile
-    let l:lines = a:pre + l:lines + a:post
-    setl ft=sh
-    call setline(1, l:lines)
-  else
-    for l:i in l:lines
-      if match(l:i, '^##') >= 0
-        echohl Special | echo l:i | echohl None
-      elseif match(l:i, '^#') >= 0
-        echohl Comment | echo l:i | echohl None
-      else
-        echo l:i
-      endif
-    endfor
-    if !empty(l:lines)
-      echohl Special | echo 'run with bang (!) to generate a shellscript.' | echohl None
-    endif
-  endif
+  enew | setl buftype=nofile
+  let l:lines = a:pre + l:lines + a:post
+  setl ft=sh
+  call setline(1, l:lines)
 endfunction
 
 function! s:pack_comp(A, L, P) abort
