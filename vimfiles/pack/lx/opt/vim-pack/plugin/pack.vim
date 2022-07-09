@@ -93,7 +93,7 @@ command! -bar -nargs=* -complete=custom,s:pack_comp Pack call s:pack(<args>)
 " s:pack() {{{1
 function! s:pack(...) abort
   if a:0 == 0
-    for [k, v] in items(s:function_dict)
+    for [k, v] in sort(items(s:function_dict), {a, b -> a[1].key > b[1].key ? 1 : -1})
       echon '['
       echohl Special | echon k | echohl None
       echon '] '
@@ -114,12 +114,13 @@ function! s:pack(...) abort
 endfunction
 
 let s:function_dict = #{
-      \ s: #{fn: 's:pack_status', help: 'generate command to get plugin repo status'},
-      \ u: #{fn: 's:pack_update', help: 'generate command to do "git fetch"'},
-      \ c: #{fn: 's:pack_clean', help: 'prompt to cleanup unused repo'},
-      \ h: #{fn: 's:pack_help_tags', help: 'run :helptags for managed plugins'},
-      \ g: #{fn: 's:pack_commit_gen', help: 'generate command to get plugin commits (snapshot)'},
-      \ a: #{fn: 's:pack_commit_apply', help: 'generate command to do "git checkout"'},
+      \ s: #{key: 1, fn: 's:pack_status', help: 'status; gen cmd to get plugin repo status'},
+      \ u: #{key: 2, fn: 's:pack_update', help: 'update; gen cmd to do "git fetch"'},
+      \ c: #{key: 3, fn: 's:pack_clean', help: 'clean; prompt to cleanup unused repo'},
+      \ h: #{key: 4, fn: 's:pack_help_tags', help: 'helptags; run :helptags for managed plugins'},
+      \ g: #{key: 5, fn: 's:pack_commit_gen', help: 'snapshot-gen; gen cmd to get plugin commits'},
+      \ d: #{key: 6, fn: 's:pack_commit_diff', help: 'snapshot-diff; gen cmd to log betwen opt.commit and current'},
+      \ a: #{key: 7, fn: 's:pack_commit_apply', help: 'snapshot-apply; gen cmd to do "git checkout"'},
       \ }
 
 " s:pack_add() {{{1
@@ -247,6 +248,16 @@ endfunction
 
 " s:pack_status() {{{1
 function! s:pack_status() abort
+  return s:pack_diff_helper('')
+endfunction
+
+" s:pack_commit_diff() {{{1
+function! s:pack_commit_diff() abort
+  return s:pack_diff_helper('commit')
+endfunction
+
+" helper for log between commit...head and current..head. {{{1
+function! s:pack_diff_helper(start) abort
   call s:pack_check_exists()
   let l:lines = []
   for [l:k, l:v] in items(s:plugins)
@@ -254,11 +265,19 @@ function! s:pack_status() abort
     call add(l:lines, '')
     call add(l:lines, printf('## %s', l:k))
     if has_key(l:v, 'path')
+      if a:start == 'commit'
+        if empty(l:v.commit)
+          continue
+        endif
+        let start = l:v.commit .. '...'
+      else
+        let start = '..'
+      endif
       if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
         call add(l:lines, printf('printf "%%s\n" %s', shellescape(l:v.path)))
         call add(l:lines, printf('git -C %s log %s --oneline; echo',
               \ shellescape(l:v.path),
-              \ shellescape('..origin/' .. (empty(l:v.branch) ? 'head' : l:v.branch))
+              \ shellescape(start .. 'origin/' .. (empty(l:v.branch) ? 'head' : l:v.branch))
               \ ))
       else
         call add(l:lines, '# is not git repository, skip.')
