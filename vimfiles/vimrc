@@ -174,6 +174,7 @@ if is_win32
             if has('gui_running')
                 &shell = i
             else
+                # avoid special char; console version behaves differently.
                 &shell = fnamemodify(i, ':t')
             endif
             if fnamemodify(exepath('find'), ':h') != fnamemodify(i, ':h')
@@ -182,15 +183,6 @@ if is_win32
                 $PATH = fnamemodify(i, ':h') .. ';' .. $PATH
             endif
             break
-        endif
-    endfor
-
-    # There is nothing harmful when adding /usr/bin:/bin to $PATH in win32
-    # vim. So do it, to make job / ":!" less messy. (they may complain some
-    # fundamental command (live in /usr/bin or /bin) not found otherwise.)
-    for i in ['/bin', '/usr/bin']
-        if index(path, i) < 0
-            $PATH = i .. ';' .. $PATH
         endif
     endfor
 
@@ -203,7 +195,7 @@ if is_win32
     #   :!echo \"hello world\"
     # (so just use :Sh if possible: it is more user friendly, and does not
     # depends on &shell related setting) }}}
-    if &shell->match('\v(bash|zsh)(|.exe)$') >= 0
+    if &shell->match('\v(bash|zsh|busybox(|.exe) sh)(|.exe)$') >= 0
         # these settings are from vim_faq, modified.
         # https://vimhelp.org/vim_faq.txt.html#faq-33.6
         &shellcmdflag = '-c'
