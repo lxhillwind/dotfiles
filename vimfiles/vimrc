@@ -144,15 +144,20 @@ if is_win32
         $HOME = TrSlash($HOME)
     endif
 
-    # set &shell, and optionally add dir of it to $PATH. {{{
+    # set &shell, and add dir of it to $PATH. {{{
     # console vim and gvim handle &shell differently:
     # When &shell contains whitespace and not quoted, console vim does not
     # work with ":!..." command.
-    # So when in console, just add it to $PATH, and use basename of it.
+    #
+    # So when in console, use basename of it.
     # It's better to use absolute path as &shell (see lacygoill's vimrc),
-    # so do not add to $PATH when gui_running.
+    # so use absolute path when gui_running.
+    #
     # To use busybox as &shell, set &shell to 'busybox sh';
     # this is more complex, so just leave it to local vimrc.
+    #
+    # NOTE: busybox sh cannot handle CJK correctly (chcp.exe / utf-8). Use
+    # cygwin / msys2 derived shell if possible.
     # }}}
     const path = $PATH->split(';')->map((_, i) => TrSlash(i))
     # copied from vim-sh
@@ -170,17 +175,19 @@ if is_win32
                 &shell = i
             else
                 &shell = fnamemodify(i, ':t')
-                if !executable(&shell)
-                    # it's possible that &shell is already in $PATH.
-                    $PATH = fnamemodify(i, ':h') .. ';' .. $PATH
-                endif
+            endif
+            if fnamemodify(exepath('find'), ':h') != fnamemodify(i, ':h')
+                # always add dir of shell to $PATH, so tools like find wins.
+                # (it will be messy when calling win32 find.exe in unix shell)
+                $PATH = fnamemodify(i, ':h') .. ';' .. $PATH
             endif
             break
         endif
     endfor
 
     # There is nothing harmful when adding /usr/bin:/bin to $PATH in win32
-    # vim. So do it, to make other plugins happy (using job / ":!", etc).
+    # vim. So do it, to make job / ":!" less messy. (they may complain some
+    # fundamental command (live in /usr/bin or /bin) not found otherwise.)
     for i in ['/bin', '/usr/bin']
         if index(path, i) < 0
             $PATH = i .. ';' .. $PATH
