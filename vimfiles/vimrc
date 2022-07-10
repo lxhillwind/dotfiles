@@ -785,7 +785,6 @@ g:tasks_config_paths =<< trim END
 ~/vimfiles/config/tasks.ini
 ~/vimfiles/config/tasks-local.ini
 END
-
 g:tasks_config_paths
 ->map((_, i) => expand(i))
 ->filter((_, i) => filereadable(i))
@@ -804,15 +803,13 @@ g:markdown_fenced_languages = [
 # mime {{{2
 # TODO archive vim-filelist?
 #Pack 'vim-filelist'
-
 Pack 'vim-jump'
 Pack 'vim-sh'
 Pack 'pyvim'
 g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
 Pack 'vim-tasks'
-
 if windowsversion() == '5.1'
-    # Windows XP: use old, small icon before v8.2.4545
+    # Windows XP: use small icon before v8.2.4545; otherwise it won't display.
     Pack 'vim-old-ico'
 endif
 
@@ -864,13 +861,13 @@ g:apc_enable_tab = 0
 # enable this plugin for filetypes, '*' for all files.
 #g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
 g:apc_enable_ft = {'*': 1}
-
 # source for dictionary, current or other loaded buffers, see ':help cpt'
 set cpt=.,k,w,b
 # don't select the first item.
 set completeopt=menu,menuone,noselect
 # suppress annoy messages.
 set shortmess+=c
+
 Pack 'https://github.com/skywind3000/vim-dict'
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
 execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')

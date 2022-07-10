@@ -87,7 +87,7 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   let help = ['Usage: [range]Sh[!] [-flags] [cmd...]']
   call extend(help, ['', 'Example:', '  Sh uname -o'])
-  call extend(help, ['', 'flags parsing rule:', '  "," delimited; if item contains "=", it is used as sub opt; else it is combination of flags'])
+  call extend(help, ['', 'Flags parsing rule:', '  "," delimited; if item contains "=", it is used as sub opt; else it is combination of flags'])
   call extend(help, ['', 'Supported flags:'])
 
   call add(help, '  h: display this help')
@@ -134,6 +134,12 @@ function! s:sh(cmd, opt) abort " {{{2
   if opt.gui
     let opt.skip_shell = 1
     let opt.window = 1
+  endif
+
+  if s:is_win32
+    call add(help, '  u: convert result from chcp to utf8')
+    call add(help, '     only take effect on Windows.')
+    let opt.utf8 = match(opt_string, 'u') >= 0
   endif
 
   if (opt.tty || opt.window)
@@ -516,7 +522,6 @@ let s:tenc_checked = 0
 function! s:post_func(result, opt) abort
   let opt = a:opt
 
-  " TODO check cp utf-8?
   if s:is_win32 && !has('gui_running') && empty(&tenc)
         \ && empty(s:tenc) && empty(s:tenc_checked) && !get(opt, 'chcp')
     " set s:tenc_checked first to avoid repeated possibly failed chcp call.
@@ -531,7 +536,7 @@ function! s:post_func(result, opt) abort
     let result = type(a:result) == type('') ? split(a:result, "\n") : a:result
 
     " fix encoding for non-utf-8
-    if s:is_win32 && !empty(tenc)
+    if s:is_win32 && opt.utf8 && !empty(tenc)
       " unable to get tenc in console version vim;
       " just use ":!{cmd}" / ":range!{cmd}" then.
       call map(result, 'iconv(v:val, tenc, &enc)')
@@ -549,7 +554,7 @@ function! s:post_func(result, opt) abort
       return result
     endif
 
-    if s:is_win32 && !empty(tenc)
+    if s:is_win32 && opt.utf8 && !empty(tenc)
       let result = iconv(result, tenc, &enc)
     endif
     redraws | echon trim(result, "\n")
