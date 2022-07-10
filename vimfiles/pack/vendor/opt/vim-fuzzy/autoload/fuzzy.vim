@@ -231,9 +231,11 @@ var source: list<dict<string>>
 var source_is_being_computed: bool = false
 var sourcetype: string
 
-# TODO check alpine linux
-var busybox_as_shell: bool = (has('win32') && executable('busybox'))
-? true : false
+var busybox_as_shell: bool = (
+has('win32')
+&& (&shell->match('\v(bash|zsh)') < 0 || !executable(&shell))
+&& executable('busybox')
+) ? true : false
 
 const SNIPPETS_DIR: string = globpath(&rtp, 'UltiSnips')
 
@@ -705,7 +707,7 @@ def Job_start(cmd: string) #{{{2
 #    - press `SPC ff`
 #}}}
     source_is_being_computed = true
-    const cmds = (has('win32') && busybox_as_shell)
+    const cmds = busybox_as_shell
     ? ['busybox', 'sh', '-c', cmd]
     : [&shell, &shellcmdflag, cmd]
     myjob = job_start(cmds, {

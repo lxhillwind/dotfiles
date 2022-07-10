@@ -134,46 +134,27 @@ if is_win32
     # UserCommand. }}}
     set shellslash
 
-    # set $HOME (for unix shell), $PATH, $VIM ...
-
-    # make it work in cygwin vim.
+    # set env for unix shell: $HOME, $VIM...
     $VIM = TrSlash($VIM)
     $VIMRUNTIME = TrSlash($VIMRUNTIME)
     $MYVIMRC = TrSlash($MYVIMRC)
-
     if !exists('$HOME')
         $HOME = TrSlash($USERPROFILE)
     else
         $HOME = TrSlash($HOME)
     endif
 
-    var path = $PATH->split(';')->map((_, i) => TrSlash(i))
-    const present =<< trim END
-    ~/app/MinGit/cmd
-    ~/app/ConEmu
-    ~/vimfiles/bin
-    ~/bin
-    END
-    for j in present
-        const i = expand(j)
-        if index(path, i) < 0 && isdirectory(i)
-            $PATH = i .. ';' .. $PATH
-        endif
-    endfor
-    # cygwin vim -> vim -> others.
-    $PATH = '/usr/bin;/bin;' .. $VIMRUNTIME .. ';' .. $PATH
-
-    # vim-sh config; busybox sh rc
-    $ENV = expand('~/.config/zshrc')
-
-    # set &shell after setting $PATH, {{{
-    # then it can be found without setting Environment Variable in OS GUI.
-    #
-    # NOTE: to use '"' correctly, all '"' should be escaped with '\'.
-    # like this:
-    #   :!echo \"hello world\"
-    # (so just use :Sh if possible: it is more user friendly, and does not
-    # depends on &shell related setting) }}}
+    # set &shell, and optionally add dir of it to $PATH. {{{
+    # console vim and gvim handle &shell differently:
+    # When &shell contains whitespace and not quoted, console vim does not
+    # work with ":!..." command.
+    # So when in console, just add it to $PATH, and use basename of it.
+    # It's better to use absolute path as &shell (see lacygoill's vimrc),
+    # so do not add to $PATH when gui_running.
+    # To use busybox as &shell, set &shell to 'busybox sh';
+    # this is more complex, so just leave it to local vimrc.
+    # }}}
+    const path = $PATH->split(';')->map((_, i) => TrSlash(i))
     # copied from vim-sh
     const bash_path =<< trim END
         C:/msys64/usr/bin/zsh.exe
@@ -182,21 +163,40 @@ if is_win32
         C:/msys32/usr/bin/bash.exe
         C:/Program Files/Git/usr/bin/bash.exe
         C:/Program Files (x86)/Git/usr/bin/bash.exe
-        busybox
     END
-    var shell_is_unix = false
     for i in bash_path
         if executable(i)
-            if i == 'busybox'
-                &shell = 'busybox sh'
-            else
+            if has('gui_running')
                 &shell = i
+            else
+                &shell = fnamemodify(i, ':t')
+                if !executable(&shell)
+                    # it's possible that &shell is already in $PATH.
+                    $PATH = fnamemodify(i, ':h') .. ';' .. $PATH
+                endif
             endif
-            shell_is_unix = true
             break
         endif
     endfor
-    if shell_is_unix
+
+    # There is nothing harmful when adding /usr/bin:/bin to $PATH in win32
+    # vim. So do it, to make other plugins happy (using job / ":!", etc).
+    for i in ['/bin', '/usr/bin']
+        if index(path, i) < 0
+            $PATH = i .. ';' .. $PATH
+        endif
+    endfor
+
+    # vim-sh config; busybox sh rc
+    $ENV = expand('~/.config/zshrc')
+
+    # set &shell related options. {{{
+    # NOTE: to use '"' correctly, all '"' should be escaped with '\'.
+    # like this:
+    #   :!echo \"hello world\"
+    # (so just use :Sh if possible: it is more user friendly, and does not
+    # depends on &shell related setting) }}}
+    if &shell->match('\v(bash|zsh)(|.exe)$') >= 0
         # these settings are from vim_faq, modified.
         # https://vimhelp.org/vim_faq.txt.html#faq-33.6
         &shellcmdflag = '-c'
