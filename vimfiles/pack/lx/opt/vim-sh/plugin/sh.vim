@@ -136,12 +136,6 @@ function! s:sh(cmd, opt) abort " {{{2
     let opt.window = 1
   endif
 
-  if s:is_win32
-    call add(help, '  u: convert result from chcp to utf8')
-    call add(help, '     only take effect on Windows.')
-    let opt.utf8 = match(opt_string, 'u') >= 0
-  endif
-
   if (opt.tty || opt.window)
     if opt.filter || opt.read_cmd || opt.dryrun
       throw '-t / -w flag is conflict with -f / -r / -n!'
@@ -158,7 +152,6 @@ function! s:sh(cmd, opt) abort " {{{2
 
   let opt = extend(opt, a:opt)
 
-  " if run s:sh() directly (like chcp check), some opt will be missing.
   let opt.range = get(opt, 'range', 0)
   let opt.bang = get(opt, 'bang', 0)
 
@@ -166,7 +159,8 @@ function! s:sh(cmd, opt) abort " {{{2
     let opt.tty = 1
   endif
 
-  if empty(opt.range) && empty(a:cmd)
+  if empty(opt.range) && empty(a:cmd) && opt.newwin != 0
+    " opt.newwin == 0: invoked with :Terminal. then do not print help.
     let opt.help = 1
   endif
 
@@ -515,33 +509,11 @@ function! s:unix_start(cmdlist, ...) abort
   call job_start(a:cmdlist)
 endfunction
 
-" win32 console version does not set tenc; so we try to get it via command.
-let s:tenc = ''
-let s:tenc_checked = 0
-
 function! s:post_func(result, opt) abort
   let opt = a:opt
 
-  if s:is_win32 && !has('gui_running') && empty(&tenc)
-        \ && empty(s:tenc) && empty(s:tenc_checked) && !get(opt, 'chcp')
-    " set s:tenc_checked first to avoid repeated possibly failed chcp call.
-    let s:tenc_checked = 1
-    " use opt.chcp to avoid recursive call to s:sh().
-    let s:tenc = 'cp' .. s:sh('-S chcp.com', #{chcp: 1})->matchstr('\v\d+$')
-  endif
-
-  let tenc = !empty(&tenc) ? &tenc : s:tenc
-
   if opt.filter || opt.read_cmd
     let result = type(a:result) == type('') ? split(a:result, "\n") : a:result
-
-    " fix encoding for non-utf-8
-    if s:is_win32 && opt.utf8 && !empty(tenc)
-      " unable to get tenc in console version vim;
-      " just use ":!{cmd}" / ":range!{cmd}" then.
-      call map(result, 'iconv(v:val, tenc, &enc)')
-    endif
-
     if opt.filter
       call s:filter(result, opt)
     elseif opt.read_cmd
@@ -549,14 +521,6 @@ function! s:post_func(result, opt) abort
     endif
   else
     let result = type(a:result) == type([]) ? join(a:result, "\n") : a:result
-
-    if s:is_win32 && get(opt, 'chcp')
-      return result
-    endif
-
-    if s:is_win32 && opt.utf8 && !empty(tenc)
-      let result = iconv(result, tenc, &enc)
-    endif
     redraws | echon trim(result, "\n")
     return 0
   endif

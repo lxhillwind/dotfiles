@@ -10,6 +10,17 @@ vim9script noclear
 #
 # Suggestion: put `exec /usr/bin/vim -Nu ~/vimfiles/vimrc "$@"` in ~/bin/vim,
 # and add ~/bin in $PATH (before /usr/bin), so ~/bin/vim wins.
+#
+# In some environment (like git-for-windows), it is hard to put custom vim in
+# $PATH.
+# set vim variable g:vimrc_allow_system to 1 to skip check.
+#
+# Inspection of some distros' system vimrc:
+#   git-for-windows:
+#     - add autocmd to recover jump; safe to duplicate.
+#   openSUSE:
+#     - autocmd to recover jump (it's ok);
+#     - some key mapping to cause <Ctrl-[> delay, this is not acceptable!
 # }}}
 def TrSlash(s: string): string
     if has('win32')
@@ -25,7 +36,11 @@ const first_vimrc = execute('scr')->split("\n")->get(0)
 ->TrSlash()
 
 if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != TrSlash($MYVIMRC)
-    throw 'system-vimrc is read. skip loading vimrc!'
+    if !(
+        exists('g:vimrc_allow_system') && !empty(g:vimrc_allow_system)
+        )
+        throw 'system-vimrc is read. skip loading vimrc!'
+    endif
 endif
 
 if !exists('$MYVIMRC')
@@ -159,10 +174,31 @@ if is_win32
     #   :!echo \"hello world\"
     # (so just use :Sh if possible: it is more user friendly, and does not
     # depends on &shell related setting) }}}
-    if executable('busybox')
+    # copied from vim-sh
+    const bash_path =<< trim END
+        C:/msys64/usr/bin/zsh.exe
+        C:/msys64/usr/bin/bash.exe
+        C:/msys32/usr/bin/zsh.exe
+        C:/msys32/usr/bin/bash.exe
+        C:/Program Files/Git/usr/bin/bash.exe
+        C:/Program Files (x86)/Git/usr/bin/bash.exe
+        busybox
+    END
+    var shell_is_unix = false
+    for i in bash_path
+        if executable(i)
+            if i == 'busybox'
+                &shell = 'busybox sh'
+            else
+                &shell = i
+            endif
+            shell_is_unix = true
+            break
+        endif
+    endfor
+    if shell_is_unix
         # these settings are from vim_faq, modified.
         # https://vimhelp.org/vim_faq.txt.html#faq-33.6
-        &shell = 'busybox sh'
         &shellcmdflag = '-c'
         # shq seems to modify excmd very early; use sxq instead.
         &shellquote = ''
