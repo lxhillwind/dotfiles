@@ -872,6 +872,8 @@ set completeopt=menu,menuone,noselect
 # suppress annoy messages.
 set shortmess+=c
 Pack 'https://github.com/skywind3000/vim-dict'
+# always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
+execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')
 # File type override
 #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
 g:vim_dict_config = {'markdown': 'text'}
