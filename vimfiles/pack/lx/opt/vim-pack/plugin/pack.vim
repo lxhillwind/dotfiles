@@ -22,11 +22,6 @@
 "   " skip: do not load plugin.
 "   Pack 'a-plugin-to-packadd-on-demand', #{skip: 1}
 "
-"   " load local dir / file
-"   Pack '~/dir/local'
-"   " same as :source
-"   Pack '~/file/local'
-"
 "   " management (interactive): select function.
 "   Pack
 "
@@ -127,29 +122,6 @@ let s:function_dict = #{
 function! s:pack_add(url, ...) abort
   " TODO check input.
   let l:plugin = a:url
-
-  if match(l:plugin, '\v^[~]') >= 0
-    " only expand ~; expanding env is not easy; see :h expand()
-    let l:path = expand(l:plugin)
-  else
-    let l:path = fnamemodify(l:plugin, ':p')
-  endif
-  " local dir; it is hard to inject path to correct place in &rtp,
-  " so just insert it at begin.
-  if isdirectory(l:path)
-    exec 'set rtp^=' .. fnameescape(l:path)
-    if isdirectory(l:path .. '/after')
-      exec 'set rtp+=' .. fnameescape(l:path) .. '/after'
-    endif
-    call add(s:plugins_local, l:path)
-    return
-  endif
-  " local file; source it immediately.
-  if filereadable(l:path)
-    exec 'source' fnameescape(l:path)
-    return
-  endif
-
   let l:opt = a:0 > 0 ? a:1 : {}
   if type(l:opt) == type('')
     if !has_key(s:plugins, l:plugin)
