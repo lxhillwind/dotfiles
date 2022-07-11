@@ -689,13 +689,14 @@ endfunction
 " guess shell if not set {{{2
 if !exists('g:sh_path')
   for s:i in [
-        \'C:/msys64/usr/bin/zsh.exe',
-        \'C:/msys64/usr/bin/bash.exe',
-        \'C:/msys32/usr/bin/zsh.exe',
-        \'C:/msys32/usr/bin/bash.exe',
-        \'C:/Program Files/Git/usr/bin/bash.exe',
-        \'C:/Program Files (x86)/Git/usr/bin/bash.exe',
-        \]
+        \ &shell,
+        \ 'C:/msys64/usr/bin/zsh.exe',
+        \ 'C:/msys64/usr/bin/bash.exe',
+        \ 'C:/msys32/usr/bin/zsh.exe',
+        \ 'C:/msys32/usr/bin/bash.exe',
+        \ 'C:/Program Files/Git/usr/bin/bash.exe',
+        \ 'C:/Program Files (x86)/Git/usr/bin/bash.exe',
+        \ ]
     if executable(s:i)
       let g:sh_path = s:i
       break

@@ -134,10 +134,15 @@ if is_win32
     # UserCommand. }}}
     set shellslash
 
-    # set env for unix shell: $HOME, $VIM...
+    # set env for cygwin / msys2 shell (start via :!): $VIM, $MYVIMRC... {{{
+    # It's better to override $VIM / $VIMRUNTIME via shell startup, so cygwin
+    # vim has correct $VIM set (/usr/share/vim). }}}
     $VIM = TrSlash($VIM)
     $VIMRUNTIME = TrSlash($VIMRUNTIME)
     $MYVIMRC = TrSlash($MYVIMRC)
+
+    # $HOME should be set to make git bash find ~; otherwise vim-fuzzy won't
+    # work (e.g. "RecentFiles" does not show file under ~).
     if !exists('$HOME')
         $HOME = TrSlash($USERPROFILE)
     else
@@ -147,42 +152,50 @@ if is_win32
     # set &shell, and add dir of it to $PATH. {{{
     # console vim and gvim handle &shell differently:
     # When &shell contains whitespace and not quoted, console vim does not
-    # work with ":!..." command.
+    # work with ":!..." command: it calls _wsystem() currently, while in gvim
+    # it calls CreateProcess(); Most importantly, quoting is handled
+    # differently.
+    # So only set shell when it does not contain special char.
     #
-    # So when in console, use basename of it.
-    # It's better to use absolute path as &shell (see lacygoill's vimrc),
-    # so use absolute path when gui_running.
-    #
-    # To use busybox as &shell, set &shell to 'busybox sh';
-    # this is more complex, so just leave it to local vimrc.
+    # To make things simpler, use git path to find bash.
+    # Then git should be installed where path does not contains speical char.
     #
     # NOTE: busybox sh cannot handle CJK correctly (chcp.exe / utf-8). Use
-    # cygwin / msys2 derived shell if possible.
+    # cygwin / msys2 derived shell (fullset) if possible.
     # }}}
-    const path = $PATH->split(';')->map((_, i) => TrSlash(i))
-    # copied from vim-sh
-    const bash_path =<< trim END
-        C:/msys64/usr/bin/zsh.exe
-        C:/msys64/usr/bin/bash.exe
-        C:/msys32/usr/bin/zsh.exe
-        C:/msys32/usr/bin/bash.exe
-        C:/Program Files/Git/usr/bin/bash.exe
-        C:/Program Files (x86)/Git/usr/bin/bash.exe
-    END
-    for i in bash_path
-        if executable(i)
-            if has('gui_running')
-                &shell = i
-            else
-                # avoid special char; console version behaves differently.
-                &shell = fnamemodify(i, ':t')
-            endif
-            if fnamemodify(exepath('find'), ':h') != fnamemodify(i, ':h')
-                # always add dir of shell to $PATH, so tools like find wins.
-                # (it will be messy when calling win32 find.exe in unix shell)
-                $PATH = fnamemodify(i, ':h') .. ';' .. $PATH
-            endif
+    const git_path = exepath('git')->substitute('\', '/', 'g')
+    for _ in ['']  # use a for loop to make indent below fewer.
+        if empty(git_path)
             break
+        endif
+        if git_path->match('\v[^/:a-zA-Z0-9._-]') >= 0
+            echoerr 'vimrc: git path contains special char; skip set shell.'
+            break
+        endif
+
+        # git.exe, when invoking from git bash, has different path.
+        var depth = 4
+        var git_root = git_path
+        while depth > 0
+            depth -= 1
+            if executable(git_root .. '/usr/bin/bash')
+                break
+            endif
+            git_root = fnamemodify(git_root, ':h')
+        endwhile
+
+        const bash_path = git_root .. '/usr/bin/bash'
+        if !executable(bash_path)
+            echoerr 'vimrc: bash not found in git dir; using MinGit?'
+            break
+        endif
+        &shell = bash_path
+        if fnamemodify(exepath('find'), ':h') != fnamemodify(bash_path, ':h')
+            # always add dir of shell to $PATH, so tools like find wins. {{{
+            # (it will be messy when calling win32 find.exe in unix shell)
+            # When running cygwin / msys2 shell via :!, bash_path here will be
+            # translated to /usr/bin, which is feasible. }}}
+            $PATH = fnamemodify(bash_path, ':h') .. ';' .. $PATH
         endif
     endfor
 
