@@ -697,7 +697,7 @@ if !exists('g:sh_path')
         \ 'C:/Program Files/Git/usr/bin/bash.exe',
         \ 'C:/Program Files (x86)/Git/usr/bin/bash.exe',
         \ ]
-    if executable(s:i)
+    if executable(s:i) && match(s:i, '\v(zsh|bash)') >= 0
       let g:sh_path = s:i
       break
     endif
