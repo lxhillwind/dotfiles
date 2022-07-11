@@ -413,7 +413,9 @@ def InitSource() #{{{2
         # General settings should be written in: `~/.config/ripgreprc`.
         #}}}
         var cmd: string = executable('rg') ? "rg --line-number '.*' ." : 'grep -RHIins'
-        if !executable('rg') && busybox_as_shell
+        if !executable('rg') && (busybox_as_shell || windowsversion() == '5.1')
+            # in git 2.10 (latest supported version on Windows XP), grep does
+            # not support no-pattern usage.
             cmd = 'grep -RHIinsE ".*" .'
         endif
         Job_start(cmd)
