@@ -109,12 +109,12 @@ function! s:pack(...) abort
 endfunction
 
 let s:function_dict = #{
-      \ s: #{key: 1, fn: 's:pack_status', help: 'status; gen cmd to get plugin repo status'},
+      \ s: #{key: 1, fn: 's:pack_status', help: 'status; gen cmd to diff from origin/head'},
       \ u: #{key: 2, fn: 's:pack_update', help: 'update; gen cmd to do "git fetch"'},
       \ c: #{key: 3, fn: 's:pack_clean', help: 'clean; prompt to cleanup unused repo'},
       \ h: #{key: 4, fn: 's:pack_help_tags', help: 'helptags; run :helptags for managed plugins'},
       \ g: #{key: 5, fn: 's:pack_commit_gen', help: 'snapshot-gen; gen cmd to get plugin commits'},
-      \ d: #{key: 6, fn: 's:pack_commit_diff', help: 'snapshot-diff; gen cmd to log betwen opt.commit and current'},
+      \ d: #{key: 6, fn: 's:pack_commit_diff', help: 'snapshot-diff; gen cmd diff from opt.commit'},
       \ a: #{key: 7, fn: 's:pack_commit_apply', help: 'snapshot-apply; gen cmd to do "git checkout"'},
       \ }
 
@@ -228,8 +228,8 @@ function! s:pack_commit_diff() abort
   return s:pack_diff_helper('commit')
 endfunction
 
-" helper for log between commit...head and current..head. {{{1
-function! s:pack_diff_helper(start) abort
+" helper for log between head...commit and head...origin/branch. {{{1
+function! s:pack_diff_helper(compare) abort
   call s:pack_check_exists()
   let l:lines = []
   for [l:k, l:v] in items(s:plugins)
@@ -237,19 +237,19 @@ function! s:pack_diff_helper(start) abort
     call add(l:lines, '')
     call add(l:lines, printf('## %s', l:k))
     if has_key(l:v, 'path')
-      if a:start == 'commit'
+      if a:compare == 'commit'
         if empty(l:v.commit)
           continue
         endif
-        let start = l:v.commit .. '...'
+        let compare = 'head...' .. l:v.commit
       else
-        let start = '..'
+        let compare = 'head...origin/' .. (empty(l:v.branch) ? 'head' : l:v.branch)
       endif
       if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
         call add(l:lines, printf('printf "%%s\n" %s', shellescape(l:v.path)))
         call add(l:lines, printf('git -C %s log %s --oneline; echo',
               \ shellescape(l:v.path),
-              \ shellescape(start .. 'origin/' .. (empty(l:v.branch) ? 'head' : l:v.branch))
+              \ shellescape(compare)
               \ ))
       else
         call add(l:lines, '# is not git repository, skip.')
