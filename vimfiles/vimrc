@@ -158,7 +158,7 @@ if is_win32
     # So only set shell when it does not contain special char.
     #
     # To make things simpler, use git path to find bash.
-    # Then git should be installed where path does not contains speical char.
+    # Then git should be installed where path does not contain speical char.
     #
     # NOTE: busybox sh cannot handle CJK correctly (chcp.exe / utf-8). Use
     # cygwin / msys2 derived shell (fullset) if possible.
@@ -173,15 +173,22 @@ if is_win32
             break
         endif
 
-        # git.exe, when invoking from git bash, has different path.
+        # git.exe, when invoking from git bash, has different paths. {{{
+        # checking 4 times is enough.
+        # $ find ./ -name git.exe  # from git root dir
+        # ./bin/git.exe
+        # ./cmd/git.exe
+        # ./mingw64/bin/git.exe
+        # ./mingw64/libexec/git-core/git.exe
+        # }}}
         var depth = 4
         var git_root = git_path
         while depth > 0
             depth -= 1
+            git_root = fnamemodify(git_root, ':h')
             if executable(git_root .. '/usr/bin/bash')
                 break
             endif
-            git_root = fnamemodify(git_root, ':h')
         endwhile
 
         const bash_path = git_root .. '/usr/bin/bash'
