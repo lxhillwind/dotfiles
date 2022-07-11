@@ -247,7 +247,11 @@ function! s:pack_diff_helper(compare) abort
       endif
       if isdirectory(l:v.path . '/.git') || filereadable(l:v.path . '/.git')
         call add(l:lines, printf('printf "%%s\n" %s', shellescape(l:v.path)))
-        call add(l:lines, printf('git -C %s log %s --oneline; echo',
+        " it's possible that opt.commit is not available in local remote
+        " history (local not up-to-date); show error here.
+        " NOTE: we use "echo ..." (stdout) instead of "echo ... >&2" (stderr),
+        " since latter shows in incorrect place on win32.
+        call add(l:lines, printf('git -C %s log %s --oneline || echo failed; echo',
               \ shellescape(l:v.path),
               \ shellescape(compare)
               \ ))
