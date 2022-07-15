@@ -299,8 +299,7 @@ augroup END
 .. '%{ &ft == "qf" && exists("w:quickfix_title") ? w:quickfix_title : "" }'
 .. '%{% &ft == "qf" && exists("w:quickfix_title") ? "" : "%F" %}'
 .. ' %=<%B>'
-.. ' [%l:%{charcol(".")}'
-.. '%{% &buftype == "terminal" ? "" : "/%L" %}' .. ']'
+.. ' [%LL|%l:%{charcol(".")}|%vv]'
 
 # viminfo {{{2
 # &viminfo should be set with ^= (the first match will be used) {{{
