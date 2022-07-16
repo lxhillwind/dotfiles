@@ -399,10 +399,6 @@ if has('gui_running')
     set guioptions=
     set lines=30
     set columns=120
-    if is_win32
-        # use builtin font.
-        set gfn=Consolas:h18:cANSI:qDRAFT
-    endif
 else
     if is_win32
         # Try to set termguicolors; if success, &t_Co will be changed to 256,
@@ -1060,22 +1056,17 @@ augroup vimrc
 
     # ReadBin / WriteBin impl {{{
     # avoid using busybox xxd.
-    const xxd_path = exists($VIM .. '/bin/xxd') ? '"$VIM"/bin/xxd' : 'xxd'
+    const xxd_path = filereadable($VIM .. '/bin/xxd') ? $VIM .. '/bin/xxd' : 'xxd'
 
     def ReadBin(name: string)
-        execute printf('silent Sh -r %s %s', xxd_path, shellescape(name))
+        execute printf('read !%s %s', shellescape(xxd_path), shellescape(name))
         normal gg"_dd
     enddef
 
     def WriteBin(name: string)
-        if is_win32
-            # returncode check is ignored.
-            job_start('xxd -r', {in_io: 'buffer', in_buf: bufnr(), out_io: 'file', out_name: name})
-        else
-            execute printf(':%w !%s -r > %s', xxd_path, shellescape(name))
-            if !empty(v:shell_error)
-                return
-            endif
+        execute printf(':%w !%s -r > %s', shellescape(xxd_path), shellescape(name))
+        if !empty(v:shell_error)
+            return
         endif
         setl nomodified
         redrawstatus | echon 'written.'
@@ -1211,12 +1202,9 @@ augroup END
 if !exists('g:colors_name')
     if has('gui_running') || &t_Co->str2nr() >= 256
         color base16-dynamic
-        if is_win32 && has('gui_running')
-            set bg=light
-        endif
     else
         if is_win32
-            # win32 cmd
+            # cmd.exe window
             color pablo
             set nocursorcolumn
         else
@@ -1532,6 +1520,7 @@ def g:Tapi_cd(nr: number, arg: list<string>)
     if bufnr() == nr
         var p = arg[0]
         if is_win32 && match(p, '^/') >= 0
+            # why not using shellescape() here?
             p = execute(printf("Sh cygpath -w '%s'", substitute(p, "'", "'\\\\''", 'g')))
         endif
         silent execute 'lcd' fnameescape(p)
@@ -2079,10 +2068,7 @@ def PopupTerminalSwitch()  # {{{
         popup_terminal_state.shown = false
     else
         if popup_terminal_state.buf < 0
-            const cmd = is_win32 && exists(':Sh') == 2 ?
-            execute('Sh -n')->json_decode().cmd :
-            &shell
-
+            const cmd = &shell
             var env = exists('g:vimserver_env') ? g:vimserver_env : {}
             # avoid setting original variables.
             env = env->copy()
