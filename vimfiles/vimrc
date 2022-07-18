@@ -775,11 +775,13 @@ enddef
 # TODO map more key (one hand); provide help page (double ? to enter search mode).
 nnoremap <Space>v <Cmd>call <SID>SwitchReaderMode()<CR>
 var reader_mode = exists('reader_mode') ? reader_mode :
-{on: false, winid: -1}
+{on: false, winid: -1, timeoutlen: 0}
 
 def SwitchReaderMode()
     const mapping =<< trim END
     q <Cmd>call <SID>SwitchReaderMode()<CR>
+    <Space> <C-f>
+    <S-Space> <C-b>
     f <C-f>
     b <C-b>
     d <C-d>
@@ -801,6 +803,7 @@ def SwitchReaderMode()
         mapping->mapnew((_, i) => {
             execute 'nunmap' i->split(' ')[0]
             })
+        &timeoutlen = reader_mode.timeoutlen
         reader_mode.on = false
         popup_close(reader_mode.winid)
     else
@@ -815,6 +818,9 @@ def SwitchReaderMode()
             tabpage: -1,  # show in all tabs.
             }
         )
+        reader_mode.timeoutlen = &timeoutlen
+        # set to 0 to make <Space> work (skip mapping immediately).
+        &timeoutlen = 0
         reader_mode.on = true
     endif
 enddef
@@ -2113,6 +2119,5 @@ enddef
 defc  # show error in this file early.
 # TODO {{{1
 # - replace g:Popup() / :Select with vim-fuzzy.
-# - :Sh -r speedup; case: e app/bin/less.exe
 
 # vim:fdm=marker:tw=78:sw=4
