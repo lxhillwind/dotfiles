@@ -254,42 +254,43 @@ endif
 set wildoptions=pum
 
 # builtin terminal enhancement {{{2
-augroup vimrc
-    def TerminalPaste()
-        echo @"
-        if @"[-1 : ] == "\n"
-            echohl WarningMsg
-            echo '<Newline> at end!'
-            echohl NONE
-        endif
-        echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
-        if tolower(nr2char(getchar())) == 'y'
-            feedkeys("i\<C-w>" .. '""', 'n')
-            redraws | echon 'pasted.'
-        else
-            redraws | echon 'cancelled.'
-        endif
-    enddef
+def TerminalPaste()
+    echo @"
+    if @"[-1 : ] == "\n"
+        echohl WarningMsg
+        echo '<Newline> at end!'
+        echohl NONE
+    endif
+    echo 'paste in terminal? (cursor may be at wrong place!) [y/N] '
+    if tolower(nr2char(getchar())) == 'y'
+        feedkeys("i\<C-w>" .. '""', 'n')
+        redraws | echon 'pasted.'
+    else
+        redraws | echon 'cancelled.'
+    endif
+enddef
 
-    # define a function, so it can also be used in popup terminal.
-    def TerminalSetup()
-        # NOTE: keymap defined here (terminal [p]aste).
-        if &buftype == 'terminal'
-            setl nonu | setl nornu
-            # vim-jump
-            nmap <buffer> <CR> <Plug>(jump_to_file)
-            vmap <buffer> <CR> <Plug>(jump_to_file)
-            # clipboard
-            nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
-            nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
-            # dirvish
-            if exists(':Dirvish') == 2
-                nnoremap <buffer> - <Cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
-            endif
-            # <C-w> as in terminal.
-            tnoremap <buffer> <C-w> <C-w>.
-        endif
-    enddef
+# define a function, so it can also be used in popup terminal.
+def TerminalSetup()
+    if &buftype != 'terminal'
+        return
+    endif
+    setl nonu | setl nornu
+    # vim-jump
+    nmap <buffer> <CR> <Plug>(jump_to_file)
+    vmap <buffer> <CR> <Plug>(jump_to_file)
+    # clipboard
+    nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
+    nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
+    # dirvish
+    if exists(':Dirvish') == 2
+        nnoremap <buffer> - <Cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
+    endif
+    # <C-w> as in terminal.
+    tnoremap <buffer> <C-w> <C-w>.
+enddef
+
+augroup vimrc
     au TerminalWinOpen * TerminalSetup()
 augroup END
 
