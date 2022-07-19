@@ -279,7 +279,6 @@ augroup vimrc
             # vim-jump
             nmap <buffer> <CR> <Plug>(jump_to_file)
             vmap <buffer> <CR> <Plug>(jump_to_file)
-
             # clipboard
             nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
             nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
@@ -287,6 +286,8 @@ augroup vimrc
             if exists(':Dirvish') == 2
                 nnoremap <buffer> - <Cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
             endif
+            # <C-w> as in terminal.
+            tnoremap <buffer> <C-w> <C-w>.
         endif
     enddef
     au TerminalWinOpen * TerminalSetup()
@@ -396,7 +397,8 @@ endif
 # TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
 # NOTE: no `set bg`; seems that terminal theme (dark / light) can be detected.
 if has('gui_running')
-    set guioptions=
+    # go-!: uniform shell interface, like :!, :sh.
+    set guioptions=!
     set lines=30
     set columns=120
 else
@@ -590,7 +592,6 @@ vmap gF <Plug>(jump_to_file)
 # used to use <C-Space>, but it may be occupied by DE / OS. {{{
 # I don't use <C-t> key in terminal, so it's ok to map it. }}}
 tnoremap <C-t> <C-\><C-n>
-tnoremap <C-w> <C-w>.
 
 # <Space>l {{{2
 nnoremap <silent> <Space>l :noh<CR>
