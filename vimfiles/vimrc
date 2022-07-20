@@ -115,17 +115,6 @@ set pp=~/vimfiles,$VIMRUNTIME
 
 # win32 environment prepare {{{2
 if is_win32
-    # make ":!" in gui work like in unix: no external cmd window. {{{
-    # set go+=! is also ok, but it requires pty.
-    #
-    # to get shell output as variable:
-    #   - use system(); but multiple stmt is not handled correctly when &shell
-    #   is unix shell.
-    #   - use ":Sh" from my vim-sh plugin; but it depends on unix shell.
-    #   - DO NOT use execute("!xxx"), since it also contains excmd in output.
-    #   }}}
-    set noshelltemp
-
     # Set shellslash, so file path completion returns slash based str, {{{
     # which works in sh environment and win32 shell (cmd is not supported?).
     # shellescape() also returns unix-shell-friendly string.
@@ -245,6 +234,14 @@ nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
 nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
 
 # shell {{{2
+# 'noshelltemp' {{{
+# In win32 gui, 'noshelltemp' makes ":!" and ":[range]w !" work like in unix:
+# no external cmd window;
+# (if guioptions contain '!', ":!" will not show cmd window anyway.)
+# In unix, 'noshelltemp' makes ":[range]w !" not create tempfile.
+# }}}
+set noshelltemp
+
 if executable('zsh') && is_unix
     &shell = exepath('zsh')
 endif
