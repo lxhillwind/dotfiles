@@ -542,6 +542,12 @@ def TabOpenOrClose()
     endif
 enddef
 
+# n / N {{{2
+# always search forward / backward.
+# https://vi.stackexchange.com/questions/2365/how-can-i-get-n-to-go-forward-even-if-i-started-searching-with-or#
+noremap <expr> n 'Nn'[v:searchforward]
+noremap <expr> N 'nN'[v:searchforward]
+
 # v_* / v_#; like `g*` / `g#`, dep: Selection() {{{2
 vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
