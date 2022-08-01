@@ -864,7 +864,7 @@ g:markdown_fenced_languages = [
     'zig',
     ]
 
-# mime {{{2
+# lx {{{2
 # TODO archive vim-filelist?
 #Pack 'vim-filelist'
 Pack 'vim-jump'
