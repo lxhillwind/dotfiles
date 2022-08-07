@@ -1023,7 +1023,8 @@ endif
 
 augroup vimrc
     # misc (filetype related) {{{2
-    au BufNewFile,BufRead *.gv setl ft=dot
+    # NOTE: "au BufNewFile,BufRead XXX setl ft=YYY" should be put in ftdetect/;
+    # otherwise "au FileType YYY .*" stmt won't work.
     au FileType yaml setl indentkeys-=0#
     au FileType zig setl fp=zig\ fmt\ --stdin
     au FileType markdown {
