@@ -117,19 +117,6 @@ function showClipboard()
     hs.alert.show(text)
 end
 
-function terminalIsFun()
-    hs.task.new(
-        "/opt/homebrew/bin/alacritty",
-        nil,
-        function(...) return true end,
-        {
-            "--title", "editing scratch",
-            "-e", "zsh", "-c",
-            [[~/bin/vim -c 'Scratch popup_text_selection' -c 'call feedkeys(" pp", "t")']]
-        }
-    ):start()
-end
-
 -- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
 -- 然后此处设置带 shift 的.
 bindApp(",", "Google Chrome", true)
@@ -149,6 +136,5 @@ hs.hotkey.bind(hyper, "m", toggleWindowMaximized)
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
 -- if hammerspoon is not started yet.
 
-hs.hotkey.bind(meta, "a", terminalIsFun)
 hs.hotkey.bind(meta, "i", showClipboard)
 hs.hotkey.bind(meta, "l", hs.caffeinate.lockScreen)
