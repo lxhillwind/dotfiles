@@ -231,6 +231,8 @@ var source: list<dict<string>>
 var source_is_being_computed: bool = false
 var sourcetype: string
 
+const user_config: dict<any> = exists('g:fuzzy#config') ? g:fuzzy#config : {}
+
 var busybox_as_shell: bool = (
 has('win32')
 && (&shell->match('\v(bash|zsh)') < 0 || !executable(&shell))
@@ -385,7 +387,29 @@ enddef
 #}}}1
 # Core {{{1
 def InitSource() #{{{2
-    if sourcetype == 'Commands' || sourcetype =~ '^Mappings'
+    if sourcetype =~ '^User'
+        const config = GetUserConfig()
+        if !empty(config)
+            if has_key(config, 'shell')
+                config.shell->Job_start()
+            elseif has_key(config, 'excmd')
+                source = config.excmd->execute()->split("\n")
+                ->mapnew((_, i) => ({
+                    text: i, trailer: '', location: ''
+                    }))
+            elseif has_key(config, 'LinesFn')
+                # LinesFn should be function, so it will execute lazily.
+                source = call(config.LinesFn, [])
+                ->mapnew((_, i) => ({
+                    text: i, trailer: '', location: ''
+                    }))
+            elseif has_key(config, 'Fn')
+                # TODO check function return type?
+                source = call(config.Fn, [])
+            endif
+        endif
+
+    elseif sourcetype == 'Commands' || sourcetype =~ '^Mappings'
         InitCommandsOrMappings()
 
     elseif sourcetype == 'Files'
@@ -1432,6 +1456,11 @@ def UpdatePreview(timerid = 0) #{{{2
 enddef
 
 def ExtractInfo(line: string): dict<string> #{{{3
+    if sourcetype =~ '^User'
+        # TODO
+        return {}
+    endif
+
     if sourcetype == 'Commands' || sourcetype =~ '^Mappings'
         var matchlist: list<string> = (filtered_source ?? source)
             ->get(line('.', menu_winid) - 1, {})
@@ -1595,7 +1624,10 @@ def PreviewHighlight(info: dict<string>) #{{{3
     enddef
 
     # syntax highlight the text
-    if sourcetype == 'HelpTags'
+    if sourcetype =~ '^User'
+        # TODO
+        return
+    elseif sourcetype == 'HelpTags'
         var setsyntax: list<string> =<< trim END
             if get(b:, 'current_syntax', '') != 'help'
                 ownsyntax help
@@ -1696,7 +1728,13 @@ def ExitCallback( #{{{2
         # See also:
         # https://github.com/vim/vim/issues/7178#issuecomment-714442958
         #}}}
-        if ['Files', 'Locate', 'RecentFiles']->index(sourcetype) >= 0
+        if sourcetype =~ '^User'
+            const config = GetUserConfig()
+            if !empty(config) && has_key(config, 'Callback')
+                call(config.Callback, [chosen])
+            endif
+
+        elseif ['Files', 'Locate', 'RecentFiles']->index(sourcetype) >= 0
             Open(chosen, howtoopen)
 
         elseif type == 'Grep'
@@ -2041,4 +2079,9 @@ def ToggleSelectedRegisterType() #{{{2
     last_filtered_line = -1
     # finally, we can refresh the popup menu
     UpdateMainText()
+enddef
+
+def GetUserConfig(): dict<any> # {{{2
+    const trimmed_type = sourcetype->substitute('\v^User\.?', '', '')
+    return get(user_config, trimmed_type, {})
 enddef

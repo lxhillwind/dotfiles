@@ -1738,99 +1738,7 @@ def ChdirTerminal(bang: bool, range: number, path_a: string)
     execute 'Cd' path ':' .. cmd
 enddef
 
-# g:Popup(cmd: string, Cb: fn<list<string>>, ctx : dict = {}); {{{2
-# NOTE: this depends on my vim-sh plugin;
-#   g:Popup() cmd param is the shell command to run.
-
-# variable used in popup terminal;
-var popup_tmpfile: string = ''
-var popup_win: number
-
-def g:Popup(cmd: string, Cb: func, ...args: list<dict<any>>)
-    var exec_pre: string = 'exec'
-    var range: string = ''
-    var kwargs: dict<any> = args->get(0) ?? {}
-    if kwargs->has_key('input') || kwargs->has_key('ex')
-        const stdin_f: string = tempname()
-        if kwargs->has_key('input')
-            writefile(kwargs.input->split("\n"), stdin_f)
-        else
-            writefile(execute(kwargs.ex)->split("\n"), stdin_f)
-        endif
-        exec_pre ..= (' < ' .. shellescape(stdin_f))
-    endif
-    if kwargs->get('range', 0) > 0
-        range = printf(':%d,%d', kwargs.line1, kwargs.line2)
-    endif
-    var tmpfile: string = tempname()
-    exec_pre ..= (' > ' .. shellescape(tmpfile))
-    var res: dict<any> = json_decode(execute(printf('%sSh -n %s; %s', range, exec_pre, cmd)))
-
-    # use builtin popup, then tmpfile can be set safely.
-    # (popup terminal steals focus).
-    popup_tmpfile = tmpfile
-    var buf = term_start(res.cmd, extendnew(res.opt, {exit_cb: TermExitCb, hidden: true}))
-    popup_win = popup_create(buf, {
-        border: [1, 1, 1, 1],
-        callback: function(PopupCloseCb, [Cb])
-        }->extendnew(PopupSize()))
-enddef
-
-def TermExitCb(_: job, code: number)
-    popup_close(popup_win, code == 0 ? readfile(popup_tmpfile) : [])
-enddef
-
-def PopupCloseCb(Cb: func, _: number, result: list<string>)
-    # TODO is this check required?
-    if !empty(result)
-        call(Cb, [result])
-    endif
-enddef
-
-# :Select ... {{{2
-command! -nargs=1 -range=0 -complete=custom,SelectComp Select
-| Select(<q-args>, {range: <range>, line1: <line1>, line2: <line2>})
-
-# Select() and it's comp {{{3
-def SelectComp(..._: list<any>): string
-    return popup_sources->keys()->join("\n")
-enddef
-
-def Select(source: string, ctx: dict<any>)
-    if popup_sources->has_key(source)
-        call(popup_sources[source], [ctx])
-    else
-        throw printf('selection not implemented: "%s"!', source)
-    endif
-enddef
-
-# LsBuffers() {{{3
-def LsBuffers(ctx: dict<any>)
-    g:Popup(
-    'fzf',
-    (s: list<string>) => {
-        const bufnr = s[0]->matchstr('\v^\s*\zs(\d+)\ze')
-        execute ':' .. bufnr .. 'b'
-        },
-    {ex: 'ls', title: 'select-buffer'}
-    )
-enddef
-
-# Color() {{{3
-def Color(ctx: dict<any>)
-    g:Popup(
-    'fzf',
-    (s: list<string>) => {
-        execute 'color' fnameescape(s[0])
-        },
-    {
-            title: 'select-color',
-            input: globpath(&rtp, "colors/*.vim", 0, 1)
-            ->mapnew((_, i) => i->split('[\/.]')->get(-2))->join("\n")
-    }
-    )
-enddef
-
+# :vim-fuzzy config {{{2
 # HistList() {{{3
 def HistBlacklist(s: string): bool
     if !filereadable(s) && !filereadable(ExpandHead(s))
@@ -1876,34 +1784,7 @@ def HistList(ctx: dict<any>)
     )
 enddef
 
-# FileList() {{{3
-def FileList(ctx: dict<any>)
-    g:Popup(
-    'fzf',
-    (s: list<string>) => {
-        execute 'e' fnameescape(s[0])
-        },
-    ctx
-    ->extendnew({title: 'select-filelist'})
-    )
-enddef
-
-# Nnn() (it's nnn.) {{{3
-def Nnn(ctx: dict<any>)
-    g:Popup(
-    # wrap nnn with `sh -i`, so term won't get messy.
-    # seems like a bug in busybox sh and macos bash.
-    (executable('zsh') ? 'zsh' : 'sh')
-    .. ' -ic "nnn -o -p -"',
-    (s: list<string>) => {
-        execute 'e' fnameescape(s[0])
-        },
-    ctx
-    ->extendnew({title: 'nnn'})
-    )
-enddef
-
-# ProjectList() {{{3
+# ProjectListCmd() {{{3
 # NOTE: this variable is directly put after `find` command,
 # using shell syntax. QUOTE IT IF NECESSARY!
 g:project_dirs = get(g:, 'project_dirs', '~/repos ~/vimfiles')
@@ -1911,7 +1792,7 @@ g:project_dirs = get(g:, 'project_dirs', '~/repos ~/vimfiles')
 # accept list<string>; every item is put after -name (or -path, if / included)
 g:project_blacklist = get(g:, 'project_blacklist', ['venv', 'node_modules'])
 
-def ProjectList(ctx: dict<any>)
+def ProjectListCmd(): string
     if empty(g:project_dirs)
         throw '`g:project_dirs` is not set or empty!'
     endif
@@ -1927,25 +1808,15 @@ def ProjectList(ctx: dict<any>)
             blacklist ..= printf('-name %s -prune -o ', shellescape(i))
         endif
     endfor
-    g:Popup(
-    printf(
-    'find %s %s -name .git -prune -print 2>/dev/null | sed -E "s/\/.git\$//"'
-    .. ' | fzf',
+    return printf(
+    "find %s %s -name .git -prune -print0 2>/dev/null | xargs -r -0 -n 1 %s | sed -E 's#[\\/].git$##'",
     g:project_dirs, blacklist,
-    ),
-    (s: list<string>) => {
-        execute 'lcd' fnameescape(s[0])
-        if exists(':Dirvish') == 2
-            execute 'Dirvish' fnameescape(s[0])
-        endif
-        },
-    ctx
-    ->extendnew({title: 'project'})
+    executable('cygpath') ? 'cygpath -w' : '',
     )
 enddef
 
-# TabWin() {{{3
-def TabWin(ctx: dict<any>)
+# TabWinLines() {{{3
+def TabWinLines(): list<string>
     var buf_list = []  # preserve order
     var key: string
     for i in range(tabpagenr('$'))
@@ -1956,62 +1827,44 @@ def TabWin(ctx: dict<any>)
             j = j + 1
         endfor
     endfor
-    g:Popup(
-    'fzf --tac',
-    (s: list<string>) => {
-        const res = s[0]->split(' ')
-        const [tab, win] = [res[0], res[1]]
-        execute printf(':%stabn', tab)
-        execute printf(':%swincmd w', win)
-        },
-    {
-            title: 'select-win',
-            input: buf_list->join("\n"),
-    }
-    )
+    return buf_list
 enddef
 
-# CdHistory {{{3
-def CdHistory(ctx: dict<any>)
-    g:Popup(
-    'zsh -ic j',
-    (s: list<string>) => {
-        var path = s[-1]
-        if path->trim()->empty()
-            return
-        endif
-        if path->isdirectory()
-            execute 'lcd' fnameescape(path)
+# config {{{3
+g:fuzzy#config = {
+    buffer: {
+        excmd: 'ls',
+        Callback: (chosen: string) => {
+            const bufnr = chosen->matchstr('\v^\s*\zs(\d+)\ze')
+            execute ':' .. bufnr .. 'b'
+            }
+        },
+    color: {
+        LinesFn: () => globpath(&rtp, "colors/*.vim", 0, 1)
+        ->mapnew((_, i) => i->split('[\/.]')->get(-2)),
+        Callback: (chosen: string) => {
+            execute 'color' fnameescape(chosen)
+            }
+        },
+    project_dir: {
+        shell: ProjectListCmd(),
+        Callback: (chosen: string) => {
+            execute 'lcd' fnameescape(chosen)
             if exists(':Dirvish') == 2
-                execute 'Dirvish' fnameescape(path)
+                execute 'Dirvish' fnameescape(chosen)
             endif
-        else
-            echoerr 'dir not valid: ' .. path
-        endif
+            }
         },
-    {
-            title: 'select-dir-to-cd',
+    tabwin: {
+        LinesFn: TabWinLines,
+        Callback: (chosen: string) => {
+            const res = chosen->trim()->split(' ')
+            const [tab, win] = [res[0], res[1]]
+            execute printf(':%stabn', tab)
+            execute printf(':%swincmd w', win)
+            }
+        }
     }
-    )
-enddef
-
-# register new source here! {{{3
-var popup_sources: dict<func> = {
-    buffer: LsBuffers,
-    color: Color,
-    fzf: FileList,
-    hist_list: HistList,
-    project: ProjectList,
-    tab_win: TabWin,
-    }
-
-if executable('zsh')
-    popup_sources['cd'] = CdHistory
-endif
-
-if executable('nnn')
-    popup_sources['nnn'] = Nnn
-endif
 
 # (keymap) popup to select from sources. {{{3
 nnoremap <Space>a <Cmd>call <SID>SelectFromSources()<CR>
@@ -2019,17 +1872,14 @@ nnoremap <Space>a <Cmd>call <SID>SelectFromSources()<CR>
 def SelectFromSources()
     # TODO highlight
     const selection = [
-        # [key, popup_sources]
-        ['w', 'nnn'],
-        ['s', 'hist_list'],
-        ['f', 'fzf'],
-        ['e', 'project'],
+        # [key, g:fuzzy#config]
+        ['c', 'color'],
+        ['e', 'project_dir'],
         ['b', 'buffer'],
-        ['t', 'tab_win'],
-        ['c', 'cd'],
+        ['t', 'tabwin'],
         ]
     # some sources may be missing, so check it.
-    ->filter((_, i) => !empty(popup_sources->get(i->get(1))))
+    ->filter((_, i) => !empty(g:fuzzy#config->get(i->get(1))))
 
     # Is is possible to use ordered dict, so we migrate selection /
     # selection_dict?
@@ -2048,7 +1898,7 @@ def SelectFromSources()
         filter: (winid: number, key: string): bool => {
             const res = get(selection_dict, key)
             if !empty(res)
-                execute 'Select' res
+                g:fuzzy#Main($'User.{res}')
             endif
             # finally.
             popup_close(winid)
@@ -2124,6 +1974,5 @@ enddef
 # finish {{{1 }}}1
 defc  # show error in this file early.
 # TODO {{{1
-# - replace g:Popup() / :Select with vim-fuzzy.
 
 # vim:fdm=marker:tw=78:sw=4
