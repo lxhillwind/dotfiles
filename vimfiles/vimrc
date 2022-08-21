@@ -1787,7 +1787,7 @@ enddef
 # ProjectListCmd() {{{3
 # NOTE: this variable is directly put after `find` command,
 # using shell syntax. QUOTE IT IF NECESSARY!
-g:project_dirs = get(g:, 'project_dirs', '~/repos ~/vimfiles')
+g:project_dirs = get(g:, 'project_dirs', '~/repos/ ~/vimfiles/')
 
 # accept list<string>; every item is put after -name (or -path, if / included)
 g:project_blacklist = get(g:, 'project_blacklist', ['venv', 'node_modules'])
@@ -1809,9 +1809,10 @@ def ProjectListCmd(): string
         endif
     endfor
     return printf(
-    "find %s %s -name .git -prune -print0 2>/dev/null | xargs -r -0 -n 1 %s | sed -E 's#[\\/].git$##'",
+    "find %s %s -name .git -prune -print0 2>/dev/null"
+    .. " | { if [ -x /usr/bin/cygpath ]; then xargs -r -0 cygpath -w; else xargs -r -0 -n 1; fi; }"
+    .. " | sed -E 's#[\\/].git$##'",
     g:project_dirs, blacklist,
-    executable('cygpath') ? 'cygpath -w' : '',
     )
 enddef
 
