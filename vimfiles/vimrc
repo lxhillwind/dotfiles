@@ -1759,8 +1759,8 @@ def HistBlacklist(s: string): bool
     return false
 enddef
 
-def HistList(ctx: dict<any>)
-    var input = v:oldfiles
+def HistList(): list<string>
+    return v:oldfiles
     # expand ~, so it works with "fzf -q" option.
     ->mapnew((_, i) => ExpandHead(i))
     ->extendnew(
@@ -1768,20 +1768,6 @@ def HistList(ctx: dict<any>)
     ->split("\n")
     )
     ->filter((_, i) => !HistBlacklist(i))
-    ->join("\n")
-
-    g:Popup(
-    # -q STR: start with query (limit to cwd).
-    # leading ^ and following / to make query more precise;
-    # final space to make additional query work as expected.
-    printf('fzf -q "^"%s/" "', shellescape(getcwd())),
-    (s: list<string>) => {
-        execute 'e' fnameescape(s[0])
-        },
-    ctx
-    ->extendnew({title: 'select-hist_list'})
-    ->extend({input: input})
-    )
 enddef
 
 # ProjectListCmd() {{{3
@@ -1849,6 +1835,8 @@ g:fuzzy#config = {
         },
     project_dir: {
         shell: ProjectListCmd(),
+        # TODO doc why \t here.
+        ExtractInfoFn: (line) => ({filename: line->split('\t')[0]}),
         Callback: (chosen: string) => {
             execute 'lcd' fnameescape(chosen)
             if exists(':Dirvish') == 2
@@ -1864,6 +1852,13 @@ g:fuzzy#config = {
             execute printf(':%stabn', tab)
             execute printf(':%swincmd w', win)
             }
+        },
+    hist_list: {
+        LinesFn: HistList,
+        ExtractInfoFn: (line) => ({filename: line->split('\t')[0]}),
+        Callback: (chosen: string) => {
+            execute 'edit' fnameescape(chosen)
+            },
         }
     }
 
@@ -1878,6 +1873,7 @@ def SelectFromSources()
         ['e', 'project_dir'],
         ['b', 'buffer'],
         ['t', 'tabwin'],
+        ['s', 'hist_list'],
         ]
     # some sources may be missing, so check it.
     ->filter((_, i) => !empty(g:fuzzy#config->get(i->get(1))))

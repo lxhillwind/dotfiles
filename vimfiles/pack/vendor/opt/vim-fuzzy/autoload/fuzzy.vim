@@ -231,7 +231,7 @@ var source: list<dict<string>>
 var source_is_being_computed: bool = false
 var sourcetype: string
 
-const user_config: dict<any> = exists('g:fuzzy#config') ? g:fuzzy#config : {}
+var config: dict<any>
 
 var busybox_as_shell: bool = (
 has('win32')
@@ -388,7 +388,9 @@ enddef
 # Core {{{1
 def InitSource() #{{{2
     if sourcetype =~ '^User'
-        const config = GetUserConfig()
+        const trimmed_type = sourcetype->substitute('\v^User\.?', '', '')
+        config = (exists('g:fuzzy#config') ? g:fuzzy#config : {})
+        ->get(trimmed_type, {})
         if !empty(config)
             if has_key(config, 'shell')
                 config.shell->Job_start()
@@ -1457,7 +1459,9 @@ enddef
 
 def ExtractInfo(line: string): dict<string> #{{{3
     if sourcetype =~ '^User'
-        # TODO
+        if has_key(config, 'ExtractInfoFn')
+            return config.ExtractInfoFn(line)
+        endif
         return {}
     endif
 
@@ -1626,6 +1630,9 @@ def PreviewHighlight(info: dict<string>) #{{{3
     # syntax highlight the text
     if sourcetype =~ '^User'
         # TODO
+        if !empty(filename)
+            Prettify()
+        endif
         return
     elseif sourcetype == 'HelpTags'
         var setsyntax: list<string> =<< trim END
@@ -1729,7 +1736,6 @@ def ExitCallback( #{{{2
         # https://github.com/vim/vim/issues/7178#issuecomment-714442958
         #}}}
         if sourcetype =~ '^User'
-            const config = GetUserConfig()
             if !empty(config) && has_key(config, 'Callback')
                 call(config.Callback, [chosen])
             endif
@@ -2079,9 +2085,4 @@ def ToggleSelectedRegisterType() #{{{2
     last_filtered_line = -1
     # finally, we can refresh the popup menu
     UpdateMainText()
-enddef
-
-def GetUserConfig(): dict<any> # {{{2
-    const trimmed_type = sourcetype->substitute('\v^User\.?', '', '')
-    return get(user_config, trimmed_type, {})
 enddef
