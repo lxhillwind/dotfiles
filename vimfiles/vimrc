@@ -464,6 +464,12 @@ onoremap az :<C-u>normal! V]zo[zo<CR>
 vnoremap iz V]zo[zjo
 onoremap iz :<C-u>normal! V]zo[zjo<CR>
 
+# mswin: disable v_CTRL-X (which is not compatible with unix) {{{2
+# use vim_starting check to avoid unexpected behavior (map and then re-source).
+if is_win32 && has('vim_starting') && !empty(maparg('<C-x>', 'v'))
+    vunmap <C-x>
+endif
+
 # <M-hjkl> {{{2
 tnoremap <M-h> <C-w>h
 tnoremap <M-j> <C-w>j
