@@ -235,8 +235,7 @@ var config: dict<any>
 
 var busybox_as_shell: bool = (
 has('win32')
-&& (&shell->match('\v(bash|zsh)') < 0 || !executable(&shell))
-&& executable('busybox')
+&& (&shell->match('busybox') >= 0)
 ) ? true : false
 
 const SNIPPETS_DIR: string = globpath(&rtp, 'UltiSnips')
@@ -735,8 +734,8 @@ def Job_start(cmd: string) #{{{2
 #    - press `SPC ff`
 #}}}
     source_is_being_computed = true
-    const cmds = busybox_as_shell
-    ? ['busybox', 'sh', '-c', cmd]
+    const cmds = has('win32')
+    ? printf('%s %s %s', &shell, &shellcmdflag, Win32ShellEscape(cmd))
     : [&shell, &shellcmdflag, cmd]
     myjob = job_start(cmds, {
         out_cb: SetIntermediateSource,
@@ -2085,4 +2084,20 @@ def ToggleSelectedRegisterType() #{{{2
     last_filtered_line = -1
     # finally, we can refresh the popup menu
     UpdateMainText()
+enddef
+
+def Win32ShellEscape(s: string): string # {{{2
+    # like shellescape() when &noshellslash is set in win32.
+    # To make quote work reliably, it is worth reading:
+    # <https://daviddeley.com/autohotkey/parameters/parameters.htm>
+    var cmd: string = s
+    # double all \ before "
+    cmd = substitute(cmd, '\v\\([\\]*")@=', '\\\\', 'g')
+    # double trailing \
+    cmd = substitute(cmd, '\v\\([\\]*$)@=', '\\\\', 'g')
+    # escape " with \
+    cmd = escape(cmd, '"')
+    # quote it
+    cmd = '"' .. cmd .. '"'
+    return cmd
 enddef

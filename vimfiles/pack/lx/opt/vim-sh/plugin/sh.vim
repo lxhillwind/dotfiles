@@ -227,15 +227,12 @@ function! s:sh(cmd, opt) abort " {{{2
     endif
   endif
 
-  let shell = exists('g:sh_path') ? g:sh_path :
-        \ (s:is_win32 ? 'busybox' : &shell)
+  let shell = exists('g:sh_path') ? g:sh_path : &shell
+  let shell_list = s:lib.ShellSplitUnix(shell)
 
-  if !executable(shell) && !opt.skip_shell
+  if !executable(shell_list->get(0)) && !opt.skip_shell
     call s:echoerr(printf('shell is not found! (`%s`)', shell)) | return
   endif
-
-  " if set shell to busybox, then call sh with `busybox sh`
-  let shell_arg_patch = (match(shell, '\vbusybox(.exe|)$') >= 0) ? ['sh'] : []
 
   " opt.visual: yank text by `norm gv`;
   " opt.window: communicate stdin by file;
@@ -276,26 +273,21 @@ function! s:sh(cmd, opt) abort " {{{2
       " it may be set by title opt already.
       let l:term_name = shell
     endif
-    if s:is_win32
-      " replace it later.
-      let cmd_new = ['sh']
-    else
-      let cmd_new = [shell]
-    endif
+    let cmd_new = shell_list
   else
     if opt.skip_shell
       let cmd_new = s:lib.ShellSplitUnix(cmd)
     else
       if !empty(tmpfile)
         if s:is_unix
-          let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
+          let cmd_new = shell_list + ['-c', printf('sh -c %s < %s',
                 \ shellescape(cmd), shellescape(tmpfile))]
         else
-          let cmd_new = ['sh', '-c', printf('sh -c %s < %s',
-                \ s:shellescape(cmd), s:shellescape(s:tr_slash(tmpfile)))]
+          let cmd_new = shell_list + ['-c', printf('sh -c %s < %s',
+                \ s:shellescape(cmd), s:shellescape(s:tr_slash(s:wsl_path(shell, tmpfile))))]
         endif
       else
-        let cmd_new = ['sh', '-c', cmd]
+        let cmd_new = shell_list + ['-c', cmd]
       endif
     endif
   endif
@@ -345,9 +337,6 @@ function! s:sh(cmd, opt) abort " {{{2
   if opt.window " {{{
     " skip_shell does not care of close option, since it is complex.
     let cmd = opt.close || opt.skip_shell ? cmd : s:cmdlist_keep_window(cmd)
-    if s:is_win32 && !opt.skip_shell
-      let cmd = s:win32_sh_replace(shell, shell_arg_patch, cmd)
-    endif
     let context = {'shell': shell,
           \ 'cmd': cmd,
           \ 'close': opt.close, 'background': opt.background,
@@ -384,10 +373,6 @@ function! s:sh(cmd, opt) abort " {{{2
     return
   endif
   " }}}
-
-  if s:is_win32 && !opt.skip_shell
-    let cmd = s:win32_sh_replace(shell, shell_arg_patch, cmd)
-  endif
 
   if s:is_win32 && !opt.skip_shell
     let cmd_new = s:win32_cmd_list_to_str(cmd)
@@ -682,10 +667,6 @@ endfunction
 " win32 polyfill {{{1
 if !s:is_win32 | finish | endif
 
-function! s:win32_sh_replace(shell, args, cmd) abort
-  return [a:shell] + a:args + a:cmd[1 : ]
-endfunction
-
 " guess shell if not set {{{2
 if !exists('g:sh_path')
   for s:i in [
@@ -697,7 +678,9 @@ if !exists('g:sh_path')
         \ 'C:/Program Files/Git/usr/bin/bash.exe',
         \ 'C:/Program Files (x86)/Git/usr/bin/bash.exe',
         \ ]
-    if executable(s:i) && match(s:i, '\v(zsh|bash)') >= 0
+    " &shell: check sh but not pwsh.
+    if (s:i ==# &shell && match(s:i, '\v(pw)@2<!sh') >= 0)
+          \ || (s:i !=# &shell && executable(s:i))
       let g:sh_path = s:i
       break
     endif
@@ -772,4 +755,14 @@ function! s:win32_cmd_list(A, L, P)
   let exe = globpath(substitute($PATH, ';', ',', 'g'), '*.exe', 0, 1)
   call map(exe, 'substitute(v:val, ".*\\", "", "")')
   return join(sort(extend(exe, split(data, ',\s*'))), "\n")
+endfunction
+
+function! s:wsl_path(shell, file) abort
+  let [shell, file] = [a:shell, a:file]
+  if executable('wsl') && match(shell, 'wsl') >= 0
+    let drive = matchstr(file, '\v^[a-zA-Z]\:')->tolower()
+    let without_drive = substitute(file, '\v^[a-zA-Z]\:', '', '')
+    return '/mnt/' .. drive[ : -2] .. s:tr_slash(without_drive)
+  endif
+  return file
 endfunction

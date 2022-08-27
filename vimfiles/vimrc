@@ -324,7 +324,9 @@ endif
 # foldmethod {{{2
 # it's too easy to use vim style folder in various text file.
 # just set fdm=marker as default.
-set fdm=marker
+if has('vim_starting')
+    set fdm=marker
+endif
 
 # sessionoptions; better ":mksession" option. {{{2
 # do not include options in ssop; {{{
@@ -1972,6 +1974,10 @@ enddef  # }}}
 # sv() helper (in vim embedded terminal) {{{2
 def g:Tapi_shell_sv_helper(...arg: list<any>)
     feedkeys("\<C-\>\<C-n>", 'n')
+enddef
+
+def g:NoteIdNew(): string # {{{2
+    return strftime('%Y%m%d_%H%M%S')
 enddef
 
 # finish {{{1 }}}1
