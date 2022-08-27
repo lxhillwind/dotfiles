@@ -114,7 +114,7 @@ set rtp=~/vimfiles,$VIMRUNTIME,~/vimfiles/after
 set pp=~/vimfiles,$VIMRUNTIME
 
 # win32 environment prepare {{{2
-if is_win32
+if is_win32 && has('vim_starting')
     # Set shellslash, so file path completion returns slash based str, {{{
     # which works in sh environment and win32 shell (cmd is not supported?).
     # shellescape() also returns unix-shell-friendly string.
@@ -154,6 +154,14 @@ if is_win32
     # }}}
     const git_path = exepath('git')->substitute('\', '/', 'g')
     for _ in ['']  # use a for loop to make indent below fewer.
+        if !(
+            execute(':verbose set shell?')->split("\n")->get(-1)
+            ->match('^\s*Last set from') < 0
+            || &shell->match('^/') >= 0)
+            # only set shell if it is not set or set to invalid value (like
+            # /bin/sh when invoking from busybox shell).
+            break
+        endif
         if empty(git_path)
             break
         endif
