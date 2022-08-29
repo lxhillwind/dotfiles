@@ -379,11 +379,21 @@ set noundofile
 # alt key in terminal {{{2
 if !has('gui_running') && is_unix
     # see ":set-termcap"
-    for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
+    # <A-0> (<Esc>0) is used as <S-Space>; so remove 0 here.
+    for i in 'abcdefghijklmnopqrstuvwxyz123456789'
         exec printf("set <M-%s>=\<Esc>%s", i, i)
     endfor
     set ttimeoutlen=100
 endif
+
+# <S-Space> in terminal {{{2
+# additional setup: map <S-Space> to <Esc>0 in terminal emulator setting.
+#
+# t_F9 is <F19>. see ":h 't_F9'"
+exec "set t_F9=\<Esc>0"
+map <F19> <S-Space>
+map! <F19> <S-Space>
+tmap <F19> <S-Space>
 
 # set env for embedded terminal. {{{2
 if !exists('$FZF_DEFAULT_OPTS')
