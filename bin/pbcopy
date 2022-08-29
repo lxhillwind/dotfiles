@@ -2,21 +2,22 @@
 
 if [ -e /usr/bin/pbcopy ]; then
     exec /usr/bin/pbcopy "$@"
+elif [ -n "$WAYLAND_DISPLAY" ]; then
+    exec wl-copy
+# vscode may set $DISPLAY in win32, so we should detect cygwin clipboard before DISPLAY.
+elif [ -e /dev/clipboard ]; then
+    cat > /dev/clipboard
+# wsl.
+elif [ -x /usr/bin/wslpath ]; then
+    clip.exe
+elif [ -n "$DISPLAY" ]; then
+    exec xsel -ib
+elif [ -n "$SSH_CLIENT" ] && \
+    [ "$CLIPBOARD_SSH" != '0' ] && \
+    timeout 1 curl -s -f "${CLIPBOARD_SSH:-10.0.2.2:8000}"/http-board-ping >/dev/null 2>&1; then
+    exec curl -s "${CLIPBOARD_SSH:-10.0.2.2:8000}"/api -X POST -F text='<-' -o /dev/null
+elif [ -n "$TMUX" ]; then
+    exec tmux loadb -
 else
-    if [ -n "$WAYLAND_DISPLAY" ]; then
-        exec wl-copy
-    # vscode may set $DISPLAY in win32, so we should detect cygwin clipboard before DISPLAY.
-    elif [ -e /dev/clipboard ]; then
-        cat > /dev/clipboard
-    elif [ -n "$DISPLAY" ]; then
-        exec xsel -ib
-    elif [ -n "$SSH_CLIENT" ] && \
-        [ "$CLIPBOARD_SSH" != '0' ] && \
-        timeout 1 curl -s -f "${CLIPBOARD_SSH:-10.0.2.2:8000}"/http-board-ping >/dev/null 2>&1; then
-        exec curl -s "${CLIPBOARD_SSH:-10.0.2.2:8000}"/api -X POST -F text='<-' -o /dev/null
-    elif [ -n "$TMUX" ]; then
-        exec tmux loadb -
-    else
-        :
-    fi
+    :
 fi

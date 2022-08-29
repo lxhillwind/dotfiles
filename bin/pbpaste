@@ -2,21 +2,23 @@
 
 if [ -e /usr/bin/pbpaste ]; then
     exec /usr/bin/pbpaste "$@"
+elif [ -n "$WAYLAND_DISPLAY" ]; then
+    exec wl-paste -n
+# vscode may set $DISPLAY in win32, so we should detect cygwin clipboard before DISPLAY.
+elif [ -e /dev/clipboard ]; then
+    exec cat /dev/clipboard
+# wsl.
+# powershell pbaste contains additional newline.
+elif [ -x /usr/bin/wslpath ]; then
+    powershell.exe -command Get-Clipboard | tr '\n' '\0' | sed -E 's/\r//g; s/.$//' | tr '\0' '\n'
+elif [ -n "$DISPLAY" ]; then
+    exec xsel -ob
+elif [ -n "$SSH_CLIENT" ] && \
+    [ "$CLIPBOARD_SSH" != '0' ] && \
+    timeout 1 curl -s -f "${CLIPBOARD_SSH:-10.0.2.2:8000}"/http-board-ping >/dev/null 2>&1; then
+    exec curl -s "${CLIPBOARD_SSH:-10.0.2.2:8000}"/raw
+elif [ -n "$TMUX" ]; then
+    exec tmux saveb -
 else
-    if [ -n "$WAYLAND_DISPLAY" ]; then
-        exec wl-paste -n
-    # vscode may set $DISPLAY in win32, so we should detect cygwin clipboard before DISPLAY.
-    elif [ -e /dev/clipboard ]; then
-        exec cat /dev/clipboard
-    elif [ -n "$DISPLAY" ]; then
-        exec xsel -ob
-    elif [ -n "$SSH_CLIENT" ] && \
-        [ "$CLIPBOARD_SSH" != '0' ] && \
-        timeout 1 curl -s -f "${CLIPBOARD_SSH:-10.0.2.2:8000}"/http-board-ping >/dev/null 2>&1; then
-        exec curl -s "${CLIPBOARD_SSH:-10.0.2.2:8000}"/raw
-    elif [ -n "$TMUX" ]; then
-        exec tmux saveb -
-    else
-        :
-    fi
+    :
 fi
