@@ -336,7 +336,7 @@ function! s:sh(cmd, opt) abort " {{{2
 
   if opt.window " {{{
     " skip_shell does not care of close option, since it is complex.
-    let cmd = opt.close || opt.skip_shell ? cmd : s:cmdlist_keep_window(cmd)
+    let cmd = opt.close || opt.skip_shell ? cmd : s:cmdlist_keep_window(shell_list, cmd)
     let context = {'shell': shell,
           \ 'cmd': cmd,
           \ 'close': opt.close, 'background': opt.background,
@@ -511,9 +511,8 @@ function! s:post_func(result, opt) abort
   endif
 endfunction
 
-function! s:cmdlist_keep_window(cmd) abort
-  " NOTE `sh` here may be replaced by correct sh path later (for win32).
-  return ['sh', '-c',
+function! s:cmdlist_keep_window(shell_list, cmd) abort
+  return a:shell_list + ['-c',
         \ '"$@"; if command -v stty >/dev/null; then stty sane; fi; '
         \ . 'echo; echo "Press any key to continue..."; '
         \ . 'if command -v zstyle >/dev/null; then read -q; else read -n 1; fi',
