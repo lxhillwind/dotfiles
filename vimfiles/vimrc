@@ -1032,14 +1032,14 @@ endif
 
 # plugin commits (generated with :PackCommitGen) {{{1
 Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
-Pack 'https://github.com/justinmk/vim-dirvish', '7e41cd7628d9844b4e66b45104f3abc326aa1a00'
+Pack 'https://github.com/justinmk/vim-dirvish', '81b40878f286f370df2a2b3a52c4d860643d2142'
 Pack 'https://github.com/justinmk/vim-sneak', '94c2de47ab301d476a2baec9ffda07367046bec9'
-Pack 'https://github.com/lacygoill/vim9-syntax', '808bca9ee4496d85f5d08924dfe24c2c2ae5b3e7'
-Pack 'https://github.com/masukomi/vim-markdown-folding', '3f35acfb753cc9ea22182400b075c5b6e896ad71'
+Pack 'https://github.com/lacygoill/vim9-syntax', '8e4b8e47e7d774c3b75f7d5df1cd7898bea84d8d'
+Pack 'https://github.com/masukomi/vim-markdown-folding', '526cffde2cb013ae337cdf48e244bb15881ab7ce'
 Pack 'https://github.com/skywind3000/vim-auto-popmenu', 'ea64a79b23401f48e95b9bce65ba39c6c020a291'
 Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
 Pack 'https://github.com/tpope/vim-repeat', '24afe922e6a05891756ecf331f39a1f6743d3d5a'
-Pack 'https://github.com/ziglang/zig.vim', '1cb9cd521cab91e39cf162b50b7a095fd12361d3'
+Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
 
 # filetype & autocmd {{{1
 filetype plugin indent on

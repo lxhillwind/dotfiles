@@ -26,6 +26,7 @@
 	s = status
 	co = checkout
 	br = branch
+	l = log
 [mergetool]
 	keepBackup = false
 [pull]
