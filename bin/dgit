@@ -1,9 +1,0 @@
-#!/bin/sh
-
-set -e
-root="$(dirname "$(dirname "$0")")"
-if [ "${root##*[\\/]}" = dotfiles ]; then
-    root="$(dirname "$root")"
-fi
-
-exec git --git-dir "$root/dotfiles/.git" --work-tree "$root" "$@"
