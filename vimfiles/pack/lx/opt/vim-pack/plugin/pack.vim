@@ -110,7 +110,7 @@ endfunction
 
 let s:function_dict = #{
       \ s: #{key: 1, fn: 's:pack_status', help: 'status; gen cmd to diff from origin/head'},
-      \ u: #{key: 2, fn: 's:pack_update', help: 'update; gen cmd to do "git fetch"'},
+      \ u: #{key: 2, fn: 's:pack_update', help: 'update (or install); gen cmd to do "git fetch"'},
       \ c: #{key: 3, fn: 's:pack_clean', help: 'clean; prompt to cleanup unused repo'},
       \ h: #{key: 4, fn: 's:pack_help_tags', help: 'helptags; run :helptags for managed plugins'},
       \ g: #{key: 5, fn: 's:pack_commit_gen', help: 'snapshot-gen; gen cmd to get plugin commits'},
