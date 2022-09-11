@@ -1109,7 +1109,7 @@ augroup vimrc
     enddef
 
     def WriteBin(name: string)
-        execute printf(':%w !%s -r > %s', shellescape(xxd_path), shellescape(name))
+        execute printf('w !%s -r > %s', shellescape(xxd_path), shellescape(name))
         if !empty(v:shell_error)
             return
         endif
