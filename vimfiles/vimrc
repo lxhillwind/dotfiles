@@ -103,6 +103,7 @@ const is_unix = has('unix')
 const is_win32 = has('win32')
 const has_gui = has('gui_running') || has('mac')
 || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
+const is_kde = has('linux') && $DESKTOP_SESSION == 'plasma'
 
 augroup vimrc
     au!
@@ -712,8 +713,10 @@ nnoremap <Space>p <Cmd>call <SID>ClipboardPaste("")<CR>
 def ClipboardCopy(cmd_: string)
     var cmd = cmd_
     if empty(cmd)
-        if has('clipboard') && is_win32
+        if has('clipboard') && (is_win32 || is_kde)
             # NOTE: unix: X11 clipboard content will disapper when program exits.
+            # but kde (plasma) has clipboard manager, which make it work
+            # consistently.
             @+ = @"
             return
         elseif executable('pbcopy')
@@ -730,7 +733,7 @@ enddef
 def ClipboardPaste(cmd_: string)
     var cmd = cmd_
     if empty(cmd)
-        if has('clipboard') && is_win32
+        if has('clipboard') && (is_win32 || is_kde)
             @" = @+
             return
         elseif executable('pbpaste')
