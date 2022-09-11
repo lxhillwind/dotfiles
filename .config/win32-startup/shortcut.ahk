@@ -1,5 +1,14 @@
 ; to run at startup, just create shortcut of this file (with explorer), and
 ; move it to `shell:startup` dir.
+;
+; cheatsheet:
+; ^ => ctrl
+; ! => alt
+; + => shift
+; # => win
+;
+; or:
+; AutoHotkey Help => Usage and Syntax => List of Keys
 
 #NoEnv
 
@@ -35,6 +44,21 @@ $!+h::
         Send !{home}
     else
         Send !+h
+return
+
+; edge: tab switch. (alt+shift+[ or ]) {{{1
+$!+[::
+    if WinActive("ahk_exe msedge.exe")
+        Send ^+{Tab}
+    else
+        Send !+[
+return
+
+$!+]::
+    if WinActive("ahk_exe msedge.exe")
+        Send ^{Tab}
+    else
+        Send !+]
 return
 
 ; map alt-1 to alt-9. {{{1
@@ -111,3 +135,6 @@ $!9::
     else
         Send !9
 return
+
+; screenshot (ctrl+alt+a) {{{1
+^!a::Send #+s

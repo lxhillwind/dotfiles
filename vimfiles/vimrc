@@ -1116,9 +1116,20 @@ augroup vimrc
         setl nomodified
         redrawstatus | echon 'written.'
     enddef
+
+    def BinaryUriToFilename(s: string): string
+        return s->substitute('^binary://', '', '')
+    enddef
     # }}}
-    au BufReadCmd *.exe,*.dll ReadBin(expand('<amatch>'))
-    au BufWriteCmd *.exe,*.dll WriteBin(expand('<amatch>'))
+
+    command BinaryEditThis {
+        const filename = expand('%:p')
+        if filename->match('^binary://') < 0
+            exec 'edit binary://' .. fnameescape(filename)
+        endif
+        }
+    au BufReadCmd binary://* ReadBin(expand('<amatch>')->BinaryUriToFilename())
+    au BufWriteCmd binary://* WriteBin(expand('<amatch>')->BinaryUriToFilename())
 
     # gx related (NOTE: key `gx` overwritten) {{{2
     nnoremap <silent> gx <Cmd>call <SID>Gx('n')<CR>
