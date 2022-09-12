@@ -1,0 +1,12 @@
+#!/bin/sh
+# It's too easy to pass stdin (as data) to awk;
+# so explicitly passing "-" as argument is required when it's used as program.
+
+if [ $# -eq 0 ]; then
+    echo 'usage: awk-f {filename or "-"} [argument...]' >&2
+    exit 1
+fi
+
+prog="$1"
+shift
+exec awk -f "$prog" "$@"

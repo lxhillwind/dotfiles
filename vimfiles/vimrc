@@ -242,6 +242,17 @@ noremap <Space> <Nop>
 nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
 nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
 
+# add ~/bin to $PATH {{{1
+# Even when set ~/bin in $PATH via ~/.config/zshrc, it may not be added when
+# invoking gvim from desktop session, then ":sh" / ":Sh" / ":term" may not
+# work for command defined in ~/bin.
+# So add it to $PATH in vim explicitly.
+const env_path_sep = is_win32 ? ';' : ':'
+const home_bin = expand('~/bin')
+if index($PATH->split(env_path_sep), home_bin) < 0
+    $PATH = home_bin .. env_path_sep .. $PATH
+endif
+
 # shell {{{2
 # 'noshelltemp' {{{
 # In win32 gui, 'noshelltemp' makes ":!" and ":[range]w !" work like in unix:
@@ -1356,9 +1367,11 @@ enddef
 command! -nargs=* -complete=shellcmd KshebangInsert ShebangInsert(<q-args>)
 
 g:vimrc_shebang_lines = {
-    'awk': '/usr/bin/awk -f', 'javascript': 'node', 'lua': 'lua',
+    'awk': 'awk-f',  # awk: wrapper executing "awk -f" is required.
+    'javascript': 'node', 'lua': 'lua',
     'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
-    'scheme': 'scheme-run', 'sh': '/bin/sh', 'zsh': 'zsh',
+    'scheme': 'scheme-run',  # scheme: see ~/bin/scheme-run
+    'sh': '/bin/sh', 'zsh': 'zsh',
     }
 
 def ShebangInsert(args: string)
