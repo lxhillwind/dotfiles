@@ -1125,7 +1125,8 @@ augroup vimrc
                 \ <Space>;c <Cmd>call <SID>MarkdownToggleTaskStatus()<CR>
 
     # ReadBin / WriteBin impl {{{
-    # avoid using busybox xxd.
+    # avoid using busybox xxd. To use busybox xxd: `sed -E 's/  .*//' | xxd -r`;
+    # since contents after 0x blocks are also parsed by busybox xxd.
     var xxd_path = 'xxd'
     # possible paths are from my vim-bin repo. (unix: $VIM/bin/xxd; win32:
     # $VIM/xxd.exe)
@@ -1171,6 +1172,9 @@ augroup vimrc
 
     command BinaryEditThis {
         const filename = expand('%:p')
+        if !filename->filereadable()
+            throw 'file associated to this buffer is not readable!'
+        endif
         if filename->match('^binary://') < 0
             exec 'edit binary://' .. fnameescape(filename)
         endif
