@@ -280,7 +280,7 @@ endif
 
 # cmdline completion {{{2
 # defined here instead of legacy, since it is available only after version 8.x
-set wildoptions=pum
+set wildoptions=pum,fuzzy
 
 # builtin terminal enhancement {{{2
 def TerminalPaste()

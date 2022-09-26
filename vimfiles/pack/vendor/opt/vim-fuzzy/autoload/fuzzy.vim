@@ -491,7 +491,7 @@ def InitCommandsOrMappings() #{{{2
         #                │    └ Address
         #                └ Args
         #}}}
-        noise = '^\S*\zs.*\%43c'
+        noise = '^\S*\zs.*\%43c\S*'
 
     elseif sourcetype =~ '^Mappings'
         cmd = 'verbose ' .. sourcetype[-2]->tolower() .. 'map'
