@@ -2070,6 +2070,35 @@ def g:NoteIdNew(): string # {{{2
     return strftime('%Y%m%d_%H%M%S')
 enddef
 
+# :PluginReadme {plugin}; open README file for specified plugin. {{{2
+command! -nargs=1 -complete=custom,PluginReadmeComp PluginReadme
+| PluginReadme(<q-args>)
+
+def PluginReadme(plugin: string)
+    for i in PluginReadmeCache()
+        if i->match(plugin) >= 0
+            exec 'edit' i->fnameescape()
+            return
+        endif
+    endfor
+    echoerr 'plugin README not found: ' .. plugin
+enddef
+
+def PluginReadmeComp(..._: list<any>): string
+    return PluginReadmeCache()
+                ->mapnew((_, i) => i->substitute('\v.*/\ze[^/]+/[^/]+$', '', ''))
+                ->join("\n")
+enddef
+
+var plugin_readme_cache: list<string> = []
+var plugin_readme_set: bool = false
+def PluginReadmeCache(): list<string>
+    if !plugin_readme_set
+        plugin_readme_cache = globpath(&rtp, 'README*', 0, 1)
+        plugin_readme_set = true
+    endif
+    return plugin_readme_cache
+enddef
 # finish {{{1 }}}1
 defc  # show error in this file early.
 # TODO {{{1
