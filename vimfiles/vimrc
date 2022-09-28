@@ -1012,6 +1012,8 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)
 
     augroup vimrc
         au FileType go,html,python,vim g:InitCocLang()
+        au FileType javascript,typescript g:InitCocLang()
+        au FileType nim,zig g:InitCocLang()
     augroup END
 
     # coc keymap; define as global function, so it can be called outside.
