@@ -1,5 +1,7 @@
 vim9script noclear
 
+# NOTE: search NOTE to get my (lxhillwind) notes about this plugin.
+
 # I want to be able to edit my input!{{{
 #
 # For now, I don't know how to do that.
@@ -1209,7 +1211,12 @@ def FilterAndHighlight(lines: list<dict<string>>): list<dict<any>> #{{{2
             filter_text,
             lines->get(0, {})->has_key('matchfuzzy_key')
             ?     {key: 'matchfuzzy_key'}
-            :     {key: 'text'}
+            #:     {key: 'text'}
+            # NOTE custom on matchfuzzypos behavior; "search_trailer" should
+            # be string, to match variable `source` type.
+            :     {text_cb: (i) => (
+            !i->get('search_trailer', '')->empty() ? [i.text, i.trailer] : [i.text]
+            )->join("\t")}
         )
         matches = matches
             ->slice(0, POPUP_MAXLINES)
@@ -1459,6 +1466,7 @@ enddef
 def ExtractInfo(line: string): dict<string> #{{{3
     if sourcetype =~ '^User'
         if has_key(config, 'ExtractInfoFn')
+            # NOTE line is what shown in popup; "\t" delimited.
             return config.ExtractInfoFn(line)
         endif
         return {}
@@ -1620,7 +1628,8 @@ def PreviewHighlight(info: dict<string>) #{{{3
             .. fnameescape(filename)
         var fullconceal: string = '&l:conceallevel = 3'
         var unfold: string = 'normal! zR'
-        var whereAmI: string = sourcetype == 'Commands' || sourcetype =~ '^Mappings'
+        # NOTE whereAmI is used to highlight current line.
+        var whereAmI: string = sourcetype == 'Commands' || sourcetype =~ '^Mappings' || sourcetype =~ '^User'
             ? '&l:cursorline = true'
             : ''
         win_execute(preview_winid, [reset_isk, setsyntax, fullconceal, unfold, whereAmI])
@@ -1630,7 +1639,11 @@ def PreviewHighlight(info: dict<string>) #{{{3
     if sourcetype =~ '^User'
         # TODO
         if !empty(filename)
+            if !empty(lnum)
+                win_execute(preview_winid, 'normal! ' .. lnum .. 'Gzz')
+            endif
             Prettify()
+            popup_setoptions(preview_winid, {title: ' ' .. filename})
         endif
         return
     elseif sourcetype == 'HelpTags'
@@ -1702,6 +1715,9 @@ def ExitCallback( #{{{2
             ->split('\t')
             ->get(0, '')
             ->trim()
+        # NOTE although source->get(..., {}) is a dict, it DOES NOT contain
+        # information like trailer (set in InitSource); it contains fuzzy match
+        # related info instead.
         if chosen == ''
             return
         endif
@@ -1737,6 +1753,8 @@ def ExitCallback( #{{{2
         if sourcetype =~ '^User'
             if !empty(config) && has_key(config, 'Callback')
                 call(config.Callback, [chosen])
+            else
+                Open(chosen, howtoopen)
             endif
 
         elseif ['Files', 'Locate', 'RecentFiles']->index(sourcetype) >= 0

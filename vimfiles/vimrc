@@ -104,7 +104,7 @@ const is_win32 = has('win32')
 const has_gui = has('gui_running') || has('mac')
 || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 const is_kde = has('linux') && $DESKTOP_SESSION == 'plasma'
-
+g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
 augroup vimrc
     au!
 augroup END
@@ -886,6 +886,91 @@ def SwitchReaderMode()
     endif
 enddef
 
+# <Space>bb (bookmark add) / <Space>bo (open) / <Space>be (edit) {{{2
+nnoremap <Space>bb <Cmd>call <SID>BookmarkAdd()<CR>
+nnoremap <Space>bo <Cmd>call fuzzy#Main('User.bookmark')<CR>
+nnoremap <Space>be <Cmd>call <SID>BookmarkEdit()<CR>
+command! -nargs=* BookmarkAdd BookmarkAdd(<args>)
+
+const bookmark_file = expand('~/.vim/files/bookmark.txt')
+
+def BookmarkAdd(args: dict<any> = {})
+    var current_file = bufname('%')
+    if current_file->empty()
+        throw 'current buffer name is empty!'
+    endif
+    current_file = current_file->fnamemodify(':p')
+    if args->empty()
+        const cmdline = printf(
+        'BookmarkAdd {"file": "%s", "line": "%d", "title": ""}',
+        current_file->escape('"'), line('.'),
+        )
+        execute 'SetCmdText' cmdline .. "\<Left>"->repeat(2)
+    else
+        const file: string = args.file
+        const line: number = args.line->str2nr()
+        const title: string = args.title
+        if BookmarkAllData()
+                    ->mapnew((_, i) => i->json_decode())
+                    ->filter((_, i) => i.file == file && i.line == line)->len() > 0
+            throw 'already bookmarked'
+        endif
+        [
+            {file: file, line: line, title: title}->json_encode()
+            ]->writefile(bookmark_file, 'a')
+        echo 'bookmark created with title: ' .. title .. '.'
+    endif
+enddef
+
+def BookmarkAllData(): list<string>
+    if filereadable(bookmark_file)
+        return bookmark_file->readfile()
+    endif
+    return []
+enddef
+
+def BookmarkOpenFn(): list<dict<string>>
+    return BookmarkAllData()
+                ->mapnew((_, i) => json_decode(i))
+                ->mapnew((_, i) => ({
+    text: i.file .. ':' .. i.line,
+    trailer: i.title,
+    location: '',
+    search_trailer: '1',
+                }))
+enddef
+
+def BookmarkOpenExFn(line: string): dict<string>
+    const res = line->matchstr('\v.*:[0-9]+\ze\t')->split('.*\zs:')
+    return {
+        filename: res[0],
+        lnum: res[1],
+    }
+enddef
+
+g:fuzzy#config->extend({
+bookmark: {
+    Fn: BookmarkOpenFn,
+    ExtractInfoFn: BookmarkOpenExFn,
+}
+})
+
+def BookmarkEdit()
+    execute 'SetCmdText' 'edit' bookmark_file->fnameescape()
+enddef
+
+# <space>gg; like :vim // %, but with vim-fuzzy {{{2
+nnoremap <Space>gg <Cmd>call fuzzy#Main('User.currentBuffer')<CR>
+g:fuzzy#config->extend({
+currentBuffer: {
+    Fn: () => getline(1, '$')->mapnew((idx, i) => ({
+    text: string(idx + 1), trailer: i, location: '', search_trailer: '1',
+    })),
+    Callback: (chosen: string) => {
+        execute 'normal ' .. chosen->matchstr('\v^[0-9]+') .. 'G'
+    }
+    }
+})
 # plugin {{{1
 # first, enable ":Pack" command.
 packadd vim-pack
@@ -983,11 +1068,15 @@ set completeopt=menu,menuone,noselect
 # suppress annoy messages.
 set shortmess+=c
 
+# vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc.
 Pack 'https://github.com/lifepillar/vim-mucomplete'
 # disable its imap <Tab> (and some others)
 g:mucomplete#no_mappings = 1
 g:mucomplete#enable_auto_at_startup = 1
+# make <CR> always add newline.
+inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 
+# vim-auto-popmenu helps me pressing <C-n>.
 #Pack 'https://github.com/skywind3000/vim-auto-popmenu'
 ## disable its imap <Tab>
 #g:apc_enable_tab = 0
@@ -995,12 +1084,12 @@ g:mucomplete#enable_auto_at_startup = 1
 ##g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
 #g:apc_enable_ft = {'*': 1}
 
+# dict-completion sources.
 Pack 'https://github.com/skywind3000/vim-dict'
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
 execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
 # File type override
 #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
-g:vim_dict_config = {'markdown': 'text'}
 # Disable certain types
 #g:vim_dict_config = {'text': ''}
 
@@ -1320,6 +1409,36 @@ augroup vimrc
         endif
         }
 
+    # open {file}:{line}[:{col}] automatically (provided by linter, etc). {{{2
+    au BufNewFile * ReopenAsFileLineCol()
+
+    def ReopenAsFileLineCol()
+        var filename: string = bufname('%')
+        var line: number = 0
+        var column: number = 0
+        if filename->filereadable()
+            return
+        endif
+        if filename->matchstr('\v^.*\ze:[0-9]+$')->filereadable()
+            line = filename->matchstr('\v.*:\zs[0-9]+$')->str2nr()
+            filename = filename->matchstr('\v^.*\ze:[0-9]+$')
+        elseif filename->matchstr('\v^.*\ze:[0-9]+:[0-9]+$')->filereadable()
+            column = filename->matchstr('\v.*:\zs[0-9]+$')->str2nr()
+            line = filename->matchstr('\v.*:\zs[0-9]+\ze:[0-9]+$')->str2nr()
+            filename = filename->matchstr('\v^.*\ze:[0-9]+:[0-9]+$')
+        endif
+        if filename->filereadable()
+            execute 'edit' filename->fnameescape()
+            # this is used to make ftdetect (and many other things) work
+            do BufRead
+            if line > 0
+                execute 'normal' line .. 'G'
+                if column > 0
+                    execute 'normal 0' (column - 1) .. 'l'
+                endif
+            endif
+        endif
+    enddef
     # fix % in cmdwin when matchit plugin enabled. {{{2
     au BufEnter * {
         if win_gettype() == 'command' && maparg('%', 'x') =~ 'Matchit'
@@ -1912,42 +2031,41 @@ def TabWinLines(): list<string>
 enddef
 
 # config {{{3
-g:fuzzy#config = {
-    buffer: {
-        excmd: 'ls',
-        Callback: (chosen: string) => {
-            const bufnr = chosen->matchstr('\v^\s*\zs(\d+)\ze')
-            execute ':' .. bufnr .. 'b'
-            }
-        },
-    color: {
-        LinesFn: () => globpath(&rtp, "colors/*.vim", 0, 1)
-        ->mapnew((_, i) => i->split('[\/.]')->get(-2)),
-        Callback: (chosen: string) => {
-            execute 'color' fnameescape(chosen)
-            }
-        },
-    project_dir: {
-        shell: ProjectListCmd(),
-        # TODO doc why \t here.
-        ExtractInfoFn: (line) => ({filename: line->split('\t')[0]}),
-        Callback: (chosen: string) => {
-            execute 'lcd' fnameescape(chosen)
-            if exists(':Dirvish') == 2
-                execute 'Dirvish' fnameescape(chosen)
-            endif
-            }
-        },
-    tabwin: {
-        LinesFn: TabWinLines,
-        Callback: (chosen: string) => {
-            const res = chosen->trim()->split(' ')
-            const [tab, win] = [res[0], res[1]]
-            execute printf(':%stabn', tab)
-            execute printf(':%swincmd w', win)
-            }
-        },
+g:fuzzy#config->extend({
+buffer: {
+    excmd: 'ls',
+    Callback: (chosen: string) => {
+        const bufnr = chosen->matchstr('\v^\s*\zs(\d+)\ze')
+        execute ':' .. bufnr .. 'b'
     }
+    },
+color: {
+    LinesFn: () => globpath(&rtp, "colors/*.vim", 0, 1)
+                ->mapnew((_, i) => i->split('[\/.]')->get(-2)),
+    Callback: (chosen: string) => {
+        execute 'color' fnameescape(chosen)
+    }
+    },
+project_dir: {
+    shell: ProjectListCmd(),
+    ExtractInfoFn: (line) => ({filename: line->split('\t')[0]}),
+    Callback: (chosen: string) => {
+        execute 'lcd' fnameescape(chosen)
+        if exists(':Dirvish') == 2
+            execute 'Dirvish' fnameescape(chosen)
+        endif
+    }
+    },
+tabwin: {
+    LinesFn: TabWinLines,
+    Callback: (chosen: string) => {
+        const res = chosen->trim()->split(' ')
+        const [tab, win] = [res[0], res[1]]
+        execute printf(':%stabn', tab)
+        execute printf(':%swincmd w', win)
+    }
+    },
+})
 
 # (keymap) popup to select from sources. {{{3
 nnoremap <Space>a <Cmd>call <SID>SelectFromSources()<CR>
@@ -1960,7 +2078,6 @@ def SelectFromSources()
         ['e', 'project_dir'],
         ['b', 'buffer'],
         ['t', 'tabwin'],
-        ['s', 'hist_list'],
         ]
     # some sources may be missing, so check it.
     ->filter((_, i) => !empty(g:fuzzy#config->get(i->get(1))))
@@ -2088,8 +2205,7 @@ def PluginReadmeCache(): list<string>
     endif
     return plugin_readme_cache
 enddef
+# TODO {{{1
 # finish {{{1 }}}1
 defc  # show error in this file early.
-# TODO {{{1
-
 # vim:fdm=marker:tw=78:sw=4
