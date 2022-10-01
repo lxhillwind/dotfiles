@@ -2008,6 +2008,10 @@ def ProjectListCmd(): string
             blacklist ..= printf('-name %s -prune -o ', shellescape(i))
         endif
     endfor
+    var find_repo_bin = exepath('find-repo' .. (is_win32 ? '.exe' : ''))
+    if !find_repo_bin->empty()
+        return printf('%s %s', shellescape(find_repo_bin), g:project_dirs)
+    endif
     return printf(
     "find %s %s -name .git -prune -print0 2>/dev/null"
     .. " | { if [ -x /usr/bin/cygpath ]; then xargs -r -0 cygpath -w; else xargs -r -0 -n 1; fi; }"

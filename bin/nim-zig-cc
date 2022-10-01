@@ -1,0 +1,24 @@
+#!/bin/sh
+
+common_flags="--cc:clang --clang.exe=zig-cc --clang.linkerexe=zig-cc -d:release"
+
+if [ -z "$ZIG_TARGET" ]; then
+    exec nim c $common_flags "$@"
+fi
+
+os=$(printf "$ZIG_TARGET" | awk -F- '{ print $2 }')
+arch=$(printf "$ZIG_TARGET" | awk -F- '{ print $1 }')
+
+case "$os" in
+    macos)
+        os=macosx ;;
+esac
+
+case "$arch" in
+    aarch64)
+        arch=arm64 ;;
+    x86_64)
+        arch=amd64 ;;
+esac
+
+exec nim c --os:"$os" --cpu:"$arch" $common_flags "$@"
