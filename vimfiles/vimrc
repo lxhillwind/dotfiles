@@ -932,6 +932,7 @@ enddef
 def BookmarkOpenFn(): list<dict<string>>
     return BookmarkAllData()
                 ->mapnew((_, i) => json_decode(i))
+                ->filter((_, i) => i.file->filereadable())
                 ->mapnew((_, i) => ({
     text: i.file .. ':' .. i.line,
     trailer: i.title,
