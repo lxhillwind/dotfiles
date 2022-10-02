@@ -22,8 +22,8 @@ vim9script noclear
 #
 # Maybe the extra popup could leverage the concept of prompt buffer.
 #
-# Suggestion2: There has been some discussion on Google regarding a feature
-# request originally posted on github:
+# Suggestion2: There  has  been  some  discussion on  the  Google  mailing  list
+# regarding a feature request originally posted on GitHub:
 # https://github.com/vim/vim/issues/5639
 # https://groups.google.com/g/vim_dev/c/42DjcXhuVAE/m/8yzxkBysAQAJ
 #
@@ -91,7 +91,7 @@ vim9script noclear
 # TODO: Sometimes `Locate` is much slower than usual (from 8s to ≈ 45s).
 # And sometimes, `$ locate /` is much slower than usual (from .5s to 4s).
 # What's going on?
-# And btw, why is `Locate` so slow compared to `locate(1)`?
+# And BTW, why is `Locate` so slow compared to `locate(1)`?
 # I don't think `Files` is that slow compared to `find(1)`.
 # Is it because `Locate` finds much more files?
 
@@ -125,9 +125,6 @@ vim9script noclear
 
 # Config {{{1
 
-# 2 popups = 4 borders
-const BORDERS: number = 4
-
 const HOURGLASS_CHARS: list<string> = ['―', '\', '|', '/']
 
 # when filtering, ignore matches with a  too low score (the lower this variable,
@@ -158,8 +155,8 @@ const MIN_SCORE: number = -5'000
 # Why?  Because moving to  the 5000th one is stupidly slow,  and the whole point
 # of this plugin  is to save time.  To  give you an idea, it takes  about 25s to
 # select the 1000th entry.  That's already too much.  Note that our popup filter
-# lets us  jump to the  end by  pressing `C-g`, so  in practice, the line which
-# is needs the most time to be selected is the 500th one, not the 1000th one.
+# lets us  jump to the  end by  pressing `C-g`, so  in practice, the  line which
+# needs the most time to be selected is the 500th one, not the 1000th one.
 # You'll need approximately 12s to reach it, which looks reasonable.
 #
 # ---
@@ -177,7 +174,9 @@ const POPUP_MAXLINES: number = 100
 
 const PREVIEW_MAXSIZE: float = 5 * pow(2, 20)
 
-# Maximum number of lines we're ok for `matchfuzzypos()` to process.{{{
+const SNIPPETS_DIR: string = globpath(&runtimepath, 'UltiSnips')
+
+# Maximum number of lines we're OK for `matchfuzzypos()` to process.{{{
 #
 # We don't want `matchfuzzypos()` to process  too many lines at once, because it
 # might be  slow and block Vim,  while we want  to add some character(s)  to the
@@ -207,16 +206,19 @@ const TOO_BIG: number = 2'000'000
 
 const UPDATEPREVIEW_WAITINGTIME: number = 50
 
-# Declarations {{{1
+# Init {{{1
+
+# 2 popups = 4 borders
+const BORDERS: number = 4
 
 var elapsed: float
-var filter_text: string = ''
+var filter_text: string
 var filtered_source: list<dict<any>>
-var hourglass_idx: number = 0
-var incomplete: string = ''
+var hourglass_idx: number
+var incomplete: string
 var job_failed: bool
 var job_started: bool
-var last_filter_text: string = ''
+var last_filter_text: string
 var last_filtered_line: number = -1
 var last_time: list<any>
 var menu_buf: number = -1
@@ -230,7 +232,7 @@ var popups_update_timer: number = -1
 var preview_timer: number = -1
 var preview_winid: number = -1
 var source: list<dict<string>>
-var source_is_being_computed: bool = false
+var source_is_being_computed: bool
 var sourcetype: string
 
 var config: dict<any>
@@ -239,8 +241,6 @@ var busybox_as_shell: bool = (
 has('win32')
 && (&shell->match('busybox') >= 0)
 ) ? true : false
-
-const SNIPPETS_DIR: string = globpath(&rtp, 'UltiSnips')
 
 # Interface {{{1
 export def Main(type: string, input = '') #{{{2
@@ -257,8 +257,8 @@ export def Main(type: string, input = '') #{{{2
     #
     # It's true  that we invoke  `Clean()` from `ExitCallback()`;  and `Clean()`
     # does indeed invoke `Reset()`.
-    # However, when you  press exit the main popup before  the job has finished,
-    # some of its callbacks can still be invoked and set `source`.
+    # However, when you exit the main popup before the job has finished, some of
+    # its callbacks can still be invoked and set `source`.
     #}}}
     # Make sure to reset as early as possible.{{{
     #
@@ -315,7 +315,7 @@ export def Main(type: string, input = '') #{{{2
     var statusline: number = (&laststatus == 2 || &laststatus == 1 && winnr('$') >= 2) ? 1 : 0
     var tabline: number = (&showtabline == 2 || &showtabline == 1 && tabpagenr('$') >= 2) ? 1 : 0
     def Offset(): number
-        var offset: number = 0
+        var offset: number
         var necessary: number = 2 * height + BORDERS
         var available: number = &lines - &cmdheight - statusline - tabline
         if necessary > available
@@ -434,12 +434,9 @@ def InitSource() #{{{2
         GetFindCmd()->Job_start()
 
     elseif sourcetype == 'Grep'
-        # You shouldn't need to pass any option to `rg(1)`.{{{
-        #
-        # Unless you want something special.
-        # General settings should be written in: `~/.config/ripgreprc`.
-        #}}}
-        var cmd: string = executable('rg') ? "rg --line-number '.*' ." : 'grep -RHIins'
+        var cmd: string = executable('rg')
+            ? "rg --line-number '.*' ."
+            : 'grep --line-number --with-filename --ignore-case --dereference-recursive --no-messages --binary-files'
         if !executable('rg') && (busybox_as_shell || windowsversion() == '5.1')
             # in git 2.10 (latest supported version on Windows XP), grep does
             # not support no-pattern usage.
@@ -467,6 +464,9 @@ def InitSource() #{{{2
 
     elseif sourcetype == 'Snippets'
         InitSnippets()
+
+    elseif sourcetype == 'Commits Messages'
+        InitCommitMessages()
     endif
 
     BailOutIfTooBig()
@@ -711,6 +711,24 @@ def InitSnippets() #{{{2
         }))
 enddef
 
+def InitCommitMessages() #{{{2
+    if getenv('COMMIT_MESSAGES_DIR') == null
+        source = []
+        return
+    endif
+
+    var msg_files: list<string> = readdir($COMMIT_MESSAGES_DIR)
+    msg_files->remove(msg_files->index('checksums'))
+    source = msg_files
+        ->copy()
+        ->map((_, fname: string): dict<string> => ({
+            text: $'{$COMMIT_MESSAGES_DIR}/{fname}'->readfile()->get(0, ''),
+            trailer: '',
+            header: '',
+            location: $'{$COMMIT_MESSAGES_DIR}/{fname}',
+        }))
+enddef
+
 def Job_start(cmd: string) #{{{2
 # TODO: *Sometimes*, after pressing `C-c` while a job is running:{{{
 #
@@ -758,7 +776,7 @@ def Job_start(cmd: string) #{{{2
 
     if job_status(myjob) == 'fail'
         # shorten message to avoid a hit-enter prompt
-        var msg: string = printf('[vim-fuzzy] Failed to run:  %s', cmd)
+        var msg: string = printf('vim-fuzzy: failed to run:  %s', cmd)
         if strcharlen(msg) > (v:echospace + (&cmdheight - 1) * &columns)
             var n: number = v:echospace - 3
             var n1: number = n % 2 ? n / 2 : n / 2 - 1
@@ -887,7 +905,7 @@ def SetFinalSource(_) #{{{2
     if sourcetype == ''
         return
     endif
-    # the last line of the shell ouput ends with an undesirable trailing newline
+    # the last line of the shell output ends with an undesirable trailing newline
     incomplete = incomplete->trim("\n", 2)
     if sourcetype == 'HelpTags'
         var parts: list<string> = incomplete->split('\t')
@@ -1287,7 +1305,7 @@ def InjectTextProps( #{{{2
             header: v.header,
             text: v.header .. v.text .. "\<Tab>" .. v.trailer,
             props: [{
-                      col: 0,
+                      col: 1,
                       end_col: v.header->strlen(),
                       type: 'fuzzyHeader',
                     }]
@@ -1325,7 +1343,7 @@ def InjectTextProps( #{{{2
                         type: 'fuzzyMatch',
                     }))
                     + [{
-                         col: 0,
+                         col: 1,
                          end_col: v.header->strlen(),
                          type: 'fuzzyHeader',
                        }]
@@ -1410,7 +1428,7 @@ def UpdateMainTitle() #{{{2
 
     if filtered_everything
         ClearHourGlass()
-        # Do *not* inlude a `return` and move this block at the start of the function.{{{
+        # Do *not* include a `return` and move this block at the start of the function.{{{
         #
         # It would  prevent the title from  updating the index of  the currently
         # selected entry when there is a non-empty filtering text.
@@ -1428,16 +1446,17 @@ def UpdatePreview(timerid = 0) #{{{2
         return
     endif
 
-    var info: dict<string> = line->ExtractInfo()
+    var info: dict<any> = line->ExtractInfo()
     if empty(info)
         return
     elseif sourcetype =~ '^Registers'
         popup_setoptions(preview_winid, {title: ' "' .. info.registername .. ' '})
         popup_settext(preview_winid, getreg(info.registername, true, true))
         return
-    elseif sourcetype == 'Snippets'
-        popup_settext(preview_winid, info.snippet->split('\n'))
-        win_execute(preview_winid, 'ownsyntax snippets')
+    elseif sourcetype == 'Snippets' || sourcetype == 'Commits Messages'
+        popup_settext(preview_winid, info.text)
+        win_execute(preview_winid,
+            $'ownsyntax {sourcetype == 'Snippets' ? 'snippets' : 'gitcommit'}')
         return
     endif
 
@@ -1463,7 +1482,7 @@ def UpdatePreview(timerid = 0) #{{{2
     PreviewHighlight(info)
 enddef
 
-def ExtractInfo(line: string): dict<string> #{{{3
+def ExtractInfo(line: string): dict<any> #{{{3
     if sourcetype =~ '^User'
         if has_key(config, 'ExtractInfoFn')
             # NOTE line is what shown in popup; "\t" delimited.
@@ -1492,8 +1511,10 @@ def ExtractInfo(line: string): dict<string> #{{{3
             # remove text; only keep filename and line number
             ->matchstr('^.\{-}:\d\+\ze:')
             ->split('.*\zs:')
+
     elseif sourcetype =~ '^Registers'
         return {registername: line->matchstr('"\zs.')}
+
     elseif sourcetype == 'Snippets'
         var snippets_files: list<string> = [SNIPPETS_DIR .. '/' .. &filetype .. '.snippets']
             + [SNIPPETS_DIR .. '/all.snippets']
@@ -1503,15 +1524,15 @@ def ExtractInfo(line: string): dict<string> #{{{3
         endif
         var snippet: list<string>
         var lines: list<string>
-        if snippets_files[0]->filereadable()
-            lines += snippets_files[0]->readfile()
-        endif
-        if snippets_files[1]->filereadable()
-            lines += snippets_files[1]->readfile()
-        endif
+        for file: string in snippets_files
+            if file->filereadable()
+                lines += file->readfile()
+            endif
+        endfor
         if lines->empty()
             return {}
         endif
+
         var started: bool
         for l: string in lines
             if l =~ '^\s*snippet\s\+' .. trigger
@@ -1520,14 +1541,24 @@ def ExtractInfo(line: string): dict<string> #{{{3
                 break
             endif
             if started
-                snippet += [l]
+                snippet->add(l)
             endif
         endfor
         if snippet->empty()
             return {}
         endif
-        snippet += ['endsnippet']
-        return {snippet: snippet->join("\n")}
+        snippet->add('endsnippet')
+        return {text: snippet}
+
+    elseif sourcetype == 'Commits Messages'
+        var msg_file: string = (filtered_source ?? source)
+            ->get(line('.', menu_winid) - 1, {})
+            ->get('location', '')
+        if msg_file == ''
+            return {}
+        endif
+        return {text: msg_file->readfile()}
+
     else
         splitted = line->split('\t\+')
     endif
@@ -1682,7 +1713,7 @@ def ExitCallback( #{{{2
     result: any
 )
     var idx: any = result
-    var howtoopen: string = ''
+    var howtoopen: string
     if typename(result) == 'number' && result <= 0
         # If a job  has been started, and  we want to kill it  by pressing `C-c`
         # because  it takes  too much  time, `job_stop()`  must be  invoked here
@@ -1777,19 +1808,66 @@ def ExitCallback( #{{{2
                 ->Open(howtoopen)
 
         elseif type == 'Snippets'
-            var keys: string
-            if col('.') == col('$') && getline('.') != ''
-                keys = ' '
-            endif
-            keys ..= chosen
+            # In the past we first inserted a space at the end of a non-empty line:{{{
+            #
+            #     var keys: string
+            #     if col('.') == col('$') && getline('.') != ''
+            #         keys = ' '
+            #     endif
+            #     keys ..= chosen
+            #
+            # Not sure why.
+            # But  it caused  an issue  in  python scripts.   For example,  when
+            # expanding a  `for` loop  inside an outer  `if`, `for`  was wrongly
+            # indented 1 character too far to the right.
+            #}}}
+            var keys: string = chosen
+            # open possible folds
+            # Alternatively, you could use `normal! ^Ozv` after `feedkeys()`.{{{
+            #
+            # But in that case, you'll need to delay via a timer.
+            #
+            # Whatever  you do,  make  sure  that an  undesirable  space is  not
+            # sometimes inserted.   Make a test in  a C file, using  the snippet
+            # for a `switch` statement, while the current line is indented (e.g.
+            # inside a function).
+            #}}}
+            keys ..= "\<C-O>zv"
             feedkeys(keys)
+
+        elseif type == 'Commits Messages'
+            PutCommitMessage(idx)
         endif
-        normal! zv
     catch
         Error(v:exception)
     finally
         Clean()
     endtry
+enddef
+
+def PutCommitMessage(idx: number) #{{{2
+    var msg_file: string = get(filtered_source ?? source, idx - 1, {})
+        ->get('location', '')
+
+    if !msg_file->filereadable()
+        return
+    endif
+
+    cursor(1, 1)
+    var msg_last_line: number = search('^#', 'cnW', 0, 0,
+        () => synstack('.', col('.'))
+        ->map((_, n: number) => n->synIDattr('name'))
+        ->match('gitcommitComment') == -1)
+
+    if msg_last_line == 0
+        return
+    endif
+
+    if msg_last_line > 1
+        deletebufline(bufnr('%'), 1, msg_last_line - 1)
+    endif
+    (msg_file->readfile() + [''])->append(0)
+    cursor(1, 1)
 enddef
 
 def Open(matchlist: any, how: string) #{{{2
@@ -1969,8 +2047,8 @@ def GetFindCmd(): string #{{{2
     # How does `-prune` work?{{{
     #
     # When the  path of a file  matches the glob preceding  `-prune`, the latter
-    # returns true; as  a result, the rhs  is not evaluated.  But  when the path
-    # does not match,  `-prune` returns false, and the rhs  *is* evaluated.  See
+    # returns true; as  a result, the RHS  is not evaluated.  But  when the path
+    # does not match,  `-prune` returns false, and the RHS  *is* evaluated.  See
     # `man find /^EXAMPLES/;/construct`.
     #}}}
     var cwd: string = getcwd()
@@ -2065,7 +2143,7 @@ def HourGlass(): string #{{{2
     var char: string = HOURGLASS_CHARS[hourglass_idx]
     ++hourglass_idx
     if hourglass_idx >= len(HOURGLASS_CHARS)
-      hourglass_idx = 0
+        hourglass_idx = 0
     endif
     return char
 enddef
