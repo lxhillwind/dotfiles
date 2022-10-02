@@ -1109,6 +1109,7 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)  # coc.nvim {{{2
         endif
     enddef
 else  # basic completion + lsp {{{2
+    # basic part, which works even if no plugin is installed. {{{3
     # source for dictionary, current or other loaded buffers, see ':help cpt'
     set cpt=.,k,w,b
     # don't select the first item.
@@ -1116,21 +1117,25 @@ else  # basic completion + lsp {{{2
     # suppress annoy messages.
     set shortmess+=c
 
-    # vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc.
+    # vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc. {{{3
     Pack 'https://github.com/lifepillar/vim-mucomplete'
     # disable its imap <Tab> (and some others)
     g:mucomplete#enable_auto_at_startup = 1
     g:mucomplete#no_mappings = 1
     imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
     imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
+    # disable keyn / dict: included in c-n via option 'complete' ('cpt');
+    # about these chains description: help 'mucomplete-methods'
     g:mucomplete#chains = {
-        default: ['path', 'omni', 'keyn', 'dict', 'uspl'],
-        vim: ['path', 'cmd', 'keyn', 'dict', 'uspl'],
+        default: ['path', 'omni', 'user', 'c-n', 'uspl'],
+        vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
+        # sql: disable omni, since it causes trouble. (sth missing?)
+        sql:     ['path',         'user', 'c-n', 'uspl'],
     }
     # make <CR> always add newline.
     inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 
-    # vim-auto-popmenu helps me pressing <C-n>.
+    # vim-auto-popmenu helps me pressing <C-n>. {{{3
     #Pack 'https://github.com/skywind3000/vim-auto-popmenu'
     ## disable its imap <Tab>
     #g:apc_enable_tab = 0
@@ -1138,7 +1143,7 @@ else  # basic completion + lsp {{{2
     ##g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
     #g:apc_enable_ft = {'*': 1}
 
-    # dict-completion sources.
+    # dict-completion sources. {{{3
     Pack 'https://github.com/skywind3000/vim-dict'
     # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
     execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
@@ -1147,7 +1152,7 @@ else  # basic completion + lsp {{{2
     # Disable certain types
     #g:vim_dict_config = {'text': ''}
 
-    # lsp
+    # lsp {{{3
     Pack 'https://github.com/yegappan/lsp'
     silent! packadd lsp
 
@@ -2212,6 +2217,8 @@ def PluginReadmeCache(): list<string>
     return plugin_readme_cache
 enddef
 # TODO {{{1
+# - toc / content: 'gO' in neovim; (help / markdown, etc.)
+# - user completion; 'compl-function'. (tmux buffer, web browser, etc.)
 # finish {{{1 }}}1
 defc  # show error in this file early.
 # vim:fdm=marker:tw=78:sw=4

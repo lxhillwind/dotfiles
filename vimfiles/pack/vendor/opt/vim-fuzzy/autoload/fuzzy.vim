@@ -436,7 +436,8 @@ def InitSource() #{{{2
     elseif sourcetype == 'Grep'
         var cmd: string = executable('rg')
             ? "rg --line-number '.*' ."
-            : 'grep --line-number --with-filename --ignore-case --dereference-recursive --no-messages --binary-files'
+            # upstream grep option seems not work?
+            : 'grep -RHIins .'
         if !executable('rg') && (busybox_as_shell || windowsversion() == '5.1')
             # in git 2.10 (latest supported version on Windows XP), grep does
             # not support no-pattern usage.
