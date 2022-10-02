@@ -1181,6 +1181,21 @@ else  # lsp {{{2
             nnoremap <buffer> K <Cmd>LspHover<CR>
             nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
             nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
+            inoremap <buffer> <expr> <C-e> FixCtrlE()
+        enddef
+
+        # <C-x> works; don't know why.
+        # TODO this "fix" still require double pressing <C-e> for lsp popup.
+        def FixCtrlE(): string
+            if pumvisible()
+                if complete_info().selected == -1
+                    return "\<C-x>"
+                else
+                    return "\<C-e>\<C-x>"
+                endif
+            else
+                return "\<C-e>"
+            endif
         enddef
 
         augroup vimrc
