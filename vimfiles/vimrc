@@ -559,23 +559,6 @@ execute "nnoremap \<M-9> :tablast<CR>"
 execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 # preserve <M-0> for DE / wm.
 
-# i_<tab> {{{2
-imap <expr> <Tab> VimTab()
-inoremap <S-Tab> <C-p>
-
-# use key <Plug>VimTab as a fake key, so it can be mapped in different
-# contexts, like coc#refresh(), vim command completion.
-def VimTab(): string
-    if pumvisible() != 0
-        return "\<C-n>"
-    else
-        return "\<Plug>VimTab"
-    endif
-enddef
-
-# completion
-inoremap <Plug>VimTab <C-x><C-o>
-
 # i_<C-u> {{{2
 # from defaults.vim
 inoremap <C-U> <C-G>u<C-U>
@@ -1061,40 +1044,10 @@ Pack 'https://github.com/ziglang/zig.vim'
 Pack 'https://github.com/lacygoill/vim9-syntax'
 Pack 'https://github.com/zah/nim.vim'
 
-# basic completion {{{2
-# source for dictionary, current or other loaded buffers, see ':help cpt'
-set cpt=.,k,w,b
-# don't select the first item.
-set completeopt=menu,menuone,noselect
-# suppress annoy messages.
-set shortmess+=c
-
-# vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc.
-Pack 'https://github.com/lifepillar/vim-mucomplete'
-# disable its imap <Tab> (and some others)
-g:mucomplete#no_mappings = 1
-g:mucomplete#enable_auto_at_startup = 1
-# make <CR> always add newline.
-inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
-
-# vim-auto-popmenu helps me pressing <C-n>.
-#Pack 'https://github.com/skywind3000/vim-auto-popmenu'
-## disable its imap <Tab>
-#g:apc_enable_tab = 0
-## enable this plugin for filetypes, '*' for all files.
-##g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
-#g:apc_enable_ft = {'*': 1}
-
-# dict-completion sources.
-Pack 'https://github.com/skywind3000/vim-dict'
-# always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
-execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
-# File type override
-#g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
-# Disable certain types
-#g:vim_dict_config = {'text': ''}
-
 if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)  # coc.nvim {{{2
+    # completion
+    inoremap <silent> <expr> <Tab> coc#refresh()
+
     g:apc_enable_ft = {}
     Pack 'neoclide/coc.nvim', {'branch': 'release'}
     # vim completion
@@ -1120,9 +1073,6 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)  # coc.nvim {{{2
         nmap <silent> <buffer> <Space>;y <Plug>(coc-type-definition)
         nmap <silent> <buffer> <Space>;i <Plug>(coc-implementation)
         nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
-
-        # completion
-        inoremap <silent> <buffer> <expr> <Plug>VimTab coc#refresh()
 
         # diagnostic
         nmap <buffer> ]e <Cmd>call g:CocAction('diagnosticNext')<CR>
@@ -1158,7 +1108,46 @@ if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)  # coc.nvim {{{2
             settagstack(winid, stack, 't')
         endif
     enddef
-else  # lsp {{{2
+else  # basic completion + lsp {{{2
+    # source for dictionary, current or other loaded buffers, see ':help cpt'
+    set cpt=.,k,w,b
+    # don't select the first item.
+    set completeopt=menu,menuone,noselect
+    # suppress annoy messages.
+    set shortmess+=c
+
+    # vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc.
+    Pack 'https://github.com/lifepillar/vim-mucomplete'
+    # disable its imap <Tab> (and some others)
+    g:mucomplete#enable_auto_at_startup = 1
+    g:mucomplete#no_mappings = 1
+    imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
+    imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
+    g:mucomplete#chains = {
+        default: ['path', 'omni', 'keyn', 'dict', 'uspl'],
+        vim: ['path', 'cmd', 'keyn', 'dict', 'uspl'],
+    }
+    # make <CR> always add newline.
+    inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
+
+    # vim-auto-popmenu helps me pressing <C-n>.
+    #Pack 'https://github.com/skywind3000/vim-auto-popmenu'
+    ## disable its imap <Tab>
+    #g:apc_enable_tab = 0
+    ## enable this plugin for filetypes, '*' for all files.
+    ##g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
+    #g:apc_enable_ft = {'*': 1}
+
+    # dict-completion sources.
+    Pack 'https://github.com/skywind3000/vim-dict'
+    # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
+    execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
+    # File type override
+    #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
+    # Disable certain types
+    #g:vim_dict_config = {'text': ''}
+
+    # lsp
     Pack 'https://github.com/yegappan/lsp'
     silent! packadd lsp
 
@@ -1246,9 +1235,6 @@ augroup vimrc
 
     # ":h ft-sh-syntax"
     g:is_posix = 1
-
-    # viml completion
-    au FileType vim inoremap <buffer> <Plug>VimTab <C-x><C-v>
 
     # markdown checkbox {{{
     def MarkdownToggleTaskStatus()
