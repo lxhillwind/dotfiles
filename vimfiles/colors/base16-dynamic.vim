@@ -143,7 +143,6 @@ endif
 
 # Theme setup
 hi clear
-syntax reset
 g:colors_name = "base16-dynamic"
 
 # Highlighting function
