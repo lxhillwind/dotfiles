@@ -1156,48 +1156,62 @@ else  # basic completion + lsp {{{2
 
     # lsp {{{3
     Pack 'https://github.com/yegappan/lsp'
-    silent! packadd lsp
 
-    var lsp_config = [
+    g:vimrc_lsp_config = [
         {filetype: ['go', 'gomod'], path: 'gopls', 'args': ['serve']},
         {filetype: ['nim'], path: 'nimlsp', 'args': []},
         {filetype: ['python'], path: 'pylsp', 'args': []},
         {filetype: ['zig'], path: 'zls', 'args': []},
         ]->filter((_, i) => i.path->executable())
 
-    if exists('*g:LspAddServer')
-        g:LspAddServer(lsp_config)
+    const lsp_supported_filetypes: list<string> = g:vimrc_lsp_config
+                ->mapnew((_, i) => i.filetype)->flattennew()
+    augroup vimrc
+        au BufRead,BufNewFile * LspDelayInit()
+        au User LspAttached LspKeymap()
+    augroup END
+
+    # this saves 20-30ms in wsl.
+    def LspDelayInit()
+        if !exists('*g:LspAddServer')
+            return
+        endif
+        if lsp_supported_filetypes->index(&ft) < 0
+            return
+        endif
+        if exists('g:lsp_delay_init')
+            return
+        endif
+        g:lsp_delay_init = true
+
+        g:LspAddServer(g:vimrc_lsp_config)
         g:LspOptionsSet({
         autoHighlightDiags: false,
         showDiagOnStatusLine: true,
         })
+    enddef
 
-        def LspKeymap()
-            nnoremap <buffer> <C-]> <Cmd>LspGotoDefinition<CR>
-            nnoremap <buffer> K <Cmd>LspHover<CR>
-            nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
-            nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
-            inoremap <buffer> <expr> <C-e> FixCtrlE()
-        enddef
+    def LspKeymap()
+        nnoremap <buffer> <C-]> <Cmd>LspGotoDefinition<CR>
+        nnoremap <buffer> K <Cmd>LspHover<CR>
+        nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
+        nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
+        inoremap <buffer> <expr> <C-e> FixCtrlE()
+    enddef
 
-        # <C-x> works; don't know why.
-        # TODO this "fix" still require double pressing <C-e> for lsp popup.
-        def FixCtrlE(): string
-            if pumvisible()
-                if complete_info().selected == -1
-                    return "\<C-x>"
-                else
-                    return "\<C-e>\<C-x>"
-                endif
+    # <C-x> works; don't know why.
+    # TODO this "fix" still require double pressing <C-e> for lsp popup.
+    def FixCtrlE(): string
+        if pumvisible()
+            if complete_info().selected == -1
+                return "\<C-x>"
             else
-                return "\<C-e>"
+                return "\<C-e>\<C-x>"
             endif
-        enddef
-
-        augroup vimrc
-            au User LspAttached LspKeymap()
-        augroup END
-    endif
+        else
+            return "\<C-e>"
+        endif
+    enddef
 endif
 # plugin commits (generated with ":Pack" => g) {{{1
 Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
