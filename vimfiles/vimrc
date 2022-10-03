@@ -1208,10 +1208,9 @@ Pack 'https://github.com/lifepillar/vim-mucomplete', '03bcd4a7dfe0a2f6d432e8ce93
 Pack 'https://github.com/masukomi/vim-markdown-folding', '526cffde2cb013ae337cdf48e244bb15881ab7ce'
 Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
 Pack 'https://github.com/tpope/vim-repeat', '24afe922e6a05891756ecf331f39a1f6743d3d5a'
-Pack 'https://github.com/yegappan/lsp', 'a7d8eda99b13b6843a16ab21e1f149b45d3300e7'
+Pack 'https://github.com/yegappan/lsp', 'a53978a37752d91945044e548828d0b05125a3bc'
 Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
 Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
-
 # filetype & autocmd {{{1
 filetype plugin indent on
 if !exists('g:syntax_on')
