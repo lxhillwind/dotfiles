@@ -198,6 +198,48 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
     Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
     finish | endif  # {{{1 }}}1
+# internal helper function. {{{1
+# expand() should NOT be used to expand arbitrary file (like containing
+# "[b-a]" in filename).
+def ExpandHead(s: string): string
+    if match(s, '\v^[%#<]') == 0
+        return expand(s)
+    elseif match(s, '\v^\~') == 0
+        return substitute(s, '\v^\~', expand('~'), '')
+    elseif match(s, '\v^\$\ze[a-zA-Z_]') == 0
+        const idx = match(s, '\v([^a-zA-Z_]|$)', 1)
+        return substitute(s, s[: idx - 1], expand(s[: idx - 1]), '')
+    endif
+    return s
+enddef
+
+def g:ExpandHead(s: string): string
+    return ExpandHead(s)
+enddef
+
+def TrSlash(s: string): string
+    if has('win32')
+        return substitute(s, '\', '/', 'g')
+    else
+        return s
+    endif
+enddef
+
+# common definition {{{1
+const is_unix = has('unix')
+const is_win32 = has('win32')
+const has_gui = has('gui_running') || has('mac')
+|| (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
+const is_linux = has('linux')
+const is_kde = is_linux && $DESKTOP_SESSION == 'plasma'
+const is_mac = has('mac')
+const is_wsl = executable('/mnt/c/Windows/notepad.exe')
+
+g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
+augroup vimrc
+    au!
+augroup END
+
 # vimrc detection. {{{1
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
@@ -220,17 +262,9 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
 #     - autocmd to recover jump (it's ok);
 #     - some key mapping to cause <Ctrl-[> delay, this is not acceptable!
 # }}}
-def TrSlash(s: string): string
-    if has('win32')
-        return substitute(s, '\', '/', 'g')
-    else
-        return s
-    endif
-enddef
-
 const first_vimrc = execute('scr')->split("\n")->get(0)
             ->substitute('\v^.{-}:\s*', '', '')
-            ->expand()
+            ->ExpandHead()
             ->TrSlash()
 
 if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != TrSlash($MYVIMRC)
@@ -295,20 +329,6 @@ set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 # runtimepath
 # for tiny version, set rtp to empty string to avoid loading any file.
 #set rtp=
-
-# common definition {{{1
-const is_unix = has('unix')
-const is_win32 = has('win32')
-const has_gui = has('gui_running') || has('mac')
-|| (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
-const is_linux = has('linux')
-const is_kde = is_linux && $DESKTOP_SESSION == 'plasma'
-const is_mac = has('mac')
-const is_wsl = executable('/mnt/c/Windows/notepad.exe')
-g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
-augroup vimrc
-    au!
-augroup END
 
 # option {{{1
 # &rtp / &pp {{{2
@@ -685,25 +705,6 @@ else
         endif
     endif
 endif
-
-# internal helper function. {{{1
-# expand() should NOT be used to expand arbitrary file (like containing
-# "[b-a]" in filename).
-def ExpandHead(s: string): string
-    if match(s, '\v^[%#<]') == 0
-        return expand(s)
-    elseif match(s, '\v^\~') == 0
-        return substitute(s, '\v^\~', expand('~'), '')
-    elseif match(s, '\v^\$\ze[a-zA-Z_]') == 0
-        const idx = match(s, '\v([^a-zA-Z_]|$)', 1)
-        return substitute(s, s[: idx - 1], expand(s[: idx - 1]), '')
-    endif
-    return s
-enddef
-
-def g:ExpandHead(s: string): string
-    return ExpandHead(s)
-enddef
 
 # keymap {{{1
 # custom text object {{{2
