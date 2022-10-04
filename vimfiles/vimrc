@@ -88,176 +88,103 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/lacygoill/vim9-syntax'
     Pack 'https://github.com/zah/nim.vim'
 
-    if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)  # coc.nvim {{{2
-        # completion
-        inoremap <silent> <expr> <Tab> coc#refresh()
+    # basic completion + lsp {{{2
+    # basic part, which works even if no plugin is installed. {{{3
+    # source for dictionary, current or other loaded buffers, see ':help cpt'
+    set cpt=.,k,w,b
+    # don't select the first item.
+    set completeopt=menu,menuone,noselect
+    # suppress annoy messages.
+    set shortmess+=c
 
-        g:apc_enable_ft = {}
-        Pack 'neoclide/coc.nvim', {'branch': 'release'}
-        # vim completion
-        Pack 'Shougo/neco-vim'
-        Pack 'neoclide/coc-neco'
-        # run the following vim command to install coc plugins:
-        #   CocInstall coc-go
-        #   CocInstall coc-html
-        #   CocInstall coc-pyright
-        #   CocInstall coc-json
-        #   CocInstall coc-tsserver
+    # vim-mucomplete. {{{3
+    Pack 'https://github.com/lifepillar/vim-mucomplete'
+    # disable its imap <Tab> (and some others)
+    g:mucomplete#enable_auto_at_startup = 1
+    g:mucomplete#no_mappings = 1
+    imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
+    imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
+    # disable keyn / dict: included in c-n via option 'complete' ('cpt');
+    # about these chains description: help 'mucomplete-methods'
+    g:mucomplete#chains = {
+        default: ['path', 'omni', 'user', 'c-n', 'uspl'],
+        vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
+        # sql: disable omni, since it causes trouble. (sth missing?)
+        sql:     ['path',         'user', 'c-n', 'uspl'],
+    }
+    # make <CR> always add newline.
+    inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 
-        augroup vimrc
-            au FileType go,html,python,vim g:InitCocLang()
-            au FileType javascript,typescript g:InitCocLang()
-            au FileType nim,zig g:InitCocLang()
-        augroup END
+    # dict-completion sources. {{{3
+    Pack 'https://github.com/skywind3000/vim-dict'
+    # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
+    execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
+    # File type override
+    #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
+    # Disable certain types
+    #g:vim_dict_config = {'text': ''}
 
-        # coc keymap; define as global function, so it can be called outside.
-        def g:InitCocLang()
-            # GoTo code navigation.
-            nmap <silent> <buffer> <Space>;d <Plug>(coc-definition)
-            nmap <silent> <buffer> <Space>;y <Plug>(coc-type-definition)
-            nmap <silent> <buffer> <Space>;i <Plug>(coc-implementation)
-            nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
+    # lsp {{{3
+    Pack 'https://github.com/yegappan/lsp'
 
-            # diagnostic
-            nmap <buffer> ]e <Cmd>call g:CocAction('diagnosticNext')<CR>
-            nmap <buffer> [e <Cmd>call g:CocAction('diagnosticPrevious')<CR>
+    g:vimrc_lsp_config = [
+        {filetype: ['go', 'gomod'], path: 'gopls', 'args': ['serve']},
+        {filetype: ['nim'], path: 'nimlsp', 'args': []},
+        {filetype: ['python'], path: 'pylsp', 'args': []},
+        {filetype: ['zig'], path: 'zls', 'args': []},
+        ]->filter((_, i) => i.path->executable())
 
-            # Use K to show documentation in preview window.
-            nnoremap <silent> <buffer> K <Cmd>call <SID>CocShowDocumentation()<CR>
+    const lsp_supported_filetypes: list<string> = g:vimrc_lsp_config
+                ->mapnew((_, i) => i.filetype)->flattennew()
+    var lsp_delay_init = false
+    augroup vimrc
+        # if we use BufRead,BufNewFile for LspDelayInit, then in win32
+        # vim, it is not actually loaded in the first time.
+        au FileType * LspDelayInit(expand('<amatch>'))
+        au User LspAttached LspKeymap()
+    augroup END
 
-            nnoremap <silent> <buffer> <C-]> <Cmd>call <SID>CocDefinitionWithTagList()<CR>
-        enddef
+    # this saves 20-30ms in wsl.
+    def LspDelayInit(ft: string)
+        if !exists('*g:LspAddServer')
+            return
+        endif
+        if lsp_supported_filetypes->index(ft) < 0
+            return
+        endif
+        if lsp_delay_init
+            return
+        endif
+        lsp_delay_init = true
 
-        def CocShowDocumentation()
-            if (index(['vim', 'help'], &filetype) >= 0)
-                execute 'h ' .. expand('<cword>')
-            elseif (coc#rpc#ready())
-                g:CocActionAsync('doHover')
+        g:LspAddServer(g:vimrc_lsp_config)
+        g:LspOptionsSet({
+        autoHighlightDiags: false,
+        showDiagOnStatusLine: true,
+        })
+    enddef
+
+    def LspKeymap()
+        nnoremap <buffer> <C-]> <Cmd>LspGotoDefinition<CR>
+        nnoremap <buffer> K <Cmd>LspHover<CR>
+        nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
+        nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
+        inoremap <buffer> <expr> <C-e> FixCtrlE()
+    enddef
+
+    # <C-x> works; don't know why.
+    # TODO this "fix" still require double pressing <C-e> for lsp popup.
+    def FixCtrlE(): string
+        if pumvisible()
+            if complete_info().selected == -1
+                return "\<C-x>"
             else
-                execute '!' .. &keywordprg .. " " .. expand('<cword>')
+                return "\<C-e>\<C-x>"
             endif
-        enddef
-
-        # https://github.com/neoclide/coc.nvim/issues/576#issuecomment-632446784
-        def CocDefinitionWithTagList()
-            # Cribbed from :h tagstack-examples
-            var tag = expand('<cword>')
-            var pos = [bufnr()] + getcurpos()[1 :]
-            var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
-            if g:CocAction('jumpDefinition')
-                # Jump was successful, write previous location to tag stack.
-                var winid = win_getid()
-                var stack = gettagstack(winid)
-                stack['items'] = [item]
-                settagstack(winid, stack, 't')
-            endif
-        enddef
-    else  # basic completion + lsp {{{2
-        # basic part, which works even if no plugin is installed. {{{3
-        # source for dictionary, current or other loaded buffers, see ':help cpt'
-        set cpt=.,k,w,b
-        # don't select the first item.
-        set completeopt=menu,menuone,noselect
-        # suppress annoy messages.
-        set shortmess+=c
-
-        # vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc. {{{3
-        Pack 'https://github.com/lifepillar/vim-mucomplete'
-        # disable its imap <Tab> (and some others)
-        g:mucomplete#enable_auto_at_startup = 1
-        g:mucomplete#no_mappings = 1
-        imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
-        imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
-        # disable keyn / dict: included in c-n via option 'complete' ('cpt');
-        # about these chains description: help 'mucomplete-methods'
-        g:mucomplete#chains = {
-            default: ['path', 'omni', 'user', 'c-n', 'uspl'],
-            vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
-            # sql: disable omni, since it causes trouble. (sth missing?)
-            sql:     ['path',         'user', 'c-n', 'uspl'],
-        }
-        # make <CR> always add newline.
-        inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
-
-        # vim-auto-popmenu helps me pressing <C-n>. {{{3
-        #Pack 'https://github.com/skywind3000/vim-auto-popmenu'
-        ## disable its imap <Tab>
-        #g:apc_enable_tab = 0
-        ## enable this plugin for filetypes, '*' for all files.
-        ##g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
-        #g:apc_enable_ft = {'*': 1}
-
-        # dict-completion sources. {{{3
-        Pack 'https://github.com/skywind3000/vim-dict'
-        # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
-        execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
-        # File type override
-        #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
-        # Disable certain types
-        #g:vim_dict_config = {'text': ''}
-
-        # lsp {{{3
-        Pack 'https://github.com/yegappan/lsp'
-
-        g:vimrc_lsp_config = [
-            {filetype: ['go', 'gomod'], path: 'gopls', 'args': ['serve']},
-            {filetype: ['nim'], path: 'nimlsp', 'args': []},
-            {filetype: ['python'], path: 'pylsp', 'args': []},
-            {filetype: ['zig'], path: 'zls', 'args': []},
-            ]->filter((_, i) => i.path->executable())
-
-        const lsp_supported_filetypes: list<string> = g:vimrc_lsp_config
-                    ->mapnew((_, i) => i.filetype)->flattennew()
-        var lsp_delay_init = false
-        augroup vimrc
-            # if we use BufRead,BufNewFile for LspDelayInit, then in win32
-            # vim, it is not actually loaded in the first time.
-            au FileType * LspDelayInit(expand('<amatch>'))
-            au User LspAttached LspKeymap()
-        augroup END
-
-        # this saves 20-30ms in wsl.
-        def LspDelayInit(ft: string)
-            if !exists('*g:LspAddServer')
-                return
-            endif
-            if lsp_supported_filetypes->index(ft) < 0
-                return
-            endif
-            if lsp_delay_init
-                return
-            endif
-            lsp_delay_init = true
-
-            g:LspAddServer(g:vimrc_lsp_config)
-            g:LspOptionsSet({
-            autoHighlightDiags: false,
-            showDiagOnStatusLine: true,
-            })
-        enddef
-
-        def LspKeymap()
-            nnoremap <buffer> <C-]> <Cmd>LspGotoDefinition<CR>
-            nnoremap <buffer> K <Cmd>LspHover<CR>
-            nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
-            nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
-            inoremap <buffer> <expr> <C-e> FixCtrlE()
-        enddef
-
-        # <C-x> works; don't know why.
-        # TODO this "fix" still require double pressing <C-e> for lsp popup.
-        def FixCtrlE(): string
-            if pumvisible()
-                if complete_info().selected == -1
-                    return "\<C-x>"
-                else
-                    return "\<C-e>\<C-x>"
-                endif
-            else
-                return "\<C-e>"
-            endif
-        enddef
-    endif
+        else
+            return "\<C-e>"
+        endif
+    enddef
     # plugin commits (generated with ":Pack" => g) {{{1
     Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
     Pack 'https://github.com/justinmk/vim-dirvish', '81b40878f286f370df2a2b3a52c4d860643d2142'
@@ -270,7 +197,7 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/yegappan/lsp', 'a53978a37752d91945044e548828d0b05125a3bc'
     Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
     Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
-finish | endif  # {{{1 }}}1
+    finish | endif  # {{{1 }}}1
 # vimrc detection. {{{1
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
@@ -302,9 +229,9 @@ def TrSlash(s: string): string
 enddef
 
 const first_vimrc = execute('scr')->split("\n")->get(0)
-->substitute('\v^.{-}:\s*', '', '')
-->expand()
-->TrSlash()
+            ->substitute('\v^.{-}:\s*', '', '')
+            ->expand()
+            ->TrSlash()
 
 if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != TrSlash($MYVIMRC)
     if !(
@@ -443,7 +370,7 @@ if is_win32 && has('vim_starting')
     for _ in ['']  # use a for loop to make indent below fewer.
         if !(
             execute(':verbose set shell?')->split("\n")->get(-1)
-            ->match('^\s*Last set from') < 0
+                        ->match('^\s*Last set from') < 0
             || &shell->match('^/') >= 0)
             # only set shell if it is not set or set to invalid value (like
             # /bin/sh when invoking from busybox shell).
@@ -887,9 +814,9 @@ def SwitchBuffer(reverse: bool = false)
 
     const term_list = term_list()
     const all_bufs = getbufinfo()
-    ->filter((_, i) => !empty(i.name) && !empty(i.listed)
+                ->filter((_, i) => !empty(i.name) && !empty(i.listed)
     && index(term_list, i.bufnr) < 0)
-    ->mapnew((_, i) => i.bufnr)
+                ->mapnew((_, i) => i.bufnr)
 
     if empty(all_bufs)
         # avoid divide zero
@@ -1073,7 +1000,7 @@ nnoremap <silent> <Space>n <Cmd>call <SID>Switch_nu_rnu()<CR>
 def Switch_nu_rnu()
     # no [0, 1]
     const presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
-    ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
+                ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
     const idx = index(presents, [&l:nu, &l:rnu])
     [&l:nu, &l:rnu] = presents[idx + 1]
 enddef
@@ -1131,21 +1058,21 @@ def SwitchReaderMode()
     if reader_mode.on
         mapping->mapnew((_, i) => {
             execute 'nunmap' i->split(' ')[0]
-            })
+        })
         &timeoutlen = reader_mode.timeoutlen
         reader_mode.on = false
         popup_close(reader_mode.winid)
     else
         mapping->mapnew((_, i) => {
             execute 'nnoremap' i
-            })
+        })
         reader_mode.winid = popup_create(
         ['reader mode'], {
             line: &lines,
             mapping: false,
             highlight: 'Special',
             tabpage: -1,  # show in all tabs.
-            }
+        }
         )
         reader_mode.timeoutlen = &timeoutlen
         # set to 0 to make <Space> work (skip mapping immediately).
@@ -1265,7 +1192,7 @@ augroup vimrc
         hi link CheckboxChecked Comment
         syn match CheckboxUnchecked '\v^\s*- \[ \] '
         syn match CheckboxChecked '\v^\s*- \[X\] '
-        }
+    }
 
     # quickfix window
     au FileType qf &l:stl = &g:stl
@@ -1348,7 +1275,7 @@ augroup vimrc
         if filename->match('^binary://') < 0
             exec 'edit binary://' .. fnameescape(filename)
         endif
-        }
+    }
     au BufReadCmd binary://* ReadBin(expand('<amatch>')->BinaryUriToFilename())
     au BufWriteCmd binary://* WriteBin(expand('<amatch>')->BinaryUriToFilename())
 
@@ -1450,7 +1377,7 @@ augroup vimrc
                     \ && expand("%") !~ "git-rebase-todo"
             exe "normal g`\""
         endif
-        }
+    }
 
     # open {file}:{line}[:{col}] automatically (provided by linter, etc). {{{2
     au BufNewFile * ReopenAsFileLineCol()
@@ -1487,7 +1414,7 @@ augroup vimrc
         if win_gettype() == 'command' && maparg('%', 'x') =~ 'Matchit'
             xnoremap <buffer> % %
         endif
-        }
+    }
 
     # fin {{{2
 augroup END
@@ -1543,7 +1470,7 @@ def PopupSize(): dict<number>
     return {
         maxwidth: width, maxheight: height,
         minwidth: width, minheight: height,
-        }
+    }
 enddef
 
 # snippet; :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{2
@@ -1591,7 +1518,7 @@ g:vimrc_shebang_lines = {
     'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
     'scheme': 'scheme-run',  # scheme: see ~/bin/scheme-run
     'sh': '/bin/sh', 'zsh': 'zsh',
-    }
+}
 
 def ShebangInsert(args: string)
     const first_line = getline(1)
@@ -1779,7 +1706,7 @@ augroup vimrc
                 unlet b:vimrc_old_cwd
             endtry
         endif
-        }
+    }
 augroup END
 
 def Cd_get_buf_dir(): string
@@ -1892,7 +1819,7 @@ def JobRun(cmd_a: string, opt: dict<any>)
         extend(job_d.opt, {
             out_cb: function(JobOutCb, [{bufnr: bufnr}]),
             err_cb: function(JobOutCb, [{bufnr: bufnr}]),
-            })
+        })
     else
         ScratchNew
         bufnr = bufnr()
@@ -1900,17 +1827,17 @@ def JobRun(cmd_a: string, opt: dict<any>)
         extend(job_d.opt, {
             out_io: 'buffer', err_io: 'buffer',
             out_buf: bufnr, err_buf: bufnr,
-            })
+        })
     endif
     extend(job_d.opt, {
         exit_cb: function(JobExitCb, [{bufnr: bufnr, qf: opt.qf}]),
-        })
+    })
 
     extend(job_dict, {
         [bufnr]: {
             job: job_start(job_d.cmd, job_d.opt),
             cmd: cmd_short,
-            }
+        }
         })
 enddef
 
@@ -2127,7 +2054,7 @@ def SelectFromSources()
         ['t', 'tabwin'],
         ]
     # some sources may be missing, so check it.
-    ->filter((_, i) => !empty(g:fuzzy#config->get(i->get(1))))
+                ->filter((_, i) => !empty(g:fuzzy#config->get(i->get(1))))
 
     # Is is possible to use ordered dict, so we migrate selection /
     # selection_dict?
@@ -2151,7 +2078,7 @@ def SelectFromSources()
             # finally.
             popup_close(winid)
             return true
-            }
+        }
         }
     )
 enddef
@@ -2169,7 +2096,7 @@ augroup vimrc
         if expand('<abuf>')->str2nr() == popup_terminal_state.buf
             PopupTerminalSwitch()
         endif
-        }
+    }
 augroup END
 
 def PopupTerminalSwitch()  # {{{
@@ -2192,13 +2119,13 @@ def PopupTerminalSwitch()  # {{{
                 exit_cb: ((_, _) => {
                     popup_terminal_state.shown = false
                     popup_terminal_state.buf = -1
-                    })
+                })
                 })
         endif
         popup_terminal_state.buf_last = bufnr()
         popup_terminal_state.winid = popup_create(popup_terminal_state.buf, {
             border: [1, 1, 1, 1],
-            }->extendnew(PopupSize()))
+        }->extendnew(PopupSize()))
         command! -buffer Cdalternate {
             term_sendkeys(
             popup_terminal_state.buf, 'cd ' .. shellescape(
@@ -2207,7 +2134,7 @@ def PopupTerminalSwitch()  # {{{
             if mode() == 'n'
                 feedkeys('i', 't')
             endif
-            }
+        }
         command! -buffer Cda Cdalternate
         TerminalSetup()
         popup_terminal_state.shown = true
