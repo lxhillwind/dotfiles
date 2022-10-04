@@ -371,7 +371,10 @@ const is_unix = has('unix')
 const is_win32 = has('win32')
 const has_gui = has('gui_running') || has('mac')
 || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
-const is_kde = has('linux') && $DESKTOP_SESSION == 'plasma'
+const is_linux = has('linux')
+const is_kde = is_linux && $DESKTOP_SESSION == 'plasma'
+const is_mac = has('mac')
+const is_wsl = executable('/mnt/c/Windows/notepad.exe')
 g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
 augroup vimrc
     au!
@@ -544,8 +547,11 @@ endif
 # }}}
 set noshelltemp
 
-if executable('zsh') && is_unix
-    &shell = exepath('zsh')
+if is_unix
+    const zsh_path = is_mac ? '/opt/homebrew/bin/zsh' : '/bin/zsh'
+    if executable(zsh_path)
+        &shell = zsh_path
+    endif
 endif
 
 # cmdline completion {{{2
@@ -743,9 +749,8 @@ else
             silent! set tgc
         endif
 
-        if $TERM->tolower() =~? 'xterm' && executable('/mnt/c/Windows/notepad.exe')
-            # wsl; fix vim start in replace mode;
-            # Refer: https://superuser.com/a/1525060
+        if $TERM->tolower() =~? 'xterm' && is_wsl
+            # fix vim start in replace mode; https://superuser.com/a/1525060
             set t_u7=
         endif
     endif
@@ -1943,7 +1948,7 @@ def JobClear(num: number)
 enddef
 
 # :Mpc {{{2
-if executable('mpc')
+if is_linux && !is_wsl && executable('mpc')
     command! Mpc Mpc()
 
     var mpc_prop_type = 'song'
@@ -2248,7 +2253,9 @@ enddef
 # - toc / content: 'gO' in neovim; (help / markdown, etc.)
 # - user completion; 'compl-function'. (tmux buffer, web browser, etc.)
 # - vim-fuzzy: page up / page down?
-# - exepath() / executable() / job_start() is slow?; try to avoid calling them in vimrc (move to function?).
-# - :packadd / globpath() is slow in wsl? (loading all plugins with :Pack takes likely 60ms)
+# - search files (globpath(), executable() / exepath() without absolute path,
+#   :packadd, :colorscheme) in win32 (wsl) is slow; try to avoid calling them
+#   in vimrc.
+# - in conemu / xterm ansi escape sequence: popup window is messy.
 defc  # show error in this file early. {{{1 }}}1
 # vim:fdm=marker:tw=78:sw=4
