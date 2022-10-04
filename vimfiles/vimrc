@@ -208,23 +208,26 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
 
         const lsp_supported_filetypes: list<string> = g:vimrc_lsp_config
                     ->mapnew((_, i) => i.filetype)->flattennew()
+        var lsp_delay_init = false
         augroup vimrc
-            au BufRead,BufNewFile * LspDelayInit()
+            # if we use BufRead,BufNewFile for LspDelayInit, then in win32
+            # vim, it is not actually loaded in the first time.
+            au FileType * LspDelayInit(expand('<amatch>'))
             au User LspAttached LspKeymap()
         augroup END
 
         # this saves 20-30ms in wsl.
-        def LspDelayInit()
+        def LspDelayInit(ft: string)
             if !exists('*g:LspAddServer')
                 return
             endif
-            if lsp_supported_filetypes->index(&ft) < 0
+            if lsp_supported_filetypes->index(ft) < 0
                 return
             endif
-            if exists('g:lsp_delay_init')
+            if lsp_delay_init
                 return
             endif
-            g:lsp_delay_init = true
+            lsp_delay_init = true
 
             g:LspAddServer(g:vimrc_lsp_config)
             g:LspOptionsSet({
