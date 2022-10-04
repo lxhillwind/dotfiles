@@ -524,7 +524,7 @@ noremap <Space> <Nop>
 nmap <Space><Space> <Space>fmn
 nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
 
-# add ~/bin to $PATH {{{1
+# add ~/bin to $PATH {{{2
 # Even when set ~/bin in $PATH via ~/.config/zshrc, it may not be added when
 # invoking gvim from desktop session, then ":sh" / ":Sh" / ":term" may not
 # work for command defined in ~/bin.
@@ -723,6 +723,13 @@ else
         # then we can use better looking colorscheme.
         # At least works in windows 10 (1809+?).
         silent! set tgc
+        if $CONEMUANSI ==? 'ON'
+            # https://conemu.github.io/en/VimXterm.html
+            set term=xterm
+            set t_Co=256
+            &t_AB = "\e[48;5;%dm"
+            &t_AF = "\e[38;5;%dm"
+        endif
     else
         if $TERM->tolower() == 'linux'
             # linux tty
