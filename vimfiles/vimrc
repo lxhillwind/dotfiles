@@ -205,10 +205,10 @@ def ExpandHead(s: string): string
     if match(s, '\v^[%#<]') == 0
         return expand(s)
     elseif match(s, '\v^\~') == 0
-        return substitute(s, '\v^\~', expand('~'), '')
+        return expand('~') .. s[1 : ]
     elseif match(s, '\v^\$\ze[a-zA-Z_]') == 0
         const idx = match(s, '\v([^a-zA-Z_]|$)', 1)
-        return substitute(s, s[: idx - 1], expand(s[: idx - 1]), '')
+        return expand(s[: idx - 1]) .. s[idx : ]
     endif
     return s
 enddef
@@ -1553,18 +1553,13 @@ enddef
 # Refer: https://stackoverflow.com/a/1117367
 command! -nargs=1 KmatchLongLine exe ':/\%>' .. <args> .. 'v.\+'
 
-# `J` with custom seperator; <visual>:J sep... {{{2
-command! -nargs=1 -range J JoinLines(<q-args>)
-def JoinLines(sep: string)
-    const buf = @"
-    try
-        norm gv
-        norm x
-        @" = substitute(@", "\n", sep, 'g')
-        norm P
-    finally
-        @" = buf
-    endtry
+# `J` with custom seperator; <range>:J sep... {{{2
+command! -range -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
+def JoinLines(sep: string, range: number, line1: number, line2: number)
+    const result = getline(line1, line2)->join(sep)
+    deletebufline('%', line1, line2)
+    append(max([line1 - 1, 0]), result)
+    normal k
 enddef
 
 # edit selected line / column; :Kjump {{{2
