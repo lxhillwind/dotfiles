@@ -83,7 +83,10 @@ function! s:main() abort
     call s:reset_vimserver_env()
   endif
   if empty($VIMSERVER_ID)
-    call s:server()
+    augroup vimserver
+      au!
+      au VimEnter * call s:server()
+    augroup END
   else
     if !&diff
       call s:client($VIMSERVER_ID)

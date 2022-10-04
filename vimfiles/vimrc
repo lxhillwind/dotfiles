@@ -1,5 +1,273 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
+if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
+    # plugin {{{1
+    # first, enable ":Pack" command.
+    packadd vim-pack
+
+    # disable default plugin {{{2
+    g:loaded_2html_plugin = 1
+    g:loaded_getscriptPlugin = 1
+    g:loaded_gzip = 1
+    g:loaded_logiPat = 1
+    g:loaded_netrwPlugin = 1
+    g:loaded_tarPlugin = 1
+    g:loaded_vimballPlugin = 1
+    g:loaded_zipPlugin = 1
+
+    # bundled plugin config. {{{2
+    g:tasks_config_paths =<< trim END
+    ~/vimfiles/config/tasks.ini
+    ~/vimfiles/config/tasks-local.ini
+    END
+    g:tasks_config_paths
+                ->map((_, i) => expand(i))
+                ->filter((_, i) => filereadable(i))
+
+    g:markdown_folding = 1
+
+    # keep sync with https://lxhillwind.gitee.io/ highlight.
+    # NOTE: zig is not available in hljs right now.
+    g:markdown_fenced_languages = [
+        'awk', 'python', 'sh', 'vim',
+        'c', 'go', 'javascript',
+        'dosini', 'json', 'yaml',
+        'zig',
+        ]
+
+    # lx {{{2
+    Pack 'vim-jump'
+    Pack 'vim-sh'
+    Pack 'pyvim'
+    g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
+    Pack 'vim-tasks'
+    if windowsversion() == '5.1'
+        # Windows XP: use small icon before v8.2.4545; otherwise it won't display.
+        Pack 'vim-old-ico'
+    endif
+
+    # vim dist. {{{2
+    # plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
+    # not have enough permission to gen tag for them.
+    # use ":packadd!" (with !) to only add them to &rtp.
+    #
+    # use matchit, so vim9 filetype indent work as expected.
+    # https://github.com/vim/vim/issues/7628
+    packadd! matchit
+
+    # vender. {{{2
+    # Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
+    Pack 'vim-fuzzy'
+
+    # from network {{{2
+    Pack 'https://github.com/justinmk/vim-dirvish'
+    g:loaded_netrwPlugin = 1
+    Pack 'https://github.com/justinmk/vim-sneak'
+    g:sneak#label = 1
+    # sneak unmap f / t when one of them is pressed after sneak key. {{{
+    # MRE:
+    #   :map t <Nop><CR>
+    #   sssff
+    #   :map t
+    # then mapping for t disappeared.
+    #
+    # since I only map t / T (f / F not mapped), only set t / T below.
+    # }}}
+    g:sneak#f_reset = 1
+    g:sneak#t_reset = 0
+    # I do not use vim-surround, so preserve s / S for vim-sneak.
+    vmap S <Plug>Sneak_S
+    omap s <Plug>Sneak_s
+    omap S <Plug>Sneak_S
+    Pack 'https://github.com/tpope/vim-repeat'
+    Pack 'https://github.com/ciaranm/securemodelines', {'after': 1}
+    Pack 'https://github.com/masukomi/vim-markdown-folding'
+    g:markdown_fold_style = 'nested'
+    g:markdown_fold_override_foldtext = 0
+    Pack 'https://github.com/ziglang/zig.vim'
+    Pack 'https://github.com/lacygoill/vim9-syntax'
+    Pack 'https://github.com/zah/nim.vim'
+
+    if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)  # coc.nvim {{{2
+        # completion
+        inoremap <silent> <expr> <Tab> coc#refresh()
+
+        g:apc_enable_ft = {}
+        Pack 'neoclide/coc.nvim', {'branch': 'release'}
+        # vim completion
+        Pack 'Shougo/neco-vim'
+        Pack 'neoclide/coc-neco'
+        # run the following vim command to install coc plugins:
+        #   CocInstall coc-go
+        #   CocInstall coc-html
+        #   CocInstall coc-pyright
+        #   CocInstall coc-json
+        #   CocInstall coc-tsserver
+
+        augroup vimrc
+            au FileType go,html,python,vim g:InitCocLang()
+            au FileType javascript,typescript g:InitCocLang()
+            au FileType nim,zig g:InitCocLang()
+        augroup END
+
+        # coc keymap; define as global function, so it can be called outside.
+        def g:InitCocLang()
+            # GoTo code navigation.
+            nmap <silent> <buffer> <Space>;d <Plug>(coc-definition)
+            nmap <silent> <buffer> <Space>;y <Plug>(coc-type-definition)
+            nmap <silent> <buffer> <Space>;i <Plug>(coc-implementation)
+            nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
+
+            # diagnostic
+            nmap <buffer> ]e <Cmd>call g:CocAction('diagnosticNext')<CR>
+            nmap <buffer> [e <Cmd>call g:CocAction('diagnosticPrevious')<CR>
+
+            # Use K to show documentation in preview window.
+            nnoremap <silent> <buffer> K <Cmd>call <SID>CocShowDocumentation()<CR>
+
+            nnoremap <silent> <buffer> <C-]> <Cmd>call <SID>CocDefinitionWithTagList()<CR>
+        enddef
+
+        def CocShowDocumentation()
+            if (index(['vim', 'help'], &filetype) >= 0)
+                execute 'h ' .. expand('<cword>')
+            elseif (coc#rpc#ready())
+                g:CocActionAsync('doHover')
+            else
+                execute '!' .. &keywordprg .. " " .. expand('<cword>')
+            endif
+        enddef
+
+        # https://github.com/neoclide/coc.nvim/issues/576#issuecomment-632446784
+        def CocDefinitionWithTagList()
+            # Cribbed from :h tagstack-examples
+            var tag = expand('<cword>')
+            var pos = [bufnr()] + getcurpos()[1 :]
+            var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
+            if g:CocAction('jumpDefinition')
+                # Jump was successful, write previous location to tag stack.
+                var winid = win_getid()
+                var stack = gettagstack(winid)
+                stack['items'] = [item]
+                settagstack(winid, stack, 't')
+            endif
+        enddef
+    else  # basic completion + lsp {{{2
+        # basic part, which works even if no plugin is installed. {{{3
+        # source for dictionary, current or other loaded buffers, see ':help cpt'
+        set cpt=.,k,w,b
+        # don't select the first item.
+        set completeopt=menu,menuone,noselect
+        # suppress annoy messages.
+        set shortmess+=c
+
+        # vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc. {{{3
+        Pack 'https://github.com/lifepillar/vim-mucomplete'
+        # disable its imap <Tab> (and some others)
+        g:mucomplete#enable_auto_at_startup = 1
+        g:mucomplete#no_mappings = 1
+        imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
+        imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
+        # disable keyn / dict: included in c-n via option 'complete' ('cpt');
+        # about these chains description: help 'mucomplete-methods'
+        g:mucomplete#chains = {
+            default: ['path', 'omni', 'user', 'c-n', 'uspl'],
+            vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
+            # sql: disable omni, since it causes trouble. (sth missing?)
+            sql:     ['path',         'user', 'c-n', 'uspl'],
+        }
+        # make <CR> always add newline.
+        inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
+
+        # vim-auto-popmenu helps me pressing <C-n>. {{{3
+        #Pack 'https://github.com/skywind3000/vim-auto-popmenu'
+        ## disable its imap <Tab>
+        #g:apc_enable_tab = 0
+        ## enable this plugin for filetypes, '*' for all files.
+        ##g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
+        #g:apc_enable_ft = {'*': 1}
+
+        # dict-completion sources. {{{3
+        Pack 'https://github.com/skywind3000/vim-dict'
+        # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
+        execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
+        # File type override
+        #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
+        # Disable certain types
+        #g:vim_dict_config = {'text': ''}
+
+        # lsp {{{3
+        Pack 'https://github.com/yegappan/lsp'
+
+        g:vimrc_lsp_config = [
+            {filetype: ['go', 'gomod'], path: 'gopls', 'args': ['serve']},
+            {filetype: ['nim'], path: 'nimlsp', 'args': []},
+            {filetype: ['python'], path: 'pylsp', 'args': []},
+            {filetype: ['zig'], path: 'zls', 'args': []},
+            ]->filter((_, i) => i.path->executable())
+
+        const lsp_supported_filetypes: list<string> = g:vimrc_lsp_config
+                    ->mapnew((_, i) => i.filetype)->flattennew()
+        augroup vimrc
+            au BufRead,BufNewFile * LspDelayInit()
+            au User LspAttached LspKeymap()
+        augroup END
+
+        # this saves 20-30ms in wsl.
+        def LspDelayInit()
+            if !exists('*g:LspAddServer')
+                return
+            endif
+            if lsp_supported_filetypes->index(&ft) < 0
+                return
+            endif
+            if exists('g:lsp_delay_init')
+                return
+            endif
+            g:lsp_delay_init = true
+
+            g:LspAddServer(g:vimrc_lsp_config)
+            g:LspOptionsSet({
+            autoHighlightDiags: false,
+            showDiagOnStatusLine: true,
+            })
+        enddef
+
+        def LspKeymap()
+            nnoremap <buffer> <C-]> <Cmd>LspGotoDefinition<CR>
+            nnoremap <buffer> K <Cmd>LspHover<CR>
+            nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
+            nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
+            inoremap <buffer> <expr> <C-e> FixCtrlE()
+        enddef
+
+        # <C-x> works; don't know why.
+        # TODO this "fix" still require double pressing <C-e> for lsp popup.
+        def FixCtrlE(): string
+            if pumvisible()
+                if complete_info().selected == -1
+                    return "\<C-x>"
+                else
+                    return "\<C-e>\<C-x>"
+                endif
+            else
+                return "\<C-e>"
+            endif
+        enddef
+    endif
+    # plugin commits (generated with ":Pack" => g) {{{1
+    Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
+    Pack 'https://github.com/justinmk/vim-dirvish', '81b40878f286f370df2a2b3a52c4d860643d2142'
+    Pack 'https://github.com/justinmk/vim-sneak', '94c2de47ab301d476a2baec9ffda07367046bec9'
+    Pack 'https://github.com/lacygoill/vim9-syntax', '8e4b8e47e7d774c3b75f7d5df1cd7898bea84d8d'
+    Pack 'https://github.com/lifepillar/vim-mucomplete', '03bcd4a7dfe0a2f6d432e8ce936d35273a15209d'
+    Pack 'https://github.com/masukomi/vim-markdown-folding', '526cffde2cb013ae337cdf48e244bb15881ab7ce'
+    Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
+    Pack 'https://github.com/tpope/vim-repeat', '24afe922e6a05891756ecf331f39a1f6743d3d5a'
+    Pack 'https://github.com/yegappan/lsp', 'a53978a37752d91945044e548828d0b05125a3bc'
+    Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
+    Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
+finish | endif  # {{{1 }}}1
 # vimrc detection. {{{1
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
@@ -957,274 +1225,12 @@ currentBuffer: {
     }
     }
 })
-# plugin {{{1
-# first, enable ":Pack" command.
-packadd vim-pack
-
-# disable default plugin {{{2
-g:loaded_2html_plugin = 1
-g:loaded_getscriptPlugin = 1
-g:loaded_gzip = 1
-g:loaded_logiPat = 1
-g:loaded_netrwPlugin = 1
-g:loaded_tarPlugin = 1
-g:loaded_vimballPlugin = 1
-g:loaded_zipPlugin = 1
-
-# bundled plugin config. {{{2
-g:tasks_config_paths =<< trim END
-~/vimfiles/config/tasks.ini
-~/vimfiles/config/tasks-local.ini
-END
-g:tasks_config_paths
-->map((_, i) => expand(i))
-->filter((_, i) => filereadable(i))
-
-g:markdown_folding = 1
-
-# keep sync with https://lxhillwind.gitee.io/ highlight.
-# NOTE: zig is not available in hljs right now.
-g:markdown_fenced_languages = [
-    'awk', 'python', 'sh', 'vim',
-    'c', 'go', 'javascript',
-    'dosini', 'json', 'yaml',
-    'zig',
-    ]
-
-# lx {{{2
-# TODO archive vim-filelist?
-#Pack 'vim-filelist'
-Pack 'vim-jump'
-Pack 'vim-sh'
-Pack 'pyvim'
-g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
-Pack 'vim-tasks'
-if windowsversion() == '5.1'
-    # Windows XP: use small icon before v8.2.4545; otherwise it won't display.
-    Pack 'vim-old-ico'
-endif
-
-# vim dist. {{{2
-# plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
-# not have enough permission to gen tag for them.
-# use ":packadd!" (with !) to only add them to &rtp.
-#
-# use matchit, so vim9 filetype indent work as expected.
-# https://github.com/vim/vim/issues/7628
-packadd! matchit
-
-# vender. {{{2
-# Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
-Pack 'vim-fuzzy'
-
-# from network {{{2
-Pack 'https://github.com/justinmk/vim-dirvish'
-g:loaded_netrwPlugin = 1
-Pack 'https://github.com/justinmk/vim-sneak'
-g:sneak#label = 1
-# sneak unmap f / t when one of them is pressed after sneak key. {{{
-# MRE:
-#   :map t <Nop><CR>
-#   sssff
-#   :map t
-# then mapping for t disappeared.
-#
-# since I only map t / T (f / F not mapped), only set t / T below.
-# }}}
-g:sneak#f_reset = 1
-g:sneak#t_reset = 0
-# I do not use vim-surround, so preserve s / S for vim-sneak.
-vmap S <Plug>Sneak_S
-omap s <Plug>Sneak_s
-omap S <Plug>Sneak_S
-Pack 'https://github.com/tpope/vim-repeat'
-Pack 'https://github.com/ciaranm/securemodelines', {'after': 1}
-Pack 'https://github.com/masukomi/vim-markdown-folding'
-g:markdown_fold_style = 'nested'
-g:markdown_fold_override_foldtext = 0
-Pack 'https://github.com/ziglang/zig.vim'
-Pack 'https://github.com/lacygoill/vim9-syntax'
-Pack 'https://github.com/zah/nim.vim'
-
-if exists('g:plugin_set_coc') && !empty(g:plugin_set_coc)  # coc.nvim {{{2
-    # completion
-    inoremap <silent> <expr> <Tab> coc#refresh()
-
-    g:apc_enable_ft = {}
-    Pack 'neoclide/coc.nvim', {'branch': 'release'}
-    # vim completion
-    Pack 'Shougo/neco-vim'
-    Pack 'neoclide/coc-neco'
-    # run the following vim command to install coc plugins:
-    #   CocInstall coc-go
-    #   CocInstall coc-html
-    #   CocInstall coc-pyright
-    #   CocInstall coc-json
-    #   CocInstall coc-tsserver
-
-    augroup vimrc
-        au FileType go,html,python,vim g:InitCocLang()
-        au FileType javascript,typescript g:InitCocLang()
-        au FileType nim,zig g:InitCocLang()
-    augroup END
-
-    # coc keymap; define as global function, so it can be called outside.
-    def g:InitCocLang()
-        # GoTo code navigation.
-        nmap <silent> <buffer> <Space>;d <Plug>(coc-definition)
-        nmap <silent> <buffer> <Space>;y <Plug>(coc-type-definition)
-        nmap <silent> <buffer> <Space>;i <Plug>(coc-implementation)
-        nmap <silent> <buffer> <Space>;r <Plug>(coc-references)
-
-        # diagnostic
-        nmap <buffer> ]e <Cmd>call g:CocAction('diagnosticNext')<CR>
-        nmap <buffer> [e <Cmd>call g:CocAction('diagnosticPrevious')<CR>
-
-        # Use K to show documentation in preview window.
-        nnoremap <silent> <buffer> K <Cmd>call <SID>CocShowDocumentation()<CR>
-
-        nnoremap <silent> <buffer> <C-]> <Cmd>call <SID>CocDefinitionWithTagList()<CR>
-    enddef
-
-    def CocShowDocumentation()
-        if (index(['vim', 'help'], &filetype) >= 0)
-            execute 'h ' .. expand('<cword>')
-        elseif (coc#rpc#ready())
-            g:CocActionAsync('doHover')
-        else
-            execute '!' .. &keywordprg .. " " .. expand('<cword>')
-        endif
-    enddef
-
-    # https://github.com/neoclide/coc.nvim/issues/576#issuecomment-632446784
-    def CocDefinitionWithTagList()
-        # Cribbed from :h tagstack-examples
-        var tag = expand('<cword>')
-        var pos = [bufnr()] + getcurpos()[1 :]
-        var item = {'bufnr': pos[0], 'from': pos, 'tagname': tag}
-        if g:CocAction('jumpDefinition')
-            # Jump was successful, write previous location to tag stack.
-            var winid = win_getid()
-            var stack = gettagstack(winid)
-            stack['items'] = [item]
-            settagstack(winid, stack, 't')
-        endif
-    enddef
-else  # basic completion + lsp {{{2
-    # basic part, which works even if no plugin is installed. {{{3
-    # source for dictionary, current or other loaded buffers, see ':help cpt'
-    set cpt=.,k,w,b
-    # don't select the first item.
-    set completeopt=menu,menuone,noselect
-    # suppress annoy messages.
-    set shortmess+=c
-
-    # vim-mucomplete helps me pressing <C-x><C-v>, <C-x><C-o>, <C-x><C-f>, <C-n>, etc. {{{3
-    Pack 'https://github.com/lifepillar/vim-mucomplete'
-    # disable its imap <Tab> (and some others)
-    g:mucomplete#enable_auto_at_startup = 1
-    g:mucomplete#no_mappings = 1
-    imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
-    imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
-    # disable keyn / dict: included in c-n via option 'complete' ('cpt');
-    # about these chains description: help 'mucomplete-methods'
-    g:mucomplete#chains = {
-        default: ['path', 'omni', 'user', 'c-n', 'uspl'],
-        vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
-        # sql: disable omni, since it causes trouble. (sth missing?)
-        sql:     ['path',         'user', 'c-n', 'uspl'],
-    }
-    # make <CR> always add newline.
-    inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
-
-    # vim-auto-popmenu helps me pressing <C-n>. {{{3
-    #Pack 'https://github.com/skywind3000/vim-auto-popmenu'
-    ## disable its imap <Tab>
-    #g:apc_enable_tab = 0
-    ## enable this plugin for filetypes, '*' for all files.
-    ##g:apc_enable_ft = {'text':1, 'markdown':1, 'php':1}
-    #g:apc_enable_ft = {'*': 1}
-
-    # dict-completion sources. {{{3
-    Pack 'https://github.com/skywind3000/vim-dict'
-    # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
-    execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
-    # File type override
-    #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
-    # Disable certain types
-    #g:vim_dict_config = {'text': ''}
-
-    # lsp {{{3
-    Pack 'https://github.com/yegappan/lsp'
-
-    g:vimrc_lsp_config = [
-        {filetype: ['go', 'gomod'], path: 'gopls', 'args': ['serve']},
-        {filetype: ['nim'], path: 'nimlsp', 'args': []},
-        {filetype: ['python'], path: 'pylsp', 'args': []},
-        {filetype: ['zig'], path: 'zls', 'args': []},
-        ]->filter((_, i) => i.path->executable())
-
-    const lsp_supported_filetypes: list<string> = g:vimrc_lsp_config
-                ->mapnew((_, i) => i.filetype)->flattennew()
-    augroup vimrc
-        au BufRead,BufNewFile * LspDelayInit()
-        au User LspAttached LspKeymap()
-    augroup END
-
-    # this saves 20-30ms in wsl.
-    def LspDelayInit()
-        if !exists('*g:LspAddServer')
-            return
-        endif
-        if lsp_supported_filetypes->index(&ft) < 0
-            return
-        endif
-        if exists('g:lsp_delay_init')
-            return
-        endif
-        g:lsp_delay_init = true
-
-        g:LspAddServer(g:vimrc_lsp_config)
-        g:LspOptionsSet({
-        autoHighlightDiags: false,
-        showDiagOnStatusLine: true,
-        })
-    enddef
-
-    def LspKeymap()
-        nnoremap <buffer> <C-]> <Cmd>LspGotoDefinition<CR>
-        nnoremap <buffer> K <Cmd>LspHover<CR>
-        nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
-        nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
-        inoremap <buffer> <expr> <C-e> FixCtrlE()
-    enddef
-
-    # <C-x> works; don't know why.
-    # TODO this "fix" still require double pressing <C-e> for lsp popup.
-    def FixCtrlE(): string
-        if pumvisible()
-            if complete_info().selected == -1
-                return "\<C-x>"
-            else
-                return "\<C-e>\<C-x>"
-            endif
-        else
-            return "\<C-e>"
-        endif
-    enddef
-endif
-# plugin commits (generated with ":Pack" => g) {{{1
-Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
-Pack 'https://github.com/justinmk/vim-dirvish', '81b40878f286f370df2a2b3a52c4d860643d2142'
-Pack 'https://github.com/justinmk/vim-sneak', '94c2de47ab301d476a2baec9ffda07367046bec9'
-Pack 'https://github.com/lacygoill/vim9-syntax', '8e4b8e47e7d774c3b75f7d5df1cd7898bea84d8d'
-Pack 'https://github.com/lifepillar/vim-mucomplete', '03bcd4a7dfe0a2f6d432e8ce936d35273a15209d'
-Pack 'https://github.com/masukomi/vim-markdown-folding', '526cffde2cb013ae337cdf48e244bb15881ab7ce'
-Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
-Pack 'https://github.com/tpope/vim-repeat', '24afe922e6a05891756ecf331f39a1f6743d3d5a'
-Pack 'https://github.com/yegappan/lsp', 'a53978a37752d91945044e548828d0b05125a3bc'
-Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
-Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
+# plugin loading {{{1
+# load plugin in a second `source this-file`; then we can differ it from other
+# parts when profiling vim startuptime.
+g:vimrc_plugin_loading = 1
+execute 'source' fnamemodify(expand('<sfile>'), ':p')
+unlet g:vimrc_plugin_loading
 # filetype & autocmd {{{1
 filetype plugin indent on
 if !exists('g:syntax_on')
@@ -2235,6 +2241,7 @@ enddef
 # - toc / content: 'gO' in neovim; (help / markdown, etc.)
 # - user completion; 'compl-function'. (tmux buffer, web browser, etc.)
 # - vim-fuzzy: page up / page down?
-# finish {{{1 }}}1
-defc  # show error in this file early.
+# - exepath() / executable() / job_start() is slow?; try to avoid calling them in vimrc (move to function?).
+# - :packadd / globpath() is slow in wsl? (loading all plugins with :Pack takes likely 60ms)
+defc  # show error in this file early. {{{1 }}}1
 # vim:fdm=marker:tw=78:sw=4
