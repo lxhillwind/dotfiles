@@ -1128,7 +1128,7 @@ enddef
 def BookmarkOpenFn(): list<dict<string>>
     return BookmarkAllData()
                 ->mapnew((_, i) => json_decode(i))
-                ->filter((_, i) => i.file->filereadable())
+                ->filter((_, i) => i.file->filereadable() || i.file->isdirectory())
                 ->mapnew((_, i) => ({
     text: i.file .. ':' .. i.line,
     trailer: i.title,
@@ -1149,7 +1149,12 @@ g:fuzzy#config->extend({
 bookmark: {
     Fn: BookmarkOpenFn,
     ExtractInfoFn: BookmarkOpenExFn,
-}
+    Callback: (chosen: string) => {
+        const res = chosen->matchstr('\v.*:[0-9]+$')->split('.*\zs:')
+        execute 'e' fnameescape(res[0])
+        execute $'norm {res[1]}G'
+    }
+    }
 })
 
 def BookmarkEdit()
@@ -1554,7 +1559,7 @@ enddef
 command! -nargs=1 KmatchLongLine exe ':/\%>' .. <args> .. 'v.\+'
 
 # `J` with custom seperator; <range>:J sep... {{{2
-command! -range -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
+command! -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
 def JoinLines(sep: string, range: number, line1: number, line2: number)
     const result = getline(line1, line2)->join(sep)
     deletebufline('%', line1, line2)
