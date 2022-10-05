@@ -41,10 +41,6 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'pyvim'
     g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
     Pack 'vim-tasks'
-    if windowsversion() == '5.1'
-        # Windows XP: use small icon before v8.2.4545; otherwise it won't display.
-        Pack 'vim-old-ico'
-    endif
 
     # vim dist. {{{2
     # plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
