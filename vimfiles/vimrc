@@ -1250,8 +1250,10 @@ augroup vimrc
             # in win32, ":read !" would be slow if &noshelltemp.
             set shelltemp
         endif
-        execute printf('read !%s %s', shellescape(xxd_path), shellescape(name))
+        silent normal gg"_dG
+        silent execute printf('read !%s %s', shellescape(xxd_path), shellescape(name))
         normal gg"_dd
+        setl nomodified
         # :defer works; but it cannot be used in old version vim: it won't
         # compile.
         if switch_shelltemp
@@ -1267,10 +1269,6 @@ augroup vimrc
         setl nomodified
         redrawstatus | echon 'written.'
     enddef
-
-    def BinaryUriToFilename(s: string): string
-        return s->substitute('^binary://', '', '')
-    enddef
     # }}}
 
     command BinaryEditThis {
@@ -1278,12 +1276,15 @@ augroup vimrc
         if !filename->filereadable()
             throw 'file associated to this buffer is not readable!'
         endif
-        if filename->match('^binary://') < 0
-            exec 'edit binary://' .. fnameescape(filename)
-        endif
+        setl ft=binary
     }
-    au BufReadCmd binary://* ReadBin(expand('<amatch>')->BinaryUriToFilename())
-    au BufWriteCmd binary://* WriteBin(expand('<amatch>')->BinaryUriToFilename())
+    au FileType binary {
+        if &modified
+            throw 'file is changed! unable to set filetype to binary.'
+        endif
+        ReadBin(expand('<afile>'))
+        au BufWriteCmd <buffer> WriteBin(expand('<amatch>'))
+    }
 
     # gx related (NOTE: key `gx` overwritten) {{{2
     nnoremap <silent> gx <Cmd>call <SID>Gx('n')<CR>
