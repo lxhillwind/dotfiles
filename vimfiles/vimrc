@@ -1148,7 +1148,10 @@ bookmark: {
     Callback: (chosen: string) => {
         const res = chosen->matchstr('\v.*:[0-9]+$')->split('.*\zs:')
         execute 'e' fnameescape(res[0])
-        execute $'norm {res[1]}G'
+        const linenr = res->get(1, 0)
+        if linenr > 0
+            execute $'norm {linenr}G'
+        endif
     }
     }
 })
