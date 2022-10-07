@@ -30,6 +30,10 @@
 "   " does nothing if not :Pack yet. (different from opt.commit)
 "   Pack 'git-commit-hash'
 "
+"   " set variable `g:pack_skip_error` to avoid reporting error.
+"   " usually this should not be set, since it will be silent if all plugins
+"   " are downloaded.
+"
 " opt:
 "   as; branch; commit; after; skip.
 "
@@ -70,6 +74,7 @@ let s:plugins_local = []
 " ensure plugins root is in rtp.
 let s:plugins_root = ''
 let s:rtp = map(split(&rtp, ','), 's:TrSlash(v:val)')
+let s:plugins_load_error = []
 
 for s:root in exists('g:plugins_root') ? [g:plugins_root] : []
       \ + [expand('~/vimfiles'), expand('~/.vim')]
@@ -146,7 +151,11 @@ function! s:pack_add(url, ...) abort
   let l:opt.url = l:url
   if !l:opt.skip
     if has('vim_starting')
-      silent! execute 'packadd!' l:dir
+      try
+        execute 'packadd!' l:dir
+      catch /.*/
+        call add(s:plugins_load_error, printf("%s\n\t%s", l:plugin, v:exception))
+      endtry
       call s:pack_ftdetect(l:opt.after, l:dir)
     else
       if index(map(split(&rtp, ','), {_, i -> split(i, '\v[\/]')[-1]}), l:opt.dir) < 0
@@ -433,3 +442,19 @@ function! s:pack_comp(A, L, P) abort
   endfor
   return join(l:result, "\n")
 endfunction
+
+function! s:error_report() abort
+  if empty(s:plugins_load_error)
+    return
+  endif
+  echohl ErrorMsg
+  echo join([':Pack: some plugin(s) failed to load:'] + s:plugins_load_error, "\n")
+  echohl None
+endfunction
+
+if !exists('g:pack_skip_error')
+  augroup pack_plugin_manager
+    au!
+    au VimEnter * call s:error_report()
+  augroup END
+endif
