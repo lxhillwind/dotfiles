@@ -227,7 +227,6 @@ const is_win32 = has('win32')
 const has_gui = has('gui_running') || has('mac')
 || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 const is_linux = has('linux')
-const is_kde = is_linux && $DESKTOP_SESSION == 'plasma'
 const is_mac = has('mac')
 const is_wsl = executable('/mnt/c/Windows/notepad.exe')
 
@@ -928,7 +927,7 @@ nnoremap <Space>p <Cmd>call <SID>ClipboardPaste("")<CR>
 def ClipboardCopy(cmd_: string)
     var cmd = cmd_
     if empty(cmd)
-        if has('clipboard') && (is_win32 || is_kde)
+        if has('clipboard') && is_win32
             # NOTE: unix: X11 clipboard content will disapper when program exits.
             # but kde (plasma) has clipboard manager, which make it work
             # consistently.
@@ -948,7 +947,7 @@ enddef
 def ClipboardPaste(cmd_: string)
     var cmd = cmd_
     if empty(cmd)
-        if has('clipboard') && (is_win32 || is_kde)
+        if has('clipboard') && is_win32
             @" = @+
             return
         elseif executable('pbpaste')
@@ -1982,6 +1981,7 @@ def ProjectListCmd(): string
             blacklist ..= printf('-name %s -prune -o ', shellescape(i))
         endif
     endfor
+    # https://github.com/lxhillwind/utils/tree/main/find-repo
     var find_repo_bin = exepath('find-repo' .. (is_win32 ? '.exe' : ''))
     if !find_repo_bin->empty()
         return printf('%s %s', shellescape(find_repo_bin), g:project_dirs)
