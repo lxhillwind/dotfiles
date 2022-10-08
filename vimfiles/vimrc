@@ -36,11 +36,11 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
         ]
 
     # lx {{{2
-    Pack 'vim-jump'
-    Pack 'vim-sh'
-    Pack 'pyvim'
+    packadd! vim-jump
+    packadd! vim-sh
+    packadd! pyvim
     g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
-    Pack 'vim-tasks'
+    packadd! vim-tasks
 
     # vim dist. {{{2
     # plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
@@ -53,7 +53,7 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
 
     # vender. {{{2
     # Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
-    Pack 'vim-fuzzy'
+    packadd! vim-fuzzy
 
     # from network {{{2
     Pack 'https://github.com/justinmk/vim-dirvish'
