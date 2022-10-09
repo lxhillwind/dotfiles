@@ -1189,6 +1189,16 @@ augroup vimrc
     # otherwise "au FileType YYY .*" stmt won't work.
     au FileType yaml setl indentkeys-=0#
     au FileType zig setl fp=zig\ fmt\ --stdin
+    # ":h ft-sh-syntax"
+    g:is_posix = 1
+    # quickfix window {{{2
+    au FileType qf &l:stl = &g:stl
+    au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
+    au FileType qf nnoremap <buffer> <C-p> <Cmd>colder<CR>
+    au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
+    au FileType qf nnoremap <buffer> <Space>;l <Cmd>chistory<CR>
+
+    # markdown {{{2
     au FileType markdown {
         setl tw=78
 
@@ -1197,16 +1207,6 @@ augroup vimrc
         syn match CheckboxUnchecked '\v^\s*- \[ \] '
         syn match CheckboxChecked '\v^\s*- \[X\] '
     }
-
-    # quickfix window
-    au FileType qf &l:stl = &g:stl
-    au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
-    au FileType qf nnoremap <buffer> <C-p> <Cmd>colder<CR>
-    au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
-    au FileType qf nnoremap <buffer> <Space>;l <Cmd>chistory<CR>
-
-    # ":h ft-sh-syntax"
-    g:is_posix = 1
 
     # markdown checkbox {{{
     def MarkdownToggleTaskStatus()
@@ -1225,6 +1225,7 @@ augroup vimrc
     au FileType markdown nnoremap <buffer>
                 \ <Space>;c <Cmd>call <SID>MarkdownToggleTaskStatus()<CR>
 
+    # binary file editing. (ft=binary) {{{2
     # ReadBin / WriteBin impl {{{
     # avoid using busybox xxd. To use busybox xxd: `sed -E 's/  .*//' | xxd -r`;
     # since contents after 0x blocks are also parsed by busybox xxd.
@@ -1284,6 +1285,12 @@ augroup vimrc
         au BufWriteCmd <buffer> WriteBin(expand('<amatch>'))
     }
 
+    # network (non-local) file editing {{{2
+    au BufReadCmd ftp://*,http://*,https://* {
+        setl buftype=nofile
+        execute 'Sh -r curl -sL --' shellescape(expand('<amatch>'))
+        setl nomodifiable
+        }
     # gx related (NOTE: key `gx` overwritten) {{{2
     nnoremap <silent> gx <Cmd>call <SID>Gx('n')<CR>
     vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>

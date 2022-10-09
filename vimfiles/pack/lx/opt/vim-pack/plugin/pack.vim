@@ -126,7 +126,8 @@ function! s:pack_add(url, ...) abort
   " TODO check input.
   let l:plugin = a:url
   let l:opt = a:0 > 0 ? a:1 : {}
-  if type(l:opt) == type('')
+  let l:arg_is_commit = type(l:opt) == type('')
+  if l:arg_is_commit
     if !has_key(s:plugins, l:plugin)
       return
     endif
@@ -151,7 +152,9 @@ function! s:pack_add(url, ...) abort
       try
         execute 'packadd!' l:dir
       catch /.*/
-        call add(s:plugins_load_error, printf("%s\n\t%s", l:plugin, v:exception))
+        if !l:arg_is_commit
+          call add(s:plugins_load_error, printf("%s\n\t%s", l:plugin, v:exception))
+        endif
       endtry
       call s:pack_ftdetect(l:opt.after, l:dir)
     else
