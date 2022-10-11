@@ -1289,6 +1289,7 @@ augroup vimrc
     au BufReadCmd ftp://*,http://*,https://* {
         setl buftype=nofile
         execute 'Sh -r curl -sL --' shellescape(expand('<amatch>'))
+        normal gg"_dd
         setl nomodifiable
         }
     # gx related (NOTE: key `gx` overwritten) {{{2
