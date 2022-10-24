@@ -28,7 +28,7 @@ RunOrRaise(class, run, where)
 }
 
 ; run or raise list. {{{1
-!,::RunOrRaise("ahk_exe msedge.exe", "msedge", Home)
+!,::RunOrRaise("ahk_exe firefox.exe", "firefox", Home)
 ; it's required to add gvim to $PATH
 !.::RunOrRaise("ahk_exe gvim.exe", "gvim", Home)
 !/::RunOrRaise("ahk_exe WindowsTerminal.exe", "wt", Home)
@@ -38,8 +38,15 @@ RunOrRaise(class, run, where)
 #.::Send {Media_Next}
 #/::Send {Media_Play_Pause}
 
-; miscrosoft edge {{{1
-#IfWinActive ahk_exe msedge.exe
+; firefox {{{1
+#IfWinActive ahk_exe firefox.exe
+; c-n / c-p as down / up.
+^n::Send {Down}
+^p::Send {Up}
+; addon shortcut
+^g::Send !g
+^+g::Send !+g
+#z::Send !z
 ; alt no steal focus
 Alt::return  ; LAlt::return will disable Alt-Tab.
 ; home page
