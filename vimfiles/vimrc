@@ -931,7 +931,10 @@ def ClipboardCopy(cmd_: string)
             # NOTE: unix: X11 clipboard content will disapper when program exits.
             # but kde (plasma) has clipboard manager, which make it work
             # consistently.
-            @+ = @"
+            # 20221029_133619 wrap stmt with 'execute', since it complains
+            # that + register is not available. I guess this is introduced in
+            # recent commit.
+            execute '@+ = @"'
             return
         elseif executable('pbcopy')
             cmd = 'pbcopy'
@@ -948,7 +951,7 @@ def ClipboardPaste(cmd_: string)
     var cmd = cmd_
     if empty(cmd)
         if has('clipboard') && is_win32
-            @" = @+
+            execute '@" = @+'
             return
         elseif executable('pbpaste')
             cmd = 'pbpaste'
