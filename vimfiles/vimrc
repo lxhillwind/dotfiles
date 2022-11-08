@@ -321,6 +321,8 @@ set enc=utf-8
 # fileencodings
 # See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
 set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+# prefer using unix style newline (fileformats).
+set ffs=unix,dos
 # runtimepath
 # for tiny version, set rtp to empty string to avoid loading any file.
 #set rtp=
