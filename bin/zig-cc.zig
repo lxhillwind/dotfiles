@@ -43,7 +43,9 @@ pub fn main() !void {
         try target.appendSlice("gnu");
     }
 
-    if (std.process.hasEnvVar(allocator, "DEBUG") catch false) {
+    const env_debug = std.process.getEnvVarOwned(allocator, "DEBUG") catch "";
+    defer allocator.free(env_debug);
+    if (!std.mem.eql(u8, env_debug, "")) {
         std.debug.print("compiling to: {s}\n", .{target.items});
     }
 
