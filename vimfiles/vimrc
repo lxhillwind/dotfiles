@@ -190,7 +190,7 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/masukomi/vim-markdown-folding', '526cffde2cb013ae337cdf48e244bb15881ab7ce'
     Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
     Pack 'https://github.com/tpope/vim-repeat', '24afe922e6a05891756ecf331f39a1f6743d3d5a'
-    Pack 'https://github.com/yegappan/lsp', '4554b826d3019001d5a30129b3f49823bb0ecc15'
+    Pack 'https://github.com/yegappan/lsp', '425a4a85e0a4713f46fb9221d89b79af9389bba3'
     Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
     Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
     finish | endif  # {{{1 }}}1
