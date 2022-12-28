@@ -1,8 +1,0 @@
-#!/bin/sh
-set -e
-
-if [ -n "$ZIG_TARGET" ]; then
-    exec /usr/bin/zig cc -target "$ZIG_TARGET" "$@"
-else
-    exec zig cc "$@"
-fi
