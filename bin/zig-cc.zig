@@ -8,37 +8,30 @@ var fba = std.heap.FixedBufferAllocator.init(&mem_buffer);
 const allocator = fba.allocator();
 
 pub fn main() !void {
-    var os = std.process.getEnvVarOwned(allocator, "ZIG_OS") catch "";
+    var os = std.process.getEnvVarOwned(allocator, "ZIG_OS") catch @tagName(builtin.os.tag);
     defer allocator.free(os);
-    if (std.mem.eql(u8, os, "")) {
-        os = @tagName(builtin.os.tag);
+    if (std.mem.eql(u8, os, "macosx")) {
+        os = "macos";
     }
-    var cpu = std.process.getEnvVarOwned(allocator, "ZIG_CPU") catch "";
+
+    var cpu = std.process.getEnvVarOwned(allocator, "ZIG_CPU") catch @tagName(builtin.cpu.arch);
     defer allocator.free(cpu);
-    if (std.mem.eql(u8, cpu, "")) {
-        cpu = @tagName(builtin.cpu.arch);
+    if (std.mem.eql(u8, cpu, "amd64")) {
+        cpu = "x86_64";
+    } else if (std.mem.eql(u8, cpu, "arm64")) {
+        cpu = "aarch64";
     }
 
     var target = std.ArrayList(u8).init(allocator);
-    // arch
-    if (std.mem.eql(u8, cpu, "amd64")) {
-        try target.appendSlice("x86_64");
-    } else if (std.mem.eql(u8, cpu, "arm64")) {
-        try target.appendSlice("aarch64");
-    } else {
-        try target.appendSlice(cpu);
-    }
+    try target.appendSlice(cpu);
     try target.appendSlice("-");
-    // os
-    if (std.mem.eql(u8, os, "macosx")) {
-        try target.appendSlice("macos");
-    } else {
-        try target.appendSlice(os);
-    }
+    try target.appendSlice(os);
     try target.appendSlice("-");
     // abi (TODO)
     if (std.mem.eql(u8, os, "linux")) {
         try target.appendSlice("musl");
+    } else if (std.mem.eql(u8, os, "macos")) {
+        try target.appendSlice("none");
     } else {
         try target.appendSlice("gnu");
     }
