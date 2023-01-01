@@ -68,3 +68,6 @@ Alt::return  ; LAlt::return will disable Alt-Tab.
 
 ; screenshot (ctrl+alt+a) {{{1
 ^!a::Send #+s
+; switch desktop (alt+[, alt+]) {{{1
+![::Send #^{Left}
+!]::Send #^{Right}

@@ -75,7 +75,6 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     vmap S <Plug>Sneak_S
     omap s <Plug>Sneak_s
     omap S <Plug>Sneak_S
-    Pack 'https://github.com/tpope/vim-repeat'
     Pack 'https://github.com/ciaranm/securemodelines', {'after': 1}
     Pack 'https://github.com/masukomi/vim-markdown-folding'
     g:markdown_fold_style = 'nested'
@@ -189,7 +188,6 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/lifepillar/vim-mucomplete', '03bcd4a7dfe0a2f6d432e8ce936d35273a15209d'
     Pack 'https://github.com/masukomi/vim-markdown-folding', '526cffde2cb013ae337cdf48e244bb15881ab7ce'
     Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
-    Pack 'https://github.com/tpope/vim-repeat', '24afe922e6a05891756ecf331f39a1f6743d3d5a'
     Pack 'https://github.com/yegappan/lsp', '425a4a85e0a4713f46fb9221d89b79af9389bba3'
     Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
     Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
@@ -306,7 +304,7 @@ set ttm=0
 set cuc
 set cul
 # laststatus
-set ls=2
+set ls=1
 # showcmd
 set sc
 # wildmenu
@@ -547,13 +545,13 @@ augroup vimrc
 augroup END
 
 # statusline {{{2
-&stl = '[%{winnr()},%{mode()}%M%R]'
-.. '%{ empty(&ft) ? "" : " [".&ft."]" }'
-.. ' %<'
-.. '%{ &ft == "qf" && exists("w:quickfix_title") ? w:quickfix_title : "" }'
-.. '%{% &ft == "qf" && exists("w:quickfix_title") ? "" : "%F" %}'
-.. ' %=<%B>'
-.. ' [%LL|%l:%{charcol(".")}|%vv]'
+set ruler
+&rulerformat = '%20('
+.. '%M'
+.. ' %l:%{charcol(".")}%V'
+.. '%='
+.. '%P'
+.. '%)'
 
 # viminfo {{{2
 # &viminfo should be set with ^= (the first match will be used) {{{
@@ -651,10 +649,10 @@ if !exists('$FZF_DEFAULT_OPTS')
     $FZF_DEFAULT_OPTS = '--cycle --no-sort --no-mouse --color=16'
 endif
 
-# enable mouse support. {{{2
-# only set it in desktop OS, not server;
-# vim in server is usually controlled by tmux, and less functional.
-set mouse=a
+# disable mouse support by default. make terminal happier. {{{2
+if !has('gui_running')
+    set mouse=
+endif
 
 # IME {{{2
 if is_win32
@@ -1197,7 +1195,6 @@ augroup vimrc
     # ":h ft-sh-syntax"
     g:is_posix = 1
     # quickfix window {{{2
-    au FileType qf &l:stl = &g:stl
     au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
     au FileType qf nnoremap <buffer> <C-p> <Cmd>colder<CR>
     au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
