@@ -548,6 +548,7 @@ augroup END
 set ruler
 &rulerformat = '%20('
 .. '%M'
+.. ' <%B>'
 .. ' %l:%{charcol(".")}%V'
 .. '%='
 .. '%P'
