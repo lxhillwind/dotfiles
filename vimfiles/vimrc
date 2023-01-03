@@ -774,7 +774,13 @@ inoremap <C-U> <C-G>u<C-U>
 
 # t / T {{{2
 # I don't use t / T, so use them to do other things.
-nnoremap t <Cmd>call <SID>TabOpenOrClose()<CR>
+nmap t <Nop>
+for i in range(1, 9)
+    execute printf('nnoremap t%s %sgt', i, i)
+endfor
+nnoremap t0 <Cmd>tablast<CR>
+nnoremap tn <Cmd>Sh -wc<CR>
+nnoremap tt <Cmd>call <SID>TabOpenOrClose()<CR>
 # TODO impl tab switch with vim-fuzzy.
 nmap T <Nop>
 
