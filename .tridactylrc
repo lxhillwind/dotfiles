@@ -5,58 +5,10 @@
 set configversion 2.0
 set smoothscroll true
 set hintchars asdfgqwertzxcv
+set modeindicatorshowkeys true
 set followpagepatterns {"next":"^(next|newer|上一章|上一篇|上一页)\\b|»|>>|more","prev":"^(prev(ious)?|older|下一章|下一篇|下一页)\\b|«|<<"}
 
-" Binds {{{1
-bind x tabclose
-bind X undo
-bind d scrollpage 0.5
-bind u scrollpage -0.5
-bind gs viewsource
-bind gf hint -t
-bind gp pin
-bind gm mute toggle
-bind m gobble 1 markadd
-" default is `, which is hard to press in most 60% keyboard.
-bind ' gobble 1 markjump
-
-" do not use bmark, and we use `af` as binding; so unbind a / A.
-unbind a
-unbind A
-
-" create duplicated binding for muscle memory.
-bind yf hint -y
-bind af hint -qb
-
-" let's keep <C-f> as search (in windows / linux)
-unbind <C-f>
-unbind <C-b>
-
-bind --mode=ex <C-b> text.backward_char
-bind --mode=ex <C-f> text.forward_char
-bind --mode=ex <C-h> text.delete_backward_char
-" cannot bind <C-w>;
-" cannot bind sth (<C-/>) as select_all (then cannot occupy <C-a>);
-
-" hint extending. {{{2
-" \ at end of line is used for line-continuation, see:
-" https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
-
-"               qidian            bilibili       bilibili
-" bilibili
-" bilibili
-" bilibili
-" bilibili
-" bilibili
-bind cc hint -c span.review-count,li.be-tab-item,div.toggle-btn\
-,div.list-box > div > div.item.sortable\
-,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
-,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
-,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
-,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
-" }}}2
-
-" follows are default binding created via ":mktridactylrc -f" {{{1
+" default binding created via ":mktridactylrc -f" {{{1
 bind <C-6> buffer #
 bind <F1> help
 bind o fillcmdline open
@@ -199,3 +151,52 @@ bind zI zoom 3
 bind zO zoom 0.3
 bind . repeat
 bind <AS-ArrowUp><AS-ArrowUp><AS-ArrowDown><AS-ArrowDown><AS-ArrowLeft><AS-ArrowRight><AS-ArrowLeft><AS-ArrowRight>ba open https://www.youtube.com/watch?v=M3iOROuTuMA
+
+" Binds {{{1
+bind x tabclose
+bind X undo
+bind d scrollpage 0.5
+bind u scrollpage -0.5
+bind gs viewsource
+bind gf hint -t
+bind gp pin
+bind gm mute toggle
+bind m gobble 1 markadd
+" default is `, which is hard to press in most 60% keyboard.
+bind ' gobble 1 markjump
+
+" do not use bmark, and we use `af` as binding; so unbind a / A.
+unbind a
+unbind A
+
+" create duplicated binding for muscle memory.
+bind yf hint -y
+bind af hint -qb
+
+" let's keep <C-f> as search (in windows / linux)
+unbind <C-f>
+unbind <C-b>
+
+bind --mode=ex <C-b> text.backward_char
+bind --mode=ex <C-f> text.forward_char
+bind --mode=ex <C-h> text.delete_backward_char
+" cannot bind <C-w>;
+" cannot bind sth (<C-/>) as select_all (then cannot occupy <C-a>);
+
+" hint extending. {{{2
+" \ at end of line is used for line-continuation, see:
+" https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
+
+"               qidian            bilibili       bilibili
+" bilibili
+" bilibili
+" bilibili
+" bilibili
+" bilibili
+bind cc hint -c span.review-count,li.be-tab-item,div.toggle-btn\
+,div.list-box > div > div.item.sortable\
+,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
+,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
+,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
+,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
+" }}}2
