@@ -1,0 +1,201 @@
+" For syntax highlighting see https://github.com/tridactyl/vim-tridactyl
+" vim: set filetype=tridactyl
+
+" General Settings {{{1
+set configversion 2.0
+set smoothscroll true
+set hintchars asdfgqwertzxcv
+set followpagepatterns {"next":"^(next|newer|上一章|上一篇|上一页)\\b|»|>>|more","prev":"^(prev(ious)?|older|下一章|下一篇|下一页)\\b|«|<<"}
+
+" Binds {{{1
+bind x tabclose
+bind X undo
+bind d scrollpage 0.5
+bind u scrollpage -0.5
+bind gs viewsource
+bind gf hint -t
+bind gp pin
+bind gm mute toggle
+bind m gobble 1 markadd
+" default is `, which is hard to press in most 60% keyboard.
+bind ' gobble 1 markjump
+
+" do not use bmark, and we use `af` as binding; so unbind a / A.
+unbind a
+unbind A
+
+" create duplicated binding for muscle memory.
+bind yf hint -y
+bind af hint -qb
+
+" let's keep <C-f> as search (in windows / linux)
+unbind <C-f>
+unbind <C-b>
+
+bind --mode=ex <C-b> text.backward_char
+bind --mode=ex <C-f> text.forward_char
+bind --mode=ex <C-h> text.delete_backward_char
+" cannot bind <C-w>;
+" cannot bind sth (<C-/>) as select_all (then cannot occupy <C-a>);
+
+" hint extending. {{{2
+" \ at end of line is used for line-continuation, see:
+" https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
+
+"               qidian            bilibili       bilibili
+" bilibili
+" bilibili
+" bilibili
+" bilibili
+" bilibili
+bind cc hint -c span.review-count,li.be-tab-item,div.toggle-btn\
+,div.list-box > div > div.item.sortable\
+,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
+,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
+,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
+,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
+" }}}2
+
+" follows are default binding created via ":mktridactylrc -f" {{{1
+bind <C-6> buffer #
+bind <F1> help
+bind o fillcmdline open
+bind O current_url open
+bind w fillcmdline winopen
+bind W current_url winopen
+bind t fillcmdline tabopen
+bind ]] followpage next
+bind [[ followpage prev
+bind [c urlincrement -1
+bind ]c urlincrement 1
+bind <C-x> urlincrement -1
+bind <C-a> urlincrement 1
+bind T current_url tabopen
+bind yy clipboard yank
+bind ys clipboard yankshort
+bind yc clipboard yankcanon
+bind ym clipboard yankmd
+bind yo clipboard yankorg
+bind yt clipboard yanktitle
+bind gh home
+bind gH home true
+bind p clipboard open
+bind P clipboard tabopen
+bind j scrollline 10
+bind <C-e> scrollline 10
+bind k scrollline -10
+bind <C-y> scrollline -10
+bind h scrollpx -50
+bind l scrollpx 50
+bind G scrollto 100
+bind gg scrollto 0
+bind <C-u> scrollpage -0.5
+bind <C-d> scrollpage 0.5
+bind <C-f> scrollpage 1
+bind <C-b> scrollpage -1
+bind <C-v> nmode ignore 1 mode normal
+bind $ scrollto 100 x
+bind ^ scrollto 0 x
+bind H back
+bind L forward
+bind <C-o> jumpprev
+bind <C-i> jumpnext
+bind D composite tabprev; tabclose #
+bind gx0 tabclosealltoleft
+bind gx$ tabclosealltoright
+bind << tabmove -1
+bind >> tabmove +1
+bind U undo window
+bind r reload
+bind R reloadhard
+bind gi focusinput -l
+bind g? rot13
+bind g! jumble
+bind g; changelistjump -1
+bind J tabprev
+bind K tabnext
+bind gt tabnext_gt
+bind gT tabprev
+bind g^ tabfirst
+bind g0 tabfirst
+bind g$ tablast
+bind ga tabaudio
+bind gr reader
+bind gu urlparent
+bind gU urlroot
+bind : fillcmdline_notrail
+bind s fillcmdline open search
+bind S fillcmdline tabopen search
+bind M gobble 1 quickmark
+bind B fillcmdline taball
+bind b fillcmdline tab
+bind ZZ qall
+bind f hint
+bind F hint -b
+bind gF hint -qb
+bind ;i hint -i
+bind ;b hint -b
+bind ;o hint
+bind ;I hint -I
+bind ;k hint -k
+bind ;K hint -K
+bind ;y hint -y
+bind ;Y hint -cF img i => tri.excmds.yankimage(tri.urlutils.getAbsoluteURL(i.src))
+bind ;p hint -p
+bind ;h hint -h
+bind v hint -h
+bind ;P hint -P
+bind ;r hint -r
+bind ;s hint -s
+bind ;S hint -S
+bind ;a hint -a
+bind ;A hint -A
+bind ;; hint -; *
+bind ;# hint -#
+bind ;v hint -W mpvsafe
+bind ;V hint -V
+bind ;w hint -w
+bind ;t hint -W tabopen
+bind ;O hint -W fillcmdline_notrail open 
+bind ;W hint -W fillcmdline_notrail winopen 
+bind ;T hint -W fillcmdline_notrail tabopen 
+bind ;z hint -z
+bind ;m composite hint -Jpipe img src | open images.google.com/searchbyimage?image_url=
+bind ;M composite hint -Jpipe img src | tabopen images.google.com/searchbyimage?image_url=
+bind ;gi hint -qi
+bind ;gI hint -qI
+bind ;gk hint -qk
+bind ;gy hint -qy
+bind ;gp hint -qp
+bind ;gP hint -qP
+bind ;gr hint -qr
+bind ;gs hint -qs
+bind ;gS hint -qS
+bind ;ga hint -qa
+bind ;gA hint -qA
+bind ;g; hint -q;
+bind ;g# hint -q#
+bind ;gv hint -qW mpvsafe
+bind ;gw hint -qw
+bind ;gb hint -qb
+bind ;gF hint -qb
+bind ;gf hint -q
+bind <S-Insert> mode ignore
+bind <AC-Escape> mode ignore
+bind <AC-`> mode ignore
+bind <S-Escape> mode ignore
+bind <Escape> composite mode normal ; hidecmdline
+bind <C-[> composite mode normal ; hidecmdline
+bind a current_url bmark
+bind A bmark
+bind zi zoom 0.1 true
+bind zo zoom -0.1 true
+bind zm zoom 0.5 true
+bind zr zoom -0.5 true
+bind zM zoom 0.5 true
+bind zR zoom -0.5 true
+bind zz zoom 1
+bind zI zoom 3
+bind zO zoom 0.3
+bind . repeat
+bind <AS-ArrowUp><AS-ArrowUp><AS-ArrowDown><AS-ArrowDown><AS-ArrowLeft><AS-ArrowRight><AS-ArrowLeft><AS-ArrowRight>ba open https://www.youtube.com/watch?v=M3iOROuTuMA
