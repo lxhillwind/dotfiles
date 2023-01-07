@@ -13,7 +13,7 @@ let g:loaded_sh = 1
 
 import '../lib/sh.vim' as lib
 
-let s:sh_programs = ['alacritty', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv', 'konsole']
+let s:sh_programs = ['kitty', 'alacritty', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv', 'konsole']
 
 " main {{{1
 " common var def {{{2
@@ -104,6 +104,7 @@ function! s:sh(cmd, opt) abort " {{{2
 
   call add(help, '  w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)')
   call add(help, '     currently supported: ' . join(s:sh_programs, ', '))
+  call add(help, '     order can be controlled by variable `g:sh_programs`')
   let opt.window = match(opt_string, 'w') >= 0
 
   call add(help, '  c: close terminal after execution')
@@ -338,6 +339,7 @@ function! s:sh(cmd, opt) abort " {{{2
     " skip_shell does not care of close option, since it is complex.
     let cmd = opt.close || opt.skip_shell ? cmd : s:cmdlist_keep_window(shell_list, cmd)
     let context = {'shell': shell,
+          \ 'interactive_shell': interactive_shell,
           \ 'cmd': cmd,
           \ 'close': opt.close, 'background': opt.background,
           \ 'start_fn': s:is_win32 ? function('s:win32_start') : function('s:unix_start'),
@@ -491,7 +493,7 @@ function! s:stop_job(job, ...) abort
 endfunction
 
 function! s:unix_start(cmdlist, ...) abort
-  call job_start(a:cmdlist)
+  call job_start(a:cmdlist, {'stoponexit': ''})
 endfunction
 
 function! s:post_func(result, opt) abort
@@ -520,6 +522,18 @@ function! s:cmdlist_keep_window(shell_list, cmd) abort
 endfunction
 
 " -w program {{{2
+function! s:program_kitty(context) abort
+  let cmd = a:context.cmd
+  if executable('kitty')
+    if a:context.interactive_shell
+      call a:context.start_fn(['kitty'] + cmd)
+    else
+      call a:context.start_fn(['kitty', '-T', a:context.term_name] + cmd)
+    endif
+    return 1
+  endif
+endfunction
+
 function! s:program_alacritty(context) abort
   let cmd = a:context.cmd
   if executable('alacritty')
