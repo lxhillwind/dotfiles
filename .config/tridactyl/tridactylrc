@@ -203,6 +203,8 @@ bind --mode=visual S composite js " " + document.getSelection().toString() | fil
 
 " easy translation
 bind --mode=visual cd composite js "cd " + document.getSelection().toString() | tabopen
+" this is heavy on CPU, so only use it for specific sites.
+seturl www.bing.com/dict preventautofocusjackhammer true
 
 " do not use bmark, and we use `af` as binding; so unbind a / A.
 unbind a
