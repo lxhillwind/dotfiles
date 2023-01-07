@@ -1,12 +1,37 @@
 " For syntax highlighting see https://github.com/tridactyl/vim-tridactyl
 " vim: set filetype=tridactyl
+"
+" ~/.tridactylrc will be sourced at last; it can be used for local config.
+
+set configversion 2.0
+
+" WARNING: use this to clear config (binding, etc) in memory.
+sanitise tridactyllocal
+
+" use `seturl` / `bindurl` for speical case.
 
 " General Settings {{{1
-set configversion 2.0
+set allowautofocus false
 set smoothscroll true
 set hintchars asdfgqwertzxcv
 set modeindicatorshowkeys true
 set followpagepatterns {"next":"^(next|newer|上一章|上一篇|上一页)\\b|»|>>|more","prev":"^(prev(ious)?|older|下一章|下一篇|下一页)\\b|«|<<"}
+" tabo default alias (tabonly) is dangerous, so let's remap it.
+alias tabo tabopen
+
+" search engine {{{1
+set searchurls.bd https://www.baidu.com/s?wd=%s
+set searchurls.bg https://www.bing.com/search?q=%s&ensearch=1
+set searchurls.bl https://search.bilibili.com/all?keyword=%s
+set searchurls.cd https://www.bing.com/dict/search?mkt=zh-CN&q=%s
+set searchurls.co https://www.collinsdictionary.com/english/%s
+set searchurls.dg https://duckduckgo.com/?q=%s
+set searchurls.gg https://www.google.com/search?q=%s
+set searchurls.man https://man.archlinux.org/search?q=%s&go=Go
+set searchurls.sh http://symbolhound.com/?q=%s
+set searchurls.tr https://www.microsofttranslator.com/bv.aspx?from=&to=zh-CHS&a=%s
+set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s
+set searchurls.yh https://search.yahoo.com/search?q=%s
 
 " default binding created via ":mktridactylrc -f" {{{1
 bind <C-6> buffer #
@@ -157,6 +182,9 @@ bind x tabclose
 bind X undo
 bind d scrollpage 0.5
 bind u scrollpage -0.5
+" j / k: default (10) too much.
+bind j scrollline 5
+bind k scrollline -5
 bind gs viewsource
 bind gf hint -t
 bind gp pin
@@ -164,6 +192,14 @@ bind gm mute toggle
 bind m gobble 1 markadd
 " default is `, which is hard to press in most 60% keyboard.
 bind ' gobble 1 markjump
+bind gC tabduplicate
+
+" search with...
+bind --mode=visual s composite js " " + document.getSelection().toString() | fillcmdline open ; text.beginning_of_line ; text.forward_word ; text.forward_char
+bind --mode=visual S composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
+
+" easy translation
+bind --mode=visual cd composite js "cd " + document.getSelection().toString() | tabopen
 
 " do not use bmark, and we use `af` as binding; so unbind a / A.
 unbind a
@@ -173,9 +209,12 @@ unbind A
 bind yf hint -y
 bind af hint -qb
 
-" let's keep <C-f> as search (in windows / linux)
+" let's keep <C-f> for native function (it's search in windows / linux)
 unbind <C-f>
 unbind <C-b>
+" some others.
+unbind <C-a>
+unbind <C-x>
 
 bind --mode=ex <C-b> text.backward_char
 bind --mode=ex <C-f> text.forward_char
@@ -187,16 +226,15 @@ bind --mode=ex <C-h> text.delete_backward_char
 " \ at end of line is used for line-continuation, see:
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
 
-"               qidian            bilibili       bilibili
-" bilibili
-" bilibili
-" bilibili
-" bilibili
-" bilibili
-bind cc hint -c span.review-count,li.be-tab-item,div.toggle-btn\
+bindurl qidian.com --mode=normal c hint -c span.review-count
+bindurl bilibili.com --mode=normal c hint -c li.be-tab-item,div.toggle-btn\
 ,div.list-box > div > div.item.sortable\
 ,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
 ,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
 ,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
 ,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
 " }}}2
+
+" load local config and alert for finish {{{1
+source ~/.tridactylrc
+js alert("tridactylrc loaded.")
