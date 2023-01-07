@@ -215,6 +215,8 @@ unbind <C-b>
 " some others.
 unbind <C-a>
 unbind <C-x>
+unbind --mode=normal <C-o>
+unbind --mode=normal <C-i>
 
 bind --mode=ex <C-b> text.backward_char
 bind --mode=ex <C-f> text.forward_char
@@ -227,6 +229,14 @@ bind --mode=ex <C-h> text.delete_backward_char
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
 
 bindurl qidian.com --mode=normal c hint -c span.review-count
+seturl qidian.com hintchars asdqwezxvf
+" don't know why with default hintfiltermode (simple), it's easy to click wrong hint.
+" so use vimperator-mode to allow filtering by pressing number (which is in review-count).
+seturl qidian.com hintfiltermode vimperator
+" native <Space> blocks sometimes.
+bindurl qidian.com --mode=normal <Space> scrollpage 0.97
+bindurl qidian.com --mode=normal <S-Space> scrollpage -0.97
+
 bindurl bilibili.com --mode=normal c hint -c li.be-tab-item,div.toggle-btn\
 ,div.list-box > div > div.item.sortable\
 ,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\

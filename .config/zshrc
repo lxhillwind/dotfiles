@@ -150,7 +150,17 @@ _cd_history() {
     fi
 }
 
-precmd_functions+=(_cd_history)
+_fix_title() {
+    print -nP '\x1b]0;%~\007'
+}
+
+precmd_functions+=(_cd_history _fix_title)
+
+_set_title() {
+    echo -ne "\x1b]0;${1}\007"
+}
+
+preexec_functions+=(_set_title)
 
 j() {
     prefix=$1

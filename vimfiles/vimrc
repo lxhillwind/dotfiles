@@ -697,6 +697,11 @@ else
             silent! set tgc
         endif
 
+        if &term == 'xterm-kitty'
+            # in kitty faq.
+            &t_ut = ''
+        endif
+
         if $TERM->tolower() =~? 'xterm' && is_wsl
             # fix vim start in replace mode; https://superuser.com/a/1525060
             set t_u7=
