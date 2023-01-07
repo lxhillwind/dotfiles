@@ -13,7 +13,7 @@ let g:loaded_sh = 1
 
 import '../lib/sh.vim' as lib
 
-let s:sh_programs = ['kitty', 'alacritty', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv', 'konsole']
+let s:sh_programs = ['kitty', 'alacritty', 'konsole', 'xfce4Terminal', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
 
 " main {{{1
 " common var def {{{2
@@ -637,6 +637,19 @@ function! s:program_konsole(context) abort
   let cmd = a:context.cmd
   if executable('konsole')
     call a:context.start_fn(['konsole', '-p', 'tabtitle=' .. a:context.term_name, '-e'] + cmd)
+    return 1
+  endif
+endfunction
+
+function! s:program_xfce4Terminal(context) abort
+  let cmd = a:context.cmd
+  if executable('xfce4-terminal')
+    let joined_cmd = join(map(cmd, 'shellescape(v:val)'), ' ')
+    if a:context.interactive_shell
+      call a:context.start_fn(['xfce4-terminal', '-e', joined_cmd])
+    else
+      call a:context.start_fn(['xfce4-terminal', '-T', a:context.term_name, '-e', joined_cmd])
+    endif
     return 1
   endif
 endfunction
