@@ -41,6 +41,10 @@ esac
 # fzf
 export FZF_DEFAULT_OPTS='--cycle --no-sort --no-mouse --color=16'
 
+# bat
+# git-delta theme is also controlled by `BAT_THEME`.
+export BAT_THEME=OneHalfLight
+
 # vim-vimserver; do not export related env if in vim popup terminal. {{{2
 if [ -n "$VIMSERVER_POPUP" ] && [ -n "$VIMSERVER_ID" ]; then
     _temp="$VIMSERVER_ID"
