@@ -7,6 +7,8 @@
 ; + => shift
 ; # => win
 ;
+; beginning with `$` => I guess it is like nnoremap in vim.
+;
 ; or:
 ; AutoHotkey Help => Usage and Syntax => List of Keys
 
@@ -54,6 +56,11 @@ Alt::return  ; LAlt::return will disable Alt-Tab.
 ; tab switch(alt+shift+[ or ])
 !+[::Send ^+{Tab}
 !+]::Send ^{Tab}
+; let ctrl-6 send alt-6, differ from alt-6 (sending ctrl-6).
+; so we can differ them in tridactyl:
+; atl-6 to switch tab 6 (native function for ctrl-6: requires unbind in local tridactylrc);
+; ctrl-6 to switch between # tab (alt-6 recognized).
+^6::Send !6
 ; alt-1 to alt-9
 !1::Send ^1
 !2::Send ^2

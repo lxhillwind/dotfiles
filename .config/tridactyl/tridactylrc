@@ -197,6 +197,25 @@ bind m gobble 1 markadd
 bind ' gobble 1 markjump
 bind gC tabduplicate
 
+" this is quite handy.
+" I don't know if it is default... just record it here.
+bind --mode=browser <C-6> tab #
+
+" in windows, <A-1> - <A-9> can not be used to navigate tab (it's ok in linux);
+" so we map <A-1> - <A-9> to <C-1> - <C-9> with ahk to make them work.
+"
+" after using tridactyl, <C-6> should be used as <C-^> (like in vim);
+" so we bind <C-6> to <A-6> in ahk, then <C-6> and <A-6> produce different keys:
+"
+" When we pressing <A-6>, <C-6> is recognized by firefox, so <C-6> should be unbind.
+" But tridactylrc is used in different OS,
+" so we need to unbind <C-6>, and bind <A-6> for windows.
+"bind --mode=browser <A-6> tab #
+"unbind <C-6>
+"unbind --mode=browser <C-6>
+" ... and unbind <A-6> for linux (if it is binded by default).
+"unbind --mode=browser <A-6>
+
 " search with...
 bind --mode=visual s composite js " " + document.getSelection().toString() | fillcmdline open ; text.beginning_of_line ; text.forward_word ; text.forward_char
 bind --mode=visual S composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
@@ -223,16 +242,15 @@ unbind <C-x>
 unbind --mode=normal <C-o>
 unbind --mode=normal <C-i>
 
+" ex mode readline
 bind --mode=ex <C-b> text.backward_char
 bind --mode=ex <C-f> text.forward_char
 bind --mode=ex <C-h> text.delete_backward_char
 " cannot bind <C-w>;
 " cannot bind sth (<C-/>) as select_all (then cannot occupy <C-a>);
 
-" hint extending. {{{2
 " \ at end of line is used for line-continuation, see:
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
-
 bindurl qidian.com --mode=normal c hint -Jc span.review-count,div.chapter-control > a
 seturl qidian.com hintchars vzcxsda
 " don't know why with default hintfiltermode (simple), it's easy to click wrong hint.
@@ -248,7 +266,6 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 ,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
 ,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
 ,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
-" }}}2
 
 " load local config and alert for finish {{{1
 source ~/.tridactylrc
