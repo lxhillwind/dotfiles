@@ -267,7 +267,9 @@ bind --mode=ex <C-h> text.delete_backward_char
 
 " \ at end of line is used for line-continuation, see:
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
-bindurl qidian.com --mode=normal c hint -Jc span.review-count,div.chapter-control > a
+bindurl qidian.com --mode=normal c hint -Jc span.review-count\
+,div.chapter-control > a\
+,.review-replies-popup > .close-btn
 seturl qidian.com hintchars vzcxsda
 " don't know why with default hintfiltermode (simple), it's easy to click wrong hint.
 " so use vimperator-mode to allow filtering by pressing number (which is in review-count).
@@ -282,6 +284,13 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 ,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
 ,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
 ,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
+
+" emulate arrow key (to control video player).
+" this takes high cpu, use with care.
+"bindurl bilibili.com --mode=normal j exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{DOWN}')"
+"bindurl bilibili.com --mode=normal k exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{UP}')"
+"bindurl bilibili.com --mode=normal h exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{LEFT}')"
+"bindurl bilibili.com --mode=normal l exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{RIGHT}')"
 
 " load local config and alert for finish {{{1
 source ~/.tridactylrc
