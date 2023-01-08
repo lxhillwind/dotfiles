@@ -1,7 +1,15 @@
 " For syntax highlighting see https://github.com/tridactyl/vim-tridactyl
 " vim: set filetype=tridactyl
 "
-" ~/.tridactylrc will be sourced at last; it can be used for local config.
+" NOTE:
+"
+" - turn on <warn if close multiple tabs> in firefox setting, so we can be
+"   alerted to not close firefox via X button;
+"   use tridactyl's `ZZ` binding, then local file:/// url will be recovered
+"   properly (simple tab group cannot recover them).
+"
+" - ~/.tridactylrc will be sourced at last; it can be used for local config.
+"   (see `:help source` in tridactyl about configuration file priority)
 
 set configversion 2.0
 
