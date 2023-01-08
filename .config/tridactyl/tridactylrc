@@ -7,9 +7,14 @@
 "   alerted to not close firefox via X button;
 "   use tridactyl's `ZZ` binding, then local file:/// url will be recovered
 "   properly (simple tab group cannot recover them).
+"   - browser.tabs.warnOnClose => true (is this default?)
 "
 " - ~/.tridactylrc will be sourced at last; it can be used for local config.
 "   (see `:help source` in tridactyl about configuration file priority)
+"
+" - firefox setup: (TODO set them via tridactyl?)
+"   - ui.key.menuAccessKey => 17 (then we can press alt-somekey without opening menu);
+"   - ui.key.menuAccessKeyFocuses => false (press alt does not focus on menu);
 
 set configversion 2.0
 
@@ -204,6 +209,8 @@ bind m gobble 1 markadd
 " default is `, which is hard to press in most 60% keyboard.
 bind ' gobble 1 markjump
 bind gC tabduplicate
+" make <Escape> able to exit simple-tab-group's switch group page.
+unbind --mode=normal <Escape>
 
 " this is quite handy.
 " I don't know if it is default... just record it here.

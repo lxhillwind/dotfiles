@@ -42,20 +42,6 @@ RunOrRaise(class, run, where)
 
 ; firefox {{{1
 #IfWinActive ahk_exe firefox.exe
-; c-n / c-p as down / up.
-^n::Send {Down}
-^p::Send {Up}
-; addon shortcut
-^g::Send !g
-^+g::Send !+g
-#z::Send !z
-; alt no steal focus
-Alt::return  ; LAlt::return will disable Alt-Tab.
-; home page
-!+h::Send !{home}
-; tab switch(alt+shift+[ or ])
-!+[::Send ^+{Tab}
-!+]::Send ^{Tab}
 ; let ctrl-6 send alt-6, differ from alt-6 (sending ctrl-6).
 ; so we can differ them in tridactyl:
 ; atl-6 to switch tab 6 (native function for ctrl-6: requires unbind in local tridactylrc);
