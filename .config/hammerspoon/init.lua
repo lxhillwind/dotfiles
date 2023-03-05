@@ -3,13 +3,40 @@
 -- config is largely token from:
 -- https://github.com/kbd/setup/blob/master/HOME/.hammerspoon/init.lua
 
+-- import:
+-- https://github.com/dbalatero/SkyRocket.spoon (commit: 358c683)
+
 hs.alert.show("Hammerspoon config loaded")
 
 hyper_shift = {"cmd", "shift"}
 hyper = {"cmd"}
 meta = {"alt"}
 
--- Defines for window maximize toggler
+hs.hotkey.bind(hyper_shift, ";", hs.reload)
+
+-- move / resize window when holding key {{{
+local SkyRocket = hs.loadSpoon("SkyRocket")
+sky = SkyRocket:new({
+  -- Opacity of resize canvas
+  opacity = 0.3,
+
+  -- Which modifiers to hold to move a window?
+  moveModifiers = hyper,
+
+  -- Which mouse button to hold to move a window?
+  moveMouseButton = 'left',
+
+  -- Which modifiers to hold to resize a window?
+  resizeModifiers = hyper,
+
+  -- Which mouse button to hold to resize a window?
+  resizeMouseButton = 'right',
+
+  disabledApps = {"Firefox", "Code"},
+})
+-- }}}
+
+-- Defines for window maximize toggler {{{
 -- copied from https://github.com/wangshub/hammerspoon-config/blob/master/window/window.lua
 local frameCache = {}
 function toggleWindowMaximized()
@@ -25,10 +52,15 @@ function toggleWindowMaximized()
        win:maximize()
     end
  end
+-- }}}
+hs.hotkey.bind(hyper, "return", toggleWindowMaximized)
+-- avoid command+enter (to fullscreen causing new workspace)
+hs.hotkey.bind(hyper, "m", toggleWindowMaximized)
+-- why maximize not fullscreen?
+-- since macOS fullscreen will move window to new workspace,
+-- then app show all window won't work as expected
 
-hs.hotkey.bind(hyper_shift, ";", hs.reload)
-
-function bindApp(char, app, with_shift)
+function bindApp(char, app, with_shift) -- {{{
     local key = hyper
     if with_shift ~= nil then
         key = hyper_shift
@@ -36,105 +68,62 @@ function bindApp(char, app, with_shift)
     hs.hotkey.bind(key, char, function()
         hs.application.launchOrFocus(app)
     end)
-end
+end -- }}}
 
-function fuzzy(choices, func)
-    local chooser = hs.chooser.new(func)
-    chooser:choices(choices)
-    chooser:searchSubText(true)
-    chooser:fgColor({hex="#233333"})
-    chooser:subTextColor({hex="#666"})
-    chooser:width(25)
-    chooser:show()
-end
+-- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
+-- 然后此处设置带 shift 的.
+bindApp(",", "Google Chrome", true)
+bindApp(".", "Visual Studio Code")
+bindApp("/", "kitty")
 
-function selectWindow(window)
-    if window == nil then -- nothing selected
-        return
-    end
-    hs.window.get(window.id):focus()
-end
+hs.hotkey.bind(hyper, ";", showWindowFuzzy) -- all windows
+hs.hotkey.bind(hyper, "'", function() showWindowFuzzy(true) end) -- app windows
 
-function showWindowFuzzy(app)
-    local windows = nil
-    if app == nil then -- all windows
-        windows = hs.window.allWindows()
-    elseif app == true then -- focused app windows
-        windows = hs.application.frontmostApplication():allWindows()
-    else -- specific app windows
-        windows = app:allWindows()
-    end
+-- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
+-- if hammerspoon is not started yet.
 
-    local focused_id = hs.window.focusedWindow()
-    if focused_id ~= nil then
-        focused_id = focused_id:id()
-    else
-        focused_id = -1
-    end
-
-    local choices = {}
-    local app_images = {}
-    local window_idx = 1
-
-    table.sort(windows, function(left, right)
-        -- 让中文开头的排在前面.
-        return left:title() > right:title()
-    end)
-
-    for i=1, #windows do
-        local w = windows[i]
-        local id = w:id()
-        local active = id == focused_id
-        local app = w:application()
-        if app_images[app] == nil then -- cache the app image per app
-            if app:bundleID() ~= nil then
-                app_images[app] = hs.image.imageFromAppBundle(app:bundleID())
-            end
-        end
-        local image = app_images[app]
-        local text = w:title()
-        local subText = app:title() .. (active and " (active)" or "")
-        if text ~= "Notification Center" then
-            choices[window_idx] = {
-                text = text,
-                subText = subText,
-                image = image,
-                valid = not active,
-                id = id,
-            }
-            window_idx = window_idx + 1
-        end
-    end
-    fuzzy(choices, selectWindow)
-end
-
-function showClipboard()
+function showClipboard() -- {{{
     hs.alert.show("content in clipboard: ")
     local text = hs.pasteboard.readString()
     if text:len() > 100 then
         text = text:sub(0, 100) .. ' ...'
     end
     hs.alert.show(text)
-end
-
--- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
--- 然后此处设置带 shift 的.
-bindApp(",", "Google Chrome", true)
-bindApp(".", "Visual Studio Code")
-bindApp("/", "iTerm")
-
-hs.hotkey.bind(hyper, ";", showWindowFuzzy) -- all windows
-hs.hotkey.bind(hyper, "'", function() showWindowFuzzy(true) end) -- app windows
-
-hs.hotkey.bind(hyper, "return", toggleWindowMaximized)
--- avoid command+enter (to fullscreen causing new workspace)
-hs.hotkey.bind(hyper, "m", toggleWindowMaximized)
--- maximize
--- since macOS fullscreen will move window to new workspace,
--- then app show all window won't work as expected
-
--- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
--- if hammerspoon is not started yet.
-
+end -- }}}
 hs.hotkey.bind(meta, "i", showClipboard)
 hs.hotkey.bind(meta, "l", hs.caffeinate.lockScreen)
+
+-- move current window to the space
+-- https://stackoverflow.com/questions/46818712/using-hammerspoon-and-the-spaces-module-to-move-window-to-new-space
+-- slightly modified {{{
+function MoveWindowToSpace(direction)
+  -- direction: 1 (right) or -1 (left)
+  local spaces = require("hs.spaces")
+  local win = hs.window.focusedWindow()      -- current window
+  local cur_screen = hs.screen.mainScreen()
+  local cur_screen_id = cur_screen:getUUID()
+  local all_spaces=spaces.allSpaces()
+  local cur_space = spaces.focusedSpace()
+  local target_space = nil
+  for i, j in pairs(all_spaces[cur_screen_id]) do
+    if j == cur_space then
+      target_space = all_spaces[cur_screen_id][i+direction]
+      break
+    end
+  end
+  if target_space ~= nil then
+    spaces.moveWindowToSpace(win:id(), target_space)
+    local map = {[1]="]", [-1]="["}
+    -- cmd+[ / cmd+] is defined in os keyboard preference.
+    hs.eventtap.keyStroke({"cmd"}, map[direction], 0)
+    -- this does not work, don't know why:
+    --spaces.gotoSpace(target_space)
+  end
+end
+-- }}}
+hs.hotkey.bind(hyper_shift, "[", function() MoveWindowToSpace(-1) end)
+hs.hotkey.bind(hyper_shift, "]", function() MoveWindowToSpace(1) end)
+
+-- why define like this?
+-- I want to press <cmd-h/j/k/l> like <alt-h/j/k/l> in linux, which are consumed by terminal emulator. but not work yet...
+--hs.hotkey.bind(hyper, "h", function() hs.alert.show("oops, not defined yet!") end)

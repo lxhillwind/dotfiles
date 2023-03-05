@@ -21,6 +21,7 @@ template = """\
         <title>local index page</title>
     </head>
     <body>
+    <h1>WARNING: STG should be the last one window to close!!!</h1>
         <style>
         a {
             font-size: xx-large;
