@@ -14,7 +14,7 @@
 "     It may help to show this info in homepage, which gets shown when creating new window
 "     **
 "   - browser.startup.page => 3 (default 1; set to 3, then last closed tabs get recovered on startup)
-"   - ui.key.menuAccessKey => 17 (then we can press alt-somekey without opening menu);
+"   - ui.key.menuAccessKey => 17 (then we can press alt-somekey without opening menu; ff restart required!);
 "   - ui.key.menuAccessKeyFocuses => false (press alt does not focus on menu);
 
 set configversion 2.0

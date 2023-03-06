@@ -1,35 +1,32 @@
 {
-    "title": "chrome (vimium) ctrl-u and ctrl-k as readline",
+    "title": "firefox",
     "rules": [
         {
-            "description": "chrome (vimium) ctrl-u and ctrl-k as readline",
+            "description": "modify cmd-g / cmd-e if in firefox",
             "manipulators": [
                 {
                     "conditions": [
                         {
                             "bundle_identifiers": [
-                                "^com.google.Chrome$"
+                                "^org.mozilla.firefox$"
                             ],
                             "type": "frontmost_application_if"
                         }
                     ],
                     "from": {
-                        "key_code": "u",
+                        "key_code": "e",
                         "modifiers": {
                             "mandatory": [
-                                "left_control"
+                                "left_command"
                             ]
                         }
                     },
                     "to": [
                         {
-                            "key_code": "home",
+                            "key_code": "e",
                             "modifiers": [
-                                "shift"
+                                "left_option"
                             ]
-                        },
-                        {
-                            "key_code": "delete_or_backspace"
                         }
                     ],
                     "type": "basic"
@@ -38,28 +35,25 @@
                     "conditions": [
                         {
                             "bundle_identifiers": [
-                                "^com.google.Chrome$"
+                                "^org.mozilla.firefox$"
                             ],
                             "type": "frontmost_application_if"
                         }
                     ],
                     "from": {
-                        "key_code": "k",
+                        "key_code": "g",
                         "modifiers": {
                             "mandatory": [
-                                "left_control"
+                                "left_command"
                             ]
                         }
                     },
                     "to": [
                         {
-                            "key_code": "end",
+                            "key_code": "g",
                             "modifiers": [
-                                "shift"
+                                "left_option"
                             ]
-                        },
-                        {
-                            "key_code": "delete_or_backspace"
                         }
                     ],
                     "type": "basic"

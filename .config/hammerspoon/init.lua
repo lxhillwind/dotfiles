@@ -72,12 +72,9 @@ end -- }}}
 
 -- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
 -- 然后此处设置带 shift 的.
-bindApp(",", "Google Chrome", true)
+bindApp(",", "Firefox", true)
 bindApp(".", "Visual Studio Code")
 bindApp("/", "kitty")
-
-hs.hotkey.bind(hyper, ";", showWindowFuzzy) -- all windows
-hs.hotkey.bind(hyper, "'", function() showWindowFuzzy(true) end) -- app windows
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
 -- if hammerspoon is not started yet.
@@ -91,7 +88,8 @@ function showClipboard() -- {{{
     hs.alert.show(text)
 end -- }}}
 hs.hotkey.bind(meta, "i", showClipboard)
-hs.hotkey.bind(meta, "l", hs.caffeinate.lockScreen)
+-- need to bind option+l to shift+option+l in karabiner.
+hs.hotkey.bind({"alt", "shift"}, "l", hs.caffeinate.lockScreen)
 
 -- move current window to the space
 -- https://stackoverflow.com/questions/46818712/using-hammerspoon-and-the-spaces-module-to-move-window-to-new-space
@@ -123,7 +121,3 @@ end
 -- }}}
 hs.hotkey.bind(hyper_shift, "[", function() MoveWindowToSpace(-1) end)
 hs.hotkey.bind(hyper_shift, "]", function() MoveWindowToSpace(1) end)
-
--- why define like this?
--- I want to press <cmd-h/j/k/l> like <alt-h/j/k/l> in linux, which are consumed by terminal emulator. but not work yet...
---hs.hotkey.bind(hyper, "h", function() hs.alert.show("oops, not defined yet!") end)

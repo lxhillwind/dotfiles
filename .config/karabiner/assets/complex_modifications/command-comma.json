@@ -1,23 +1,24 @@
 {
-    "title": "Change escape to backtick if pressed with command",
+    "title": "Switch Command+Shift+, and Command+,",
     "rules": [
         {
-            "description": "Change escape to backtick if pressed with command",
+            "description": "Switch Command+Shift+, and Command+,",
             "manipulators": [
                 {
                     "from": {
-                        "key_code": "escape",
+                        "key_code": "comma",
                         "modifiers": {
                             "mandatory": [
-                                "left_command"
+                                "command",
+                                "shift"
                             ]
                         }
                     },
                     "to": [
                         {
-                            "key_code": "grave_accent_and_tilde",
+                            "key_code": "comma",
                             "modifiers": [
-                                "left_command"
+                                "command"
                             ]
                         }
                     ],
@@ -25,18 +26,19 @@
                 },
                 {
                     "from": {
-                        "key_code": "escape",
+                        "key_code": "comma",
                         "modifiers": {
                             "mandatory": [
-                                "right_command"
+                                "command"
                             ]
                         }
                     },
                     "to": [
                         {
-                            "key_code": "grave_accent_and_tilde",
+                            "key_code": "comma",
                             "modifiers": [
-                                "right_command"
+                                "command",
+                                "shift"
                             ]
                         }
                     ],

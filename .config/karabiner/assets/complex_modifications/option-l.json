@@ -1,0 +1,30 @@
+{
+    "title": "Set Option+l to Option+Shift+l",
+    "rules": [
+        {
+            "description": "Set Option+l to Option+Shift+l",
+            "manipulators": [
+                {
+                    "from": {
+                        "key_code": "l",
+                        "modifiers": {
+                            "mandatory": [
+                                "option"
+                            ]
+                        }
+                    },
+                    "to": [
+                        {
+                            "key_code": "l",
+                            "modifiers": [
+                                "option",
+                                "shift"
+                            ]
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        }
+    ]
+}
