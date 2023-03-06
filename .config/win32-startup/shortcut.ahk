@@ -31,8 +31,8 @@ RunOrRaise(class, run, where)
 
 ; run or raise list. {{{1
 !,::RunOrRaise("ahk_exe firefox.exe", "firefox", Home)
-; it's required to add gvim to $PATH
-!.::RunOrRaise("ahk_exe gvim.exe", "gvim", Home)
+; TODO: vscode shows cmd window when launches via ahk (though the window can be closed manually)
+!.::RunOrRaise("ahk_exe Code.exe", "code", Home)
 !/::RunOrRaise("ahk_exe WindowsTerminal.exe", "wt", Home)
 
 ; multimedia key. {{{1
