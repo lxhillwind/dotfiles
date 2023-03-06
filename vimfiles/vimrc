@@ -375,7 +375,7 @@ if is_win32 && has('vim_starting')
     def Exepath(program: string): string  # {{{
         # exepath(xxx) returns xxx in current dir, which is not desired.
         # so let's wrap it.
-        for i in globpath($PATH->substitute(';', ',', 'g'), program, 0, 1)
+        for i in globpath($PATH->substitute('\', '/', 'g')->substitute(';', ',', 'g'), program, 0, 1)
             if i->match('\v[\/]') >= 0  # not in current dir
                 return i
             endif
@@ -394,10 +394,6 @@ if is_win32 && has('vim_starting')
             break
         endif
         if empty(git_path)
-            break
-        endif
-        if git_path->match('\v[^/:a-zA-Z0-9._-]') >= 0
-            echoerr 'vimrc: git path contains special char; skip set shell.'
             break
         endif
 
@@ -424,7 +420,12 @@ if is_win32 && has('vim_starting')
             echoerr 'vimrc: bash not found in git dir; using MinGit?'
             break
         endif
-        &shell = bash_path
+        if bash_path->match(' ') >= 0
+            # git-for-windows default install location contains whitespace.
+            &shell = '"' .. bash_path .. '"'
+        else
+            &shell = bash_path
+        endif
         if fnamemodify(exepath('find'), ':h') != fnamemodify(bash_path, ':h')
             # always add dir of shell to $PATH, so tools like find wins. {{{
             # (it will be messy when calling win32 find.exe in unix shell)
