@@ -37,6 +37,12 @@
 	# git for windows (MinGit) set core.autocrlf to true by default, which is not
 	# what I want.
 	autocrlf = false
+	# if git-delta is available, then we can set these in ~/.gitconfig:
+	#   core.pager = delta
+	#   delta.pager = less -+X
+	#   delta.light = true
+	# why -+X here? init termcap so git output does not occupy screen.
+	pager = less -+X
 [tag]
 	sort = -creatordate
 [log]
