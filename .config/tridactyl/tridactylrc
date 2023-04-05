@@ -295,6 +295,8 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 "bindurl bilibili.com --mode=normal h exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{LEFT}')"
 "bindurl bilibili.com --mode=normal l exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{RIGHT}')"
 
+autocmd DocStart ^http(s?)://www.reddit.com urlmodify -t www old
+
 " load local config and alert for finish {{{1
 source ~/.tridactylrc
 js alert("tridactylrc loaded.")
