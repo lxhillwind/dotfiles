@@ -324,21 +324,15 @@ alias o=xdg-open
 export MPD_HOST=~/.mpd/socket
 
 # x11 / wayland; func: s() or x() {{{2
-if [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
-    _common() {
-        export GTK_IM_MODULE=fcitx
-        export QT_IM_MODULE=fcitx
-        export XMODIFIERS=@im=fcitx
-        # start mpd (without daemon) in background, so it works with bwrap's
-        # --die-with-parent param.
-        # start mpd via xdg autostart.
-        #[ -s ~/.mpd/pid ] || mpd --no-daemon &!
-    }
+if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
+    export GTK_IM_MODULE=fcitx
+    export QT_IM_MODULE=fcitx
+    export XMODIFIERS=@im=fcitx
+
     _start-wayland() {
         XDG_SESSION_TYPE=wayland dbus-run-session startplasma-wayland
     }
     _s() {
-        _common
         export QT_QPA_PLATFORM=wayland
         export SDL_VIDEODRIVER=wayland
         _start-wayland
@@ -347,7 +341,6 @@ if [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
     x() {
         # plasma has its own value.
         export QT_QPA_PLATFORMTHEME=qt5ct
-        _common
         startx
     }
 
@@ -358,5 +351,5 @@ fi
 
 # zsh: startx automatically in linux {{{1
 if [[ $OSTYPE =~ linux ]] && [ "$TTY" = /dev/tty1 ] && [ "$TERM" = linux ]; then
-    startx
+    x  # defined above
 fi
