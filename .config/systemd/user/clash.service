@@ -1,0 +1,8 @@
+[Unit]
+After = sockets.target
+
+[Service]
+ExecStart = %h/lx/linux/clash-wrapper.sh
+
+[Install]
+WantedBy = default.target

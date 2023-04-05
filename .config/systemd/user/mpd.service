@@ -1,0 +1,9 @@
+[Unit]
+After = sockets.target
+After = pipewire-pulse.socket
+
+[Service]
+ExecStart = %h/bin/mpd --no-daemon
+
+[Install]
+WantedBy = default.target
