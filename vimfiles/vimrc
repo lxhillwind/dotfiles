@@ -473,7 +473,7 @@ noremap <Space> <Nop>
 #nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
 # this looks better: vim-fuzzy mapping (n).
 nmap <Space><Space> <Space>fmn
-nnoremap <Space>;; :nmap <Char-60>Space<Char-62>;<CR>
+nnoremap <Space>;; :map <buffer><CR>
 
 # add ~/bin to $PATH {{{2
 # Even when set ~/bin in $PATH via ~/.config/zshrc, it may not be added when
@@ -1927,6 +1927,7 @@ if is_linux && !is_wsl && executable('mpc')
         nnoremap <buffer> <silent> <CR> <Cmd>call <SID>MpcPlay()<CR>
         # should we map <2-LeftMouse> to <CR> globally?
         nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call <SID>MpcPlay()<CR>
+        nnoremap <buffer> <silent> <C-l> <Cmd>call <SID>MpcJumpToPlay()<CR>
     enddef
 
     def MpcPlay()
@@ -1939,6 +1940,11 @@ if is_linux && !is_wsl && executable('mpc')
         if prop['type'] == mpc_prop_type
             job_start(printf('mpc play %d', prop.id))
         endif
+    enddef
+
+    def MpcJumpToPlay()
+        const current: number = system('mpc --format %position% current')->str2nr()
+        execute ':' .. current
     enddef
 endif
 

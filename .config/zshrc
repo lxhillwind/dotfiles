@@ -330,7 +330,8 @@ if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; the
     export XMODIFIERS=@im=fcitx
 
     _start-wayland() {
-        XDG_SESSION_TYPE=wayland dbus-run-session startplasma-wayland
+        #XDG_SESSION_TYPE=wayland dbus-run-session startplasma-wayland
+        sway
     }
     _s() {
         export QT_QPA_PLATFORM=wayland

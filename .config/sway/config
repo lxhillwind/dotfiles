@@ -190,8 +190,9 @@ mode "resize" {
 bindsym $mod+r mode "resize"
 
 for_window [title=".*"] floating enable
-for_window [app_id="Alacritty"] move workspace 1, floating disable, border pixel
-for_window [app_id="qutebrowser"] move workspace 2, floating disable
+for_window [app_id="kitty"] move workspace 1, floating disable, border pixel
+# firefox floating enable, since popup window cannot be detected.
+for_window [app_id="firefox"] move workspace 2
 for_window [instance="sun-awt-X11-XFramePeer" app_id="jetbrains-pycharm-ce"] move workspace 3, floating disable
 assign [app_id="qpdfview"] 4
 for_window [title="QEMU \(arch.*"] move workspace 5, floating disable, border none
@@ -235,7 +236,4 @@ input type:keyboard {
 
 include /etc/sway/config.d/*
 
-exec alacritty
-exec qutebrowser
-exec qpdfview --unique
 exec swayidle timeout 1800 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"'
