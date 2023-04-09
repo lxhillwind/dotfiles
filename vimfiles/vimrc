@@ -1928,6 +1928,7 @@ if is_linux && !is_wsl && executable('mpc')
         # should we map <2-LeftMouse> to <CR> globally?
         nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call <SID>MpcPlay()<CR>
         nnoremap <buffer> <silent> <C-l> <Cmd>call <SID>MpcJumpToPlay()<CR>
+        nnoremap <buffer> <silent> <C-g> <Cmd>call <SID>MpcStatus()<CR>
     enddef
 
     def MpcPlay()
@@ -1943,8 +1944,21 @@ if is_linux && !is_wsl && executable('mpc')
     enddef
 
     def MpcJumpToPlay()
-        const current: number = system('mpc --format %position% current')->str2nr()
-        execute ':' .. current
+        const id: number = system('mpc --format %position% current')->str2nr()
+        var ctx: dict<any>
+        for direction in ['f', 'b']
+            ctx = prop_find({id: id}, direction)
+            if !empty(ctx)
+                execute ':' .. ctx.lnum
+                return
+            endif
+        endfor
+    enddef
+
+    def MpcStatus()
+        const status: string = system('mpc status "%currenttime%/%totaltime%%percenttime%"')->trim()
+        const song: string = system('mpc --format "[[%artist% - ]%title%]|[%file%]" current')->trim()
+        echo status " ~ " song
     enddef
 endif
 
