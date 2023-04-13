@@ -331,9 +331,11 @@ if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; the
 
     _start-wayland() {
         #XDG_SESSION_TYPE=wayland dbus-run-session startplasma-wayland
-        sway
+        #XDG_SESSION_TYPE=wayland dbus-run-session gnome-session
+        labwc
     }
     _s() {
+        export LANG=zh_CN.UTF-8
         export QT_QPA_PLATFORM=wayland
         export SDL_VIDEODRIVER=wayland
         _start-wayland

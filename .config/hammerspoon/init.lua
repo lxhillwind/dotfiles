@@ -32,7 +32,7 @@ sky = SkyRocket:new({
   -- Which mouse button to hold to resize a window?
   resizeMouseButton = 'right',
 
-  disabledApps = {"Firefox", "Code"},
+  disabledApps = {"Firefox", "Code", "访达"},
 })
 -- }}}
 
