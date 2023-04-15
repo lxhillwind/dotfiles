@@ -84,7 +84,11 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/zah/nim.vim'
     Pack 'https://github.com/tridactyl/vim-tridactyl'
 
-    # basic completion + lsp {{{2
+    # basic completion + lsp (if no coc.nvim; default) {{{2
+    if !empty($VIMRC_USING_COC)
+        set pp+=~/.vim
+        source ~/vimfiles/coc-config.vim
+    else
     # basic part, which works even if no plugin is installed. {{{3
     # source for dictionary, current or other loaded buffers, see ':help cpt'
     set cpt=.,k,w,b
@@ -180,7 +184,8 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
         else
             return "\<C-e>"
         endif
-    enddef
+    enddef  # }}}
+    endif
     # plugin commits (generated with ":Pack" => g) {{{1
     Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
     Pack 'https://github.com/justinmk/vim-dirvish', '81b40878f286f370df2a2b3a52c4d860643d2142'
@@ -248,7 +253,7 @@ augroup END
 #
 # In some environment (like git-for-windows), it is hard to put custom vim in
 # $PATH.
-# set vim variable g:vimrc_allow_system to 1 to skip check.
+# set vim variable g:vimrc_allow_system or env VIMRC_ALLOW_SYSTEM to 1 to skip check.
 #
 # Inspection of some distros' system vimrc:
 #   git-for-windows:
@@ -264,7 +269,8 @@ const first_vimrc = execute('scr')->split("\n")->get(0)
 
 if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != TrSlash($MYVIMRC)
     if !(
-        exists('g:vimrc_allow_system') && !empty(g:vimrc_allow_system)
+        !empty(get(g:, 'vimrc_allow_system'))
+        || !empty($VIMRC_ALLOW_SYSTEM)
         )
         throw 'system-vimrc is read. skip loading vimrc!'
     endif

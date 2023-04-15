@@ -1,1 +1,1 @@
-/usr/share/mpv/scripts/autocrop.lua
+../github-mpv-source-lua/autocrop.lua

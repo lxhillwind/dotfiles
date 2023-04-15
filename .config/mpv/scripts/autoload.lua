@@ -1,1 +1,1 @@
-/usr/share/mpv/scripts/autoload.lua
+../github-mpv-source-lua/autoload.lua
