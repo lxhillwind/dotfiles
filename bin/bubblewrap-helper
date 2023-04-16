@@ -128,12 +128,7 @@ else
     opt_dtach_array=(dtach -c /tmp/dtaches-1 -E)
 fi
 
-# $@ or default. {{{1
-if [ $# -eq 0 ]; then
-    set -- "${opt_default_sh:-sh}"
-fi
-
-# use `--` in args* to allow passing bwrap argument, before dtach. {{{1
+# use `--` in "$@" to allow passing bwrap argument, before dtach. {{{1
 # useful to bind dir temporarily.
 arg_before_dtach=()
 arg_after_dtach=()
@@ -155,10 +150,16 @@ if [ -z "$double_slash_seen" ]; then
     arg_after_dtach=("${arg_before_dtach[@]}")
     arg_before_dtach=()
 fi
+set -- "${arg_after_dtach[@]}"
+
+# $@ or default. {{{1
+if [ $# -eq 0 ]; then
+    set -- "${opt_default_sh:-sh}"
+fi
 
 # main. {{{1
 if [ -n "$DEBUG" ]; then
-    printf "%s\n" "bwrap ${args_pre[*]} ${args[*]} ${args_post[*]} ${arg_before_dtach[*]} ${opt_dtach_array[*]} ${arg_after_dtach[*]}"
+    printf "%s\n" "bwrap ${args_pre[*]} ${args[*]} ${args_post[*]} ${arg_before_dtach[*]} ${opt_dtach_array[*]} $*"
 else
-    exec bwrap "${args_pre[@]}" "${args[@]}" "${args_post[@]}" "${arg_before_dtach[@]}" "${opt_dtach_array[@]}" "${arg_after_dtach[@]}"
+    exec bwrap "${args_pre[@]}" "${args[@]}" "${args_post[@]}" "${arg_before_dtach[@]}" "${opt_dtach_array[@]}" "$@"
 fi
