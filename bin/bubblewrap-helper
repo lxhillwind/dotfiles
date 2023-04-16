@@ -157,6 +157,11 @@ if [ $# -eq 0 ]; then
     set -- "${opt_default_sh:-sh}"
 fi
 
+if printf %s "$1" | grep -q -E '^-'; then
+    printf '%s\n' 'error: first argument is begin with dash (-); missing -- after bwrap argument?' >&2
+    exit 1
+fi
+
 # main. {{{1
 if [ -n "$DEBUG" ]; then
     printf "%s\n" "bwrap ${args_pre[*]} ${args[*]} ${args_post[*]} ${arg_before_dtach[*]} ${opt_dtach_array[*]} $*"
