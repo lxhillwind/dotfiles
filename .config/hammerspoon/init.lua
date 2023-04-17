@@ -21,18 +21,18 @@ sky = SkyRocket:new({
   opacity = 0.3,
 
   -- Which modifiers to hold to move a window?
-  moveModifiers = hyper,
+  moveModifiers = meta,
 
   -- Which mouse button to hold to move a window?
   moveMouseButton = 'left',
 
   -- Which modifiers to hold to resize a window?
-  resizeModifiers = hyper,
+  resizeModifiers = meta,
 
   -- Which mouse button to hold to resize a window?
   resizeMouseButton = 'right',
 
-  disabledApps = {"Firefox", "Code", "访达"},
+  disabledApps = {},
 })
 -- }}}
 
