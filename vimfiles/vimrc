@@ -84,10 +84,13 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/zah/nim.vim'
     Pack 'https://github.com/tridactyl/vim-tridactyl'
 
-    # basic completion + lsp (if no coc.nvim; default) {{{2
+    # basic completion (default) or coc.nvim {{{2
     if !empty($VIMRC_USING_COC)
         set pp+=~/.vim
         source ~/vimfiles/coc-config.vim
+        source ~/vimfiles/coc-settings.vim
+        # must-have extensions:
+        # :CocInstall coc-json coc-pairs
     else
     # basic part, which works even if no plugin is installed. {{{3
     # source for dictionary, current or other loaded buffers, see ':help cpt'
@@ -123,81 +126,18 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
     # Disable certain types
     #g:vim_dict_config = {'text': ''}
-
-    # lsp {{{3
-    Pack 'https://github.com/yegappan/lsp'
-
-    g:vimrc_lsp_config = [
-        {filetype: ['go', 'gomod'], path: 'gopls', 'args': ['serve']},
-        {filetype: ['nim'], path: 'nimlsp', 'args': []},
-        {filetype: ['python'], path: 'pylsp', 'args': []},
-        {filetype: ['zig'], path: 'zls', 'args': []},
-        ]->filter((_, i) => i.path->executable())
-
-    const lsp_supported_filetypes: list<string> = g:vimrc_lsp_config
-                ->mapnew((_, i) => i.filetype)->flattennew()
-    var lsp_delay_init = false
-    augroup vimrc
-        # if we use BufRead,BufNewFile for LspDelayInit, then in win32
-        # vim, it is not actually loaded in the first time.
-        au FileType * LspDelayInit(expand('<amatch>'))
-        au User LspAttached LspKeymap()
-    augroup END
-
-    # this saves 20-30ms in wsl.
-    def LspDelayInit(ft: string)
-        if !exists('*g:LspAddServer')
-            return
-        endif
-        if lsp_supported_filetypes->index(ft) < 0
-            return
-        endif
-        if lsp_delay_init
-            return
-        endif
-        lsp_delay_init = true
-
-        g:LspAddServer(g:vimrc_lsp_config)
-        g:LspOptionsSet({
-        autoHighlightDiags: false,
-        showDiagOnStatusLine: true,
-        })
-    enddef
-
-    def LspKeymap()
-        nnoremap <buffer> <C-]> <Cmd>LspGotoDefinition<CR>
-        nnoremap <buffer> K <Cmd>LspHover<CR>
-        nnoremap <buffer> [e <Cmd>LspDiagPrev<CR>
-        nnoremap <buffer> ]e <Cmd>LspDiagNext<CR>
-        inoremap <buffer> <expr> <C-e> FixCtrlE()
-    enddef
-
-    # <C-x> works; don't know why.
-    # TODO this "fix" still require double pressing <C-e> for lsp popup.
-    def FixCtrlE(): string
-        if pumvisible()
-            if complete_info().selected == -1
-                return "\<C-x>"
-            else
-                return "\<C-e>\<C-x>"
-            endif
-        else
-            return "\<C-e>"
-        endif
-    enddef  # }}}
-    endif
+    endif  # {{{3
     # plugin commits (generated with ":Pack" => g) {{{1
     Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
     Pack 'https://github.com/justinmk/vim-dirvish', '81b40878f286f370df2a2b3a52c4d860643d2142'
     Pack 'https://github.com/justinmk/vim-sneak', '94c2de47ab301d476a2baec9ffda07367046bec9'
-    Pack 'https://github.com/lacygoill/vim9-syntax', '8e4b8e47e7d774c3b75f7d5df1cd7898bea84d8d'
+    Pack 'https://github.com/lacygoill/vim9-syntax', '49895457b1fcae6407041a780932387bc681289a'
     Pack 'https://github.com/lifepillar/vim-mucomplete', '03bcd4a7dfe0a2f6d432e8ce936d35273a15209d'
-    Pack 'https://github.com/masukomi/vim-markdown-folding', '526cffde2cb013ae337cdf48e244bb15881ab7ce'
+    Pack 'https://github.com/masukomi/vim-markdown-folding', '3f35acfb753cc9ea22182400b075c5b6e896ad71'
     Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
     Pack 'https://github.com/tridactyl/vim-tridactyl', 'fdd069bde3a34c786abed4601b6d59a065590ad9'
-    Pack 'https://github.com/yegappan/lsp', '4554b826d3019001d5a30129b3f49823bb0ecc15'
     Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
-    Pack 'https://github.com/ziglang/zig.vim', '3538ae95b469bab6dc15d93067798c87f8968010'
+    Pack 'https://github.com/ziglang/zig.vim', '0adf3a1407bdf60a6c1446fb6a9a05c9823e4290'
     finish | endif  # {{{1 }}}1
 # internal helper function. {{{1
 # expand() should NOT be used to expand arbitrary file (like containing
