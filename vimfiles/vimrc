@@ -79,7 +79,6 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/masukomi/vim-markdown-folding'
     g:markdown_fold_style = 'nested'
     g:markdown_fold_override_foldtext = 0
-    Pack 'https://github.com/ziglang/zig.vim'
     Pack 'https://github.com/lacygoill/vim9-syntax'
     Pack 'https://github.com/zah/nim.vim'
     Pack 'https://github.com/tridactyl/vim-tridactyl'
@@ -137,7 +136,6 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
     Pack 'https://github.com/tridactyl/vim-tridactyl', 'fdd069bde3a34c786abed4601b6d59a065590ad9'
     Pack 'https://github.com/zah/nim.vim', 'a15714fea392b0f06ff2b282921a68c7033e39a2'
-    Pack 'https://github.com/ziglang/zig.vim', '0adf3a1407bdf60a6c1446fb6a9a05c9823e4290'
     finish | endif  # {{{1 }}}1
 # internal helper function. {{{1
 # expand() should NOT be used to expand arbitrary file (like containing

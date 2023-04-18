@@ -315,6 +315,15 @@ fz()
     command fzf | xargs-sh print -z
 }
 
+# bubblewrap. {{{2
+if [[ $OSTYPE =~ linux ]]; then
+    if [[ "$(readlink /proc/1/exe)" =~ bwrap ]]; then
+        PS1="(bwrap) $PS1"
+    elif command -v bwrap >/dev/null && [ -e ~/.config/misc/bubblewrap.conf ]; then
+        PS1="(host) $PS1"
+    fi
+fi
+
 # finish. {{{2
 compinit
 
