@@ -944,7 +944,7 @@ def ExecuteLines(mode: string)
     if nr2char(getchar())->tolower() == 'y'
         redraws
         try
-            execute 'legacy' result
+            execute result
         finally
         endtry
     else
