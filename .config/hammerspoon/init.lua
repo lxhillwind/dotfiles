@@ -55,7 +55,6 @@ function toggleWindowMaximized()
 -- }}}
 hs.hotkey.bind(hyper, "return", toggleWindowMaximized)
 -- avoid command+enter (to fullscreen causing new workspace)
-hs.hotkey.bind(hyper, "m", toggleWindowMaximized)
 -- why maximize not fullscreen?
 -- since macOS fullscreen will move window to new workspace,
 -- then app show all window won't work as expected
@@ -73,7 +72,7 @@ end -- }}}
 -- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
 -- 然后此处设置带 shift 的.
 bindApp(",", "Firefox", true)
-bindApp(".", "Visual Studio Code")
+bindApp(".", "sioyek")
 bindApp("/", "kitty")
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
