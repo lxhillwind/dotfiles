@@ -125,7 +125,7 @@ fi
 if [ -z "$opt_using_dtach" ]; then
     opt_dtach_array=()
 else
-    opt_dtach_array=(dtach -c /tmp/dtaches-1 -E)
+    opt_dtach_array=(dtach -c /tmp/dtaches-1 -Ez)
 fi
 
 # use `--` in "$@" to allow passing bwrap argument, before dtach. {{{1
