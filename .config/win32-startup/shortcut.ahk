@@ -64,3 +64,6 @@ RunOrRaise(class, run, where)
 ; switch desktop (alt+[, alt+]) {{{1
 ![::Send #^{Left}
 !]::Send #^{Right}
+; ctrl-space to switch input method (windows 8+ only) {{{1
+; (requires setting en-us keyboard as default
+^space::Send, #{space}
