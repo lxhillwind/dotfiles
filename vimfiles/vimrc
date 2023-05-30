@@ -298,6 +298,11 @@ if is_win32 && has('vim_starting')
     # UserCommand. }}}
     set shellslash
 
+    # XP italic font is not displayed correctly
+    if windowsversion()->str2float() <= 5.1
+        g:base16#enable_italics = 0
+    endif
+
     # set env for cygwin / msys2 shell (start via :!): $VIM, $MYVIMRC... {{{
     # It's better to override $VIM / $VIMRUNTIME via shell startup, so cygwin
     # vim has correct $VIM set (/usr/share/vim). }}}
