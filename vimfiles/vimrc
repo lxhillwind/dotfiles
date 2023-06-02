@@ -1567,12 +1567,9 @@ def g:Selection(): string
         @" = tmp
         if !success
             throw 'g:Selection() failed!'
-            # make type check happy.
-            return result
-        else
-            return result
         endif
     endtry
+    return result
 enddef
 
 # :SetCmdText / SetCmdText() {{{2
