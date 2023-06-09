@@ -631,7 +631,10 @@ else
         # Try to set termguicolors; if success, &t_Co will be changed to 256,
         # then we can use better looking colorscheme.
         # At least works in windows 10 (1809+?).
-        silent! set tgc
+        #
+        # setting it causes panic in console vim from headless wine.
+        # so set it in $MYVIMRC instead.
+        #silent! set tgc
         if $CONEMUANSI ==? 'ON'
             # https://conemu.github.io/en/VimXterm.html
             set term=xterm

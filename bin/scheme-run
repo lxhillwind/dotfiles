@@ -32,6 +32,12 @@ elif command -v racket >/dev/null; then
     else
         run="racket -r"
     fi
+elif command -v guile >/dev/null; then
+    if [ $# -eq 0 ]; then
+        run=guile
+    else
+        run="guile -q"
+    fi
 else
     echo "scheme interpreter not found!" >&2
     exit 1
