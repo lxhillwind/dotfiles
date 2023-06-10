@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+code=0
+while [ "$code" -lt 256 ]; do
+    printf '\x1b[48;5;%sm''\x1b[38;5;15m'' %03d ' "$code" "$code"
+    printf '\x1b[33;5;0m''\x1b[38;5;%sm'' %03d ' "$code" "$code"
+
+    if [ $(( code + 1 )) -lt 16 ]; then
+        if [ $(( (code + 1) % 8 )) -eq 0 ]; then
+            echo
+        fi
+        if [ $(( (code + 1) % 16 )) -eq 0 ]; then
+            echo
+        fi
+    else
+        if [ $(( (code + 1 - 16) % 6 )) -eq 0 ]; then
+            echo
+        fi
+        if [ $(( (code + 1 - 16) % 36 )) -eq 0 ]; then
+            echo
+        fi
+    fi
+
+    code=$(( code + 1 ))
+done

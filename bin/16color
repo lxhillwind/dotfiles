@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+code=30
+
+for i in black red green yellow blue magenta cyan white; do
+    printf '\x1b[%sm''%s\t''\x1b[1m''bold''\x1b[0m''\n' "$code" "$i"
+    code=$(( code + 1 ))
+done
