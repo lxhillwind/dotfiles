@@ -82,7 +82,7 @@ function! s:sh(cmd, opt) abort " {{{2
   call add(help, '  h: display this help')
   let opt.help = match(opt_string, 'h') >= 0
 
-  call add(help, '  !: (:Sh! ...); try to reuse terminal window')
+  call add(help, '  !: (:Sh! ...); try to reuse terminal window (implies -t)')
 
   call add(help, '  v: visual mode (char level)')
   let opt.visual = match(opt_string, 'v') >= 0
