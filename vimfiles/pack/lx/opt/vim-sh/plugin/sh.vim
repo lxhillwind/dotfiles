@@ -65,12 +65,7 @@ function! s:sh(cmd, opt) abort " {{{2
       if match(i, '=') < 0
         let opt_string = opt_string . i
       else
-        try
-          let [k, v] = split(i, '\v^[^=]+\zs\=\ze')
-        catch /E688/
-          " empty opt will raise, just ignore it.
-          continue
-        endtry
+        let [k, v] = split(i, '\v^[^=]+\zs\=\ze', 1)
         if len(k) == 1
           " only add short option.
           let opt_string = opt_string . k
