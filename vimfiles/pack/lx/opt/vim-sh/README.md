@@ -4,11 +4,15 @@ Since commit [5b829c9799c458ef4956009a747925b141b3a373](https://github.com/lxhil
 only vim with `has('vim9script')` will be supported.
 
 ## Usage
-Two commands are provided:
+One command is provided:
 
 - `:Sh [cmd]...`;
 
+<del>
 - `:Terminal [cmd]...`; (like `:Sh`, but always open tty in current window)
+</del>
+
+To open tty in current window, try using `:Sh -t=enew ...`.
 
 ```console
 Usage: [range]Sh [-flags] [cmd...]

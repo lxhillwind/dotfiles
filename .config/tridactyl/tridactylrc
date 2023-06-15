@@ -272,6 +272,9 @@ bind --mode=ex <C-h> text.delete_backward_char
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
 bindurl qidian.com --mode=normal c hint -Jc span.review-count\
 ,div.chapter-control > a\
+,span.j-open-reply\
+,div.nav-btn-group > a.nav-btn\
+,button.flex.items-center.text-s-gray-500.font-medium.text-s3.mt-8px.h-28px\
 ,.review-replies-popup > .close-btn
 seturl qidian.com hintchars vzcxsda
 " don't know why with default hintfiltermode (simple), it's easy to click wrong hint.

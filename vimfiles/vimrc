@@ -737,17 +737,15 @@ execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 # from defaults.vim
 inoremap <C-U> <C-G>u<C-U>
 
-# t / T {{{2
-# I don't use t / T, so use them to do other things.
-nmap t <Nop>
+# <Space>t... for tab operation {{{2
 for i in range(1, 9)
-    execute printf('nnoremap t%s %sgt', i, i)
+    execute printf('nnoremap <Space>t%s %sgt', i, i)
 endfor
-nnoremap t0 <Cmd>tablast<CR>
-nnoremap tn <Cmd>Sh -wc<CR>
-nnoremap tt <Cmd>call <SID>TabOpenOrClose()<CR>
-# TODO impl tab switch with vim-fuzzy.
-nmap T <Nop>
+nnoremap <Space>t0 <Cmd>tablast<CR>
+# note there is a final <Space>.
+nnoremap <Space>tm :tabmove 
+nnoremap <Space>tn <Cmd>Sh -wc<CR>
+nnoremap <Space>tt <Cmd>call <SID>TabOpenOrClose()<CR>
 
 def TabOpenOrClose()
     if empty(&buftype) && empty(bufname()) && &swapfile && !&modified
@@ -2086,64 +2084,6 @@ def SelectFromSources()
         }
     )
 enddef
-
-# scratch-mode terminal in popup (keymap: <Space>t) {{{2
-# TODO: support jump to buffer dir.
-nnoremap <Space>t <Cmd>call <SID>PopupTerminalSwitch()<CR>
-
-# save state across ":so $MYVIMRC"
-var popup_terminal_state: dict<any> = exists('popup_terminal_state') ? popup_terminal_state :
-{winid: -1, buf: -1, shown: false, buf_last: -1}
-
-augroup vimrc
-    au User vim-jump {
-        if expand('<abuf>')->str2nr() == popup_terminal_state.buf
-            PopupTerminalSwitch()
-        endif
-    }
-augroup END
-
-def PopupTerminalSwitch()  # {{{
-    if popup_terminal_state.shown
-        popup_close(popup_terminal_state.winid)
-        popup_terminal_state.shown = false
-    else
-        if popup_terminal_state.buf < 0
-            const cmd = &shell
-            var env = exists('g:vimserver_env') ? g:vimserver_env : {}
-            # avoid setting original variables.
-            env = env->copy()
-            # in ~/.config/zshrc, we check $VIMSERVER_POPUP to un-export
-            # vimserver related env, so vim won't be recognized as client
-            # (which causes trouble in popup window).
-            env['VIMSERVER_POPUP'] = '1'
-            popup_terminal_state.buf = term_start(cmd, {
-                env: env,
-                hidden: true, term_finish: 'close',
-                exit_cb: ((_, _) => {
-                    popup_terminal_state.shown = false
-                    popup_terminal_state.buf = -1
-                })
-                })
-        endif
-        popup_terminal_state.buf_last = bufnr()
-        popup_terminal_state.winid = popup_create(popup_terminal_state.buf, {
-            border: [1, 1, 1, 1],
-        }->extendnew(PopupSize()))
-        command! -buffer Cdalternate {
-            term_sendkeys(
-            popup_terminal_state.buf, 'cd ' .. shellescape(
-            fnamemodify(bufname(popup_terminal_state.buf_last), ':p:h')
-            ))
-            if mode() == 'n'
-                feedkeys('i', 't')
-            endif
-        }
-        command! -buffer Cda Cdalternate
-        TerminalSetup()
-        popup_terminal_state.shown = true
-    endif
-enddef  # }}}
 
 # sv() helper (in vim embedded terminal) {{{2
 def g:Tapi_shell_sv_helper(...arg: list<any>)

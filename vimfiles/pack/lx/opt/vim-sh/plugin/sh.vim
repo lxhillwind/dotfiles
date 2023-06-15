@@ -31,15 +31,9 @@ if s:is_win32
   command! -bang -range=0 -nargs=* -complete=custom,s:win32_cmd_list Sh
         \ call s:sh(<q-args>, {'bang': <bang>0,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-  command! -range=0 -nargs=* -complete=custom,s:win32_cmd_list Terminal
-        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
-        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 else
   command! -bang -range=0 -nargs=* -complete=shellcmd Sh
         \ call s:sh(<q-args>, {'bang': <bang>0,
-        \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
-  command! -range=0 -nargs=* -complete=shellcmd Terminal
-        \ call s:sh(<q-args>, { 'tty': 1, 'newwin': 0,
         \ 'range': <range>, 'line1': <line1>, 'line2': <line2>})
 endif
 
@@ -56,7 +50,7 @@ endfunction
 
 function! s:sh(cmd, opt) abort " {{{2
   " opt parse {{{
-  let opt = {'bang': 0, 'newwin': 1}
+  let opt = {'bang': 0}
 
   let opt_string = matchstr(a:cmd, '\v^\s*-[a-zA-Z_,=0-9:-]*')
   let cmd = a:cmd[len(opt_string):]
@@ -160,8 +154,7 @@ function! s:sh(cmd, opt) abort " {{{2
     let opt.tty = 1
   endif
 
-  if empty(opt.range) && empty(a:cmd) && opt.newwin != 0
-    " opt.newwin == 0: invoked with :Terminal. then do not print help.
+  if empty(opt.range) && empty(a:cmd)
     let opt.help = 1
   endif
 
@@ -237,8 +230,8 @@ function! s:sh(cmd, opt) abort " {{{2
 
   " opt.visual: yank text by `norm gv`;
   " opt.window: communicate stdin by file;
-  " opt.tty && !opt.newwin: buffer would be destroyed before using;
-  if !opt.visual && !opt.window && !(opt.tty && !opt.newwin)
+  " opt.tty: buffer would be destroyed before using (if no newwin);
+  if !opt.visual && !opt.window && !opt.tty
     let stdin_flag = get(opt, 'range') != 0 ? 2 : stdin_flag
   endif
   let job_opt = {}
@@ -399,7 +392,7 @@ function! s:sh(cmd, opt) abort " {{{2
     if buf_idx < 0
       if has_key(opt_dict, 't')
         execute opt_dict.t[-1]
-      elseif opt.newwin
+      else
         execute 'bel' &cmdwinheight . 'split'
       endif
     endif
