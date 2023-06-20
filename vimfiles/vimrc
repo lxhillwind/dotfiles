@@ -87,8 +87,25 @@ if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
     # basic completion (default) or coc.nvim {{{2
     if !empty($VIMRC_USING_COC)
         set pp+=~/.vim
-        source ~/vimfiles/coc-config.vim
-        source ~/vimfiles/coc-settings.vim
+        if isdirectory('~/.vim/pack/coc/start/coc.nvim'->expand())
+            source ~/vimfiles/coc-config.vim
+            source ~/vimfiles/coc-settings.vim
+        else
+            const msg =<< trim END
+                coc.nvim is not found in `~/.vim/pack/coc/start/coc.nvim`!
+
+                installation method (from https://github.com/neoclide/coc.nvim/wiki/Install-coc.nvim):
+
+                mkdir -p ~/.vim/pack/coc/start
+                cd ~/.vim/pack/coc/start
+                git clone --branch release https://github.com/neoclide/coc.nvim.git --depth=1
+                vim -c "helptags coc.nvim/doc/ | q"
+            END
+            echohl ErrorMsg
+            echo msg->join("\n")
+            echohl NONE
+            echoerr 'unable to find coc.nvim'
+        endif
         # must-have extensions:
         # :CocInstall coc-json coc-pairs
     else
