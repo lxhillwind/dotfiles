@@ -68,13 +68,13 @@ def ReadBin(name: string)
     # we do not set 'shelltemp' option (to no); see relevant comment in
     # ~/vimfiles/vimrc.
     silent normal gg"_dG
-    silent execute printf('read !%s %s', shellescape(xxd_path), shellescape(name))
+    silent execute printf('r !%s %s', shellescape(xxd_path), shellescape(name))
     normal gg"_dd
     setl nomodified
 enddef
 
 def WriteBin(name: string)
-    execute printf('w !%s -r > %s', shellescape(xxd_path), shellescape(name))
+    silent execute printf('w !%s -r > %s', shellescape(xxd_path), shellescape(name))
     if !empty(v:shell_error)
         return
     endif
@@ -94,7 +94,12 @@ au FileType binary {
     if &modified
         throw 'file is changed! unable to set filetype to binary.'
     endif
-    ReadBin(expand('<afile>'))
+    # if we don't set BufReadCmd, then re-edit file will not load binary data,
+    # while BufWriteCmd still run xxd on write;
+    # this will cause serious problem.
+    au BufReadCmd <buffer> ReadBin(expand('<afile>'))
+    # use do... since BufReadCmd will not take effect when defined after :e.
+    do BufReadCmd
     au BufWriteCmd <buffer> WriteBin(expand('<amatch>'))
 }
 
