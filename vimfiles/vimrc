@@ -1,160 +1,5 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
-if exists('g:vimrc_plugin_loading')  # DO NOT set this variable manually!
-    # plugin {{{1
-    # first, enable ":Pack" command.
-    packadd vim-pack
-
-    # disable default plugin {{{2
-    g:loaded_2html_plugin = 1
-    g:loaded_getscriptPlugin = 1
-    g:loaded_gzip = 1
-    g:loaded_logiPat = 1
-    g:loaded_netrwPlugin = 1
-    g:loaded_tarPlugin = 1
-    g:loaded_vimballPlugin = 1
-    g:loaded_zipPlugin = 1
-
-    # bundled plugin config. {{{2
-    g:tasks_config_paths =<< trim END
-    ~/vimfiles/config/tasks.ini
-    ~/vimfiles/config/tasks-local.ini
-    END
-    g:tasks_config_paths
-                ->map((_, i) => expand(i))
-                ->filter((_, i) => filereadable(i))
-
-    g:markdown_folding = 1
-
-    # keep sync with https://lxhillwind.gitee.io/ highlight.
-    # NOTE: zig is not available in hljs right now.
-    g:markdown_fenced_languages = [
-        'awk', 'python', 'sh', 'vim',
-        'c', 'go', 'javascript',
-        'dosini', 'json', 'yaml',
-        'zig',
-        ]
-
-    # lx {{{2
-    packadd! vim-jump
-    packadd! vim-sh
-    packadd! pyvim
-    g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
-    packadd! vim-tasks
-
-    # vim dist. {{{2
-    # plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
-    # not have enough permission to gen tag for them.
-    # use ":packadd!" (with !) to only add them to &rtp.
-    #
-    # use matchit, so vim9 filetype indent work as expected.
-    # https://github.com/vim/vim/issues/7628
-    packadd! matchit
-
-    # vender. {{{2
-    # Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
-    packadd! vim-fuzzy
-
-    # from network {{{2
-    Pack 'https://github.com/justinmk/vim-dirvish'
-    g:loaded_netrwPlugin = 1
-    Pack 'https://github.com/justinmk/vim-sneak'
-    g:sneak#label = 1
-    # sneak unmap f / t when one of them is pressed after sneak key. {{{
-    # MRE:
-    #   :map t <Nop><CR>
-    #   sssff
-    #   :map t
-    # then mapping for t disappeared.
-    #
-    # since I only map t / T (f / F not mapped), only set t / T below.
-    # }}}
-    g:sneak#f_reset = 1
-    g:sneak#t_reset = 0
-    # I do not use vim-surround, so preserve s / S for vim-sneak.
-    vmap S <Plug>Sneak_S
-    omap s <Plug>Sneak_s
-    omap S <Plug>Sneak_S
-    Pack 'https://github.com/ciaranm/securemodelines', {'after': 1}
-    Pack 'https://github.com/masukomi/vim-markdown-folding'
-    g:markdown_fold_style = 'nested'
-    g:markdown_fold_override_foldtext = 0
-    Pack 'https://github.com/lacygoill/vim9-syntax'
-    Pack 'https://github.com/tridactyl/vim-tridactyl'
-    # colorscheme
-    Pack 'https://github.com/eemed/sitruuna.vim'
-
-    # basic completion (default) or coc.nvim {{{2
-    if !empty($VIMRC_USING_COC)
-        set pp+=~/.vim
-        if isdirectory('~/.vim/pack/coc/start/coc.nvim'->expand())
-            source ~/vimfiles/coc-config.vim
-            source ~/vimfiles/coc-settings.vim
-        else
-            const msg =<< trim END
-                coc.nvim is not found in `~/.vim/pack/coc/start/coc.nvim`!
-
-                installation method (from https://github.com/neoclide/coc.nvim/wiki/Install-coc.nvim):
-
-                mkdir -p ~/.vim/pack/coc/start
-                cd ~/.vim/pack/coc/start
-                git clone --branch release https://github.com/neoclide/coc.nvim.git --depth=1
-                vim -c "helptags coc.nvim/doc/ | q"
-            END
-            echohl ErrorMsg
-            echo msg->join("\n")
-            echohl NONE
-            echoerr 'unable to find coc.nvim'
-        endif
-        # must-have extensions:
-        # :CocInstall coc-json coc-pairs
-    else
-    # basic part, which works even if no plugin is installed. {{{3
-    # source for dictionary, current or other loaded buffers, see ':help cpt'
-    set cpt=.,k,w,b
-    # don't select the first item.
-    set completeopt=menu,menuone,noselect
-    # suppress annoy messages.
-    set shortmess+=c
-
-    # vim-mucomplete. {{{3
-    Pack 'https://github.com/lifepillar/vim-mucomplete'
-    # disable its imap <Tab> (and some others)
-    g:mucomplete#enable_auto_at_startup = 1
-    g:mucomplete#no_mappings = 1
-    imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
-    imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
-    # disable keyn / dict: included in c-n via option 'complete' ('cpt');
-    # about these chains description: help 'mucomplete-methods'
-    g:mucomplete#chains = {
-        default: ['path', 'omni', 'user', 'c-n', 'uspl'],
-        vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
-        # sql: disable omni, since it causes trouble. (sth missing?)
-        sql:     ['path',         'user', 'c-n', 'uspl'],
-    }
-    # make <CR> always add newline.
-    inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
-
-    # dict-completion sources. {{{3
-    Pack 'https://github.com/skywind3000/vim-dict'
-    # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
-    execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
-    # File type override
-    #g:vim_dict_config = {'html':'html,javascript,css', 'markdown':'text'}
-    # Disable certain types
-    #g:vim_dict_config = {'text': ''}
-    endif  # {{{3
-    # plugin commits (generated with ":Pack" => g) {{{1
-    Pack 'https://github.com/ciaranm/securemodelines', '9751f29699186a47743ff6c06e689f483058d77a'
-    Pack 'https://github.com/eemed/sitruuna.vim', 'e0e0a829bdeefbe7ba012f26cebdad2fb4481cb0'
-    Pack 'https://github.com/justinmk/vim-dirvish', '81b40878f286f370df2a2b3a52c4d860643d2142'
-    Pack 'https://github.com/justinmk/vim-sneak', '94c2de47ab301d476a2baec9ffda07367046bec9'
-    Pack 'https://github.com/lacygoill/vim9-syntax', '49895457b1fcae6407041a780932387bc681289a'
-    Pack 'https://github.com/lifepillar/vim-mucomplete', '03bcd4a7dfe0a2f6d432e8ce936d35273a15209d'
-    Pack 'https://github.com/masukomi/vim-markdown-folding', '3f35acfb753cc9ea22182400b075c5b6e896ad71'
-    Pack 'https://github.com/skywind3000/vim-dict', 'b73128b7acbcae675b2e008c3c63adb74fce566e'
-    Pack 'https://github.com/tridactyl/vim-tridactyl', 'fdd069bde3a34c786abed4601b6d59a065590ad9'
-    finish | endif  # {{{1 }}}1
 # internal helper function. {{{1
 # expand() should NOT be used to expand arbitrary file (like containing
 # "[b-a]" in filename).
@@ -181,6 +26,13 @@ def TrSlash(s: string): string
         return s
     endif
 enddef
+
+# Source() function is like ":source arg", except that arg is append to
+# vimrc's directory.
+def Source(file: string)
+    execute 'source' fnameescape(vimrc_dir .. '/' .. file)
+enddef
+const vimrc_dir = expand('<sfile>')->fnamemodify(':h')
 
 # common definition {{{1
 const is_unix = has('unix')
@@ -239,56 +91,7 @@ if !exists('$MYVIMRC')
 endif
 
 # config compatible with vim tiny version. {{{1
-# (replace leading # with " when in legacy context)
-#
-# if run vim with `-u xxx`, then &cp is set; disable it with `set nocp`.
-# lines between `:if` and `:endif` will be ignored by vim tiny.
-if &compatible
-    set nocompatible
-endif
-set nomodeline
-# backspace
-set bs=2
-# expandtab
-set et
-# shiftwidth
-set sw=4
-# (relative)number
-set nu
-set rnu
-# hlsearch
-set hls
-# incsearch
-set is
-# timeoutlen
-set tm=5000
-# ttimeoutlen
-set ttm=0
-# cursorcolumn & cursorline
-set cuc
-set cul
-# laststatus
-set ls=1
-# showcmd
-set sc
-# wildmenu
-set wmnu
-# completeopt
-set cot-=preview
-# shortmess; show search count message (default in neovim)
-set shm-=S
-# set locale in vimrc.vim, since vim tiny doesn't support :if.
-# menu
-set enc=utf-8
-# fileencodings
-# See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
-set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
-# prefer using unix style newline (fileformats).
-set ffs=unix,dos
-# runtimepath
-# for tiny version, set rtp to empty string to avoid loading any file.
-#set rtp=
-
+Source('./rc/tiny.vim')
 # option {{{1
 # &rtp / &pp {{{2
 set rtp=~/vimfiles,$VIMRUNTIME,~/vimfiles/after
@@ -307,137 +110,7 @@ endif
 
 # win32 environment prepare {{{2
 if is_win32 && has('vim_starting')
-    # Set shellslash, so file path completion returns slash based str, {{{
-    # which works in sh environment and win32 shell (cmd is not supported?).
-    # shellescape() also returns unix-shell-friendly string.
-    #   - plugin vim-fuzzy also requires it.
-    # Windows XP does not like slash path; let's handle it in ":Start"
-    # UserCommand. }}}
-    set shellslash
-
-    # XP italic font is not displayed correctly
-    if windowsversion()->str2float() <= 5.1
-        g:base16#enable_italics = 0
-    endif
-
-    # set env for cygwin / msys2 shell (start via :!): $VIM, $MYVIMRC... {{{
-    # It's better to override $VIM / $VIMRUNTIME via shell startup, so cygwin
-    # vim has correct $VIM set (/usr/share/vim). }}}
-    $VIM = TrSlash($VIM)
-    $VIMRUNTIME = TrSlash($VIMRUNTIME)
-    $MYVIMRC = TrSlash($MYVIMRC)
-
-    # $HOME should be set to make git bash find ~; otherwise vim-fuzzy won't
-    # work (e.g. "RecentFiles" does not show file under ~).
-    if !exists('$HOME')
-        $HOME = TrSlash($USERPROFILE)
-    else
-        $HOME = TrSlash($HOME)
-    endif
-
-    # set &shell, and add dir of it to $PATH. {{{
-    # console vim and gvim handle &shell differently:
-    # When &shell contains whitespace and not quoted, console vim does not
-    # work with ":!..." command: it calls _wsystem() currently, while in gvim
-    # it calls CreateProcess(); Most importantly, quoting is handled
-    # differently.
-    # So only set shell when it does not contain special char.
-    #
-    # To make things simpler, use git path to find bash.
-    # Then git should be installed where path does not contain speical char.
-    #
-    # NOTE: busybox sh cannot handle CJK correctly (chcp.exe / utf-8). Use
-    # cygwin / msys2 derived shell (fullset) if possible.
-    # }}}
-
-    def Exepath(program: string): string  # {{{
-        # exepath(xxx) returns xxx in current dir, which is not desired.
-        # so let's wrap it; NOTE: `.exe` suffix should be set in param.
-        for i in globpath($PATH->substitute('\', '/', 'g')->substitute(';', ',', 'g'), program, 0, 1)
-            if i->match('\v[\/]') >= 0  # not in current dir
-                return i
-            endif
-        endfor
-        return ''  # not found
-    enddef  # }}}
-
-    const git_path = Exepath('git.exe')->substitute('\', '/', 'g')
-    for _ in ['']  # use a for loop to make indent below fewer.
-        if !(
-            execute(':verbose set shell?')->split("\n")->get(-1)
-                        ->match('^\s*Last set from') < 0
-            || &shell->match('^/') >= 0)
-            # only set shell if it is not set or set to invalid value (like
-            # /bin/sh when invoking from busybox shell).
-            break
-        endif
-        if empty(git_path)
-            # try busybox before giving up.
-            if !Exepath('busybox.exe')->empty()
-                &shell = 'busybox sh'
-            endif
-            break
-        endif
-
-        # git.exe, when invoking from git bash, has different paths. {{{
-        # checking 4 times is enough.
-        # $ find ./ -name git.exe  # from git root dir
-        # ./bin/git.exe
-        # ./cmd/git.exe
-        # ./mingw64/bin/git.exe
-        # ./mingw64/libexec/git-core/git.exe
-        # }}}
-        var depth = 4
-        var git_root = git_path
-        while depth > 0
-            depth -= 1
-            git_root = fnamemodify(git_root, ':h')
-            if executable(git_root .. '/usr/bin/bash')
-                break
-            endif
-        endwhile
-
-        const bash_path = git_root .. '/usr/bin/bash'
-        if !executable(bash_path)
-            echoerr 'vimrc: bash not found in git dir; using MinGit?'
-            break
-        endif
-        if bash_path->match(' ') >= 0
-            # git-for-windows default install location contains whitespace.
-            &shell = '"' .. bash_path .. '"'
-        else
-            &shell = bash_path
-        endif
-        if fnamemodify(exepath('find'), ':h') != fnamemodify(bash_path, ':h')
-            # always add dir of shell to $PATH, so tools like find wins. {{{
-            # (it will be messy when calling win32 find.exe in unix shell)
-            # When running cygwin / msys2 shell via :!, bash_path here will be
-            # translated to /usr/bin, which is feasible. }}}
-            $PATH = fnamemodify(bash_path, ':h') .. ';' .. $PATH
-        endif
-    endfor
-
-    # vim-sh config; busybox sh rc
-    $ENV = expand('~/.config/zshrc')
-
-    # set &shell related options. {{{
-    # NOTE: to use '"' correctly, all '"' should be escaped with '\'.
-    # like this:
-    #   :!echo \"hello world\"
-    # (so just use :Sh if possible: it is more user friendly, and does not
-    # depends on &shell related setting) }}}
-    if &shell->match('\v(bash|zsh|busybox(|.exe) sh)(|.exe)$') >= 0
-        # these settings are from vim_faq, modified.
-        # https://vimhelp.org/vim_faq.txt.html#faq-33.6
-        &shellcmdflag = '-c'
-        # shq seems to modify excmd very early; use sxq instead.
-        &shellquote = ''
-        &shellxquote = '"'
-        # sxe take effect even when sxq is not "(", so set it to empty.
-        # see vim-sh (search ":!start") for details.
-        &shellxescape = ''
-        # shellpipe / shellredir seems not required.
-    endif
+    Source('./rc/win32.vim')
 endif
 
 # unnamed... {{{2
@@ -832,7 +505,7 @@ tnoremap <C-t> <C-\><C-n>
 # <Space>l {{{2
 nnoremap <silent> <Space>l :noh<CR>
 
-# <Space>r; simple tasks: tasks.vim {{{2
+# <Space>r; simple tasks: plugin/tasks.vim {{{2
 nmap <Space>r <Plug>(tasks-select)
 vmap <Space>r <Plug>(tasks-select)
 
@@ -1162,11 +835,36 @@ currentBuffer: {
     }
 })
 # plugin loading {{{1
-# load plugin in a second `source this-file`; then we can differ it from other
-# parts when profiling vim startuptime.
-g:vimrc_plugin_loading = 1
-execute 'source' fnamemodify(expand('<sfile>'), ':p')
-unlet g:vimrc_plugin_loading
+Source('./rc/pack.vim')  # enable :Pack command
+Source('./rc/plugin.vim')
+if empty($VIMRC_USING_COC)
+    Source('./rc/completion-without-coc.vim')
+else
+    # must-have extensions:
+    # :CocInstall coc-json coc-pairs
+    set pp+=~/.vim
+    if isdirectory('~/.vim/pack/coc/start/coc.nvim'->expand())
+        Source('./rc/coc-settings.vim')
+        Source('./rc/coc-config.vim')
+    else
+        const msg =<< trim END
+            coc.nvim is not found in `~/.vim/pack/coc/start/coc.nvim`!
+
+            installation method (from https://github.com/neoclide/coc.nvim/wiki/Install-coc.nvim):
+
+            mkdir -p ~/.vim/pack/coc/start
+            cd ~/.vim/pack/coc/start
+            git clone --branch release https://github.com/neoclide/coc.nvim.git --depth=1
+            vim -c "helptags coc.nvim/doc/ | q"
+        END
+        echohl ErrorMsg
+        echo msg->join("\n")
+        echohl NONE
+        echoerr 'unable to find coc.nvim'
+    endif
+endif
+# update plugin-commit.vim content with `:Pack` then `g`.
+Source('./rc/plugin-commit.vim')
 # filetype & autocmd {{{1
 filetype plugin indent on
 if !exists('g:syntax_on')
@@ -1874,62 +1572,6 @@ def JobClear(num: number)
         endif
     endfor
 enddef
-
-# :Mpc {{{2
-if is_linux && !is_wsl && executable('mpc')
-    command! Mpc Mpc()
-
-    var mpc_prop_type = 'song'
-
-    def Mpc()
-        enew | setl filetype=mpc buftype=nofile noswapfile nobuflisted
-        var buf = bufnr()
-        prop_type_add(mpc_prop_type, {bufnr: buf})
-        var i = 1
-        for line in split(system('mpc playlist'), "\n")
-            setline(i, line)
-            prop_add(i, 1, {type: mpc_prop_type, id: i, bufnr: buf})
-            i += 1
-        endfor
-        const nr = str2nr(system('mpc current -f "%position%"'))
-        execute 'norm' nr .. 'G'
-        nnoremap <buffer> <silent> <CR> <Cmd>call <SID>MpcPlay()<CR>
-        # should we map <2-LeftMouse> to <CR> globally?
-        nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call <SID>MpcPlay()<CR>
-        nnoremap <buffer> <silent> <C-l> <Cmd>call <SID>MpcJumpToPlay()<CR>
-        nnoremap <buffer> <silent> <C-g> <Cmd>call <SID>MpcStatus()<CR>
-    enddef
-
-    def MpcPlay()
-        var props = prop_list(line('.'))
-        if len(props) == 0
-            return
-        endif
-
-        var prop = props[-1]
-        if prop['type'] == mpc_prop_type
-            job_start(printf('mpc play %d', prop.id))
-        endif
-    enddef
-
-    def MpcJumpToPlay()
-        const id: number = system('mpc --format %position% current')->str2nr()
-        var ctx: dict<any>
-        for direction in ['f', 'b']
-            ctx = prop_find({id: id}, direction)
-            if !empty(ctx)
-                execute ':' .. ctx.lnum
-                return
-            endif
-        endfor
-    enddef
-
-    def MpcStatus()
-        const status: string = system('mpc status "%currenttime%/%totaltime%%percenttime%"')->trim()
-        const song: string = system('mpc --format "[[%artist% - ]%title%]|[%file%]" current')->trim()
-        echo status " ~ " song
-    enddef
-endif
 
 # :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{2
 # depends on g:Selection().
