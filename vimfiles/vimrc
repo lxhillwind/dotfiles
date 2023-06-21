@@ -131,13 +131,19 @@ nmap <Space><Space> <Space>fmn
 nnoremap <Space>;; :map <buffer><CR>
 
 # shell {{{2
-# 'noshelltemp' {{{
-# In win32 gui, 'noshelltemp' makes ":!" and ":[range]w !" work like in unix:
+# 'shelltemp' or 'noshelltemp': {{{
+# - In win32 gui, 'noshelltemp' makes ":!" and ":[range]w !" work like in unix:
 # no external cmd window;
 # (if guioptions contain '!', ":!" will not show cmd window anyway.)
-# In unix, 'noshelltemp' makes ":[range]w !" not create tempfile.
+#
+# but encoding cannot be detected (e.g. in "r !")
+#
+# - In unix, 'noshelltemp' makes ":[range]w !" not create tempfile;
+#
+# but if guioptions contain '!', ":r !" would not write content to buffer.
+#
+# So do not change 'shelltemp' option (default on).
 # }}}
-set noshelltemp
 
 if is_unix
     const zsh_path = is_mac ? '/opt/homebrew/bin/zsh' : '/bin/zsh'

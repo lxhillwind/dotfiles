@@ -65,20 +65,12 @@ for i in xxd_possible
 endfor
 
 def ReadBin(name: string)
-    const switch_shelltemp = is_win32 && !&shelltemp
-    if switch_shelltemp
-        # in win32, ":read !" would be slow if &noshelltemp.
-        set shelltemp
-    endif
+    # we do not set 'shelltemp' option (to no); see relevant comment in
+    # ~/vimfiles/vimrc.
     silent normal gg"_dG
     silent execute printf('read !%s %s', shellescape(xxd_path), shellescape(name))
     normal gg"_dd
     setl nomodified
-    # :defer works; but it cannot be used in old version vim: it won't
-    # compile.
-    if switch_shelltemp
-        set noshelltemp
-    endif
 enddef
 
 def WriteBin(name: string)
