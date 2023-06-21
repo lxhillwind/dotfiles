@@ -1,6 +1,6 @@
 vim9script
 
-# utility function (copied from ~/vimfiles/vimrc {{{
+# utility (copied from ~/vimfiles/vimrc) {{{
 def TrSlash(s: string): string
     if has('win32')
         return substitute(s, '\', '/', 'g')
