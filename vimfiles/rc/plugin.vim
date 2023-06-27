@@ -31,10 +31,7 @@ g:markdown_fenced_languages = [
 ]
 
 # lx {{{1
-packadd! vim-jump
 packadd! vim-sh
-packadd! pyvim
-g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
 
 # vim dist. {{{1
 # use matchit, so vim9 filetype indent work as expected.

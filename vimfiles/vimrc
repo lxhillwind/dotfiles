@@ -179,7 +179,7 @@ def TerminalSetup()
         return
     endif
     setl nonu | setl nornu
-    # vim-jump
+    # plugin/jump.vim
     nmap <buffer> <CR> <Plug>(jump_to_file)
     vmap <buffer> <CR> <Plug>(jump_to_file)
     # clipboard
@@ -499,7 +499,7 @@ enddef
 
 # gF / v_gF {{{2
 # (handle column nr; v_gF handle line / column nr)
-# using my plugin vim-jump.
+# using plugin/jump.vim.
 nmap gF <Plug>(jump_to_file)
 vmap gF <Plug>(jump_to_file)
 
