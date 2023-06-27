@@ -11,8 +11,6 @@ if get(g:, 'loaded_sh') || !has('vim9script')
 endif
 let g:loaded_sh = 1
 
-import '../lib/sh.vim' as lib
-
 let s:sh_programs = ['kitty', 'alacritty', 'konsole', 'xfce4Terminal', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
 
 " main {{{1
@@ -217,7 +215,7 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
 
   let shell = exists('g:sh_path') ? g:sh_path : &shell
-  let shell_list = s:lib.ShellSplitUnix(shell)
+  let shell_list = ShellSplitUnix(shell)
 
   if !executable(shell_list->get(0)) && !opt.skip_shell
     call s:echoerr(printf('shell is not found! (`%s`)', shell)) | return
@@ -265,7 +263,7 @@ function! s:sh(cmd, opt) abort " {{{2
     let cmd_new = shell_list
   else
     if opt.skip_shell
-      let cmd_new = s:lib.ShellSplitUnix(cmd)
+      let cmd_new = ShellSplitUnix(cmd)
     else
       if !empty(tmpfile)
         if s:is_unix
@@ -553,6 +551,103 @@ function! s:cmdlist_keep_window(shell_list, cmd) abort
         \ ''] + a:cmd
 endfunction
 
+" util func (vim9) {{{2
+def ShellSplitUnix(s: string): list<string>
+    # shlex.split() with unix rule for unix and win32.
+    var state: string = 'whitespace'
+    var idx = 0
+    var ch: string
+    var token: string = ''
+    var result: list<string> = []
+
+    while idx < len(s)
+        ch = s[idx]
+        idx += 1
+
+        if ch == "'"
+            if state == 'raw' || state == 'whitespace'
+                state = 'quote_single'
+            elseif state == 'quote_single'
+                state = 'raw'
+            else
+                token ..= ch
+                if state == 'backslash'
+                    state = 'raw'
+                endif
+            endif
+        elseif ch == '"'
+            if state == 'raw' || state == 'whitespace'
+                state = 'quote_double'
+            elseif state == 'quote_double'
+                state = 'raw'
+            elseif state == 'quote_backslash'
+                token ..= ch
+                state = 'quote_double'
+            else
+                token ..= ch
+                if state == 'backslash'
+                    state = 'raw'
+                endif
+            endif
+        elseif ch == '\'
+            if state == 'quote_double'
+                state = 'quote_backslash'
+            elseif state == 'raw' || state == 'whitespace'
+                state = 'backslash'
+            elseif state == 'backslash'
+                token ..= '\'
+                state = 'raw'
+            elseif state == 'quote_single'
+                token ..= '\'
+            elseif state == 'quote_backslash'
+                token ..= '\'
+                state = 'quote_double'
+            else
+                throw 'vim-sh: invalid state: \'
+            endif
+        elseif ch =~ '\s'
+            if state == 'whitespace'
+                # nop
+            elseif index(
+                ['quote_double', 'quote_single', 'quote_backslash', 'backslash'],
+                state) >= 0
+                if state == 'quote_backslash'
+                    token ..= '\'
+                endif
+                token ..= ch
+                if state == 'backslash'
+                    state = 'raw'
+                elseif state == 'quote_backslash'
+                    state = 'quote_double'
+                endif
+            elseif state == 'raw'
+                add(result, token)
+                token = ''
+                state = 'whitespace'
+            else
+                throw 'vim-sh: invalid state: \s'
+            endif
+        else
+            if state == 'whitespace' || state == 'backslash'
+                state = 'raw'
+            elseif state == 'quote_backslash'
+                token ..= '\'
+                state = 'quote_double'
+            endif
+            token ..= ch
+        endif
+    endwhile
+
+    if state == 'raw'
+        add(result, token)
+    elseif state == 'whitespace'
+        # nop
+    else
+        throw 'input not legal: state at finish: ' .. state
+    endif
+
+    return result
+enddef
 " -w program {{{2
 function! s:program_kitty(context) abort
   let cmd = a:context.cmd
@@ -824,3 +919,93 @@ function! s:wsl_path(shell, file) abort
   endif
   return file
 endfunction
+finish  " tests. {{{1
+vim9script
+# usage: copy these (and function ShellSplitUnix definition) to a vim buffer;
+# then run with :%source
+
+# data is from cpython source, which "was from shellwords, by Hartmut Goebel".
+# "foo#bar\nbaz|foo|baz|" is removed, since we don't support comment.
+const posix_data =<< trim END
+x|x|
+foo bar|foo|bar|
+ foo bar|foo|bar|
+ foo bar |foo|bar|
+foo   bar    bla     fasel|foo|bar|bla|fasel|
+x y  z              xxxx|x|y|z|xxxx|
+\x bar|x|bar|
+\ x bar| x|bar|
+\ bar| bar|
+foo \x bar|foo|x|bar|
+foo \ x bar|foo| x|bar|
+foo \ bar|foo| bar|
+foo "bar" bla|foo|bar|bla|
+"foo" "bar" "bla"|foo|bar|bla|
+"foo" bar "bla"|foo|bar|bla|
+"foo" bar bla|foo|bar|bla|
+foo 'bar' bla|foo|bar|bla|
+'foo' 'bar' 'bla'|foo|bar|bla|
+'foo' bar 'bla'|foo|bar|bla|
+'foo' bar bla|foo|bar|bla|
+blurb foo"bar"bar"fasel" baz|blurb|foobarbarfasel|baz|
+blurb foo'bar'bar'fasel' baz|blurb|foobarbarfasel|baz|
+""||
+''||
+foo "" bar|foo||bar|
+foo '' bar|foo||bar|
+foo "" "" "" bar|foo||||bar|
+foo '' '' '' bar|foo||||bar|
+\"|"|
+"\""|"|
+"foo\ bar"|foo\ bar|
+"foo\\ bar"|foo\ bar|
+"foo\\ bar\""|foo\ bar"|
+"foo\\" bar\"|foo\|bar"|
+"foo\\ bar\" dfadf"|foo\ bar" dfadf|
+"foo\\\ bar\" dfadf"|foo\\ bar" dfadf|
+"foo\\\x bar\" dfadf"|foo\\x bar" dfadf|
+"foo\x bar\" dfadf"|foo\x bar" dfadf|
+\'|'|
+'foo\ bar'|foo\ bar|
+'foo\\ bar'|foo\\ bar|
+"foo\\\x bar\" df'a\ 'df"|foo\\x bar" df'a\ 'df|
+\"foo|"foo|
+\"foo\x|"foox|
+"foo\x"|foo\x|
+"foo\ "|foo\ |
+foo\ xx|foo xx|
+foo\ x\x|foo xx|
+foo\ x\x\"|foo xx"|
+"foo\ x\x"|foo\ x\x|
+"foo\ x\x\\"|foo\ x\x\|
+"foo\ x\x\\""foobar"|foo\ x\x\foobar|
+"foo\ x\x\\"\'"foobar"|foo\ x\x\'foobar|
+"foo\ x\x\\"\'"fo'obar"|foo\ x\x\'fo'obar|
+"foo\ x\x\\"\'"fo'obar" 'don'\''t'|foo\ x\x\'fo'obar|don't|
+"foo\ x\x\\"\'"fo'obar" 'don'\''t' \\|foo\ x\x\'fo'obar|don't|\|
+'foo\ bar'|foo\ bar|
+'foo\\ bar'|foo\\ bar|
+foo\ bar|foo bar|
+:-) ;-)|:-)|;-)|
+áéíóú|áéíóú|
+END
+
+# put ShellSplitUnix definition here!
+#
+
+var line_nr = 7  # the line of "trim END"
+for line in posix_data
+    line_nr += 1
+    const fields: list<string> = line->split('|')[ : -1]
+    try
+        const result = ShellSplitUnix(fields[0])
+        const expected = fields[1 : ]
+        if result != expected
+            echo $'line {line_nr}: expected: {string(expected)}; result: {string(result)}'
+        endif
+    catch /.*/
+        echohl Error
+        echo $'line {line_nr}: {v:exception}'
+        echohl None
+    endtry
+endfor
