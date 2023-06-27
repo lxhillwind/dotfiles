@@ -37,22 +37,17 @@ packadd! pyvim
 g:pyvim_rc = expand('~/vimfiles/config/pyvim.py')
 
 # vim dist. {{{1
-# plugin here should not be loaded with ":Pack", since ":PackHelpTags" does
-# not have enough permission to gen tag for them.
-# use ":packadd!" (with !) to only add them to &rtp.
-#
 # use matchit, so vim9 filetype indent work as expected.
 # https://github.com/vim/vim/issues/7628
 packadd! matchit
 
 # vender. {{{1
-# Pack 'https://github.com/lacygoill/vim-fuzzy', {'commit': 'fa6a719'}
 packadd! vim-fuzzy
 
 # from network {{{1
-Pack 'https://github.com/justinmk/vim-dirvish'
+packadd! vim-dirvish
 g:loaded_netrwPlugin = 1
-Pack 'https://github.com/justinmk/vim-sneak'
+packadd! vim-sneak
 g:sneak#label = 1
 # sneak unmap f / t when one of them is pressed after sneak key. {{{
 # MRE:
@@ -69,11 +64,11 @@ g:sneak#t_reset = 0
 vmap S <Plug>Sneak_S
 omap s <Plug>Sneak_s
 omap S <Plug>Sneak_S
-Pack 'https://github.com/ciaranm/securemodelines', {'after': 1}
-Pack 'https://github.com/masukomi/vim-markdown-folding'
+packadd! securemodelines
+packadd! vim-markdown-folding
 g:markdown_fold_style = 'nested'
 g:markdown_fold_override_foldtext = 0
-Pack 'https://github.com/lacygoill/vim9-syntax'
-Pack 'https://github.com/tridactyl/vim-tridactyl'
+packadd! vim9-syntax
+packadd! vim-tridactyl
 # colorscheme
-Pack 'https://github.com/eemed/sitruuna.vim'
+packadd! sitruuna.vim

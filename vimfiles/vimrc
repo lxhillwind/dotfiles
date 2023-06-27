@@ -692,7 +692,6 @@ currentBuffer: {
     }
 })
 # plugin loading {{{1
-Source('./rc/pack.vim')  # enable :Pack command
 Source('./rc/plugin.vim')
 if empty($VIMRC_USING_COC)
     Source('./rc/completion-without-coc.vim')
@@ -720,8 +719,6 @@ else
         echoerr 'unable to find coc.nvim'
     endif
 endif
-# update plugin-commit.vim content with `:Pack` then `g`.
-Source('./rc/plugin-commit.vim')
 # filetype & autocmd {{{1
 # filetype related autocmd should be put after this.
 filetype plugin indent on

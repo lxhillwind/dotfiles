@@ -9,7 +9,7 @@ set completeopt=menu,menuone,noselect
 set shortmess+=c
 
 # vim-mucomplete. {{{3
-Pack 'https://github.com/lifepillar/vim-mucomplete'
+packadd! vim-mucomplete
 # disable its imap <Tab> (and some others)
 g:mucomplete#enable_auto_at_startup = 1
 g:mucomplete#no_mappings = 1
@@ -27,7 +27,7 @@ g:mucomplete#chains = {
 inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 
 # dict-completion sources. {{{3
-Pack 'https://github.com/skywind3000/vim-dict'
+packadd! vim-dict
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
 execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
 # File type override
