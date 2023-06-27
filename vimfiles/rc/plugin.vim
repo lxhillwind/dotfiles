@@ -30,9 +30,6 @@ g:markdown_fenced_languages = [
     'zig',
 ]
 
-# lx {{{1
-packadd! vim-sh
-
 # vim dist. {{{1
 # use matchit, so vim9 filetype indent work as expected.
 # https://github.com/vim/vim/issues/7628
