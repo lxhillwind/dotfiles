@@ -1,4 +1,4 @@
-" tasks defenition is loaded from list of files:
+" tasks defenition is loaded from list of files:  {{{1
 "   g:tasks_config_paths (default: [<sfile>:h/tasks.ini])
 "
 " available command:
@@ -81,12 +81,16 @@
 " '#' / ';' starts comment (prefix spaces are allowed);
 " section name are inside '[' and ']';
 " key / value is delimited by the first '=' character;
-" key_without_value is NOT allowed; use `key =` instead.
+" key_without_value is NOT allowed; use `key =` instead. }}}1
 
 if v:version < 703
   finish
 endif
 
+nmap <Space>r <Plug>(tasks-select)
+vmap <Space>r <Plug>(tasks-select)
+
+" impl {{{1
 function! s:raise(msg, line) abort
   throw printf('%s %s', a:msg, a:line)
 endfunction
