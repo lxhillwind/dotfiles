@@ -94,8 +94,10 @@ endif
 Source('./rc/tiny.vim')
 # option {{{1
 # &rtp / &pp {{{2
-set rtp=~/vimfiles,$VIMRUNTIME,~/vimfiles/after
-set pp=~/vimfiles,$VIMRUNTIME
+# why not using = here? since we may want to add package before souring this
+# file; `set rtp=XXX` here will cause problem.
+set rtp^=~/vimfiles
+set pp^=~/vimfiles
 
 # add ~/bin to $PATH {{{2
 # Even when set ~/bin in $PATH via ~/.config/zshrc, it may not be added when
@@ -720,7 +722,8 @@ else
     endif
 endif
 # filetype & autocmd {{{1
-# filetype related autocmd should be put after this.
+# - plugin loading should be put **before** this. (see :help packadd)
+# - filetype related autocmd should be put **after** this.
 filetype plugin indent on
 if !exists('g:syntax_on')
     syntax on
