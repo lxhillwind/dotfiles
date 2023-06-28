@@ -68,6 +68,52 @@ g:markdown_fold_override_foldtext = 0
 
 # colorscheme
 packadd! sitruuna.vim
+
+# completion {{{2
+# source for dictionary, current or other loaded buffers, see ':help cpt'
+set cpt=.,k,w,b
+# don't select the first item.
+set completeopt=menu,menuone,noselect
+# suppress annoy messages.
+set shortmess+=c
+
+# disable its imap <Tab> (and some others)
+g:mucomplete#enable_auto_at_startup = 1
+g:mucomplete#no_mappings = 1
+# disable keyn / dict: included in c-n via option 'complete' ('cpt');
+# about these chains description: help 'mucomplete-methods'
+g:mucomplete#chains = {
+    default: ['path', 'omni', 'user', 'c-n', 'uspl'],
+    vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
+    # sql: disable omni, since it causes trouble. (sth missing?)
+    sql:     ['path',         'user', 'c-n', 'uspl'],
+}
+
+var coc_nvim_available = false
+if !empty($VIMRC_USING_COC)
+    try
+        # must-have extensions:
+        # :CocInstall coc-json coc-pairs
+        packadd! coc.nvim
+        coc_nvim_available = true
+    catch /^Vim\%((\a\+)\)\=:E919:/
+    endtry
+    if !coc_nvim_available
+        echoerr 'unable to find coc.nvim'
+    endif
+endif
+
+if !coc_nvim_available
+    packadd! vim-mucomplete
+    imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
+    imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
+    # make <CR> always add newline.
+    inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
+
+    packadd! vim-dict
+    # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
+    execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
+endif
 # "filetype plugin indent on" {{{1
 # - plugin loading should be put **before** this. (see :help packadd)
 # - filetype related autocmd should be put **after** this.
@@ -764,24 +810,10 @@ currentBuffer: {
 augroup vimrc
     Source('./rc/autocmd.vim')
 augroup END
-# completion {{{1
-if empty($VIMRC_USING_COC)
-    Source('./rc/completion-without-coc.vim')
-else
-    var coc_nvim_available = false
-    try
-        # must-have extensions:
-        # :CocInstall coc-json coc-pairs
-        packadd! coc.nvim
-        coc_nvim_available = true
-    catch /^Vim\%((\a\+)\)\=:E919:/
-    endtry
-    if coc_nvim_available
-        Source('./rc/coc-settings.vim')
-        Source('./rc/coc-config.vim')
-    else
-        echoerr 'unable to find coc.nvim'
-    endif
+# coc.nvim config {{{1
+if coc_nvim_available
+    Source('./rc/coc-settings.vim')
+    Source('./rc/coc-config.vim')
 endif
 # colorscheme {{{1
 # only set colorscheme if not set yet. {{{2
