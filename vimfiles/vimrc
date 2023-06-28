@@ -1,5 +1,80 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
+# :packadd! (as early as possible) {{{1
+set pp^=~/vimfiles
+
+# vim-vimserver should be called early.
+packadd vim-vimserver
+
+# disable default plugin {{{
+g:loaded_2html_plugin = 1
+g:loaded_getscriptPlugin = 1
+g:loaded_gzip = 1
+g:loaded_logiPat = 1
+g:loaded_netrwPlugin = 1
+g:loaded_tarPlugin = 1
+g:loaded_vimballPlugin = 1
+g:loaded_zipPlugin = 1  # }}}
+
+g:tasks_config_paths =<< trim END
+    ~/vimfiles/config/tasks.ini
+    ~/vimfiles/config/tasks-local.ini
+END
+g:tasks_config_paths
+    ->map((_, i) => expand(i))
+    ->filter((_, i) => filereadable(i))
+
+g:markdown_folding = 1
+g:markdown_fenced_languages = [
+    'awk', 'python', 'sh', 'vim',
+    'c', 'go', 'javascript',
+    'dosini', 'json', 'yaml',
+    'zig',
+]
+
+# use matchit, so vim9 filetype indent work as expected.
+# https://github.com/vim/vim/issues/7628
+packadd! matchit
+
+packadd! vim-fuzzy
+packadd! securemodelines
+packadd! vim9-syntax
+packadd! vim-tridactyl
+
+packadd! vim-dirvish
+g:loaded_netrwPlugin = 1
+
+packadd! vim-sneak
+g:sneak#label = 1
+# sneak unmap f / t when one of them is pressed after sneak key. {{{
+# MRE:
+#   :map t <Nop><CR>
+#   sssff
+#   :map t
+# then mapping for t disappeared.
+#
+# since I only map t / T (f / F not mapped), only set t / T below.
+# }}}
+g:sneak#f_reset = 1
+g:sneak#t_reset = 0
+# I do not use vim-surround, so preserve s / S for vim-sneak.
+vmap S <Plug>Sneak_S
+omap s <Plug>Sneak_s
+omap S <Plug>Sneak_S
+
+packadd! vim-markdown-folding
+g:markdown_fold_style = 'nested'
+g:markdown_fold_override_foldtext = 0
+
+# colorscheme
+packadd! sitruuna.vim
+# "filetype plugin indent on" {{{1
+# - plugin loading should be put **before** this. (see :help packadd)
+# - filetype related autocmd should be put **after** this.
+filetype plugin indent on
+if !exists('g:syntax_on')
+    syntax on
+endif
 # internal helper function. {{{1
 # expand() should NOT be used to expand arbitrary file (like containing
 # "[b-a]" in filename).
@@ -33,7 +108,6 @@ def Source(file: string)
     execute 'source' fnameescape(vimrc_dir .. '/' .. file)
 enddef
 const vimrc_dir = expand('<sfile>')->fnamemodify(':h')
-
 # common definition {{{1
 const is_unix = has('unix')
 const is_win32 = has('win32')
@@ -47,7 +121,6 @@ g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
 augroup vimrc
     au!
 augroup END
-
 # vimrc detection. {{{1
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
@@ -89,15 +162,13 @@ if !exists('$MYVIMRC')
     # make ":e $MYVIMRC" work.
     $MYVIMRC = first_vimrc
 endif
-
 # config compatible with vim tiny version. {{{1
 Source('./rc/tiny.vim')
 # option {{{1
-# &rtp / &pp {{{2
+# &rtp {{{2
 # why not using = here? since we may want to add package before souring this
 # file; `set rtp=XXX` here will cause problem.
 set rtp^=~/vimfiles
-set pp^=~/vimfiles
 
 # add ~/bin to $PATH {{{2
 # Even when set ~/bin in $PATH via ~/.config/zshrc, it may not be added when
@@ -116,9 +187,6 @@ if is_win32 && has('vim_starting')
 endif
 
 # unnamed... {{{2
-# vim-vimserver should be called early.
-packadd vim-vimserver
-
 # set leader / localleader to unused key, so plugin is hardly to clash with
 # our key.
 # Refer: lacygoill's vimrc.
@@ -364,7 +432,6 @@ else
         endif
     endif
 endif
-
 # keymap {{{1
 # custom text object {{{2
 # all
@@ -693,45 +760,29 @@ currentBuffer: {
     }
     }
 })
-# plugin loading {{{1
-Source('./rc/plugin.vim')
-if empty($VIMRC_USING_COC)
-    Source('./rc/completion-without-coc.vim')
-else
-    # must-have extensions:
-    # :CocInstall coc-json coc-pairs
-    set pp+=~/.vim
-    if isdirectory('~/.vim/pack/coc/start/coc.nvim'->expand())
-        Source('./rc/coc-settings.vim')
-        Source('./rc/coc-config.vim')
-    else
-        const msg =<< trim END
-            coc.nvim is not found in `~/.vim/pack/coc/start/coc.nvim`!
-
-            installation method (from https://github.com/neoclide/coc.nvim/wiki/Install-coc.nvim):
-
-            mkdir -p ~/.vim/pack/coc/start
-            cd ~/.vim/pack/coc/start
-            git clone --branch release https://github.com/neoclide/coc.nvim.git --depth=1
-            vim -c "helptags coc.nvim/doc/ | q"
-        END
-        echohl ErrorMsg
-        echo msg->join("\n")
-        echohl NONE
-        echoerr 'unable to find coc.nvim'
-    endif
-endif
-# filetype & autocmd {{{1
-# - plugin loading should be put **before** this. (see :help packadd)
-# - filetype related autocmd should be put **after** this.
-filetype plugin indent on
-if !exists('g:syntax_on')
-    syntax on
-endif
-
+# autocmd {{{1
 augroup vimrc
     Source('./rc/autocmd.vim')
 augroup END
+# completion {{{1
+if empty($VIMRC_USING_COC)
+    Source('./rc/completion-without-coc.vim')
+else
+    var coc_nvim_available = false
+    try
+        # must-have extensions:
+        # :CocInstall coc-json coc-pairs
+        packadd! coc.nvim
+        coc_nvim_available = true
+    catch /^Vim\%((\a\+)\)\=:E919:/
+    endtry
+    if coc_nvim_available
+        Source('./rc/coc-settings.vim')
+        Source('./rc/coc-config.vim')
+    else
+        echoerr 'unable to find coc.nvim'
+    endif
+endif
 # colorscheme {{{1
 # only set colorscheme if not set yet. {{{2
 # using `trim(execute('color')) == 'default'` is not valid.
@@ -773,7 +824,6 @@ augroup vimrc
     au ColorScheme * TerminalAnsiColor()
 augroup END
 TerminalAnsiColor()
-
 # TODO {{{1
 # - toc / content: 'gO' in neovim; (help / markdown, etc.)
 # - user completion; 'compl-function'. (tmux buffer, web browser, etc.)
