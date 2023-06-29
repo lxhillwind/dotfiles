@@ -142,8 +142,8 @@ if coc_nvim_available  # {{{
     # Use K to show documentation in preview window
     nnoremap <silent> K <ScriptCmd>ShowDocumentation()<CR>
     def ShowDocumentation()
-        if CocAction('hasProvider', 'hover')
-            CocActionAsync('doHover')
+        if g:CocAction('hasProvider', 'hover')
+            g:CocActionAsync('doHover')
         else
             feedkeys('K', 'in')
         endif
