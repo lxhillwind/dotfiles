@@ -1,6 +1,7 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
 # Plugins {{{1
+
 set pp^=~/vimfiles
 
 # vim-vimserver should be called early.
@@ -170,6 +171,7 @@ if !exists('g:syntax_on')
 endif
 
 # helper function / const {{{1
+
 # expand() should NOT be used to expand arbitrary file (like containing
 # "[b-a]" in filename).
 def ExpandHead(s: string): string
@@ -210,6 +212,7 @@ augroup vimrc
 augroup END
 
 # vimrc Detection {{{1
+
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
 # like set mapping, add autocmd.
@@ -252,6 +255,7 @@ if !exists('$MYVIMRC')
 endif
 
 # Tiny build options {{{1
+
 set nomodeline
 set backspace=2
 set expandtab
@@ -276,6 +280,7 @@ set fileformats=unix,dos
 set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 
 # Option {{{1
+
 # &rtp {{{2
 # why not using = here? since we may want to add package before souring this
 # file; `set rtp=XXX` here will cause problem.
@@ -678,6 +683,7 @@ else
     endif
 endif
 # Key mapping {{{1
+
 # custom text object {{{2
 # all
 vnoremap aa :<C-u>normal! ggVG<CR>
@@ -1006,8 +1012,8 @@ g:fuzzy#config->extend({
     }
 })
 # Autocmd {{{1
-augroup vimrc
 
+augroup vimrc
     # misc (filetype related) {{{2
     # NOTE: "au BufNewFile,BufRead XXX setl ft=YYY" should be put in ftdetect/;
     # otherwise "au FileType YYY .*" stmt won't work.
@@ -1252,10 +1258,10 @@ augroup vimrc
         endif
     }
 
-    # fin. {{{2
-augroup END
+augroup END  # {{{2
 
 # Colorscheme {{{1
+
 # only set colorscheme if not set yet. {{{2
 # using `trim(execute('color')) == 'default'` is not valid.
 if !exists('g:colors_name')
@@ -1298,6 +1304,7 @@ augroup END
 TerminalAnsiColor()
 
 # Command {{{1
+
 # :CopyMatches  {{{2
 # https://vim.fandom.com/wiki/Copy_search_matches#Copy_matches
 # original snippet does not work...
@@ -1632,10 +1639,11 @@ def ShowOutput(...data_: list<any>)
     norm gg"_dd
 enddef
 
-# terminal-api related user function {{{2
-# sync terminal path to buffer path.
-# TODO follow cd even when terminal buffer not in focus (with event?).
-def g:Tapi_cd(nr: number, arg: list<string>)
+# UserFunction {{{1
+
+def g:Tapi_cd(nr: number, arg: list<string>)  # {{{2
+    # sync terminal path to buffer path.
+    # TODO follow cd even when terminal buffer not in focus (with event?).
     if bufnr() == nr
         var p = arg[0]
         if is_win32 && match(p, '^/') >= 0
@@ -1646,7 +1654,15 @@ def g:Tapi_cd(nr: number, arg: list<string>)
     endif
 enddef
 
-# :vim-fuzzy config {{{2
+def g:Tapi_shell_sv_helper(...arg: list<any>)  # {{{2
+    feedkeys("\<C-\>\<C-n>", 'n')
+enddef
+
+def g:NoteIdNew(): string # {{{2
+    return strftime('%Y%m%d_%H%M%S')
+enddef
+
+# vim-fuzzy config {{{2
 # ProjectListCmd() {{{3
 # NOTE: this variable is directly put after `find` command,
 # using shell syntax. QUOTE IT IF NECESSARY!
@@ -1776,15 +1792,6 @@ def SelectFromSources()
         }
     }
     )
-enddef
-
-# sv() helper (in vim embedded terminal) {{{2
-def g:Tapi_shell_sv_helper(...arg: list<any>)
-    feedkeys("\<C-\>\<C-n>", 'n')
-enddef
-
-def g:NoteIdNew(): string # {{{2
-    return strftime('%Y%m%d_%H%M%S')
 enddef
 
 # TODO {{{1
