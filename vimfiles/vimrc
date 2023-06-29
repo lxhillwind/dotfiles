@@ -1,12 +1,76 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
-def Source(file: string)  # {{{1
-    execute 'source' fnameescape(vimrc_dir .. '/' .. file)
-enddef
-const vimrc_dir = expand('<sfile>')->fnamemodify(':h')
-# :packadd! (as early as possible) {{{1
+# Plugins {{{1
 set pp^=~/vimfiles
-Source('./rc/plugin.vim')
+
+# vim-vimserver should be called early.
+packadd vim-vimserver
+
+# disable default plugin {{{
+g:loaded_2html_plugin = 1
+g:loaded_getscriptPlugin = 1
+g:loaded_gzip = 1
+g:loaded_logiPat = 1
+g:loaded_netrwPlugin = 1
+g:loaded_tarPlugin = 1
+g:loaded_vimballPlugin = 1
+g:loaded_zipPlugin = 1  # }}}
+
+# config definition for plugins not added via `:packadd[!]` {{{
+g:tasks_config_paths =<< trim END
+    ~/vimfiles/config/tasks.ini
+    ~/vimfiles/config/tasks-local.ini
+END
+g:tasks_config_paths
+    ->map((_, i) => expand(i))
+    ->filter((_, i) => filereadable(i))
+
+g:markdown_folding = 1
+g:markdown_fenced_languages = [
+    'awk', 'python', 'sh', 'vim',
+    'c', 'go', 'javascript',
+    'dosini', 'json', 'yaml',
+    'zig',
+]
+# }}}
+
+# use matchit, so vim9 filetype indent work as expected.
+# https://github.com/vim/vim/issues/7628
+packadd! matchit
+
+packadd! vim-fuzzy
+packadd! securemodelines
+packadd! vim9-syntax
+packadd! vim-tridactyl
+
+packadd! vim-dirvish
+g:loaded_netrwPlugin = 1
+
+packadd! vim-sneak
+g:sneak#label = 1
+# sneak unmap f / t when one of them is pressed after sneak key. {{{
+# MRE:
+#   :map t <Nop><CR>
+#   sssff
+#   :map t
+# then mapping for t disappeared.
+#
+# since I only map t / T (f / F not mapped), only set t / T below.
+# }}}
+g:sneak#f_reset = 1
+g:sneak#t_reset = 0
+# I do not use vim-surround, so preserve s / S for vim-sneak.
+vmap S <Plug>Sneak_S
+omap s <Plug>Sneak_s
+omap S <Plug>Sneak_S
+
+packadd! vim-markdown-folding
+g:markdown_fold_style = 'nested'
+g:markdown_fold_override_foldtext = 0
+
+# colorscheme
+packadd! sitruuna.vim
+
 # completion {{{2
 # source for dictionary, current or other loaded buffers, see ':help cpt'
 set cpt=.,k,w,b
@@ -41,7 +105,51 @@ if !empty($VIMRC_USING_COC)
     endif
 endif
 
-if !coc_nvim_available
+if coc_nvim_available  # {{{
+    # coc-settings.json template {{{
+    const coc_settings_default =<< trim END
+        {
+            "suggest.noselect": true,
+            "languageserver": {
+                "zig": {
+                    "command": "zls",
+                    "filetypes": ["zig"]
+                }
+            }
+        }
+    END
+    # }}}
+    const coc_settings_file = expand('~/.vim/coc-settings.json')
+    if !coc_settings_file->filereadable()
+        coc_settings_default->writefile(coc_settings_file)
+        echo 'vimrc: ~/.vim/coc-settings.json is not found. created a default one.'
+    endif
+
+    # Highlight the symbol and its references when holding the cursor
+    autocmd CursorHold * silent call CocActionAsync('highlight')
+
+    # Use `[g` and `]g` to navigate diagnostics
+    # Use `:CocDiagnostics` to get all diagnostics of current buffer in location list
+    nmap <silent> [g <Plug>(coc-diagnostic-prev)
+    nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+    # GoTo code navigation
+    nmap <silent> gd <Plug>(coc-definition)
+    nmap <silent> gy <Plug>(coc-type-definition)
+    nmap <silent> gi <Plug>(coc-implementation)
+    nmap <silent> gr <Plug>(coc-references)
+
+    # Use K to show documentation in preview window
+    nnoremap <silent> K <ScriptCmd>ShowDocumentation()<CR>
+    def ShowDocumentation()
+        if CocAction('hasProvider', 'hover')
+            CocActionAsync('doHover')
+        else
+            feedkeys('K', 'in')
+        endif
+    enddef
+# }}}
+else  # {{{
     packadd! vim-mucomplete
     imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
     imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
@@ -51,15 +159,17 @@ if !coc_nvim_available
     packadd! vim-dict
     # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
     execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
-endif
-# "filetype plugin indent on" {{{1
-# - plugin loading should be put **before** this. (see :help packadd)
-# - filetype related autocmd should be put **after** this.
+endif  # }}}
+# }}}2
+
+# NOTE: plugin loading should be put **before** this. (see :help packadd)
+# NOTE: filetype related autocmd should be put **after** this.
 filetype plugin indent on
 if !exists('g:syntax_on')
     syntax on
 endif
-# internal helper function. {{{1
+
+# helper function / const {{{1
 # expand() should NOT be used to expand arbitrary file (like containing
 # "[b-a]" in filename).
 def ExpandHead(s: string): string
@@ -85,11 +195,11 @@ def TrSlash(s: string): string
         return s
     endif
 enddef
-# common definition {{{1
+
 const is_unix = has('unix')
 const is_win32 = has('win32')
 const has_gui = has('gui_running') || has('mac')
-|| (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
+    || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 const is_linux = has('linux')
 const is_mac = has('mac')
 const is_wsl = executable('/mnt/c/Windows/notepad.exe')
@@ -98,7 +208,8 @@ g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
 augroup vimrc
     au!
 augroup END
-# vimrc detection. {{{1
+
+# vimrc Detection {{{1
 # Error if reading system-vimrc. {{{
 # Some distribution's system-vimrc (like openSUSE) does sth,
 # like set mapping, add autocmd.
@@ -121,15 +232,15 @@ augroup END
 #     - some key mapping to cause <Ctrl-[> delay, this is not acceptable!
 # }}}
 const first_vimrc = execute('scr')->split("\n")->get(0)
-            ->substitute('\v^.{-}:\s*', '', '')
-            ->ExpandHead()
-            ->TrSlash()
+    ->substitute('\v^.{-}:\s*', '', '')
+    ->ExpandHead()
+    ->TrSlash()
 
 if has('vim_starting') && exists('$MYVIMRC') && first_vimrc != TrSlash($MYVIMRC)
     if !(
-        !empty(get(g:, 'vimrc_allow_system'))
-        || !empty($VIMRC_ALLOW_SYSTEM)
-        )
+            !empty(get(g:, 'vimrc_allow_system'))
+            || !empty($VIMRC_ALLOW_SYSTEM)
+            )
         throw 'system-vimrc is read. skip loading vimrc!'
     endif
 endif
@@ -139,9 +250,32 @@ if !exists('$MYVIMRC')
     # make ":e $MYVIMRC" work.
     $MYVIMRC = first_vimrc
 endif
-# config compatible with vim tiny version. {{{1
-Source('./rc/tiny.vim')
-# option {{{1
+
+# Tiny build options {{{1
+set nomodeline
+set backspace=2
+set expandtab
+set shiftwidth=4
+set number
+set relativenumber
+set hlsearch
+set incsearch
+set timeoutlen=5000
+set ttimeoutlen=0
+set cursorcolumn
+set cursorline
+set laststatus=1
+set showcmd
+set wildmenu
+set completeopt-=preview
+set shortmess-=S
+set encoding=utf-8
+set fileformats=unix,dos
+
+# See: http://edyfox.codecarver.org/html/vim_fileencodings_detection.html
+set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+
+# Option {{{1
 # &rtp {{{2
 # why not using = here? since we may want to add package before souring this
 # file; `set rtp=XXX` here will cause problem.
@@ -160,10 +294,144 @@ endif
 
 # win32 environment prepare {{{2
 if is_win32 && has('vim_starting')
-    Source('./rc/win32.vim')
+    # Set shellslash, so file path completion returns slash based str, {{{
+    # which works in sh environment and win32 shell (cmd is not supported?).
+    # shellescape() also returns unix-shell-friendly string.
+    #   - plugin vim-fuzzy also requires it.
+    # Windows XP does not like slash path; let's handle it in ":Start"
+    # UserCommand. }}}
+    set shellslash
+
+    # XP italic font is not displayed correctly
+    if windowsversion()->str2float() <= 5.1
+        g:base16#enable_italics = 0
+    endif
+
+    # set env for cygwin / msys2 shell (start via :!): $VIM, $MYVIMRC... {{{
+    # It's better to override $VIM / $VIMRUNTIME via shell startup, so cygwin
+    # vim has correct $VIM set (/usr/share/vim). }}}
+    $VIM = TrSlash($VIM)
+    $VIMRUNTIME = TrSlash($VIMRUNTIME)
+    $MYVIMRC = TrSlash($MYVIMRC)
+
+    # $HOME should be set to make git bash find ~; otherwise vim-fuzzy won't
+    # work (e.g. "RecentFiles" does not show file under ~).
+    if !exists('$HOME')
+        $HOME = TrSlash($USERPROFILE)
+    else
+        $HOME = TrSlash($HOME)
+    endif
+
+    # set &shell, and add dir of it to $PATH. {{{
+    # console vim and gvim handle &shell differently:
+    # When &shell contains whitespace and not quoted, console vim does not
+    # work with ":!..." command: it calls _wsystem() currently, while in gvim
+    # it calls CreateProcess(); Most importantly, quoting is handled
+    # differently.
+    # So only set shell when it does not contain special char.
+    #
+    # To make things simpler, use git path to find bash.
+    # Then git should be installed where path does not contain speical char.
+    #
+    # NOTE: busybox sh cannot handle CJK correctly (chcp.exe / utf-8). Use
+    # cygwin / msys2 derived shell (fullset) if possible.
+    # }}}
+
+    def Exepath(program: string): string  # {{{
+        # exepath(xxx) returns xxx in current dir, which is not desired.
+        # so let's wrap it; NOTE: `.exe` suffix should be set in param.
+        for i in globpath($PATH->substitute('\', '/', 'g')->substitute(';', ',', 'g'), program, 0, 1)
+            if i->match('\v[\/]') >= 0  # not in current dir
+                return i
+            endif
+        endfor
+        return ''  # not found
+    enddef  # }}}
+
+    def WindowsShellSetting()
+        const git_path = Exepath('git.exe')->substitute('\', '/', 'g')
+
+        if !(
+                execute(':verbose set shell?')->split("\n")->get(-1)
+                ->match('^\s*Last set from') < 0
+                || &shell->match('^/') >= 0)
+            # only set shell if it is not set or set to invalid value (like
+            # /bin/sh when invoking from busybox shell).
+            return
+        endif
+
+        if empty(git_path)
+            # try busybox before giving up.
+            if !Exepath('busybox.exe')->empty()
+                &shell = 'busybox sh'
+            endif
+            return
+        endif
+
+        # git.exe, when invoking from git bash, has different paths. {{{
+        # checking 4 times is enough.
+        # $ find ./ -name git.exe  # from git root dir
+        # ./bin/git.exe
+        # ./cmd/git.exe
+        # ./mingw64/bin/git.exe
+        # ./mingw64/libexec/git-core/git.exe
+        # }}}
+        var depth = 4
+        var git_root = git_path
+        while depth > 0
+            depth -= 1
+            git_root = fnamemodify(git_root, ':h')
+            if executable(git_root .. '/usr/bin/bash')
+                break
+            endif
+        endwhile
+
+        const bash_path = git_root .. '/usr/bin/bash'
+        if !executable(bash_path)
+            echoerr 'vimrc: bash not found in git dir; using MinGit?'
+            return
+        endif
+        if bash_path->match(' ') >= 0
+            # git-for-windows default install location contains whitespace.
+            &shell = '"' .. bash_path .. '"'
+        else
+            &shell = bash_path
+        endif
+        if fnamemodify(exepath('find'), ':h') != fnamemodify(bash_path, ':h')
+            # always add dir of shell to $PATH, so tools like find wins. {{{
+            # (it will be messy when calling win32 find.exe in unix shell)
+            # When running cygwin / msys2 shell via :!, bash_path here will be
+            # translated to /usr/bin, which is feasible. }}}
+            $PATH = fnamemodify(bash_path, ':h') .. ';' .. $PATH
+        endif
+    enddef
+
+    WindowsShellSetting()
+
+    # vim-sh config; busybox sh rc
+    $ENV = expand('~/.config/zshrc')
+
+    # set &shell related options. {{{
+    # NOTE: to use '"' correctly, all '"' should be escaped with '\'.
+    # like this:
+    #   :!echo \"hello world\"
+    # (so just use :Sh if possible: it is more user friendly, and does not
+    # depends on &shell related setting) }}}
+    if &shell->match('\v(bash|zsh|busybox(|.exe) sh)(|.exe)$') >= 0
+        # these settings are from vim_faq, modified.
+        # https://vimhelp.org/vim_faq.txt.html#faq-33.6
+        &shellcmdflag = '-c'
+        # shq seems to modify excmd very early; use sxq instead.
+        &shellquote = ''
+        &shellxquote = '"'
+        # sxe take effect even when sxq is not "(", so set it to empty.
+        # see vim-sh (search ":!start") for details.
+        &shellxescape = ''
+        # shellpipe / shellredir seems not required.
+    endif
 endif
 
-# unnamed... {{{2
+# Leader key {{{2
 # set leader / localleader to unused key, so plugin is hardly to clash with
 # our key.
 # Refer: lacygoill's vimrc.
@@ -247,12 +515,12 @@ augroup END
 # statusline {{{2
 set ruler
 &rulerformat = '%20('
-.. '%M'
-.. ' <%B>'
-.. ' %l:%{charcol(".")}%V'
-.. '%='
-.. '%P'
-.. '%)'
+    .. '%M'
+    .. ' <%B>'
+    .. ' %l:%{charcol(".")}%V'
+    .. '%='
+    .. '%P'
+    .. '%)'
 
 # viminfo {{{2
 # &viminfo should be set with ^= (the first match will be used) {{{
@@ -387,7 +655,7 @@ else
         endif
     else
         if $TERM->tolower() == 'linux'
-            # linux tty
+        # linux tty
         else
             # 256color or tgc
             if $TERM !~ 'xterm'
@@ -409,7 +677,7 @@ else
         endif
     endif
 endif
-# keymap {{{1
+# Key mapping {{{1
 # custom text object {{{2
 # all
 vnoremap aa :<C-u>normal! ggVG<CR>
@@ -491,15 +759,15 @@ nnoremap <Space>tt <Cmd>call <SID>TabOpenOrClose()<CR>
 
 def TabOpenOrClose()
     if empty(&buftype) && empty(bufname()) && &swapfile && !&modified
-        # avoid closing last tab.
-        && tabpagenr('$') != 1
+            # avoid closing last tab.
+            && tabpagenr('$') != 1
         wincmd c
     else
         tabe
     endif
 enddef
 
-# n / N {{{2
+# Normal: n / N {{{2
 # always search forward / backward.
 # https://vi.stackexchange.com/questions/2365/how-can-i-get-n-to-go-forward-even-if-i-started-searching-with-or#
 noremap <expr> n 'Nn'[v:searchforward]
@@ -509,7 +777,7 @@ noremap <expr> N 'nN'[v:searchforward]
 vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
 
-# <c-n> / <c-p> to switch buffer. {{{2
+# Normal: <c-n> / <c-p> to switch buffer. {{{2
 nnoremap <C-n> <Cmd>call <SID>SwitchBuffer(v:true)<CR>
 nnoremap <C-p> <Cmd>call <SID>SwitchBuffer(v:false)<CR>
 def SwitchBuffer(reverse: bool = false)
@@ -522,9 +790,9 @@ def SwitchBuffer(reverse: bool = false)
 
     const term_list = term_list()
     const all_bufs = getbufinfo()
-                ->filter((_, i) => !empty(i.name) && !empty(i.listed)
-    && index(term_list, i.bufnr) < 0)
-                ->mapnew((_, i) => i.bufnr)
+        ->filter((_, i) => !empty(i.name) && !empty(i.listed)
+        && index(term_list, i.bufnr) < 0)
+        ->mapnew((_, i) => i.bufnr)
 
     if empty(all_bufs)
         # avoid divide zero
@@ -644,7 +912,7 @@ nnoremap <silent> <Space>n <Cmd>call <SID>Switch_nu_rnu()<CR>
 def Switch_nu_rnu()
     # no [0, 1]
     const presents = [[1, 1], [1, 0], [0, 0], [1, 1]]
-                ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
+        ->mapnew((_, i) => [i[0] == 1, i[1] == 1])
     const idx = index(presents, [&l:nu, &l:rnu])
     [&l:nu, &l:rnu] = presents[idx + 1]
 enddef
@@ -675,29 +943,29 @@ enddef
 # TODO map more key (one hand); provide help page (double ? to enter search mode).
 nnoremap <Space>v <Cmd>call <SID>SwitchReaderMode()<CR>
 var reader_mode = exists('reader_mode') ? reader_mode :
-{on: false, winid: -1, timeoutlen: 0}
+    {on: false, winid: -1, timeoutlen: 0}
 
 def SwitchReaderMode()
     const mapping =<< trim END
-    q <Cmd>call <SID>SwitchReaderMode()<CR>
-    <Space> <C-f>
-    <S-Space> <C-b>
-    f <C-f>
-    b <C-b>
-    d <C-d>
-    u <C-u>
-    e <C-e>
-    y <C-y>
-    x <C-w>c
-    1 1gt
-    2 2gt
-    3 3gt
-    4 4gt
-    5 5gt
-    6 6gt
-    7 7gt
-    8 8gt
-    9 <Cmd>tablast<CR>
+        q <Cmd>call <SID>SwitchReaderMode()<CR>
+        <Space> <C-f>
+        <S-Space> <C-b>
+        f <C-f>
+        b <C-b>
+        d <C-d>
+        u <C-u>
+        e <C-e>
+        y <C-y>
+        x <C-w>c
+        1 1gt
+        2 2gt
+        3 3gt
+        4 4gt
+        5 5gt
+        6 6gt
+        7 7gt
+        8 8gt
+        9 <Cmd>tablast<CR>
     END
     if reader_mode.on
         mapping->mapnew((_, i) => {
@@ -711,12 +979,12 @@ def SwitchReaderMode()
             execute 'nnoremap' i
         })
         reader_mode.winid = popup_create(
-        ['reader mode'], {
-            line: &lines,
-            mapping: false,
-            highlight: 'Special',
-            tabpage: -1,  # show in all tabs.
-        }
+            ['reader mode'], {
+                line: &lines,
+                mapping: false,
+                highlight: 'Special',
+                tabpage: -1,  # show in all tabs.
+            }
         )
         reader_mode.timeoutlen = &timeoutlen
         # set to 0 to make <Space> work (skip mapping immediately).
@@ -728,25 +996,266 @@ enddef
 # <space>gg; like :vim // %, but with vim-fuzzy {{{2
 nnoremap <Space>gg <Cmd>call fuzzy#Main('User.currentBuffer')<CR>
 g:fuzzy#config->extend({
-currentBuffer: {
-    Fn: () => getline(1, '$')->mapnew((idx, i) => ({
-    text: string(idx + 1), trailer: i, location: '', search_trailer: '1',
-    })),
-    Callback: (chosen: string) => {
-        execute 'normal ' .. chosen->matchstr('\v^[0-9]+') .. 'G'
-    }
+    currentBuffer: {
+        Fn: () => getline(1, '$')->mapnew((idx, i) => ({
+            text: string(idx + 1), trailer: i, location: '', search_trailer: '1',
+        })),
+        Callback: (chosen: string) => {
+            execute 'normal ' .. chosen->matchstr('\v^[0-9]+') .. 'G'
+        }
     }
 })
-# autocmd {{{1
+# Autocmd {{{1
 augroup vimrc
-    Source('./rc/autocmd.vim')
+
+    # misc (filetype related) {{{2
+    # NOTE: "au BufNewFile,BufRead XXX setl ft=YYY" should be put in ftdetect/;
+    # otherwise "au FileType YYY .*" stmt won't work.
+    au FileType yaml setl indentkeys-=0#
+    au FileType zig setl fp=zig\ fmt\ --stdin
+    # ":h ft-sh-syntax"
+    g:is_posix = 1
+
+    # quickfix window {{{2
+    au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
+    au FileType qf nnoremap <buffer> <C-p> <Cmd>colder<CR>
+    au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
+    au FileType qf nnoremap <buffer> <Space>;l <Cmd>chistory<CR>
+
+    # markdown {{{2
+    au FileType markdown {
+        setl tw=78
+
+        hi link CheckboxUnchecked Type
+        hi link CheckboxChecked Comment
+        syn match CheckboxUnchecked '\v^\s*- \[ \] '
+        syn match CheckboxChecked '\v^\s*- \[X\] '
+    }
+
+    # markdown checkbox {{{
+    def MarkdownToggleTaskStatus()
+        const lineno = line('.')
+        var line = getline(lineno)
+        if line =~ '\v^\s*- \[X\] '
+            line = substitute(line, '\v(^\s*- )@<=\[X\] ', '', '')
+        elseif line =~ '\v^\s*- \[ \] '
+            line = substitute(line, '\v(^\s*- \[)@<= ', 'X', '')
+        elseif line =~ '\v^\s*- '
+            line = substitute(line, '\v(^\s*-)@<= ', ' [ ] ', '')
+        endif
+        setline(lineno, line)
+    enddef
+    # }}}
+    au FileType markdown nnoremap <buffer>
+                \ <Space>;c <Cmd>call <SID>MarkdownToggleTaskStatus()<CR>
+
+    # binary file editing. (ft=binary) {{{2
+    # ReadBin / WriteBin impl {{{
+    # avoid using busybox xxd. To use busybox xxd: `sed -E 's/  .*//' | xxd -r`;
+    # since contents after 0x blocks are also parsed by busybox xxd.
+    var xxd_path = 'xxd'
+    # possible paths are from my vim-bin repo. (unix: $VIM/bin/xxd; win32:
+    # $VIM/xxd.exe)
+    const xxd_possible =<< eval trim END
+        {$VIM}/bin/xxd
+        {$VIM}/xxd.exe
+    END
+    for i in xxd_possible
+        if filereadable(i)
+            xxd_path = i
+            break
+        endif
+    endfor
+
+    def ReadBin(name: string)
+        # we do not set 'shelltemp' option (to no); see relevant comment in
+        # ~/vimfiles/vimrc.
+        silent normal gg"_dG
+        silent execute printf('r !%s %s', shellescape(xxd_path), shellescape(name))
+        normal gg"_dd
+        setl nomodified
+    enddef
+
+    def WriteBin(name: string)
+        silent execute printf('w !%s -r > %s', shellescape(xxd_path), shellescape(name))
+        if !empty(v:shell_error)
+            return
+        endif
+        setl nomodified
+        redrawstatus | echon 'written.'
+    enddef
+    # }}}
+
+    command BinaryEditThis {
+        const filename = expand('%:p')
+        if !filename->filereadable()
+            throw 'file associated to this buffer is not readable!'
+        endif
+        setl ft=binary
+    }
+    au FileType binary {
+        if &modified
+            throw 'file is changed! unable to set filetype to binary.'
+        endif
+        # if we don't set BufReadCmd, then re-edit file will not load binary data,
+        # while BufWriteCmd still run xxd on write;
+        # this will cause serious problem.
+        au BufReadCmd <buffer> ReadBin(expand('<afile>'))
+        # use do... since BufReadCmd will not take effect when defined after :e.
+        do BufReadCmd
+        au BufWriteCmd <buffer> WriteBin(expand('<amatch>'))
+    }
+
+    # network (non-local) file editing {{{2
+    au BufReadCmd ftp://*,http://*,https://* {
+        setl buftype=nofile
+        execute 'Sh -r curl -sL --' shellescape(expand('<amatch>'))
+        normal gg"_dd
+        setl nomodifiable
+    }
+
+    # gx related (NOTE: key `gx` overwritten) {{{2
+    nnoremap <silent> gx <Cmd>call <SID>Gx('n')<CR>
+    vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
+
+    # TODO show error?
+    def GxOpen(...arg: list<string>)
+        var text = join(getline(1, '$'), "\n")
+        if empty(text)
+            return
+        endif
+        if text->match('\v^[~$]') >= 0
+            # expand ~ and $ (env).
+            text = g:ExpandHead(text)
+        endif
+        const open_cmd = empty(arg) ? [text] : [arg[0], text]
+        if empty(open_cmd)
+            return
+        endif
+        execute 'Sh -g' open_cmd->mapnew((_, s) => shellescape(s))->join(' ')
+    enddef
+
+    def GxOpenGx(...arg: list<string>)
+        if len(arg) == 1
+            GxOpen(arg[0])
+        else
+            GxOpen()
+        endif
+        const winnr = winnr()
+        wincmd p
+        execute ':' .. winnr .. 'wincmd c'
+    enddef
+
+    def GxVim(...arg: list<string>)
+        # a:1 -> cmd; a:2 -> text modifier; a:3 -> post string.
+        var text = join(getline(1, '$'), "\n")
+        if empty(text)
+            return
+        endif
+        var cmd: string
+        if len(arg) == 0
+            cmd = text
+        else
+            if len(arg) >= 2 && !empty(arg[1])
+                var Fun = arg[1]
+                text = function(Fun)(text)
+            endif
+            cmd = arg[1] .. ' ' .. text
+            if len(arg) >= 3 && !empty(arg[2])
+                cmd ..= arg[2]
+            endif
+        endif
+        exe cmd
+    enddef
+
+    def Gx(mode: string)
+        var text: string
+        if mode == 'v'
+            var t = @"
+            silent normal gvy
+            text = @"
+            @" = t
+        else
+            text = expand(get(g:, 'netrw_gx', '<cfile>'))
+        endif
+        exe printf('bel :%dnew', &cwh)
+        # a special filetype
+        setl ft=gx
+        for line in split(text, "\n")
+            append('$', line)
+        endfor
+        norm gg"_dd
+    enddef
+
+    def GxInit()
+        setl buftype=nofile noswapfile
+        setl bufhidden=hide
+        if executable('qutebrowser')
+            nnoremap <buffer> <Space>;s <Cmd>call <SID>GxOpen('qutebrowser')<CR>
+        endif
+        nnoremap <buffer> gx <Cmd>call <SID>GxOpenGx()<CR>
+        if executable('qutebrowser') && has_gui
+            nnoremap <buffer> gs <Cmd>call <SID>GxOpenGx('qutebrowser')<CR>
+        endif
+        nnoremap <buffer> <Space>;f <Cmd>call <SID>GxOpen()<CR>
+        nnoremap <buffer> <Space>;v <Cmd>call <SID>GxVim("wincmd p \\|")<CR>
+    enddef
+    au FileType gx GxInit()
+
+    # Remember the positions in files with some git-specific exceptions {{{2
+    au BufReadPost * {
+        # copied from /usr/share/vim/vim82/suse.vimrc
+        if line("'\"") > 0 && line("'\"") <= line("$")
+                    \ && expand("%") !~ "COMMIT_EDITMSG"
+                    \ && expand("%") !~ "ADD_EDIT.patch"
+                    \ && expand("%") !~ "addp-hunk-edit.diff"
+                    \ && expand("%") !~ "git-rebase-todo"
+            exe "normal g`\""
+        endif
+    }
+
+    # open {file}:{line}[:{col}] automatically (provided by linter, etc). {{{2
+    au BufNewFile * ReopenAsFileLineCol()
+
+    def ReopenAsFileLineCol()
+        var filename: string = bufname('%')
+        var line: number = 0
+        var column: number = 0
+        if filename->filereadable()
+            return
+        endif
+        if filename->matchstr('\v^.*\ze:[0-9]+:?$')->filereadable()
+            line = filename->matchstr('\v.*:\zs[0-9]+\ze:?$')->str2nr()
+            filename = filename->matchstr('\v^.*\ze:[0-9]+:?$')
+        elseif filename->matchstr('\v^.*\ze:[0-9]+:[0-9]+:?$')->filereadable()
+            column = filename->matchstr('\v.*:\zs[0-9]+\ze:?$')->str2nr()
+            line = filename->matchstr('\v.*:\zs[0-9]+\ze:[0-9]+:?$')->str2nr()
+            filename = filename->matchstr('\v^.*\ze:[0-9]+:[0-9]+:?$')
+        endif
+        if filename->filereadable()
+            execute 'edit' filename->fnameescape()
+            # this is used to make ftdetect (and many other things) work
+            do BufRead
+            if line > 0
+                execute 'normal' line .. 'G'
+                if column > 0
+                    execute 'normal 0' (column - 1) .. 'l'
+                endif
+            endif
+        endif
+    enddef
+
+    # fix % in cmdwin when matchit plugin enabled. {{{2
+    au BufEnter * {
+        if win_gettype() == 'command' && maparg('%', 'x') =~ 'Matchit'
+            xnoremap <buffer> % %
+        endif
+    }
+
+    # fin. {{{2
 augroup END
-# coc.nvim config {{{1
-if coc_nvim_available
-    Source('./rc/coc-settings.vim')
-    Source('./rc/coc-config.vim')
-endif
-# colorscheme {{{1
+
+# Colorscheme {{{1
 # only set colorscheme if not set yet. {{{2
 # using `trim(execute('color')) == 'default'` is not valid.
 if !exists('g:colors_name')
@@ -787,6 +1296,506 @@ augroup vimrc
     au ColorScheme * TerminalAnsiColor()
 augroup END
 TerminalAnsiColor()
+
+# Command {{{1
+# :CopyMatches  {{{2
+# https://vim.fandom.com/wiki/Copy_search_matches#Copy_matches
+# original snippet does not work...
+command! CopyMatches legacy call s:CopyMatches()
+legacy function! s:CopyMatches() abort
+let hits = []
+%s//\=add(hits, submatch(0))/gne
+let @" = join(hits, "\n") .. "\n"
+endfunction
+
+# :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{2
+# depends on g:Selection().
+command! -bang -nargs=* -range=0 ChdirTerminal ChdirTerminal(<bang>false, <range>, <q-args>)
+
+def ChdirTerminal(bang: bool, range: number, path_a: string)
+    var path = path_a ?? ( range > 0 ? g:Selection() : expand('<cfile>') )
+    if match(path, '\v^[~$<%]') >= 0
+        path = g:ExpandHead(path)
+    endif
+    path = fnamemodify(path, ':p')
+    if filereadable(path)
+        path = fnamemodify(path, ':h')
+    endif
+    if !isdirectory(path)
+        throw 'is not directory or not readable: ' .. path
+    endif
+
+    const bufs: list<number> = tabpagebuflist()
+    if !bang
+        for i in term_list()->filter(
+                (_, x) => x->term_getstatus() == 'running'
+                )
+            const idx: number = index(bufs, i)
+            if idx >= 0
+                echo printf('chdir in window [%d]? [y/N] ', idx + 1)
+                if nr2char(getchar())->tolower() == 'y'
+                    execute ':' .. (idx + 1) 'wincmd w'
+                    call feedkeys(printf('%scd %s', mode() == 'n' ? 'i' : '', shellescape(path)), 't')
+                else
+                    redrawstatus | echon 'cancelled.'
+                endif
+                return
+            endif
+        endfor
+    endif
+    const cmd = bang ? 'Sh -w' : 'Sh -t'
+    execute 'Cd' path ':' .. cmd
+enddef
+
+# :DiffOrig {{{2
+# see help :DiffOrig
+command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
+    | diffthis | wincmd p | diffthis
+# <range>:J sep... (`J` with custom seperator) {{{2
+command! -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
+def JoinLines(sep: string, range: number, line1: number, line2: number)
+    const result = getline(line1, line2)->join(sep)
+    deletebufline('%', line1, line2)
+    append(max([line1 - 1, 0]), result)
+    normal k
+enddef
+
+# :Jobrun / :Jobqfrun / :Jobstop / :Joblist / :Jobclear {{{2
+command! -range=0 -nargs=+ Jobrun
+    | JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: false})
+command! -range=0 -nargs=+ Jobqfrun
+    | JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: true})
+command! -nargs=* -bang -complete=custom,JobStopComp Jobstop
+    | JobStop(<q-args>, <bang>0 ? 'kill' : 'term')
+command! Joblist call JobList()
+command! -count Jobclear call JobClear(<count>)
+
+var job_dict = exists('job_dict') ? job_dict : {}
+
+def JobOutCb(ctx: dict<any>, _: channel, msg: string)
+    const buf = ctx.bufnr
+    setqflist([], 'a', {nr: buf, lines: [msg]})
+enddef
+
+def JobExitCb(ctx: dict<any>, job: job, ret: number)
+    const buf = ctx.bufnr
+    var data = []
+    add(data, '')
+    add(data, '===========================')
+    add(data, 'command finished with code ' .. ret)
+    if ctx.qf
+        setqflist([], 'a', {nr: buf, lines: data})
+    else
+        appendbufline(buf, '$', data)
+    endif
+enddef
+
+def JobRun(cmd_a: string, opt: dict<any>)
+    if exists(':Sh') != 2
+        throw 'depends on vim-sh plugin!'
+    endif
+    if exists(':ScratchNew') != 2
+        throw 'depends on `:ScratchNew`!'
+    endif
+    var cmd: string = cmd_a
+    var flag: string = '-n'
+    if match(cmd, '^-') >= 0
+        var tmp = matchlist(cmd, '\v^(-\S+)\s+(.*)$')
+        cmd = tmp[2]
+        flag = tmp[1] .. 'n'
+    endif
+    var cmd_short = cmd
+    if opt.range != 0
+        cmd = printf(':%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
+    else
+        cmd = printf('Sh %s %s', flag, cmd)
+    endif
+    var job_d = json_decode(execute(cmd))
+
+    # in case running with ":Cd... [path]"
+    extend(job_d.opt, {cwd: getcwd()})
+
+    var bufnr: number
+    if opt.qf
+        var current_max = getqflist({nr: '$'}).nr
+        bufnr = current_max + 1
+        setqflist([], ' ',
+            {
+                title: '(:Joblist to check state) ' .. cmd_short, nr: bufnr,
+            })
+        extend(job_d.opt, {
+            out_cb: function(JobOutCb, [{bufnr: bufnr}]),
+            err_cb: function(JobOutCb, [{bufnr: bufnr}]),
+        })
+    else
+        ScratchNew
+        bufnr = bufnr()
+        wincmd p
+        extend(job_d.opt, {
+            out_io: 'buffer', err_io: 'buffer',
+            out_buf: bufnr, err_buf: bufnr,
+        })
+    endif
+    extend(job_d.opt, {
+        exit_cb: function(JobExitCb, [{bufnr: bufnr, qf: opt.qf}]),
+    })
+
+    extend(job_dict, {
+        [bufnr]: {
+            job: job_start(job_d.cmd, job_d.opt),
+            cmd: cmd_short,
+        }
+    })
+enddef
+
+def JobStop(id_a: string, sig: string)
+    var id = empty(id_a) ? bufnr() : str2nr(matchstr(id_a, '\v^\d+'))
+    if has_key(job_dict, id)
+        job_stop(job_dict[id].job, sig)
+    else
+        throw 'job not found: buffer id ' .. id
+    endif
+enddef
+
+def JobStopComp(...arg: list<any>): string
+    var result = []
+    for [k, v] in items(job_dict)
+        if v.job->job_status() == 'run'
+            add(result, printf('%s: %s', k, v.cmd))
+        endif
+    endfor
+    return join(result, "\n")
+enddef
+
+def JobList()
+    for [k, v] in items(job_dict)
+        echo printf("%s:\t%s\t%s", k, v.job, v.cmd)
+    endfor
+enddef
+
+def JobClear(num: number)
+    for item in num > 0 ? [num] : keys(job_dict)
+        var job = get(job_dict, item)
+        if !empty(job)
+            if job.job->job_info().status != 'run'
+                remove(job_dict, item)
+            endif
+        endif
+    endfor
+enddef
+
+# :Kjump (edit selected line / column) {{{2
+command! -nargs=+ Kjump JumpToLineCol(<args>)
+def JumpToLineCol(line: number, col: number = 0)
+    execute 'normal' line .. 'gg'
+    if col > 1
+        execute 'normal 0' .. (col - 1) .. 'l'
+    endif
+enddef
+
+# :MatchLongLine {number} {{{2
+# Refer: https://stackoverflow.com/a/1117367
+command! -nargs=1 MatchLongLine exe ':/\%>' .. <args> .. 'v.\+'
+
+# :PluginReadme {plugin}; open README file for specified plugin. {{{2
+command! -nargs=1 -complete=custom,PluginReadmeComp PluginReadme
+    | PluginReadme(<q-args>)
+
+def PluginReadme(plugin: string)
+    for i in PluginReadmeCache()
+        if i->match(plugin) >= 0
+            exec 'edit' i->fnameescape()
+            return
+        endif
+    endfor
+    echoerr 'plugin README not found: ' .. plugin
+enddef
+
+def PluginReadmeComp(..._: list<any>): string
+    return PluginReadmeCache()
+        ->mapnew((_, i) => i->substitute('\v.*/\ze[^/]+/[^/]+$', '', ''))
+        ->join("\n")
+enddef
+
+var plugin_readme_cache: list<string> = []
+var plugin_readme_set: bool = false
+def PluginReadmeCache(): list<string>
+    if !plugin_readme_set
+        plugin_readme_cache = globpath(&rtp, 'README*', 0, 1)
+        plugin_readme_set = true
+    endif
+    return plugin_readme_cache
+enddef
+
+# :KqutebrowserEditCmd {{{2
+if !empty($QUTE_FIFO)
+    command! KqutebrowserEditCmd KqutebrowserEditCmd()
+
+    def KqutebrowserEditCmd()
+        setl buftype=nofile noswapfile
+        setline(1, $QUTE_COMMANDLINE_TEXT[1 :])
+        setline(2, '')
+        setline(3, 'hit `<Space>q` to save cmd (first line) and quit')
+        # weired bug with `map ... \| q...` in vim9script.
+        legacy nnoremap <buffer> <Space>q :call writefile(['set-cmd-text -s :' .. getline(1)], $QUTE_FIFO) \| q<CR>
+    enddef
+endif
+
+# :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{2
+command -nargs=? -complete=filetype Scratch Scratch(<q-args>)
+command! -nargs=? -complete=filetype ScratchNew SnippetInNewWindow(<q-args>)
+
+def Scratch(ft: string)
+    enew | setl buftype=nofile noswapfile bufhidden=hide
+    if !empty(ft)
+        exe 'setl ft=' .. ft
+    endif
+enddef
+
+def SnippetInNewWindow(ft: string)
+    exe printf('bel :%dnew', &cwh)
+    setl buftype=nofile noswapfile
+    setl bufhidden=hide
+    if !empty(ft)
+        exe 'setl ft=' .. ft
+    endif
+enddef
+
+# Selection() {{{2
+def g:Selection(): string
+    const tmp = @"
+    var result = ''
+    var success = false
+    try
+        silent normal gvy
+        success = true
+    finally
+        result = @"
+        @" = tmp
+        if !success
+            throw 'g:Selection() failed!'
+        endif
+    endtry
+    return result
+enddef
+
+# :SetCmdText / SetCmdText() {{{2
+def g:SetCmdText(text: string)
+    feedkeys(':' .. text, 't')
+enddef
+
+command! -nargs=+ SetCmdText g:SetCmdText(<q-args>)
+
+# :ShebangInsert [content after "#!/usr/bin/env "] {{{2
+command! -nargs=* -complete=shellcmd ShebangInsert ShebangInsert(<q-args>)
+
+g:vimrc_shebang_lines = {
+    'awk': 'awk-f',  # awk: wrapper executing "awk -f" is required.
+    'javascript': 'node', 'lua': 'lua',
+    'perl': 'perl', 'python': 'python', 'ruby': 'ruby',
+    'scheme': 'scheme-run',  # scheme: see ~/bin/scheme-run
+    'sh': '/bin/sh', 'zsh': 'zsh',
+}
+
+def ShebangInsert(args: string)
+    const first_line = getline(1)
+    if len(first_line) >= 2 && first_line[0 : 1] == '#!'
+        throw 'shebang exists!'
+    endif
+    var shebang: string
+    if !empty(args)
+        shebang = args
+    elseif has_key(g:vimrc_shebang_lines, &ft)
+        shebang = g:vimrc_shebang_lines[&ft]
+    else
+        throw 'shebang: which interpreter to run?'
+    endif
+    if match(shebang, '^/') >= 0
+        shebang = '#!' .. shebang
+    else
+        shebang = '#!/usr/bin/env ' .. shebang
+    endif
+    # insert at first line and leave cursor here (for further modification)
+    normal ggO<Esc>
+    var ret = setline(1, shebang)
+    if ret == 0  # success
+        normal $
+    else
+        throw 'setting shebang error!'
+    endif
+enddef
+
+# :VimRun {vim_command}... (run vim command) {{{2
+command! -nargs=+ -complete=command VimRun ShowOutput(execute(<q-args>))
+
+# :VimExpr {vim_expr}... (run vim expr) {{{2
+command! -nargs=+ -complete=expression VimExpr ShowOutput(eval(<q-args>))
+
+def ShowOutput(...data_: list<any>)
+    # eval() return type may not be string, so use list<any> here.
+    const data = type(data_[0]) == type('') ? data_[0] : string(data_[0])
+    ScratchNew
+    for line in split(data, "\n")
+        append('$', line)
+    endfor
+    norm gg"_dd
+enddef
+
+# terminal-api related user function {{{2
+# sync terminal path to buffer path.
+# TODO follow cd even when terminal buffer not in focus (with event?).
+def g:Tapi_cd(nr: number, arg: list<string>)
+    if bufnr() == nr
+        var p = arg[0]
+        if is_win32 && match(p, '^/') >= 0
+            # why not using shellescape() here?
+            p = execute(printf("Sh cygpath -w '%s'", substitute(p, "'", "'\\\\''", 'g')))
+        endif
+        silent execute 'lcd' fnameescape(p)
+    endif
+enddef
+
+# :vim-fuzzy config {{{2
+# ProjectListCmd() {{{3
+# NOTE: this variable is directly put after `find` command,
+# using shell syntax. QUOTE IT IF NECESSARY!
+g:project_dirs = get(g:, 'project_dirs', '~/repos/ ~/vimfiles/')
+
+# accept list<string>; every item is put after -name (or -path, if / included)
+g:project_blacklist = get(g:, 'project_blacklist', ['venv', 'node_modules'])
+
+def ProjectListCmd(): string
+    if empty(g:project_dirs)
+        throw '`g:project_dirs` is not set or empty!'
+    endif
+    if type(g:project_blacklist) != type([])
+        throw '`g:project_blacklist` should be list<string>!'
+    endif
+
+    var blacklist = ''
+    for i in g:project_blacklist
+        if match(i, is_win32 ? '\v[/\\]' : '/') >= 0
+            blacklist ..= printf('-path %s -prune -o ', shellescape(i))
+        else
+            blacklist ..= printf('-name %s -prune -o ', shellescape(i))
+        endif
+    endfor
+    # https://github.com/lxhillwind/utils/tree/main/find-repo
+    var find_repo_bin = exepath('find-repo' .. (is_win32 ? '.exe' : ''))
+    if !find_repo_bin->empty()
+        return printf('%s %s', shellescape(find_repo_bin), g:project_dirs)
+    endif
+    return printf(
+        "find %s %s -name .git -prune -print0 2>/dev/null"
+        .. " | { if [ -x /usr/bin/cygpath ]; then xargs -r -0 cygpath -w; else xargs -r -0 -n 1; fi; }"
+        .. " | sed -E 's#[\\/].git$##'",
+        g:project_dirs, blacklist,
+    )
+enddef
+
+# TabWinLines() {{{3
+def TabWinLines(): list<string>
+    var buf_list = []  # preserve order
+    var key: string
+    for i in range(tabpagenr('$'))
+        var j = 0
+        for buf in tabpagebuflist(i + 1)
+            key = printf('%d %d', i + 1, j + 1)
+            buf_list->add(key .. ' ' .. bufname(buf))
+            j = j + 1
+        endfor
+    endfor
+    return buf_list
+enddef
+
+# config {{{3
+g:fuzzy#config->extend({
+    buffer: {
+        excmd: 'ls',
+        Callback: (chosen: string) => {
+            const bufnr = chosen->matchstr('\v^\s*\zs(\d+)\ze')
+            execute ':' .. bufnr .. 'b'
+        }
+    },
+    color: {
+        LinesFn: () => globpath(&rtp, "colors/*.vim", 0, 1)
+            ->mapnew((_, i) => i->split('[\/.]')->get(-2)),
+            Callback: (chosen: string) => {
+                execute 'color' fnameescape(chosen)
+            }
+    },
+    project_dir: {
+        shell: ProjectListCmd(),
+        ExtractInfoFn: (line) => ({filename: line->split('\t')[0]}),
+        Callback: (chosen: string) => {
+            execute 'lcd' fnameescape(chosen)
+            if exists(':Dirvish') == 2
+                execute 'Dirvish' fnameescape(chosen)
+            endif
+        }
+    },
+    tabwin: {
+        LinesFn: TabWinLines,
+        Callback: (chosen: string) => {
+            const res = chosen->trim()->split(' ')
+            const [tab, win] = [res[0], res[1]]
+            execute printf(':%stabn', tab)
+            execute printf(':%swincmd w', win)
+        }
+    },
+})
+
+# (keymap) popup to select from sources. {{{3
+nnoremap <Space>a <Cmd>call <SID>SelectFromSources()<CR>
+
+def SelectFromSources()
+    # TODO highlight
+    const selection = [
+        # [key, g:fuzzy#config]
+        ['c', 'color'],
+        ['e', 'project_dir'],
+        ['b', 'buffer'],
+        ['t', 'tabwin'],
+    ]
+    # some sources may be missing, so check it.
+    ->filter((_, i) => !empty(g:fuzzy#config->get(i->get(1))))
+
+    # Is is possible to use ordered dict, so we migrate selection /
+    # selection_dict?
+    var selection_dict = {}
+    var lists = []
+    for [k, v] in selection
+        add(lists, printf('[%s] %s', k, v))
+        selection_dict[k] = v
+    endfor
+    popup_create(lists, {
+        pos: 'center',
+        title: 'Select... (any other key to quit)',
+        minwidth: min([40, &columns / 2]),
+        border: [1, 1, 1, 1],
+        mapping: false,
+        filter: (winid: number, key: string): bool => {
+            const res = get(selection_dict, key)
+            if !empty(res)
+                g:fuzzy#Main($'User.{res}')
+            endif
+            # finally.
+            popup_close(winid)
+            return true
+        }
+    }
+    )
+enddef
+
+# sv() helper (in vim embedded terminal) {{{2
+def g:Tapi_shell_sv_helper(...arg: list<any>)
+    feedkeys("\<C-\>\<C-n>", 'n')
+enddef
+
+def g:NoteIdNew(): string # {{{2
+    return strftime('%Y%m%d_%H%M%S')
+enddef
+
 # TODO {{{1
 # - toc / content: 'gO' in neovim; (help / markdown, etc.)
 # - user completion; 'compl-function'. (tmux buffer, web browser, etc.)
@@ -795,5 +1804,12 @@ TerminalAnsiColor()
 #   :packadd, :colorscheme) in win32 (wsl) is slow; try to avoid calling them
 #   in vimrc.
 # - in conemu / xterm ansi escape sequence: popup window is messy.
+#
+# NOTE: DO NOT split vimrc. pro & con of maintaining a monolithic vimrc:
+# - pro: easy to find out thing;
+# - pro: plain layout, no magic;
+# - con: not easy to find startuptime impact;
+# - con: namespace (not suitable for short name var);
+
 defc  # show error in this file early. {{{1 }}}1
 # vim:fdm=marker:tw=78:sw=4
