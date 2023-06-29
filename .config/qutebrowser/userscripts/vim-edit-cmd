@@ -3,10 +3,10 @@
 set -e
 
 if command -v gvim >/dev/null; then
-    exec gvim -f +KqutebrowserEditCmd
+    exec gvim -f +QutebrowserEditCmd
 elif command -v tmux >/dev/null; then
     lock=tmux_lock_$(date +%s)
-    tmux neww -e "QUTE_FIFO=$QUTE_FIFO" -e "QUTE_COMMANDLINE_TEXT=$QUTE_COMMANDLINE_TEXT" "vim +KqutebrowserEditCmd; tmux wait -S "$lock""
+    tmux neww -e "QUTE_FIFO=$QUTE_FIFO" -e "QUTE_COMMANDLINE_TEXT=$QUTE_COMMANDLINE_TEXT" "vim +QutebrowserEditCmd; tmux wait -S "$lock""
     # TODO activate terminal window
     tmux wait "$lock"
 fi

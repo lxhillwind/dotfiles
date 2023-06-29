@@ -1301,12 +1301,12 @@ TerminalAnsiColor()
 # :CopyMatches  {{{2
 # https://vim.fandom.com/wiki/Copy_search_matches#Copy_matches
 # original snippet does not work...
-command! CopyMatches legacy call s:CopyMatches()
-legacy function! s:CopyMatches() abort
-let hits = []
-%s//\=add(hits, submatch(0))/gne
-let @" = join(hits, "\n") .. "\n"
-endfunction
+command! CopyMatches CopyMatches()
+def CopyMatches()
+    var hits = []
+    :%s//\=add(hits, submatch(0))/gne
+    @" = join(hits, "\n") .. "\n"
+enddef
 
 # :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{2
 # depends on g:Selection().
@@ -1484,15 +1484,6 @@ def JobClear(num: number)
     endfor
 enddef
 
-# :Kjump (edit selected line / column) {{{2
-command! -nargs=+ Kjump JumpToLineCol(<args>)
-def JumpToLineCol(line: number, col: number = 0)
-    execute 'normal' line .. 'gg'
-    if col > 1
-        execute 'normal 0' .. (col - 1) .. 'l'
-    endif
-enddef
-
 # :MatchLongLine {number} {{{2
 # Refer: https://stackoverflow.com/a/1117367
 command! -nargs=1 MatchLongLine exe ':/\%>' .. <args> .. 'v.\+'
@@ -1527,11 +1518,11 @@ def PluginReadmeCache(): list<string>
     return plugin_readme_cache
 enddef
 
-# :KqutebrowserEditCmd {{{2
+# :QutebrowserEditCmd {{{2
 if !empty($QUTE_FIFO)
-    command! KqutebrowserEditCmd KqutebrowserEditCmd()
+    command! QutebrowserEditCmd QutebrowserEditCmd()
 
-    def KqutebrowserEditCmd()
+    def QutebrowserEditCmd()
         setl buftype=nofile noswapfile
         setline(1, $QUTE_COMMANDLINE_TEXT[1 :])
         setline(2, '')
