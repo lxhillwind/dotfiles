@@ -20,8 +20,8 @@ window:
   # Specified in number of columns/lines, not pixels.
   # If both are `0`, this setting is ignored.
   dimensions:
-    columns: 128
-    lines: 32
+    columns: 100
+    lines: 26
 
   # Window padding (changes require restart)
   #
@@ -67,7 +67,7 @@ scrolling:
 font:
   # Normal (roman) font face
   normal:
-    family: hack
+    family: jetbrains mono NL
     # The `style` can be specified to pick a specific face.
     #style: Regular
 
@@ -184,7 +184,7 @@ themes:
       cyan: '0x00FFFF'
       white: '0xEEEEEE'
 
-colors: *dark
+colors: *light
 
 # Visual Bell
 #
@@ -469,6 +469,3 @@ key_bindings:
   - { key: F10,      mods: Super,   chars: "\x1b[21;3~"                  }
   - { key: F11,      mods: Super,   chars: "\x1b[23;3~"                  }
   - { key: F12,      mods: Super,   chars: "\x1b[24;3~"                  }
-  # 60% keyboard
-  - { key: Escape,                  chars: "`"                           }
-  - { key: Escape,   mods: Shift,   chars: "~"                           }
