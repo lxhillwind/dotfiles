@@ -1,5 +1,46 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
+# helper function / const {{{1
+
+# expand() should NOT be used to expand arbitrary file (like containing
+# "[b-a]" in filename).
+def ExpandHead(s: string): string
+    if match(s, '\v^[%#<]') == 0
+        return expand(s)
+    elseif match(s, '\v^\~') == 0
+        return expand('~') .. s[1 : ]
+    elseif match(s, '\v^\$\ze[a-zA-Z_]') == 0
+        const idx = match(s, '\v([^a-zA-Z_]|$)', 1)
+        return expand(s[: idx - 1]) .. s[idx : ]
+    endif
+    return s
+enddef
+
+def g:ExpandHead(s: string): string
+    return ExpandHead(s)
+enddef
+
+def TrSlash(s: string): string
+    if has('win32')
+        return substitute(s, '\', '/', 'g')
+    else
+        return s
+    endif
+enddef
+
+const is_unix = has('unix')
+const is_win32 = has('win32')
+const has_gui = has('gui_running') || has('mac')
+    || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
+const is_linux = has('linux')
+const is_mac = has('mac')
+const is_wsl = executable('/mnt/c/Windows/notepad.exe')
+
+g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
+augroup vimrc
+    au!
+augroup END
+
 # Plugins {{{1
 
 set pp^=~/vimfiles
@@ -71,6 +112,12 @@ g:markdown_fold_override_foldtext = 0
 
 # colorscheme
 packadd! sitruuna.vim
+
+# clipboard
+const use_oscyank = !(has_gui || !empty($TMUX))
+if use_oscyank
+    packadd! vim-oscyank
+endif
 
 # completion {{{2
 # source for dictionary, current or other loaded buffers, see ':help cpt'
@@ -169,47 +216,6 @@ filetype plugin indent on
 if !exists('g:syntax_on')
     syntax on
 endif
-
-# helper function / const {{{1
-
-# expand() should NOT be used to expand arbitrary file (like containing
-# "[b-a]" in filename).
-def ExpandHead(s: string): string
-    if match(s, '\v^[%#<]') == 0
-        return expand(s)
-    elseif match(s, '\v^\~') == 0
-        return expand('~') .. s[1 : ]
-    elseif match(s, '\v^\$\ze[a-zA-Z_]') == 0
-        const idx = match(s, '\v([^a-zA-Z_]|$)', 1)
-        return expand(s[: idx - 1]) .. s[idx : ]
-    endif
-    return s
-enddef
-
-def g:ExpandHead(s: string): string
-    return ExpandHead(s)
-enddef
-
-def TrSlash(s: string): string
-    if has('win32')
-        return substitute(s, '\', '/', 'g')
-    else
-        return s
-    endif
-enddef
-
-const is_unix = has('unix')
-const is_win32 = has('win32')
-const has_gui = has('gui_running') || has('mac')
-    || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
-const is_linux = has('linux')
-const is_mac = has('mac')
-const is_wsl = executable('/mnt/c/Windows/notepad.exe')
-
-g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
-augroup vimrc
-    au!
-augroup END
 
 # vimrc Detection {{{1
 
@@ -837,11 +843,16 @@ nnoremap <expr> <Space>ss
             \ $':wall \| mksession{empty(v:this_session) ? "" : "!"}'
             \ .. $' {v:this_session ?? "~/.vim/sessions/"}'
 
-# <Space>y / <Space>p; clipboard {{{2
-# use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
-# detection is defined there. (~/bin/{pbcopy,pbpaste})
-nnoremap <Space>y <Cmd>call <SID>ClipboardCopy("")<CR>
-nnoremap <Space>p <Cmd>call <SID>ClipboardPaste("")<CR>
+# <Space>y / <Space>p; Clipboard {{{2
+if use_oscyank
+    nnoremap <Space>y :OSCYankRegister "<CR>
+    nnoremap <Space>p :echoerr 'use system paste shortcut instead!'<CR>
+else
+    # use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
+    # detection is defined there. (~/bin/{pbcopy,pbpaste})
+    nnoremap <Space>y <ScriptCmd>ClipboardCopy("")<CR>
+    nnoremap <Space>p <ScriptCmd>ClipboardPaste("")<CR>
+endif
 
 def ClipboardCopy(cmd_: string)
     var cmd = cmd_
