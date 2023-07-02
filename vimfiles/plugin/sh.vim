@@ -482,20 +482,17 @@ function! s:unix_start(cmdlist, ...) abort
   call job_start(a:cmdlist, {'stoponexit': ''})
 endfunction
 
-" win32 console version does not set tenc; so we try to get it via command.
+" win32 console version does not set tenc; so we try to get it explicitly.
 let s:tenc = ''
-let s:tenc_checked = 0
 
 function! s:post_func(result, opt) abort
   let opt = a:opt
 
   if s:is_win32
         \ && !has('gui_running') && empty(&tenc)
-        \ && empty(s:tenc) && empty(s:tenc_checked) && !get(opt, 'chcp')
-    " set s:tenc_checked first to avoid repeated possibly failed chcp call.
-    let s:tenc_checked = 1
-    " use opt.chcp to avoid recursive call to s:sh().
-    let s:tenc = 'cp' .. s:sh('-S chcp.com', #{chcp: 1})->matchstr('\v\d+$')
+        \ && empty(s:tenc)
+    " learned from fzf.vim
+    let s:tenc = 'cp' .. libcallnr('kernel32.dll', 'GetACP', 0)
   endif
 
   if s:is_win32
@@ -529,10 +526,6 @@ function! s:post_func(result, opt) abort
     endif
   else
     let result = type(a:result) == type([]) ? join(a:result, "\n") : a:result
-
-    if s:is_win32 && get(opt, 'chcp')
-      return result
-    endif
 
     " fix encoding for non-utf-8
     if s:is_win32 && !empty(tenc)
