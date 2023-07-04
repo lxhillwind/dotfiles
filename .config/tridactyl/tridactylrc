@@ -1,12 +1,14 @@
-" For syntax highlighting see https://github.com/tridactyl/vim-tridactyl
 " vim: set filetype=tridactyl
+" About {{{1
+"
+" For syntax highlighting see https://github.com/tridactyl/vim-tridactyl
 "
 " NOTE:
 "
-" - ~/.tridactylrc will be sourced at last; it can be used for local config.
-"   (see `:help source` in tridactyl about configuration file priority)
+" - ~/.tridactylrc will be sourced at last; it can be used for local config. {{{
+"   (see `:help source` in tridactyl about configuration file priority) }}}
 "
-" - firefox setup: (TODO set them via tridactyl?)
+" - firefox setup: (TODO set them via tridactyl?) {{{
 "   - browser.tabs.warnOnClose => true
 "     simple-tab-group cannot recover local (file:// schema) webpages properly,
 "     if STG is not the last window to close. (last is private window seems fine)
@@ -15,14 +17,19 @@
 "     **
 "   - browser.startup.page => 3 (default 1; set to 3, then last closed tabs get recovered on startup)
 "   - ui.key.menuAccessKey => 17 (then we can press alt-somekey without opening menu; ff restart required!);
-"   - ui.key.menuAccessKeyFocuses => false (press alt does not focus on menu);
+"   - ui.key.menuAccessKeyFocuses => false (press alt does not focus on menu); }}}
+"
+" - \ at end of line is used for line-continuation, see: {{{
+" https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61 }}}
+"
+" - use `seturl` / `bindurl` for speical case.
+
+" Pre {{{1
 
 set configversion 2.0
 
 " WARNING: use this to clear config (binding, etc) in memory.
 sanitise tridactyllocal
-
-" use `seturl` / `bindurl` for speical case.
 
 " General Settings {{{1
 set allowautofocus false
@@ -33,7 +40,7 @@ set followpagepatterns {"next":"^(next|newer|上一章|上一篇|上一页)\\b|�
 " tabo default alias (tabonly) is dangerous, so let's remap it.
 alias tabo tabopen
 
-" search engine {{{1
+" Search Engine {{{1
 set searchurls.bd https://www.baidu.com/s?wd=%s
 set searchurls.bg https://www.bing.com/search?q=%s&ensearch=1
 set searchurls.bl https://search.bilibili.com/all?keyword=%s
@@ -47,7 +54,7 @@ set searchurls.tr https://www.microsofttranslator.com/bv.aspx?from=&to=zh-CHS&a=
 set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s
 set searchurls.yh https://search.yahoo.com/search?q=%s
 
-" default binding created via ":mktridactylrc -f" {{{1
+" Default Binding created via ":mktridactylrc -f" {{{1
 " tridactyl takes 1/3s for every excmd (info: from a github issue), so we
 " comment out default binding here to speedup loading.
 
@@ -268,8 +275,12 @@ bind --mode=ex <C-h> text.delete_backward_char
 " cannot bind <C-w>;
 " cannot bind sth (<C-/>) as select_all (then cannot occupy <C-a>);
 
-" \ at end of line is used for line-continuation, see:
-" https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61
+" Site Settings {{{1
+
+" some general rule:
+" - bind c for site specific hint;
+
+" qidian.com {{{
 bindurl qidian.com --mode=normal c hint -Jc span.review-count\
 ,div.chapter-control > a\
 ,span.j-open-reply\
@@ -283,7 +294,9 @@ seturl qidian.com hintfiltermode vimperator
 " native <Space> blocks sometimes.
 bindurl qidian.com --mode=normal <Space> scrollpage 0.97
 bindurl qidian.com --mode=normal <S-Space> scrollpage -0.97
+" }}}
 
+" bilibili.com {{{
 bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 ,div.list-box > div > div.item.sortable\
 ,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
@@ -299,8 +312,13 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 "bindurl bilibili.com --mode=normal h exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{LEFT}')"
 "bindurl bilibili.com --mode=normal l exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{RIGHT}')"
 
-autocmd DocStart ^http(s?)://www.reddit.com urlmodify -t www old
+" }}}
 
-" load local config and alert for finish {{{1
+" reddit.com {{{
+autocmd DocStart ^http(s?)://www.reddit.com urlmodify -t www old
+bindurl old.reddit.com --mode=normal c hint -bJc a.bylink.comments.may-blank
+" }}}
+
+" Load local config and alert for finish {{{1
 source ~/.tridactylrc
 js alert("tridactylrc loaded.")
