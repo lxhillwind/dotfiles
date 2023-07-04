@@ -165,7 +165,7 @@ _fix_title() {
 precmd_functions+=(_cd_history _fix_title)
 
 _set_title() {
-    echo -ne "\x1b]0;${1}\007"
+    print -nP "\x1b]0;${1//\\/\\\\}\007"
 }
 
 preexec_functions+=(_set_title)
