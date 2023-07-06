@@ -140,7 +140,7 @@ hh() {
     local result=$(fc -l -n 0 -1 | fzf --tac --cycle --no-sort)
     if [ -n "$result" ]; then
         # TODO handle multiline history.
-        print -z "$result"
+        print -rz -- "$result"
     fi
 }
 
@@ -165,7 +165,7 @@ _fix_title() {
 precmd_functions+=(_cd_history _fix_title)
 
 _set_title() {
-    print -nP "\x1b]0;${1//\\/\\\\}\007"
+    print -nP "\x1b]0;"; print -nr -- "$1"; print -nP "\007"
 }
 
 preexec_functions+=(_set_title)
