@@ -1128,58 +1128,8 @@ augroup vimrc
     }
 
     # gx related (NOTE: key `gx` overwritten) {{{2
-    nnoremap <silent> gx <Cmd>call <SID>Gx('n')<CR>
+    nnoremap <silent> gx <ScriptCmd>Gx('n')<CR>
     vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
-
-    # TODO show error?
-    def GxOpen(...arg: list<string>)
-        var text = join(getline(1, '$'), "\n")
-        if empty(text)
-            return
-        endif
-        if text->match('\v^[~$]') >= 0
-            # expand ~ and $ (env).
-            text = g:ExpandHead(text)
-        endif
-        const open_cmd = empty(arg) ? [text] : [arg[0], text]
-        if empty(open_cmd)
-            return
-        endif
-        execute 'Sh -g' open_cmd->mapnew((_, s) => shellescape(s))->join(' ')
-    enddef
-
-    def GxOpenGx(...arg: list<string>)
-        if len(arg) == 1
-            GxOpen(arg[0])
-        else
-            GxOpen()
-        endif
-        const winnr = winnr()
-        wincmd p
-        execute ':' .. winnr .. 'wincmd c'
-    enddef
-
-    def GxVim(...arg: list<string>)
-        # a:1 -> cmd; a:2 -> text modifier; a:3 -> post string.
-        var text = join(getline(1, '$'), "\n")
-        if empty(text)
-            return
-        endif
-        var cmd: string
-        if len(arg) == 0
-            cmd = text
-        else
-            if len(arg) >= 2 && !empty(arg[1])
-                var Fun = arg[1]
-                text = function(Fun)(text)
-            endif
-            cmd = arg[1] .. ' ' .. text
-            if len(arg) >= 3 && !empty(arg[2])
-                cmd ..= arg[2]
-            endif
-        endif
-        exe cmd
-    enddef
 
     def Gx(mode: string)
         var text: string
@@ -1191,29 +1141,13 @@ augroup vimrc
         else
             text = expand(get(g:, 'netrw_gx', '<cfile>'))
         endif
-        exe printf('bel :%dnew', &cwh)
-        # a special filetype
-        setl ft=gx
-        for line in split(text, "\n")
-            append('$', line)
-        endfor
-        norm gg"_dd
-    enddef
-
-    def GxInit()
-        setl buftype=nofile noswapfile
-        setl bufhidden=hide
-        if executable('qutebrowser')
-            nnoremap <buffer> <Space>;s <Cmd>call <SID>GxOpen('qutebrowser')<CR>
+        if text->match('\v^[~$]') >= 0
+            # expand ~ and $ (env).
+            text = g:ExpandHead(text)
         endif
-        nnoremap <buffer> gx <Cmd>call <SID>GxOpenGx()<CR>
-        if executable('qutebrowser') && has_gui
-            nnoremap <buffer> gs <Cmd>call <SID>GxOpenGx('qutebrowser')<CR>
-        endif
-        nnoremap <buffer> <Space>;f <Cmd>call <SID>GxOpen()<CR>
-        nnoremap <buffer> <Space>;v <Cmd>call <SID>GxVim("wincmd p \\|")<CR>
+        echom text
+        execute 'Sh -g' text->shellescape()
     enddef
-    au FileType gx GxInit()
 
     # Remember the positions in files with some git-specific exceptions {{{2
     au BufReadPost * {
@@ -1366,7 +1300,7 @@ enddef
 command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
     | diffthis | wincmd p | diffthis
 
-# :FuzzyFinder related (depends on g:FuzzyFinder()) {{{2
+# :FuzzyFinder {shellcmd...} (depends on g:FuzzyFinder()) {{{2
 command! -nargs=+ -complete=shellcmd FuzzyFinder FuzzyAnyCli(<q-args>)
 
 def FuzzyAnyCli(cli: string)
