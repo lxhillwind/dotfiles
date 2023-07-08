@@ -63,6 +63,7 @@ enddef
 
 def FuzzyGotoBookmark()
     g:FuzzyFinder(
+        'Bookmark',
         v:none,
         BookmarkOpenFn(),
         (chosen) => {

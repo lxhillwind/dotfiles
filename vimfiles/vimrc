@@ -1009,6 +1009,7 @@ nnoremap <Space>gg <ScriptCmd>FuzzyJumpCurrentBuffer()<CR>
 
 def FuzzyJumpCurrentBuffer()
     g:FuzzyFinder(
+        'CurrentBuffer',
         v:none,
         getline(1, '$')->mapnew((idx, i) => $'{idx + 1}: {i}'),
         (chosen) => {
@@ -1366,10 +1367,18 @@ command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
     | diffthis | wincmd p | diffthis
 
 # :FuzzyFinder related (depends on g:FuzzyFinder()) {{{2
-command! -nargs=+ -complete=shellcmd FuzzyFinder g:FuzzyFinder(
-            \ <q-args>,
-            \ v:none,
-            \ (s) => execute('e ' .. fnameescape(s)))
+command! -nargs=+ -complete=shellcmd FuzzyFinder FuzzyAnyCli(<q-args>)
+
+def FuzzyAnyCli(cli: string)
+    g:FuzzyFinder(
+        v:none,
+        cli,
+        v:none,
+        (s) => {
+            execute('e ' .. fnameescape(s)) 
+        }
+    )
+enddef
 
 # <range>:J sep... (`J` with custom seperator) {{{2
 command! -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
@@ -1677,22 +1686,28 @@ def g:NoteIdNew(): string # {{{2
     return strftime('%Y%m%d_%H%M%S')
 enddef
 
-def g:FuzzyFinder(Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{2
+def g:FuzzyFinder(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{2
     const rescmd = winrestcmd()
     const fzf = 'fzf'  # we may change binary name.
+    var shcmd = ''
     const file_result = tempname()
     if empty(Cmd)  # Lines may be empty but provided; so checking Cmd is better.
         const file_input = tempname()
         Lines->writefile(file_input)
-        execute printf('term ++shell %s < %s > %s', fzf, shellescape(file_input), shellescape(file_result))
+        shcmd = printf('%s < %s > %s', fzf, shellescape(file_input), shellescape(file_result))
     else
-        const cmd_with_fzf = printf('{ %s; } | %s > %s', Cmd, fzf, shellescape(file_result))
-        execute printf('term ++shell %s > %s', cmd_with_fzf, shellescape(file_result))
+        shcmd = printf('{ %s; } | %s > %s', Cmd, fzf, shellescape(file_result))
     endif
+    # use :Sh instead of :term, since latter does not work in win32:
+    # e.g. `:term ++shell ls -l` will be trimmed as `ls`.
+    const title_string = empty(Title) || Title->match(' ') >= 0 ? '' : $'title={Title}'
+    execute printf('Sh -t=sp,c,%s %s', title_string, shcmd)
     term_getjob('')
         ->job_setoptions({ exit_cb: (_, _) => {
-            # term ++close may not close window; so we close it manually.
-            wincmd c | execute rescmd
+            execute rescmd
+            # sleep after rescmd, since it needs time before Callback()'s
+            # changing window hehavior.
+            sleep 50m
             const res: string = file_result->readfile()->get(0, '')
             if !empty(res)
                 Callback(res)
@@ -1703,6 +1718,7 @@ enddef
 # private fuzzy function {{{2
 def FuzzyGotoBuffer() # {{{3
     g:FuzzyFinder(
+        'Buffer',
         v:none,
         execute('ls')->split("\n"),
         (chosen) => {
@@ -1714,6 +1730,7 @@ enddef
 
 def FuzzyGotoProject() # {{{3
     g:FuzzyFinder(
+        'Project',
         ProjectListCmd(),
         v:none,
         (chosen) => {
@@ -1756,6 +1773,7 @@ enddef
 
 def FuzzyGotoTabWin() # {{{3
     g:FuzzyFinder(
+        'TabWin',
         v:none,
         TabWinLines(),
         (chosen) => {
@@ -1783,6 +1801,7 @@ enddef
 
 def FuzzyColorScheme() # {{{3
     g:FuzzyFinder(
+        'VimColorscheme',
         v:none,
         globpath(&rtp, 'colors/*.vim', 0, 1)->map((_, i) => i->matchstr('\v[^\/]+\ze\.vim$')),
         (s) => {
@@ -1793,6 +1812,7 @@ enddef
 
 def FuzzyRecentFiles() # {{{3
     g:FuzzyFinder(
+        'RecentFiles',
         v:none,
         v:oldfiles,
         (s) => {
@@ -1803,6 +1823,7 @@ enddef
 
 def FuzzyCwdFzf() # {{{3
     g:FuzzyFinder(
+        'CurrentDirFzf',
         "find '!' -type d",
         v:none,
         (s) => {
