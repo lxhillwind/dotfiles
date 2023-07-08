@@ -1802,7 +1802,7 @@ def SelectFromSources(set: string)
         add(lists, printf('[%s] %s', k, v))
         selection_dict[k] = f
     endfor
-    popup_create(lists, {
+    var popup_opt = {
         pos: 'center',
         title: 'Select... (any other key to quit)',
         minwidth: min([40, &columns / 2]),
@@ -1818,16 +1818,20 @@ def SelectFromSources(set: string)
             return true
         }
     }
-    )
+    if is_win32 && $CONEMUANSI ==? 'ON'
+        # non-ansii char is buggy under conemu.
+        popup_opt.borderchars = ['-']
+    endif
+    popup_create(lists, popup_opt)
 enddef
 
 # TODO {{{1
+
 # - toc / content: 'gO' in neovim; (help / markdown, etc.)
 # - user completion; 'compl-function'. (tmux buffer, web browser, etc.)
 # - search files (globpath(), executable() / exepath() without absolute path,
 #   :packadd, :colorscheme) in win32 (wsl) is slow; try to avoid calling them
 #   in vimrc.
-# - in conemu / xterm ansi escape sequence: popup window is messy.
 #
 # NOTE: DO NOT split vimrc. pro & con of maintaining a monolithic vimrc:
 # - pro: easy to find out thing;
