@@ -1,10 +1,10 @@
 vim9script
 
-nnoremap <Space>bb <Cmd>call <SID>BookmarkAdd()<CR>
-nnoremap <Space>bo <Cmd>call fuzzy#Main('User.bookmark')<CR>
-nnoremap <Space>be <Cmd>call <SID>BookmarkEdit()<CR>
+nnoremap <Space>bb <ScriptCmd>BookmarkAdd()<CR>
+nnoremap <Space>bo <ScriptCmd>FuzzyGotoBookmark()<CR>
+nnoremap <Space>be <ScriptCmd>BookmarkEdit()<CR>
 
-# depends on ":SetCmdText", vim-fuzzy, fuzzy#config.
+# depends on ":SetCmdText", g:FuzzyFinder().
 
 
 command! -nargs=* BookmarkAdd BookmarkAdd(<args>)
@@ -46,16 +46,11 @@ def BookmarkAllData(): list<string>
     return []
 enddef
 
-def BookmarkOpenFn(): list<dict<string>>
+def BookmarkOpenFn(): list<string>
     return BookmarkAllData()
                 ->mapnew((_, i) => json_decode(i))
                 ->filter((_, i) => i.file->filereadable() || i.file->isdirectory())
-                ->mapnew((_, i) => ({
-    text: i.file .. ':' .. i.line,
-    trailer: i.title,
-    location: '',
-    search_trailer: '1',
-                }))
+                ->mapnew((_, i) => (i.file .. ':' .. i.line))
 enddef
 
 def BookmarkOpenExFn(line: string): dict<string>
@@ -66,20 +61,20 @@ def BookmarkOpenExFn(line: string): dict<string>
     }
 enddef
 
-g:fuzzy#config->extend({
-bookmark: {
-    Fn: BookmarkOpenFn,
-    ExtractInfoFn: BookmarkOpenExFn,
-    Callback: (chosen: string) => {
-        const res = chosen->matchstr('\v.*:[0-9]+$')->split('.*\zs:')
-        execute 'e' fnameescape(res[0])
-        const linenr = res->get(1, 0)
-        if linenr > 0
-            execute $'norm {linenr}G'
-        endif
-    }
-    }
-})
+def FuzzyGotoBookmark()
+    g:FuzzyFinder(
+        v:none,
+        BookmarkOpenFn(),
+        (chosen) => {
+            const res = chosen->matchstr('\v.*:[0-9]+$')->split('.*\zs:')
+            execute 'e' fnameescape(res[0])
+            const linenr = res->get(1, '0')->str2nr()
+            if linenr > 0
+                execute $'norm {linenr}G'
+            endif
+        }
+    )
+enddef
 
 def BookmarkEdit()
     execute 'edit' bookmark_file->fnameescape()

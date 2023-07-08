@@ -36,7 +36,6 @@ const is_linux = has('linux')
 const is_mac = has('mac')
 const is_wsl = executable('/mnt/c/Windows/notepad.exe')
 
-g:fuzzy#config = exists('g:fuzzy#config') ? g:fuzzy#config : {}
 augroup vimrc
     au!
 augroup END
@@ -80,7 +79,6 @@ g:markdown_fenced_languages = [
 # https://github.com/vim/vim/issues/7628
 packadd! matchit
 
-packadd! vim-fuzzy
 packadd! securemodelines
 packadd! vim9-syntax
 packadd! vim-tridactyl
@@ -308,7 +306,6 @@ if is_win32 && has('vim_starting')
     # Set shellslash, so file path completion returns slash based str, {{{
     # which works in sh environment and win32 shell (cmd is not supported?).
     # shellescape() also returns unix-shell-friendly string.
-    #   - plugin vim-fuzzy also requires it.
     # Windows XP does not like slash path; let's handle it in ":Start"
     # UserCommand. }}}
     set shellslash
@@ -325,8 +322,7 @@ if is_win32 && has('vim_starting')
     $VIMRUNTIME = TrSlash($VIMRUNTIME)
     $MYVIMRC = TrSlash($MYVIMRC)
 
-    # $HOME should be set to make git bash find ~; otherwise vim-fuzzy won't
-    # work (e.g. "RecentFiles" does not show file under ~).
+    # $HOME should be set to make git bash find ~.
     if !exists('$HOME')
         $HOME = TrSlash($USERPROFILE)
     else
@@ -451,9 +447,7 @@ g:maplocalleader = "\<S-F11>"
 
 # use <Space> as *true* leader key.
 noremap <Space> <Nop>
-#nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
-# this looks better: vim-fuzzy mapping (n).
-nmap <Space><Space> <Space>fmn
+nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
 nnoremap <Space>;; :map <buffer><CR>
 
 # shell {{{2
@@ -1010,18 +1004,19 @@ def SwitchReaderMode()
     endif
 enddef
 
-# <space>gg; like :vim // %, but with vim-fuzzy {{{2
-nnoremap <Space>gg <Cmd>call fuzzy#Main('User.currentBuffer')<CR>
-g:fuzzy#config->extend({
-    currentBuffer: {
-        Fn: () => getline(1, '$')->mapnew((idx, i) => ({
-            text: string(idx + 1), trailer: i, location: '', search_trailer: '1',
-        })),
-        Callback: (chosen: string) => {
+# <space>gg; like :vim // %, but with fzf {{{2
+nnoremap <Space>gg <ScriptCmd>FuzzyJumpCurrentBuffer()<CR>
+
+def FuzzyJumpCurrentBuffer()
+    g:FuzzyFinder(
+        v:none,
+        getline(1, '$')->mapnew((idx, i) => $'{idx + 1}: {i}'),
+        (chosen) => {
             execute 'normal ' .. chosen->matchstr('\v^[0-9]+') .. 'G'
         }
-    }
-})
+    )
+enddef
+
 # Autocmd {{{1
 
 augroup vimrc
@@ -1369,6 +1364,13 @@ enddef
 # see help :DiffOrig
 command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
     | diffthis | wincmd p | diffthis
+
+# :FuzzyFinder related (depends on g:FuzzyFinder()) {{{2
+command! -nargs=+ -complete=shellcmd FuzzyFinder g:FuzzyFinder(
+            \ <q-args>,
+            \ v:none,
+            \ (s) => execute('e ' .. fnameescape(s)))
+
 # <range>:J sep... (`J` with custom seperator) {{{2
 command! -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
 def JoinLines(sep: string, range: number, line1: number, line2: number)
@@ -1612,7 +1614,9 @@ def ShebangInsert(args: string)
         throw 'shebang exists!'
     endif
     var shebang: string
-    if !empty(args)
+    if has_key(g:vimrc_shebang_lines, args)
+        shebang = g:vimrc_shebang_lines[args]
+    elseif !empty(args)
         shebang = args
     elseif has_key(g:vimrc_shebang_lines, &ft)
         shebang = g:vimrc_shebang_lines[&ft]
@@ -1673,25 +1677,64 @@ def g:NoteIdNew(): string # {{{2
     return strftime('%Y%m%d_%H%M%S')
 enddef
 
-# vim-fuzzy config {{{2
-# ProjectListCmd() {{{3
+def g:FuzzyFinder(Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{2
+    const rescmd = winrestcmd()
+    const fzf = 'fzf'  # we may change binary name.
+    const file_result = tempname()
+    if empty(Cmd)  # Lines may be empty but provided; so checking Cmd is better.
+        const file_input = tempname()
+        Lines->writefile(file_input)
+        execute printf('term ++shell %s < %s > %s', fzf, shellescape(file_input), shellescape(file_result))
+    else
+        const cmd_with_fzf = printf('{ %s; } | %s > %s', Cmd, fzf, shellescape(file_result))
+        execute printf('term ++shell %s > %s', cmd_with_fzf, shellescape(file_result))
+    endif
+    term_getjob('')
+        ->job_setoptions({ exit_cb: (_, _) => {
+            # term ++close may not close window; so we close it manually.
+            wincmd c | execute rescmd
+            const res: string = file_result->readfile()->get(0, '')
+            if !empty(res)
+                Callback(res)
+            endif
+        }})
+enddef
+
+# private fuzzy function {{{2
+def FuzzyGotoBuffer() # {{{3
+    g:FuzzyFinder(
+        v:none,
+        execute('ls')->split("\n"),
+        (chosen) => {
+            const bufnr = chosen->matchstr('\v^\s*\zs(\d+)\ze')
+            execute ':' .. bufnr .. 'b'
+        }
+    )
+enddef
+
+def FuzzyGotoProject() # {{{3
+    g:FuzzyFinder(
+        ProjectListCmd(),
+        v:none,
+        (chosen) => {
+            execute 'lcd' fnameescape(chosen)
+            if exists(':Dirvish') == 2
+                execute 'Dirvish' fnameescape(chosen)
+            endif
+        }
+    )
+enddef
+
 # NOTE: this variable is directly put after `find` command,
 # using shell syntax. QUOTE IT IF NECESSARY!
-g:project_dirs = get(g:, 'project_dirs', '~/repos/ ~/vimfiles/')
+const project_dirs = '~/repos/ ~/vimfiles/'
 
-# accept list<string>; every item is put after -name (or -path, if / included)
-g:project_blacklist = get(g:, 'project_blacklist', ['venv', 'node_modules'])
+# every item is put after -name (or -path, if / included)
+const project_blacklist = ['venv', 'node_modules']
 
 def ProjectListCmd(): string
-    if empty(g:project_dirs)
-        throw '`g:project_dirs` is not set or empty!'
-    endif
-    if type(g:project_blacklist) != type([])
-        throw '`g:project_blacklist` should be list<string>!'
-    endif
-
     var blacklist = ''
-    for i in g:project_blacklist
+    for i in project_blacklist
         if match(i, is_win32 ? '\v[/\\]' : '/') >= 0
             blacklist ..= printf('-path %s -prune -o ', shellescape(i))
         else
@@ -1701,17 +1744,29 @@ def ProjectListCmd(): string
     # https://github.com/lxhillwind/utils/tree/main/find-repo
     var find_repo_bin = exepath('find-repo' .. (is_win32 ? '.exe' : ''))
     if !find_repo_bin->empty()
-        return printf('%s %s', shellescape(find_repo_bin), g:project_dirs)
+        return printf('%s %s', shellescape(find_repo_bin), project_dirs)
     endif
     return printf(
         "find %s %s -name .git -prune -print0 2>/dev/null"
         .. " | { if [ -x /usr/bin/cygpath ]; then xargs -r -0 cygpath -w; else xargs -r -0 -n 1; fi; }"
         .. " | sed -E 's#[\\/].git$##'",
-        g:project_dirs, blacklist,
+        project_dirs, blacklist,
     )
 enddef
 
-# TabWinLines() {{{3
+def FuzzyGotoTabWin() # {{{3
+    g:FuzzyFinder(
+        v:none,
+        TabWinLines(),
+        (chosen) => {
+            const res = chosen->trim()->split(' ')
+            const [tab, win] = [res[0], res[1]]
+            execute printf(':%stabn', tab)
+            execute printf(':%swincmd w', win)
+        }
+    )
+enddef
+
 def TabWinLines(): list<string>
     var buf_list = []  # preserve order
     var key: string
@@ -1726,65 +1781,65 @@ def TabWinLines(): list<string>
     return buf_list
 enddef
 
-# config {{{3
-g:fuzzy#config->extend({
-    buffer: {
-        excmd: 'ls',
-        Callback: (chosen: string) => {
-            const bufnr = chosen->matchstr('\v^\s*\zs(\d+)\ze')
-            execute ':' .. bufnr .. 'b'
+def FuzzyColorScheme() # {{{3
+    g:FuzzyFinder(
+        v:none,
+        globpath(&rtp, 'colors/*.vim', 0, 1)->map((_, i) => i->matchstr('\v[^\/]+\ze\.vim$')),
+        (s) => {
+            execute('color ' .. fnameescape(s))
         }
-    },
-    color: {
-        LinesFn: () => globpath(&rtp, "colors/*.vim", 0, 1)
-            ->mapnew((_, i) => i->split('[\/.]')->get(-2)),
-            Callback: (chosen: string) => {
-                execute 'color' fnameescape(chosen)
-            }
-    },
-    project_dir: {
-        shell: ProjectListCmd(),
-        ExtractInfoFn: (line) => ({filename: line->split('\t')[0]}),
-        Callback: (chosen: string) => {
-            execute 'lcd' fnameescape(chosen)
-            if exists(':Dirvish') == 2
-                execute 'Dirvish' fnameescape(chosen)
-            endif
+    )
+enddef
+
+def FuzzyRecentFiles() # {{{3
+    g:FuzzyFinder(
+        v:none,
+        v:oldfiles,
+        (s) => {
+            execute 'e' fnameescape(s)
         }
-    },
-    tabwin: {
-        LinesFn: TabWinLines,
-        Callback: (chosen: string) => {
-            const res = chosen->trim()->split(' ')
-            const [tab, win] = [res[0], res[1]]
-            execute printf(':%stabn', tab)
-            execute printf(':%swincmd w', win)
+    )
+enddef
+
+def FuzzyCwdFzf() # {{{3
+    g:FuzzyFinder(
+        "find '!' -type d",
+        v:none,
+        (s) => {
+            execute 'e' fnameescape(s)
         }
-    },
-})
+    )
+enddef
 
 # (keymap) popup to select from sources. {{{3
-nnoremap <Space>a <Cmd>call <SID>SelectFromSources()<CR>
+nnoremap <Space>a <ScriptCmd>SelectFromSources('a')<CR>
+nnoremap <Space>f <ScriptCmd>SelectFromSources('f')<CR>
 
-def SelectFromSources()
+const fuzzy_all = {
+    a: [
+        # [key, name, func]
+        ['c', 'color', FuzzyColorScheme],
+        ['e', 'project_dir', FuzzyGotoProject],
+        ['b', 'buffer', FuzzyGotoBuffer],
+        ['t', 'tabwin', FuzzyGotoTabWin],
+    ],
+    f: [
+        ['f', 'fzf_cwd', FuzzyCwdFzf],
+        ['r', 'recent_files', FuzzyRecentFiles],
+    ],
+}
+
+def SelectFromSources(set: string)
     # TODO highlight
-    const selection = [
-        # [key, g:fuzzy#config]
-        ['c', 'color'],
-        ['e', 'project_dir'],
-        ['b', 'buffer'],
-        ['t', 'tabwin'],
-    ]
-    # some sources may be missing, so check it.
-    ->filter((_, i) => !empty(g:fuzzy#config->get(i->get(1))))
+    const selection = fuzzy_all[set]
 
     # Is is possible to use ordered dict, so we migrate selection /
     # selection_dict?
     var selection_dict = {}
     var lists = []
-    for [k, v] in selection
+    for [k, v, f] in selection
         add(lists, printf('[%s] %s', k, v))
-        selection_dict[k] = v
+        selection_dict[k] = f
     endfor
     popup_create(lists, {
         pos: 'center',
@@ -1793,9 +1848,9 @@ def SelectFromSources()
         border: [1, 1, 1, 1],
         mapping: false,
         filter: (winid: number, key: string): bool => {
-            const res = get(selection_dict, key)
-            if !empty(res)
-                g:fuzzy#Main($'User.{res}')
+            const Res = get(selection_dict, key)
+            if !empty(Res)
+                Res()
             endif
             # finally.
             popup_close(winid)
@@ -1808,7 +1863,6 @@ enddef
 # TODO {{{1
 # - toc / content: 'gO' in neovim; (help / markdown, etc.)
 # - user completion; 'compl-function'. (tmux buffer, web browser, etc.)
-# - vim-fuzzy: page up / page down?
 # - search files (globpath(), executable() / exepath() without absolute path,
 #   :packadd, :colorscheme) in win32 (wsl) is slow; try to avoid calling them
 #   in vimrc.
