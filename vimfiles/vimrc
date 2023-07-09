@@ -611,7 +611,7 @@ set noundofile
 if !has('gui_running') && is_unix
     # see ":set-termcap"
     for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
-        exec printf("set <M-%s>=\<Esc>%s", i, i)
+        exec $"set <M-{i}>=\<Esc>{i}"
     endfor
     set ttimeoutlen=100
 endif
@@ -752,9 +752,9 @@ inoremap <M-t> <C-o>:tabe<CR>
 
 # <M-1> - <M-9> {{{2
 for i in range(1, 8)
-    execute printf("tnoremap \<M-%d> \<C-w>%dgt", i, i)
-    execute printf("nnoremap \<M-%d> %dgt", i, i)
-    execute printf("inoremap \<M-%d> \<C-o>\<C-w>%dgt", i, i)
+    execute $"tnoremap \<M-{i}> \<C-w>{i}gt"
+    execute $"nnoremap \<M-{i}> {i}gt"
+    execute $"inoremap \<M-{i}> \<C-o>\<C-w>{i}gt"
 endfor
 execute "tnoremap \<M-9> \<C-w>:tablast<CR>"
 execute "nnoremap \<M-9> :tablast<CR>"
@@ -767,7 +767,7 @@ inoremap <C-U> <C-G>u<C-U>
 
 # <Space>t... for tab operation {{{2
 for i in range(1, 9)
-    execute printf('nnoremap <Space>t%s %sgt', i, i)
+    execute $'nnoremap <Space>t{i} {i}gt'
 endfor
 nnoremap <Space>t0 <Cmd>tablast<CR>
 # note there is a final <Space>.
@@ -1295,7 +1295,7 @@ def ChdirTerminal(bang: bool, range: number, path_a: string)
                 )
             const idx: number = index(bufs, i)
             if idx >= 0
-                echo printf('chdir in window [%d]? [y/N] ', idx + 1)
+                echo $'chdir in window [{idx + 1}]? [y/N] '
                 if nr2char(getchar())->tolower() == 'y'
                     execute ':' .. (idx + 1) 'wincmd w'
                     call feedkeys(printf('%scd %s', mode() == 'n' ? 'i' : '', shellescape(path)), 't')
@@ -1339,14 +1339,14 @@ def JoinLines(sep: string, range: number, line1: number, line2: number)
 enddef
 
 # :Jobrun / :Jobqfrun / :Jobstop / :Joblist / :Jobclear {{{2
-command! -range=0 -nargs=+ Jobrun
+command! -range=0 -nargs=+ -complete=shellcmd Jobrun
     | JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: false})
-command! -range=0 -nargs=+ Jobqfrun
+command! -range=0 -nargs=+ -complete=shellcmd Jobqfrun
     | JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: true})
 command! -nargs=* -bang -complete=custom,JobStopComp Jobstop
     | JobStop(<q-args>, <bang>0 ? 'kill' : 'term')
-command! Joblist call JobList()
-command! -count Jobclear call JobClear(<count>)
+command! Joblist JobList()
+command! -count Jobclear JobClear(<count>)
 
 var job_dict = exists('job_dict') ? job_dict : {}
 
@@ -1384,9 +1384,9 @@ def JobRun(cmd_a: string, opt: dict<any>)
     endif
     var cmd_short = cmd
     if opt.range != 0
-        cmd = printf(':%s,%sSh %s %s', opt.line1, opt.line2, flag, cmd)
+        cmd = $':{opt.line1},{opt.line2}Sh {flag} {cmd}'
     else
-        cmd = printf('Sh %s %s', flag, cmd)
+        cmd = $'Sh {flag} {cmd}'
     endif
     var job_d = json_decode(execute(cmd))
 
@@ -1439,7 +1439,7 @@ def JobStopComp(...arg: list<any>): string
     var result = []
     for [k, v] in items(job_dict)
         if v.job->job_status() == 'run'
-            add(result, printf('%s: %s', k, v.cmd))
+            add(result, $'{k}: {v.cmd}')
         endif
     endfor
     return join(result, "\n")
@@ -1447,7 +1447,7 @@ enddef
 
 def JobList()
     for [k, v] in items(job_dict)
-        echo printf("%s:\t%s\t%s", k, v.job, v.cmd)
+        echo $"{k}:\t{v.job->string()}\t{v.cmd}"
     endfor
 enddef
 
@@ -1522,7 +1522,7 @@ def Scratch(ft: string)
 enddef
 
 def SnippetInNewWindow(ft: string)
-    exe printf('bel :%dnew', &cwh)
+    exe $'bel :{&cwh}new'
     setl buftype=nofile noswapfile
     setl bufhidden=hide
     if !empty(ft)
@@ -1719,11 +1719,10 @@ def ProjectListCmd(): string
     if !find_repo_bin->empty()
         return printf('%s %s', shellescape(find_repo_bin), project_dirs)
     endif
-    return printf(
-        "find %s %s -name .git -prune -print0 2>/dev/null"
-        .. " | { if [ -x /usr/bin/cygpath ]; then xargs -r -0 cygpath -w; else xargs -r -0 -n 1; fi; }"
-        .. " | sed -E 's#[\\/].git$##'",
-        project_dirs, blacklist,
+    return (
+        $'find {project_dirs} {blacklist} -name .git -prune -print0 2>/dev/null'
+        .. ' | { if [ -x /usr/bin/cygpath ]; then xargs -r -0 cygpath -w; else xargs -r -0 -n 1; fi; }'
+        .. " | sed -E 's#[\\/].git$##'"
     )
 enddef
 
@@ -1735,8 +1734,8 @@ def FuzzyGotoTabWin() # {{{3
         (chosen) => {
             const res = chosen->trim()->split(' ')
             const [tab, win] = [res[0], res[1]]
-            execute printf(':%stabn', tab)
-            execute printf(':%swincmd w', win)
+            execute $':{tab}tabn'
+            execute $':{win}wincmd w'
         }
     )
 enddef
@@ -1823,7 +1822,7 @@ def SelectFromSources(set: string)
     var selection_dict = {}
     var lists = []
     for [k, v, f] in selection
-        add(lists, printf('[%s] %s', k, v))
+        add(lists, $'[{k}] {v}')
         selection_dict[k] = f
     endfor
     var popup_opt = {
