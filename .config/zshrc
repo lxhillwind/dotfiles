@@ -49,17 +49,6 @@ export BAT_THEME=OneHalfLight
 # https://github.com/kovidgoyal/kitty/issues/469
 export GLFW_IM_MODULE=ibus
 
-# vim-vimserver; do not export related env if in vim popup terminal. {{{2
-if [ -n "$VIMSERVER_POPUP" ] && [ -n "$VIMSERVER_ID" ]; then
-    _temp="$VIMSERVER_ID"
-    unset VIMSERVER_ID
-    # $VIMSERVER_ID is exported; we revert the "export",
-    # so vim in popup terminal won't be recognized as client,
-    # and Tapi_cd like function still works.
-    VIMSERVER_ID="$_temp"
-    unset _temp
-fi
-
 # finish if not interactive {{{1
 case "$-" in
     *i*) ;;
@@ -299,13 +288,6 @@ if [ -n "$DTACH_SESSION_FILE" ]; then
 sv()
 {
     vim -c 'set buftype=nofile | %Sh -t=enew cat' <(dtach-session $1)
-}
-fi
-
-if [ -n "$VIMSERVER_BIN" ]; then
-sv()
-{
-    "$VIMSERVER_BIN" "$VIMSERVER_ID" Tapi_shell_sv_helper
 }
 fi
 

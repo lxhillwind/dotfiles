@@ -31,9 +31,6 @@
 [submodule "vimfiles/pack/rc/opt/vim-markdown-folding"]
 	path = vimfiles/pack/rc/opt/vim-markdown-folding
 	url = https://github.com/masukomi/vim-markdown-folding
-[submodule "vimfiles/pack/lx/opt/vim-vimserver"]
-	path = vimfiles/pack/lx/opt/vim-vimserver
-	url = https://github.com/lxhillwind/vim-vimserver
 [submodule "vimfiles/pack/rc/opt/vim-oscyank"]
 	path = vimfiles/pack/rc/opt/vim-oscyank
 	url = https://github.com/ojroques/vim-oscyank

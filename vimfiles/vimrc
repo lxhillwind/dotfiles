@@ -44,9 +44,6 @@ augroup END
 
 set pp^=~/vimfiles
 
-# vim-vimserver should be called early.
-packadd vim-vimserver
-
 # disable default plugin {{{
 g:loaded_2html_plugin = 1
 g:loaded_getscriptPlugin = 1
@@ -1174,6 +1171,10 @@ augroup vimrc
                     \ && expand("%") !~ "addp-hunk-edit.diff"
                     \ && expand("%") !~ "git-rebase-todo"
             exe "normal g`\""
+        else
+            # fedora will do like if branch, but without checking whitelist;
+            # so go to file head manually.
+            exe 'normal gg0'
         endif
     }
 
@@ -1614,23 +1615,6 @@ def ShowOutput(...data_: list<any>)
 enddef
 
 # UserFunction {{{1
-
-def g:Tapi_cd(nr: number, arg: list<string>)  # {{{2
-    # sync terminal path to buffer path.
-    # TODO follow cd even when terminal buffer not in focus (with event?).
-    if bufnr() == nr
-        var p = arg[0]
-        if is_win32 && match(p, '^/') >= 0
-            # why not using shellescape() here?
-            p = execute(printf("Sh cygpath -w '%s'", substitute(p, "'", "'\\\\''", 'g')))
-        endif
-        silent execute 'lcd' fnameescape(p)
-    endif
-enddef
-
-def g:Tapi_shell_sv_helper(...arg: list<any>)  # {{{2
-    feedkeys("\<C-\>\<C-n>", 'n')
-enddef
 
 def g:NoteIdNew(): string # {{{2
     return strftime('%Y%m%d_%H%M%S')
