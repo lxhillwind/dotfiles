@@ -1669,6 +1669,8 @@ def g:FuzzyFinder(Title: string = '', Cmd: string = '', Lines: list<string> = []
             popup_close(winid)
             const res: string = file_result->readfile()->get(0, '')
             if !empty(res)
+                redraws  # this is required to make Exception shown; {{{
+                # like editing files already opened in another instance. }}}
                 Callback(res)
             endif
         }})
