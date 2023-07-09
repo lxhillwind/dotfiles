@@ -447,8 +447,20 @@ g:maplocalleader = "\<S-F11>"
 
 # use <Space> as *true* leader key.
 noremap <Space> <Nop>
-nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
+#nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
+nnoremap <Space><Space> <ScriptCmd>FuzzyNMapSpace()<CR>
 nnoremap <Space>;; :map <buffer><CR>
+
+def FuzzyNMapSpace() # {{{
+    g:FuzzyFinder(
+        'display nmap <Space>',
+        v:none,
+        execute('nmap <Space>')->split("\n"),
+        (s) => {
+                # do nothing
+            }
+    )
+enddef # }}}
 
 # shell {{{2
 # 'shelltemp' or 'noshelltemp': {{{
@@ -760,7 +772,6 @@ endfor
 nnoremap <Space>t0 <Cmd>tablast<CR>
 # note there is a final <Space>.
 nnoremap <Space>tm :tabmove 
-nnoremap <Space>tn <Cmd>Sh -wc<CR>
 nnoremap <Space>tt <Cmd>call <SID>TabOpenOrClose()<CR>
 
 def TabOpenOrClose()
@@ -836,6 +847,10 @@ nnoremap <Space>sl :so ~/.vim/sessions/
 nnoremap <expr> <Space>ss
             \ $':wall \| mksession{empty(v:this_session) ? "" : "!"}'
             \ .. $' {v:this_session ?? "~/.vim/sessions/"}'
+
+# <Space>s...; :Sh related. {{{2
+nnoremap <Space>st :Sh -t
+nnoremap <Space>sw :Sh -w
 
 # <Space>y / <Space>p; Clipboard {{{2
 if use_oscyank
@@ -1645,6 +1660,7 @@ def g:FuzzyFinder(Title: string = '', Cmd: string = '', Lines: list<string> = []
         maxheight: height,
         line: &lines,  # use 1 if use top as pos.
     })
+    TerminalSetup()  # mainly for keybinding.
     term_getjob(term_buf)
         ->job_setoptions({ exit_cb: (_, _) => {
             popup_close(winid)
@@ -1772,6 +1788,13 @@ def FuzzyCwdFzf() # {{{3
     )
 enddef
 
+def FuzzyPromptFzf() # {{{3
+    const cmd_1 = 'FuzzyFinder find ./'
+    const cmd_2 = " '!' -type d"
+    const offset = "\<Home>" .. repeat("\<Right>", len(cmd_1))
+    feedkeys($":{cmd_1}{cmd_2}{offset}", 't')
+enddef
+
 # (keymap) popup to select from sources. {{{3
 nnoremap <Space>a <ScriptCmd>SelectFromSources('a')<CR>
 nnoremap <Space>f <ScriptCmd>SelectFromSources('f')<CR>
@@ -1785,7 +1808,8 @@ const fuzzy_all = {
         ['t', 'tabwin', FuzzyGotoTabWin],
     ],
     f: [
-        ['f', 'fzf_cwd', FuzzyCwdFzf],
+        ['F', 'fzf_cwd', FuzzyCwdFzf],
+        ['f', 'fzf_prompt', FuzzyPromptFzf],
         ['r', 'recent_files', FuzzyRecentFiles],
     ],
 }
