@@ -11,7 +11,8 @@ if get(g:, 'loaded_sh') || !has('vim9script')
 endif
 let g:loaded_sh = 1
 
-let s:sh_programs = ['kitty', 'alacritty', 'konsole', 'xfce4Terminal', 'urxvt', 'WindowsTerminal', 'ConEmu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
+" "item" or "item|alias"
+let s:sh_programs = ['kitty', 'alacritty|alac', 'konsole|kde', 'xfce4Terminal|xfce', 'urxvt', 'WindowsTerminal|wt', 'ConEmu|conemu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
 
 " main {{{1
 " common var def {{{2
@@ -345,7 +346,13 @@ function! s:sh(cmd, opt) abort " {{{2
       if type(s:program) == type(function('tr'))
         :
       elseif type(s:program) == type('')
-        let s:program = 's:program_' . s:program
+        for i in s:sh_programs
+          if match(i, '\<' .. s:program .. '\>') >= 0
+            let s:program = i
+            break
+          endif
+        endfor
+        let s:program = 's:program_' . matchstr(s:program, '\v[^|]+')
         if !exists('*' . s:program)
           continue
         endif
