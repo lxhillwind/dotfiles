@@ -36,6 +36,8 @@ const is_linux = has('linux')
 const is_mac = has('mac')
 const is_wsl = executable('/mnt/c/Windows/notepad.exe')
 
+const is_conemu = is_win32 && !has('gui_running') && $CONEMUANSI ==? 'ON'
+
 augroup vimrc
     au!
 augroup END
@@ -350,7 +352,7 @@ if is_win32 && has('vim_starting')
         return ''  # not found
     enddef  # }}}
 
-    def WindowsShellSetting()
+    def WindowsShellSetting() # {{{
         const git_path = Exepath('git.exe')->substitute('\', '/', 'g')
 
         if !(
@@ -406,7 +408,7 @@ if is_win32 && has('vim_starting')
             # translated to /usr/bin, which is feasible. }}}
             $PATH = fnamemodify(bash_path, ':h') .. ';' .. $PATH
         endif
-    enddef
+    enddef # }}}
 
     WindowsShellSetting()
 
@@ -430,6 +432,11 @@ if is_win32 && has('vim_starting')
         # see vim-sh (search ":!start") for details.
         &shellxescape = ''
         # shellpipe / shellredir seems not required.
+    endif
+
+    # fix cjk inside vim inside conemu.
+    if is_conemu
+        &encoding = 'cp' .. libcallnr('kernel32.dll', 'GetACP', 0)
     endif
 endif
 
@@ -658,7 +665,7 @@ else
         # setting it causes panic in console vim from headless wine.
         # so set it in $MYVIMRC instead.
         #silent! set tgc
-        if $CONEMUANSI ==? 'ON'
+        if is_conemu
             # https://conemu.github.io/en/VimXterm.html
             set term=xterm
             set t_Co=256
@@ -1832,7 +1839,7 @@ def SelectFromSources(set: string)
             return true
         }
     }
-    if is_win32 && $CONEMUANSI ==? 'ON'
+    if is_win32 && is_conemu
         # non-ansii char is buggy under conemu.
         popup_opt.borderchars = ['-']
     endif
