@@ -171,7 +171,7 @@ if coc_nvim_available  # {{{
     endif
 
     # Highlight the symbol and its references when holding the cursor
-    autocmd CursorHold * silent call CocActionAsync('highlight')
+    autocmd CursorHold * silent call g:CocActionAsync('highlight')
 
     # Use `[g` and `]g` to navigate diagnostics
     # Use `:CocDiagnostics` to get all diagnostics of current buffer in location list
@@ -184,15 +184,19 @@ if coc_nvim_available  # {{{
     nmap <silent> gi <Plug>(coc-implementation)
     nmap <silent> gr <Plug>(coc-references)
 
+    # C-n C-p
+    inoremap <expr> <C-n> (coc#pum#visible() ? coc#pum#next(1) : coc#refresh())
+    inoremap <expr> <C-p> (coc#pum#visible() ? coc#pum#prev(1) : coc#refresh())
+
     # Use K to show documentation in preview window
     nnoremap <silent> K <ScriptCmd>ShowDocumentation()<CR>
-    def ShowDocumentation()
+    def ShowDocumentation() # {{{
         if g:CocAction('hasProvider', 'hover')
             g:CocActionAsync('doHover')
         else
             feedkeys('K', 'in')
         endif
-    enddef
+    enddef # }}}
 # }}}
 else  # {{{
     packadd! vim-mucomplete
@@ -450,14 +454,14 @@ g:maplocalleader = "\<S-F11>"
 # use <Space> as *true* leader key.
 noremap <Space> <Nop>
 #nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
-nnoremap <Space><Space> <ScriptCmd>FuzzyNMapSpace()<CR>
+nnoremap <Space><Space> <ScriptCmd>FuzzyDisplayMap()<CR>
 nnoremap <Space>;; :map <buffer><CR>
 
-def FuzzyNMapSpace() # {{{
+def FuzzyDisplayMap() # {{{
     g:FuzzyFinder(
-        'display nmap <Space>',
+        'display map',
         v:none,
-        execute('nmap <Space>')->split("\n"),
+        execute('map | map! | tmap')->split("\n"),
         (s) => {
                 # do nothing
             }
@@ -768,10 +772,11 @@ execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 inoremap <C-U> <C-G>u<C-U>
 
 # <Space>t... for tab operation {{{2
-for i in range(1, 9)
+for i in range(1, 8)
     execute $'nnoremap <Space>t{i} {i}gt'
 endfor
-nnoremap <Space>t0 <Cmd>tablast<CR>
+# t0 do nothing.
+nnoremap <Space>t9 <Cmd>tablast<CR>
 # note there is a final <Space>.
 nnoremap <Space>tm :tabmove 
 nnoremap <Space>tt <Cmd>call <SID>TabOpenOrClose()<CR>
@@ -1764,10 +1769,18 @@ def FuzzyColorScheme() # {{{3
 enddef
 
 def FuzzyRecentFiles() # {{{3
+    const filesInCurrentTab = tabpagebuflist()
+        ->mapnew((_, i) => i->getbufinfo())
+        ->flattennew(1)->map((_, i) => i.name)
     g:FuzzyFinder(
         'RecentFiles',
         v:none,
-        v:oldfiles,
+        v:oldfiles
+        ->mapnew((_, i) => i)
+        ->filter((_, i) => {
+            const absName = i->ExpandHead()
+            return absName->filereadable() && filesInCurrentTab->index(absName) < 0
+            }),
         (s) => {
             execute 'e' fnameescape(s)
         }

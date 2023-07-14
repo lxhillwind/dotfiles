@@ -25,6 +25,8 @@ function! s:jump_to_file(nr, ...) abort
     finally
       let @" = p
     endtry
+    " data may be cross newline, especially for embedded terminal.
+    let chunk = substitute(chunk, "\n", '', 'g')
   else
     let chunk = getline('.')
   endif
