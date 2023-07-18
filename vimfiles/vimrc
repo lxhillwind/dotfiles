@@ -124,18 +124,6 @@ set completeopt=menu,menuone,noselect
 # suppress annoy messages.
 set shortmess+=c
 
-# disable its imap <Tab> (and some others)
-g:mucomplete#enable_auto_at_startup = 1
-g:mucomplete#no_mappings = 1
-# disable keyn / dict: included in c-n via option 'complete' ('cpt');
-# about these chains description: help 'mucomplete-methods'
-g:mucomplete#chains = {
-    default: ['path', 'omni', 'user', 'c-n', 'uspl'],
-    vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
-    # sql: disable omni, since it causes trouble. (sth missing?)
-    sql:     ['path',         'user', 'c-n', 'uspl'],
-}
-
 var coc_nvim_available = false
 if !empty($VIMRC_USING_COC)
     try
@@ -200,6 +188,19 @@ if coc_nvim_available  # {{{
 # }}}
 else  # {{{
     packadd! vim-mucomplete
+
+    # disable its imap <Tab> (and some others)
+    g:mucomplete#enable_auto_at_startup = 1
+    g:mucomplete#no_mappings = 1
+    # disable keyn / dict: included in c-n via option 'complete' ('cpt');
+    # about these chains description: help 'mucomplete-methods'
+    g:mucomplete#chains = {
+        default: ['path', 'omni', 'user', 'c-n', 'uspl'],
+        vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
+        # sql: disable omni, since it causes trouble. (sth missing?)
+        sql:     ['path',         'user', 'c-n', 'uspl'],
+    }
+
     imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
     imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
     # make <CR> always add newline.
@@ -208,10 +209,6 @@ else  # {{{
     packadd! vim-dict
     # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
     execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
-
-    augroup vimrc
-        au VimEnter * LspSetup()
-    augroup END
 
     def LspSetup() # {{{
         const lspConfig = [
@@ -243,6 +240,10 @@ else  # {{{
             # no ! here.
             packadd lsp
             g:LspAddServer(lspConfig)
+            g:LspOptionsSet({
+                # :help lsp-options
+                showDiagWithSign: false,
+            })
         endif
     enddef # }}}
 
@@ -257,6 +258,10 @@ else  # {{{
 
         nnoremap <buffer> K :LspHover<CR>
     enddef # }}}
+
+    # DO NOT delay this to VimEnter;
+    # otherwise buffer associated with `vim xxx.xxx` won't execute 'au FileType'.
+    LspSetup()
 endif  # }}}
 # }}}2
 
