@@ -208,6 +208,55 @@ else  # {{{
     packadd! vim-dict
     # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
     execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
+
+    augroup vimrc
+        au VimEnter * LspSetup()
+    augroup END
+
+    def LspSetup() # {{{
+        const lspConfig = [
+            {
+                name: 'golang',
+                filetype: ['go', 'gomod'],
+                path: exepath('gopls'),
+                args: ['serve'],
+                syncInit: true,
+            },
+            {
+                name: 'python',
+                filetype: ['python'],
+                path: exepath('pylsp'),
+                args: [],
+            },
+            {
+                name: 'ziglang',
+                filetype: ['zig'],
+                path: exepath('zls'),
+                args: [],
+            },
+        ]
+        ->filter((_, i) => !i.path->empty())
+        if !empty(lspConfig)
+            for ft in lspConfig->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
+                execute $'au FileType {ft} LspFileTypeSetup()'
+            endfor
+            # no ! here.
+            packadd lsp
+            g:LspAddServer(lspConfig)
+        endif
+    enddef # }}}
+
+    def LspFileTypeSetup() # {{{
+        nnoremap <buffer> [g :LspDiag prev<CR>
+        nnoremap <buffer> ]g :LspDiag next<CR>
+
+        nnoremap <buffer> gd :LspGotoDefinition<CR>
+        nnoremap <buffer> gy :LspGotoTypeDef<CR>
+        nnoremap <buffer> gi :LspGotoImpl<CR>
+        nnoremap <buffer> gr :LspShowReferences<CR>
+
+        nnoremap <buffer> K :LspHover<CR>
+    enddef # }}}
 endif  # }}}
 # }}}2
 
@@ -1780,7 +1829,7 @@ def FuzzyRecentFiles() # {{{3
         ->filter((_, i) => {
             const absName = i->ExpandHead()
             return absName->filereadable() && filesInCurrentTab->index(absName) < 0
-            }),
+        }),
         (s) => {
             execute 'e' fnameescape(s)
         }

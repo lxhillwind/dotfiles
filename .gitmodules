@@ -34,3 +34,6 @@
 [submodule "vimfiles/pack/rc/opt/vim-oscyank"]
 	path = vimfiles/pack/rc/opt/vim-oscyank
 	url = https://github.com/ojroques/vim-oscyank
+[submodule "vimfiles/pack/rc/opt/lsp"]
+	path = vimfiles/pack/rc/opt/lsp
+	url = https://github.com/yegappan/lsp
