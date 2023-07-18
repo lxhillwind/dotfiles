@@ -211,7 +211,7 @@ else  # {{{
     execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
 
     def LspSetup() # {{{
-        const lspConfig = [
+        var lspConfig = [  # dict will be changed in LspAddServer, so do not use `const`
             {
                 name: 'golang',
                 filetype: ['go', 'gomod'],
