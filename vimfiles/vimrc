@@ -1796,6 +1796,74 @@ def FuzzyPromptFzf() # {{{3
     feedkeys($":{cmd_1}{cmd_2}{offset}", 't')
 enddef
 
+def FuzzyUserMapping() # {{{3
+    const data = execute('verb map | verb map! | verb tmap')->split("\n")
+    var keys: list<string>
+    var values: list<string>
+    {
+        var idx = 0
+        for i in data
+            idx += 1
+            if idx % 2 == 1
+                keys->add(i)
+            else
+                values->add(i)
+            endif
+        endfor
+    }
+    g:FuzzyFinder(
+        'UserMapping',
+        v:none,
+        keys,
+        (s) => {
+            const idx = keys->index(s)
+            if idx >= 0
+                const line_info = values[idx]
+                    ->matchlist('\vLast set from (.*) line (\d+)$')
+                if !empty(line_info)
+                    const [file, line] = line_info[1 : 2]
+                    execute 'edit' fnameescape(file)
+                    execute $'normal {line}G'
+                endif
+            endif
+        }
+    )
+enddef
+
+def FuzzyUserCommand() # {{{3
+    const data = execute('verb command')->split("\n")
+    var keys: list<string>
+    var values: list<string>
+    {
+        var idx = 0
+        for i in data[1 :]  # skip firstline
+            idx += 1
+            if idx % 2 == 1
+                keys->add(i)
+            else
+                values->add(i)
+            endif
+        endfor
+    }
+    g:FuzzyFinder(
+        'UserCommand',
+        v:none,
+        keys,
+        (s) => {
+            const idx = keys->index(s)
+            if idx >= 0
+                const line_info = values[idx]
+                    ->matchlist('\vLast set from (.*) line (\d+)$')
+                if !empty(line_info)
+                    const [file, line] = line_info[1 : 2]
+                    execute 'edit' fnameescape(file)
+                    execute $'normal {line}G'
+                endif
+            endif
+        }
+    )
+enddef
+
 # (keymap) popup to select from sources. {{{3
 nnoremap <Space>a <ScriptCmd>SelectFromSources('a')<CR>
 nnoremap <Space>f <ScriptCmd>SelectFromSources('f')<CR>
@@ -1812,6 +1880,8 @@ const fuzzy_all = {
         ['F', 'fzf_cwd', FuzzyCwdFzf],
         ['f', 'fzf_prompt', FuzzyPromptFzf],
         ['r', 'recent_files', FuzzyRecentFiles],
+        ['m', 'mapping', FuzzyUserMapping],
+        ['c', 'user_command', FuzzyUserCommand],
     ],
 }
 
