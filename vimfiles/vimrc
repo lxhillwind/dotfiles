@@ -124,69 +124,6 @@ set completeopt=menu,menuone,noselect
 # suppress annoy messages.
 set shortmess+=c
 
-var coc_nvim_available = false
-if !empty($VIMRC_USING_COC)
-    try
-        # must-have extensions:
-        # :CocInstall coc-json coc-pairs
-        packadd! coc.nvim
-        coc_nvim_available = true
-    catch /^Vim\%((\a\+)\)\=:E919:/
-    endtry
-    if !coc_nvim_available
-        echoerr 'unable to find coc.nvim'
-    endif
-endif
-
-if coc_nvim_available  # {{{
-    # coc-settings.json template {{{
-    const coc_settings_default =<< trim END
-        {
-            "suggest.noselect": true,
-            "languageserver": {
-                "zig": {
-                    "command": "zls",
-                    "filetypes": ["zig"]
-                }
-            }
-        }
-    END
-    # }}}
-    const coc_settings_file = expand('~/.vim/coc-settings.json')
-    if !coc_settings_file->filereadable()
-        coc_settings_default->writefile(coc_settings_file)
-        echo 'vimrc: ~/.vim/coc-settings.json is not found. created a default one.'
-    endif
-
-    # Highlight the symbol and its references when holding the cursor
-    autocmd CursorHold * silent call g:CocActionAsync('highlight')
-
-    # Use `[g` and `]g` to navigate diagnostics
-    # Use `:CocDiagnostics` to get all diagnostics of current buffer in location list
-    nmap <silent> [g <Plug>(coc-diagnostic-prev)
-    nmap <silent> ]g <Plug>(coc-diagnostic-next)
-
-    # GoTo code navigation
-    nmap <silent> gd <Plug>(coc-definition)
-    nmap <silent> gy <Plug>(coc-type-definition)
-    nmap <silent> gi <Plug>(coc-implementation)
-    nmap <silent> gr <Plug>(coc-references)
-
-    # C-n C-p
-    inoremap <expr> <C-n> (coc#pum#visible() ? coc#pum#next(1) : coc#refresh())
-    inoremap <expr> <C-p> (coc#pum#visible() ? coc#pum#prev(1) : coc#refresh())
-
-    # Use K to show documentation in preview window
-    nnoremap <silent> K <ScriptCmd>ShowDocumentation()<CR>
-    def ShowDocumentation() # {{{
-        if g:CocAction('hasProvider', 'hover')
-            g:CocActionAsync('doHover')
-        else
-            feedkeys('K', 'in')
-        endif
-    enddef # }}}
-# }}}
-else  # {{{
     packadd! vim-mucomplete
 
     # disable its imap <Tab> (and some others)
@@ -210,7 +147,8 @@ else  # {{{
     # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
     execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
 
-    var lspConfig = [  # dict will be changed in LspAddServer, so do not use `const`
+    # {{{
+    var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
         {
             name: 'golang',
             filetype: ['go', 'gomod'],
@@ -230,10 +168,10 @@ else  # {{{
             path: exepath('zls'),
             args: [],
         },
-    ]
+    ] # }}}
     ->filter((_, i) => !i.path->empty())
 
-    if !empty(lspConfig)
+    if !empty(lspConfig) # {{{
         for ft in lspConfig->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
             execute $'au FileType {ft} LspSetup()'
         endfor
@@ -261,9 +199,8 @@ else  # {{{
 
             nnoremap <buffer> K :LspHover<CR>
         enddef
-    endif
-endif  # }}}
-# }}}2
+    endif # }}}
+    # }}}2
 
 # NOTE: plugin loading should be put **before** this. (see :help packadd)
 # NOTE: filetype related autocmd should be put **after** this.
