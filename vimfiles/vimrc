@@ -210,58 +210,58 @@ else  # {{{
     # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
     execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
 
-    def LspSetup() # {{{
-        var lspConfig = [  # dict will be changed in LspAddServer, so do not use `const`
-            {
-                name: 'golang',
-                filetype: ['go', 'gomod'],
-                path: exepath('gopls'),
-                args: ['serve'],
-                syncInit: true,
-            },
-            {
-                name: 'python',
-                filetype: ['python'],
-                path: exepath('pylsp'),
-                args: [],
-            },
-            {
-                name: 'ziglang',
-                filetype: ['zig'],
-                path: exepath('zls'),
-                args: [],
-            },
-        ]
-        ->filter((_, i) => !i.path->empty())
-        if !empty(lspConfig)
-            for ft in lspConfig->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
-                execute $'au FileType {ft} LspFileTypeSetup()'
-            endfor
-            # no ! here.
-            packadd lsp
-            g:LspAddServer(lspConfig)
-            g:LspOptionsSet({
-                # :help lsp-options
-                showDiagWithSign: false,
-            })
-        endif
-    enddef # }}}
+    var lspConfig = [  # dict will be changed in LspAddServer, so do not use `const`
+        {
+            name: 'golang',
+            filetype: ['go', 'gomod'],
+            path: exepath('gopls'),
+            args: ['serve'],
+            syncInit: true,
+        },
+        {
+            name: 'python',
+            filetype: ['python'],
+            path: exepath('pylsp'),
+            args: [],
+        },
+        {
+            name: 'ziglang',
+            filetype: ['zig'],
+            path: exepath('zls'),
+            args: [],
+        },
+    ]
+    ->filter((_, i) => !i.path->empty())
 
-    def LspFileTypeSetup() # {{{
-        nnoremap <buffer> [g :LspDiag prev<CR>
-        nnoremap <buffer> ]g :LspDiag next<CR>
+    if !empty(lspConfig)
+        for ft in lspConfig->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
+            execute $'au FileType {ft} LspSetup()'
+        endfor
 
-        nnoremap <buffer> gd :LspGotoDefinition<CR>
-        nnoremap <buffer> gy :LspGotoTypeDef<CR>
-        nnoremap <buffer> gi :LspGotoImpl<CR>
-        nnoremap <buffer> gr :LspShowReferences<CR>
+        var lsp_is_started = false
+        def LspSetup()
+            if !lsp_is_started
+                lsp_is_started = true
+                # no ! here.
+                packadd lsp
+                g:LspAddServer(lspConfig)
+                g:LspOptionsSet({
+                    # :help lsp-options
+                    showDiagWithSign: false,
+                })
+            endif
 
-        nnoremap <buffer> K :LspHover<CR>
-    enddef # }}}
+            nnoremap <buffer> [g :LspDiag prev<CR>
+            nnoremap <buffer> ]g :LspDiag next<CR>
 
-    # DO NOT delay this to VimEnter;
-    # otherwise buffer associated with `vim xxx.xxx` won't execute 'au FileType'.
-    LspSetup()
+            nnoremap <buffer> gd :LspGotoDefinition<CR>
+            nnoremap <buffer> gy :LspGotoTypeDef<CR>
+            nnoremap <buffer> gi :LspGotoImpl<CR>
+            nnoremap <buffer> gr :LspShowReferences<CR>
+
+            nnoremap <buffer> K :LspHover<CR>
+        enddef
+    endif
 endif  # }}}
 # }}}2
 
