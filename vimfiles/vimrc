@@ -310,9 +310,6 @@ if is_win32 && has('vim_starting')
     # UserCommand. }}}
     set shellslash
 
-    # italic font is not displayed correctly
-    g:base16#enable_italics = 0
-
     # set env for cygwin / msys2 shell (start via :!): $VIM, $MYVIMRC... {{{
     # It's better to override $VIM / $VIMRUNTIME via shell startup, so cygwin
     # vim has correct $VIM set (/usr/share/vim). }}}
@@ -664,12 +661,12 @@ elseif is_win32 # win32 console version
     # At least works in windows 10 (1809+?).
     #
     # setting it causes panic in console vim from headless wine.
-    # so set it in $MYVIMRC instead.
-    #silent! set tgc
-    if is_conemu
+    if windowsversion()->str2float() >= 10
+        set tgc
+    elseif is_conemu # DO NOT set term=xterm for windows 10+
         # https://conemu.github.io/en/VimXterm.html
         set term=xterm
-        &t_Co = 256
+        &t_Co = '256' # string required!
         &t_AB = "\e[48;5;%dm"
         &t_AF = "\e[38;5;%dm"
     endif
@@ -708,13 +705,14 @@ else # unix-like system, in terminal emulator
     if is_mac && $TERM_PROGRAM == 'Apple_Terminal'
         set notgc
     endif
-
-    if is_mac && &term =~ 'xterm'
-        # italic; terminfo is buggy on macos.
-        &t_ZH = "\<Esc>[3m"
-        &t_ZR = "\<Esc>[0m"
-    endif
 endif
+
+if (is_conemu || is_mac) && &term =~ 'xterm'
+    # italic; terminfo is buggy on conemu / macos?
+    &t_ZH = "\<Esc>[3m"
+    &t_ZR = "\<Esc>[0m"
+endif
+
 # Key mapping {{{1
 
 # custom text object {{{2
@@ -1718,6 +1716,10 @@ def g:FuzzyFinder(Title: string = '', Cmd: string = '', Lines: list<string> = []
         line: &lines,  # use 1 if use top as pos.
     })
     TerminalSetup()  # mainly for keybinding.
+    if is_win32
+        # in win32, double <Esc> exits fzf; let's make it behave same as other OS.
+        tnoremap <buffer> <Esc> <C-c>
+    endif
     term_getjob(term_buf)
         ->job_setoptions({ exit_cb: (_, _) => {
             popup_close(winid)
