@@ -73,7 +73,7 @@ end -- }}}
 -- 然后此处设置带 shift 的.
 bindApp(",", "Firefox", true)
 bindApp(".", "sioyek")
-bindApp("/", "kitty")
+bindApp("/", "iterm")
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
 -- if hammerspoon is not started yet.

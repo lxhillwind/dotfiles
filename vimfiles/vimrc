@@ -163,6 +163,12 @@ var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
         args: [],
     },
     {
+        name: 'scala',
+        filetype: ['scala'],
+        path: exepath('metals'),
+        args: [],
+    },
+    {
         name: 'ziglang',
         filetype: ['zig'],
         path: exepath('zls'),
@@ -594,6 +600,7 @@ set undofile
 for t_dir in [
         &backupdir, &directory, &undodir, &viewdir,
         expand('~/.vim/sessions/'),
+        expand('~/.vim/scratch/'),
         ]
     if !isdirectory(t_dir)
         mkdir(t_dir, 'p')
@@ -651,44 +658,61 @@ if has('gui_running')
     set guioptions=!
     set lines=30
     set columns=120
-else
-    if is_win32
-        # Try to set termguicolors; if success, &t_Co will be changed to 256,
-        # then we can use better looking colorscheme.
-        # At least works in windows 10 (1809+?).
-        #
-        # setting it causes panic in console vim from headless wine.
-        # so set it in $MYVIMRC instead.
-        #silent! set tgc
-        if is_conemu
-            # https://conemu.github.io/en/VimXterm.html
-            set term=xterm
-            set t_Co=256
-            &t_AB = "\e[48;5;%dm"
-            &t_AF = "\e[38;5;%dm"
-        endif
-    else
-        if $TERM->tolower() == 'linux'
-        # linux tty
-        else
-            # 256color or tgc
-            if $TERM !~ 'xterm'
-                # make tgc work; :help xterm-true-color
-                &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
-                &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
-            endif
-            silent! set tgc
-        endif
+elseif is_win32 # win32 console version
+    # Try to set termguicolors; if success, &t_Co will be changed to 256,
+    # then we can use better looking colorscheme.
+    # At least works in windows 10 (1809+?).
+    #
+    # setting it causes panic in console vim from headless wine.
+    # so set it in $MYVIMRC instead.
+    #silent! set tgc
+    if is_conemu
+        # https://conemu.github.io/en/VimXterm.html
+        set term=xterm
+        &t_Co = 256
+        &t_AB = "\e[48;5;%dm"
+        &t_AF = "\e[38;5;%dm"
+    endif
+elseif &term == 'linux' # linux console
+    ::
+else # unix-like system, in terminal emulator
+    # cursor shape (does not work if &term is set after init ?)
+    &t_SI = "\<Esc>[5 q"
+    &t_SR = "\<Esc>[4 q"
+    &t_EI = "\<Esc>[1 q"
 
-        if &term == 'xterm-kitty'
-            # in kitty faq.
-            &t_ut = ''
-        endif
+    # strikethrough
+    if &term !~ 'xterm'
+        &t_Ts = "\<Esc>[9m"
+        &t_Te = "\<Esc>[0m"
+    endif
 
-        if $TERM->tolower() =~? 'xterm' && is_wsl
-            # fix vim start in replace mode; https://superuser.com/a/1525060
-            set t_u7=
-        endif
+    # 256color or tgc
+    if &term !~ 'xterm'
+        # make tgc work; :help xterm-true-color
+        &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+        &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+    endif
+    silent! set tgc
+
+    if &term == 'xterm-kitty'
+        # in kitty faq.
+        &t_ut = ''
+    endif
+
+    if is_wsl && &term =~ 'xterm'
+        # fix vim start in replace mode; https://superuser.com/a/1525060
+        &t_u7 = ''
+    endif
+
+    if is_mac && $TERM_PROGRAM == 'Apple_Terminal'
+        set notgc
+    endif
+
+    if is_mac && &term =~ 'xterm'
+        # italic; terminfo is buggy on macos.
+        &t_ZH = "\<Esc>[3m"
+        &t_ZR = "\<Esc>[0m"
     endif
 endif
 # Key mapping {{{1
@@ -1219,6 +1243,9 @@ augroup vimrc
         endif
     }
 
+    # `run-some-shellcmd | vim -`, without "No write since..." warning {{{2
+    au StdinReadPre * setl bt=nofile noswapfile
+
 augroup END  # {{{2
 
 # Colorscheme {{{1
@@ -1615,6 +1642,44 @@ def ShowOutput(...data_: list<any>)
         append('$', line)
     endfor
     norm gg"_dd
+enddef
+
+# :EditFilenameInScratch (edit filename in scratch buffer) {{{2
+command! EditFilenameInScratch EditFilenameInScratch()
+
+def EditFilenameInScratch()
+    wincmd s
+    const title = expand('%:p')
+    Scratch
+    setline(1, title)
+enddef
+
+# :<range>Reverse (reverse selected lines) {{{2
+command! -range Reverse keeppatterns :<line1>,<line2>g/^/m <line1>-1
+
+# :Yank [...] (yank; default filename; otherwise expand(<q-args>)) {{{2
+command! -nargs=* Yank @" = expand(empty(<q-args>) ? '%:t' : <q-args>)
+
+# :ScratchWithName (like :Scratch, named; so it can be saved with `mksession`) {{{2
+command! -nargs=? ScratchWithName ScratchWithName(<q-args>)
+def ScratchWithName(name: string)
+    const scratch_dirs = expand('~/.vim/scratch/')
+    var filename = scratch_dirs .. name
+    if empty(name)
+        const files = globpath(scratch_dirs, '*', 0, 1)
+        var i = 0
+        while i < 10000
+            filename = scratch_dirs .. string(i)
+            if index(files, filename) < 0
+                break
+            endif
+            i += 1
+        endwhile
+        if index(files, filename) >= 0
+            throw 'too many files in scratch dir! "' .. scratch_dirs .. '"'
+        endif
+    endif
+    exec 'e' fnameescape(filename)
 enddef
 
 # UserFunction {{{1

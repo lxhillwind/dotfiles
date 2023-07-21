@@ -8,6 +8,8 @@
 " - ~/.tridactylrc will be sourced at last; it can be used for local config. {{{
 "   (see `:help source` in tridactyl about configuration file priority) }}}
 "
+" - search "A-6" in this file, if OS is windows or linux: we need additional setting.
+"
 " - firefox setup: (TODO set them via tridactyl?) {{{
 "   - browser.tabs.warnOnClose => true
 "     simple-tab-group cannot recover local (file:// schema) webpages properly,
@@ -227,7 +229,7 @@ unbind --mode=normal <Escape>
 " I don't know if it is default... just record it here.
 bind --mode=browser <C-6> tab #
 
-" in windows, <A-1> - <A-9> can not be used to navigate tab (it's ok in linux);
+" in windows, <A-1> - <A-9> can not be used to navigate tab (it's ok in linux); {{{
 " so we map <A-1> - <A-9> to <C-1> - <C-9> with ahk to make them work.
 "
 " after using tridactyl, <C-6> should be used as <C-^> (like in vim);
@@ -235,12 +237,18 @@ bind --mode=browser <C-6> tab #
 "
 " When we pressing <A-6>, <C-6> is recognized by firefox, so <C-6> should be unbind.
 " But tridactylrc is used in different OS,
-" so we need to unbind <C-6>, and bind <A-6> for windows.
-"bind --mode=browser <A-6> tab #
-"unbind <C-6>
-"unbind --mode=browser <C-6>
-" ... and unbind <A-6> for linux (if it is binded by default).
-"unbind --mode=browser <A-6>
+" so we need to put these in ~/.tridactylrc, depending on OS:
+"
+" - unbind <C-6>, and bind <A-6> for windows:
+"
+"    bind --mode=browser <A-6> tab #
+"    unbind <C-6>
+"    unbind --mode=browser <C-6>
+"
+" - unbind <A-6> for linux (if it is binded by default):
+"
+"    unbind --mode=browser <A-6>
+" }}}
 
 " search with...
 bind --mode=visual s composite js " " + document.getSelection().toString() | fillcmdline open ; text.beginning_of_line ; text.forward_word ; text.forward_char

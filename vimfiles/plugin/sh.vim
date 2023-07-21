@@ -664,7 +664,7 @@ endfunction
 function! s:program_alacritty(context) abort
   let cmd = a:context.cmd
   if executable('alacritty')
-    call a:context.start_fn(['alacritty', '-t', a:context.term_name, '-e'] + cmd)
+    call a:context.start_fn(['alacritty', '--working-directory', getcwd(), '-t', a:context.term_name, '-e'] + cmd)
     return 1
   endif
 endfunction
