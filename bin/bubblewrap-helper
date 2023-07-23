@@ -26,6 +26,8 @@ opt_no_net=
 opt_root_dir=
 # run dtach (binary from sandbox) before passing argument.
 opt_using_dtach=
+# allow run with root (cli: "$0" root {profile} ...).
+opt_allow_root=
 
 # helper. {{{1
 bubblewrap_list()
@@ -72,6 +74,10 @@ else
 fi
 
 if [ -n "$is_root" ]; then
+    if ! [ -n "$opt_allow_root" ]; then
+        printf '%s\n' 'error: try to run with root, but opt_allow_root is not specified in config.' >&2
+        exit 1
+    fi
     args_pre=(
         "${args_pre[@]}"
         --setenv HOME /root
