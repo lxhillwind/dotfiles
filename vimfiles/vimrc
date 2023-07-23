@@ -28,13 +28,12 @@ def TrSlash(s: string): string
     endif
 enddef
 
-const is_unix = has('unix')
 const is_win32 = has('win32')
-const has_gui = has('gui_running') || has('mac')
-    || (has('linux') && (!empty($DISPLAY) || !(empty($WAYLAND_DISPLAY))))
 const is_linux = has('linux')
 const is_mac = has('mac')
 const is_wsl = executable('/mnt/c/Windows/notepad.exe')
+const has_gui = has('gui_running') || is_mac || is_win32
+    || (is_linux && (!empty($DISPLAY) || !empty($WAYLAND_DISPLAY)))
 
 const is_conemu = is_win32 && !has('gui_running') && $CONEMUANSI ==? 'ON'
 
@@ -477,7 +476,7 @@ enddef # }}}
 # So do not change 'shelltemp' option (default on).
 # }}}
 
-if is_unix
+if !is_win32
     const zsh_path = is_mac ? '/opt/homebrew/bin/zsh' : '/bin/zsh'
     if executable(zsh_path)
         &shell = zsh_path
@@ -550,10 +549,9 @@ set ruler
 set viminfo^='1000
 
 # set locale {{{2
-if is_unix
-    # some environment cannot set lang, like in minimal container (fedora).
-    silent! lang en_US.UTF-8
-else
+# DO NOT set lang for unix system (mainly linux?);
+# since it affects locale of subprocess (like calling gui program from vim).
+if is_win32
     # for msys2 / git-for-windows, set $LANG to make CJK display correctly.
     $LANG = 'en_US.UTF-8'
     # when libintl.dll is not available, message translation is disabled.
@@ -609,7 +607,7 @@ set nobackup
 set noundofile
 
 # alt key in terminal {{{2
-if !has('gui_running') && is_unix
+if !has('gui_running') && !is_win32
     # see ":set-termcap"
     for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
         exec $"set <M-{i}>=\<Esc>{i}"
@@ -1980,10 +1978,6 @@ def SelectFromSources(set: string)
             return true
         }
     }
-    if is_win32 && is_conemu
-        # non-ansii char is buggy under conemu.
-        popup_opt.borderchars = ['-']
-    endif
     popup_create(lists, popup_opt)
 enddef
 

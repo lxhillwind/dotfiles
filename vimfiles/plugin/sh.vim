@@ -16,7 +16,6 @@ let s:sh_programs = ['kitty', 'alacritty|alac', 'konsole|kde', 'xfce4Terminal|xf
 
 " main {{{1
 " common var def {{{2
-let s:is_unix = has('unix')
 let s:is_win32 = has('win32')
 
 function! s:echoerr(msg)
@@ -267,7 +266,7 @@ function! s:sh(cmd, opt) abort " {{{2
       let cmd_new = ShellSplitUnix(cmd)
     else
       if !empty(tmpfile)
-        if s:is_unix
+        if !s:is_win32
           let cmd_new = shell_list + ['-c', printf('sh -c %s < %s',
                 \ shellescape(cmd), shellescape(tmpfile))]
         else
@@ -708,14 +707,14 @@ function! s:program_tmuxv(context) abort
 endfunction
 
 function! s:program_cmd(context) abort
-  if s:is_unix | return 0 | endif
+  if !s:is_win32 | return 0 | endif
 
   call a:context.start_fn(a:context.cmd, {'term_name': a:context.term_name})
   return 1
 endfunction
 
 function! s:program_WindowsTerminal(context) abort
-  if s:is_unix | return 0 | endif
+  if !s:is_win32 | return 0 | endif
   if !executable('wt') | return 0 | endif
   " NOTE win32 vim seems to resolve path on exepath();
   " wt is located here (according to `busybox which`):
@@ -738,7 +737,7 @@ function! s:program_WindowsTerminal(context) abort
 endfunction
 
 function! s:program_ConEmu(context) abort
-  if s:is_unix | return 0 | endif
+  if !s:is_win32 | return 0 | endif
   if !executable('conemu') | return 0 | endif
 
   call a:context.start_fn(['conemu', '-title', a:context.term_name, '-run'] + a:context.cmd)

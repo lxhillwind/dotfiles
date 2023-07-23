@@ -55,9 +55,10 @@ args_post=(
 
 args=()
 
-# adjust args* based on profile. {{{1
+# source profile. {{{1
 source ~/.config/misc/bubblewrap.conf
 
+# check if profile is found. {{{1
 if [ "${#args[@]}" -eq 0 ] && [ -z "$opt_root_dir" ]; then
     printf '%s\n\n%s\n\n%s\n' \
         'profile not found.' \
@@ -73,11 +74,14 @@ else
     shift
 fi
 
+# check root. {{{1
+if [ -n "$is_root" ] && ! [ -n "$opt_allow_root" ]; then
+    printf '%s\n' 'error: try to run with root, but opt_allow_root is not specified in config.' >&2
+    exit 1
+fi
+
+# adjust args* based on profile. {{{1
 if [ -n "$is_root" ]; then
-    if ! [ -n "$opt_allow_root" ]; then
-        printf '%s\n' 'error: try to run with root, but opt_allow_root is not specified in config.' >&2
-        exit 1
-    fi
     args_pre=(
         "${args_pre[@]}"
         --setenv HOME /root
