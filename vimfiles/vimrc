@@ -653,6 +653,11 @@ if has('gui_running')
     set guioptions=!
     set lines=30
     set columns=120
+    if is_win32
+        &guifont = 'JetBrains_Mono_NL:h12:cANSI:qDRAFT'
+    elseif is_linux
+        &guifont = 'JetBrains Mono NL 12'
+    endif
 elseif is_win32 # win32 console version
     # Try to set termguicolors; if success, &t_Co will be changed to 256,
     # then we can use better looking colorscheme.

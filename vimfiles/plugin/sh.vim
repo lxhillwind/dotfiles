@@ -6,7 +6,7 @@
 "     info is not available;
 "   - translate to vim9script.
 
-if get(g:, 'loaded_sh') || !has('vim9script')
+if get(g:, 'loaded_sh')
   finish
 endif
 let g:loaded_sh = 1
@@ -215,7 +215,7 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
 
   let shell = exists('g:sh_path') ? g:sh_path : &shell
-  let shell_list = ShellSplitUnix(shell)
+  let shell_list = s:ShellSplitUnix(shell)
 
   if !executable(shell_list->get(0)) && !opt.skip_shell
     call s:echoerr(printf('shell is not found! (`%s`)', shell)) | return
@@ -225,7 +225,7 @@ function! s:sh(cmd, opt) abort " {{{2
   " opt.window: communicate stdin by file;
   " opt.tty: buffer would be destroyed before using (if no newwin);
   if !opt.visual && !opt.window && !opt.tty
-    let stdin_flag = get(opt, 'range') != 0 ? 2 : stdin_flag
+    let stdin_flag = get(opt, 'range') != 0 && !has('nvim') ? 2 : stdin_flag
   endif
   let job_opt = {}
   if stdin_flag is# 2
@@ -263,7 +263,7 @@ function! s:sh(cmd, opt) abort " {{{2
     let cmd_new = shell_list
   else
     if opt.skip_shell
-      let cmd_new = ShellSplitUnix(cmd)
+      let cmd_new = s:ShellSplitUnix(cmd)
     else
       if !empty(tmpfile)
         if !s:is_win32
@@ -368,7 +368,8 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
-  if s:is_win32 && !opt.skip_shell
+  " only job api left; for win32 vim, use string instead of list.
+  if s:is_win32 && !opt.skip_shell && !has('nvim')
     let cmd_new = s:win32_cmd_list_to_str(cmd)
     unlet cmd
     let cmd = cmd_new
@@ -402,9 +403,18 @@ function! s:sh(cmd, opt) abort " {{{2
     endif
     " use g:vimserver_env (set in vim-vimserver)
     let job_opt = extend(job_opt, {'env': exists('g:vimserver_env') ? g:vimserver_env : {}})
-    let job = term_start(cmd, job_opt)
+    if has('nvim')
+      enew
+    endif
+    let job = function(has('nvim') ? 'termopen' : 'term_start')(cmd, job_opt)
+    if has('nvim')
+      startinsert
+    endif
     if opt.background
       wincmd p
+      if has('nvim')
+	call feedkeys("\<Esc>")
+      endif
     endif
 
     return job
@@ -415,6 +425,15 @@ function! s:sh(cmd, opt) abort " {{{2
     echo json_encode(#{cmd: cmd, opt: job_opt})
     return
   endif
+
+  " no tty && nvim {{{
+  if has('nvim')
+    " system() in nvim, when args is list, will not call shell (then not
+    " affected by &shell setting); so it's ok to use here.
+    let result = system(cmd)
+    return s:post_func(result, opt)
+  endif
+  " }}}
 
   " no tty {{{
   let bufnr = bufadd('')
@@ -459,7 +478,6 @@ function! s:sh(cmd, opt) abort " {{{2
       endtry
     endif
   endif
-  " }}}
 
   " line buffer workaround.
   " get 30m in this way:
@@ -469,6 +487,7 @@ function! s:sh(cmd, opt) abort " {{{2
   let result = getbufline(bufnr, 1, '$')
   execute bufnr . 'bwipeout!'
   return s:post_func(result, opt)
+  " }}}
 endfunction
 
 " util func {{{2
@@ -485,7 +504,11 @@ function! s:stop_job(job, ...) abort
 endfunction
 
 function! s:unix_start(cmdlist, ...) abort
-  call job_start(a:cmdlist, {'stoponexit': ''})
+  if has('nvim')
+    call jobstart(a:cmdlist, {'detach': 1})
+  else
+    call job_start(a:cmdlist, {'stoponexit': ''})
+  endif
 endfunction
 
 " win32 console version does not set tenc; so we try to get it explicitly.
@@ -550,103 +573,106 @@ function! s:cmdlist_keep_window(shell_list, cmd) abort
         \ ''] + a:cmd
 endfunction
 
-" util func (vim9) {{{2
-def ShellSplitUnix(s: string): list<string>
-    # shlex.split() with unix rule for unix and win32.
-    var state: string = 'whitespace'
-    var idx = 0
-    var ch: string
-    var token: string = ''
-    var result: list<string> = []
+" util func, pure {{{2
+function! s:ShellSplitUnix(s)
+    " shlex.split() with unix rule for unix and win32.
+    let str = a:s
 
-    while idx < len(s)
-        ch = s[idx]
-        idx += 1
+    let state = 'whitespace'
+    let idx = 0
+    let ch = ''
+    let token = ''
+    let result = []
+
+    while idx < len(str)
+        let ch = str[idx]
+        let idx += 1
 
         if ch == "'"
             if state == 'raw' || state == 'whitespace'
-                state = 'quote_single'
+                let state = 'quote_single'
             elseif state == 'quote_single'
-                state = 'raw'
+                let state = 'raw'
             else
-                token ..= ch
+                let token ..= ch
                 if state == 'backslash'
-                    state = 'raw'
+                    let state = 'raw'
                 endif
             endif
         elseif ch == '"'
             if state == 'raw' || state == 'whitespace'
-                state = 'quote_double'
+                let state = 'quote_double'
             elseif state == 'quote_double'
-                state = 'raw'
+                let state = 'raw'
             elseif state == 'quote_backslash'
-                token ..= ch
-                state = 'quote_double'
+                let token ..= ch
+                let state = 'quote_double'
             else
-                token ..= ch
+                let token ..= ch
                 if state == 'backslash'
-                    state = 'raw'
+                    let state = 'raw'
                 endif
             endif
         elseif ch == '\'
             if state == 'quote_double'
-                state = 'quote_backslash'
+                let state = 'quote_backslash'
             elseif state == 'raw' || state == 'whitespace'
-                state = 'backslash'
+                let state = 'backslash'
             elseif state == 'backslash'
-                token ..= '\'
-                state = 'raw'
+                let token ..= '\'
+                let state = 'raw'
             elseif state == 'quote_single'
-                token ..= '\'
+                let token ..= '\'
             elseif state == 'quote_backslash'
-                token ..= '\'
-                state = 'quote_double'
+                let token ..= '\'
+                let state = 'quote_double'
             else
                 throw 'vim-sh: invalid state: \'
             endif
         elseif ch =~ '\s'
             if state == 'whitespace'
-                # nop
+                " nop
             elseif index(
-                ['quote_double', 'quote_single', 'quote_backslash', 'backslash'],
-                state) >= 0
+		  \ ['quote_double', 'quote_single', 'quote_backslash', 'backslash'],
+		  \ state) >= 0
                 if state == 'quote_backslash'
-                    token ..= '\'
+                    let token ..= '\'
                 endif
-                token ..= ch
+                let token ..= ch
                 if state == 'backslash'
-                    state = 'raw'
+                    let state = 'raw'
                 elseif state == 'quote_backslash'
-                    state = 'quote_double'
+                    let state = 'quote_double'
                 endif
             elseif state == 'raw'
-                add(result, token)
-                token = ''
-                state = 'whitespace'
+                call add(result, token)
+                let token = ''
+                let state = 'whitespace'
             else
                 throw 'vim-sh: invalid state: \s'
             endif
         else
             if state == 'whitespace' || state == 'backslash'
-                state = 'raw'
+                let state = 'raw'
             elseif state == 'quote_backslash'
-                token ..= '\'
-                state = 'quote_double'
+                let token ..= '\'
+                let state = 'quote_double'
             endif
-            token ..= ch
+            let token ..= ch
         endif
     endwhile
 
     if state == 'raw'
-        add(result, token)
+        call add(result, token)
     elseif state == 'whitespace'
-        # nop
+        " nop
     else
         throw 'input not legal: state at finish: ' .. state
     endif
 
     return result
-enddef
+endfunction
+
 " -w program {{{2
 function! s:program_kitty(context) abort
   let cmd = a:context.cmd
@@ -738,9 +764,15 @@ endfunction
 
 function! s:program_ConEmu(context) abort
   if !s:is_win32 | return 0 | endif
-  if !executable('conemu') | return 0 | endif
+  if executable('ConEmu64')
+    let conemu = 'ConEmu64'
+  elseif executable('ConEmu')
+    let conemu = 'ConEmu'
+  else
+    return 0
+  endif
 
-  call a:context.start_fn(['conemu', '-title', a:context.term_name, '-run'] + a:context.cmd)
+  call a:context.start_fn([conemu, '-title', a:context.term_name, '-run'] + a:context.cmd)
   return 1
 endfunction
 
@@ -851,6 +883,20 @@ endfunction
 function! s:win32_start(cmdlist, ...) abort
   let cmd = s:win32_cmd_list_to_str(a:cmdlist)
 
+  if has('nvim')
+    let term_name = a:0 > 0 ? get(a:1, 'term_name', '') : ''
+    " cmd.exe start <title> <program>: quote in <title> seems buggy, so just
+    " remove " from it.
+    let term_name = substitute(term_name, '"', '', 'g')
+    let term_name = s:win32_quote(term_name)
+
+    " escape rule for cmd.exe
+    let cmd = substitute(cmd, '\v[<>^|&()"]', '^&', 'g')
+
+    call jobstart(['cmd', '/s /c start', term_name, cmd])
+    return
+  endif
+
   " "!start" is handled by vim internally; not affected by &shell related
   " setting.
   "
@@ -920,7 +966,7 @@ function! s:wsl_path(shell, file) abort
 endfunction
 finish  " tests. {{{1
 vim9script
-# usage: copy these (and function ShellSplitUnix definition) to a vim buffer;
+# usage: copy these (and function s:ShellSplitUnix definition) to a vim buffer;
 # then run with :%source
 
 # data is from cpython source, which "was from shellwords, by Hartmut Goebel".
@@ -989,7 +1035,7 @@ foo\ bar|foo bar|
 áéíóú|áéíóú|
 END
 
-# put ShellSplitUnix definition here!
+# put s:ShellSplitUnix definition here!
 #
 
 var line_nr = 7  # the line of "trim END"
