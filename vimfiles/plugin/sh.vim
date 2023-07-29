@@ -4,7 +4,6 @@
 "   - Sh -S (skip_shell) needs more test.
 "     - win32 not-existed command (including .com file without suffix) error
 "     info is not available;
-"   - translate to vim9script.
 
 if get(g:, 'loaded_sh')
   finish
@@ -12,11 +11,14 @@ endif
 let g:loaded_sh = 1
 
 " "item" or "item|alias"
-let s:sh_programs = ['kitty', 'alacritty|alac', 'konsole|kde', 'xfce4Terminal|xfce', 'urxvt', 'WindowsTerminal|wt', 'ConEmu|conemu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
+let s:sh_programs_builtin = ['kitty', 'alacritty|alac', 'konsole|kde', 'xfce4Terminal|xfce', 'urxvt', 'WindowsTerminal|wt', 'ConEmu|conemu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
 
 " main {{{1
 " common var def {{{2
 let s:is_win32 = has('win32')
+
+" set s:sh_path_default for win32 later.
+let s:sh_path_default = s:is_win32 ? '' : &shell
 
 function! s:echoerr(msg)
   echohl ErrorMsg
@@ -38,11 +40,20 @@ endif
 " polyfill {{{2
 function! s:get_fin_term_buffer() abort
   let result = []
-  for bufnr in term_list()
-    if match(term_getstatus(bufnr), 'finished') >= 0
-      let result = add(result, bufnr)
-    endif
-  endfor
+  if has('nvim')
+    for buffer in getbufinfo()
+      let jid = get(buffer.variables, 'terminal_job_id', 0)
+      if jid > 0 && jobwait([jid], 0)[0] != -1
+        let result = add(result, buffer.bufnr)
+      endif
+    endfor
+  else
+    for bufnr in term_list()
+      if match(term_getstatus(bufnr), 'finished') >= 0
+        let result = add(result, bufnr)
+      endif
+    endfor
+  endif
   return result
 endfunction
 
@@ -90,7 +101,7 @@ function! s:sh(cmd, opt) abort " {{{2
   let opt.tty = match(opt_string, 't') >= 0
 
   call add(help, '  w: use external terminal (support sub opt, like this: -w=urxvt,w=cmd)')
-  call add(help, '     currently supported: ' . join(s:sh_programs, ', '))
+  call add(help, '     currently supported: ' . join(s:sh_programs_builtin, ', '))
   call add(help, '     order can be controlled by variable `g:sh_programs`')
   let opt.window = match(opt_string, 'w') >= 0
 
@@ -214,11 +225,13 @@ function! s:sh(cmd, opt) abort " {{{2
     endif
   endif
 
-  let shell = exists('g:sh_path') ? g:sh_path : &shell
-  let shell_list = s:ShellSplitUnix(shell)
+  let shell = exists('g:sh_path') ? g:sh_path : s:sh_path_default
+  " if shell is already quoted (executable(shell) is much likely false),
+  " then split it to get executable path.
+  let shell_list = executable(shell) ? [shell] : s:ShellSplitUnix(shell)
 
   if !executable(shell_list->get(0)) && !opt.skip_shell
-    call s:echoerr(printf('shell is not found! (`%s`)', shell)) | return
+    call s:echoerr(printf('Unix shell is not found! (`%s`)', shell)) | return
   endif
 
   " opt.visual: yank text by `norm gv`;
@@ -315,7 +328,7 @@ function! s:sh(cmd, opt) abort " {{{2
         endif
       endif
     endif
-    call job_start(cmd, #{stoponexit: '', in_io: 'null', out_io: 'null', err_io: 'null'})
+    call s:unix_start(cmd)
 
     return
   endif
@@ -339,13 +352,13 @@ function! s:sh(cmd, opt) abort " {{{2
     elseif exists('g:sh_programs')
       let program_set = g:sh_programs
     else
-      let program_set = s:sh_programs
+      let program_set = s:sh_programs_builtin
     endif
     for s:program in program_set
       if type(s:program) == type(function('tr'))
         :
       elseif type(s:program) == type('')
-        for i in s:sh_programs
+        for i in s:sh_programs_builtin
           if match(i, '\<' .. s:program .. '\>') >= 0
             let s:program = i
             break
@@ -435,7 +448,7 @@ function! s:sh(cmd, opt) abort " {{{2
   endif
   " }}}
 
-  " no tty {{{
+  " no tty && !nvim {{{
   let bufnr = bufadd('')
   call bufload(bufnr)
   let job_opt = extend(job_opt, {
@@ -507,7 +520,7 @@ function! s:unix_start(cmdlist, ...) abort
   if has('nvim')
     call jobstart(a:cmdlist, {'detach': 1})
   else
-    call job_start(a:cmdlist, {'stoponexit': ''})
+    call job_start(a:cmdlist, #{stoponexit: '', in_io: 'null', out_io: 'null', err_io: 'null'})
   endif
 endfunction
 
@@ -526,8 +539,7 @@ function! s:post_func(result, opt) abort
 
   if s:is_win32
     let tenc = !empty(&tenc) ? &tenc : s:tenc
-    let shell = exists('g:sh_path') ? g:sh_path : &shell
-    if match(shell, 'busybox') < 0
+    if match(exists('g:sh_path') ? g:sh_path : s:sh_path_default, 'busybox') < 0
       " skip iconv if not using busybox;
       " busybox / mingit has encoding issue; but mingit is not easy to detect.
       let tenc = ''
@@ -851,25 +863,25 @@ endfunction
 " win32 polyfill {{{1
 if !s:is_win32 | finish | endif
 
-" guess shell if not set {{{2
-if !exists('g:sh_path')
-  for s:i in [
-        \ &shell,
-        \ 'C:/msys64/usr/bin/zsh.exe',
-        \ 'C:/msys64/usr/bin/bash.exe',
-        \ 'C:/msys32/usr/bin/zsh.exe',
-        \ 'C:/msys32/usr/bin/bash.exe',
-        \ 'C:/Program Files/Git/usr/bin/bash.exe',
-        \ 'C:/Program Files (x86)/Git/usr/bin/bash.exe',
-        \ ]
-    " &shell: check sh but not pwsh.
-    if (s:i ==# &shell && match(s:i, '\v(pw)@2<!sh') >= 0)
-          \ || (s:i !=# &shell && executable(s:i))
-      let g:sh_path = s:i
-      break
-    endif
-  endfor
-endif
+" default shell detect {{{2
+for s:i in [
+      \ &shell,
+      \ 'C:/msys64/usr/bin/zsh.exe',
+      \ 'C:/msys64/usr/bin/bash.exe',
+      \ 'C:/msys32/usr/bin/zsh.exe',
+      \ 'C:/msys32/usr/bin/bash.exe',
+      \ 'C:/Program Files/Git/usr/bin/bash.exe',
+      \ 'C:/Program Files (x86)/Git/usr/bin/bash.exe',
+      \ 'busybox sh',
+      \ ]
+  " &shell: check sh but not pwsh.
+  if (s:i ==# &shell && match(s:i, '\v(pw)@2<!sh') >= 0)
+        \ || (s:i !=# &shell && executable(s:i))
+        \ || (s:i ==# 'busybox sh' && executable('busybox'))
+    let s:sh_path_default = s:i
+    break
+  endif
+endfor
 
 " win32 quote related {{{2
 function! s:shellescape(cmd) abort

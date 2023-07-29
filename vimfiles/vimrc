@@ -1179,6 +1179,9 @@ augroup vimrc
             silent normal gvy
             text = @"
             @" = t
+            if &buftype == 'terminal'
+                text = substitute(text, "\n", '', 'g')
+            endif
         else
             text = expand(get(g:, 'netrw_gx', '<cfile>'))
         endif
