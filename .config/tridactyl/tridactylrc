@@ -42,6 +42,12 @@ set followpagepatterns {"next":"^(next|newer|上一章|上一篇|上一页)\\b|�
 " tabo default alias (tabonly) is dangerous, so let's remap it.
 alias tabo tabopen
 
+" Security {{{1
+" default binding p / P (if content in clipboard does not look like url, then
+" search it) is dangerous; so use a blank search engine as default.
+set searchengine blank
+set searchurls.blank http://localhost/maybe-pressed-wrong-key?%s
+
 " Search Engine {{{1
 set searchurls.bd https://www.baidu.com/s?wd=%s
 set searchurls.bg https://www.bing.com/search?q=%s&ensearch=1
