@@ -43,7 +43,7 @@ export FZF_DEFAULT_OPTS='--cycle --no-sort --no-mouse --color=16'
 
 # bat
 # git-delta theme is also controlled by `BAT_THEME`.
-export BAT_THEME=OneHalfLight
+export BAT_THEME=ansi
 
 # enable fcitx in kitty.
 # https://github.com/kovidgoyal/kitty/issues/469

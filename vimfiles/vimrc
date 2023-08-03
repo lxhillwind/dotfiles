@@ -1250,6 +1250,23 @@ augroup vimrc
     # `run-some-shellcmd | vim -`, without "No write since..." warning {{{2
     au StdinReadPre * setl bt=nofile noswapfile
 
+    # day/light theme switching {{{2
+    def DayLightTheme()
+        if executable('darkman') && system('darkman get') =~ 'light'
+            set bg=light
+        else
+            set bg=dark
+        endif
+    enddef
+    if has_gui && is_linux
+        au SigUSR1 * DayLightTheme()
+        if has('vim_starting')
+            # console vim can detect day/light theme;
+            # but when run inside tmux, it cannot. So run this anyway.
+            DayLightTheme()
+        endif
+    endif
+
 augroup END  # {{{2
 
 # Colorscheme {{{1
