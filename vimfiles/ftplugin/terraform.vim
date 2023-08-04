@@ -18,7 +18,11 @@ def TerraformDoc(...arg: list<string>)
             const idx = resource_long_name->match('_')
             const provider = resource_long_name[: idx - 1]
             const resource = resource_long_name[idx + 1 :]
-            const group = {alicloud: 'aliyun', dyn: 'terraform-providers'}->get(provider, 'hashicorp')
+            const group = {
+                alicloud: 'aliyun',
+                dyn: 'terraform-providers',
+                vultr: 'vultr',
+            }->get(provider, 'hashicorp')
             const url = $'https://registry.terraform.io/providers/{group}/{provider}/latest/docs/{type}/{resource}'
             execute 'Sh -g' shellescape(url)
         endif
