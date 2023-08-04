@@ -1,0 +1,47 @@
+#!/bin/bash
+set -e
+
+if [ -t 0 ]; then
+    echo 'should only be called from tmux hook!' >&2
+    exit 1
+fi
+
+# Usage:
+#   add following to tmux.conf:
+#     set-hook -g alert-bell 'run-shell ~/bin/tmux-notify'
+#
+# Why do we need this script?
+#   Because if a window in a background session alerts, we won't get notified,
+#   with default desktop / emulator / notification setup.
+
+# NOTE: alert_windows does not contain active window which is in front session;
+# then we rely on desktop's notification system to send notification (instead
+# of this script).
+#
+# "║" is unlikely to be in session_name / window_name; it's better than "|".
+IFS=$'\n' alert_windows=( $(tmux list-windows -af '#{==:#{window_bell_flag},1}' -F '#{session_name}║#{window_index}║#{window_name}') )
+
+alert_message=
+for window in "${alert_windows[@]}"; do
+    IFS=$'║' fmt=( $window )
+    alert_message=$( \
+        printf "%s\n[%s] %s:%s" \
+        "${alert_message}" "${fmt[0]}" "${fmt[1]}" "${fmt[2]}" \
+    )
+done
+
+if [ -z "$alert_message" ]; then
+    exit 0
+fi
+
+case "$OSTYPE" in
+    darwin*)
+        alert_message=$(printf %s "$alert_message" | tr -d '"')
+        # NOTE: notification center tweak is required!
+        # https://apple.stackexchange.com/a/214598
+        osascript -e 'display notification "'"$alert_message"'" with title "tmux alert"'
+        ;;
+    *linux*)
+        notify-send -i terminal -u critical -t 0 "tmux alert" "$alert_message"
+        ;;
+esac

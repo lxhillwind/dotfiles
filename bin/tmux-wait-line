@@ -1,0 +1,43 @@
+#!/bin/bash
+set -e
+
+if [ -z "$TMUX" ]; then
+    echo 'not in tmux session.' >&2
+    exit 1
+fi
+
+help='
+description:
+send alert (tmux) when expected line is shown (line is checked every 5s)
+
+usage:
+$1: pane id (can be get by key `<C-s>q`)
+$2 ... $last: command to run to detect if line is expected
+(to use shell pipe, run `sh -c "cmd"`)
+'
+
+if [ $# -lt 2 ]; then
+    printf "%s\n" "$help" >&2
+    exit 0
+fi
+
+capture_pane()
+{
+    tmux capture -p -t "${@:?$1 as pane_id; others as appended args}"
+}
+
+get_pane_id()
+{
+    pane_id=${1:?pane index as $1, others to append}
+    pane_id=$(tmux list-panes -F '#{pane_index} #{session_id}:#{window_id}.#{pane_id}' | awk "(\$1 == $pane_id) { print(\$2) }")
+    echo "${pane_id:?pane not found}"
+}
+
+pane_id=$(get_pane_id "$1")
+shift
+
+while ! capture_pane "$pane_id" | sed -n /^./p | tail -n 1 | "$@"; do
+    sleep 5
+done
+
+printf '\a'

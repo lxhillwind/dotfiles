@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e
+
+if [ -z "$TMUX" ]; then
+    echo 'not in tmux session.' >&2
+    exit 1
+fi
+
+windows=( $(tmux list-windows | cut -d: -f1) )
+current=$(tmux display -p '#I')
+
+index=1
+while [ "$index" -le "${#windows[@]}" ]; do
+    src="${windows[index-1]}"
+    dest="$index"
+    if [ "$src" != "$dest" ]; then
+        if [ "$src" = "$current" ]; then
+            tmux move-window -s "$src" -t "$dest"
+        else
+            tmux move-window -d -s "$src" -t "$dest"
+        fi
+    fi
+    index=$(( index + 1 ))
+done

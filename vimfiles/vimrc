@@ -1076,33 +1076,6 @@ augroup vimrc
     au FileType qf nnoremap <buffer> <C-j> <CR><C-w>p
     au FileType qf nnoremap <buffer> <Space>;l <Cmd>chistory<CR>
 
-    # markdown {{{2
-    au FileType markdown {
-        setl tw=78
-
-        hi link CheckboxUnchecked Type
-        hi link CheckboxChecked Comment
-        syn match CheckboxUnchecked '\v^\s*- \[ \] '
-        syn match CheckboxChecked '\v^\s*- \[X\] '
-    }
-
-    # markdown checkbox {{{
-    def MarkdownToggleTaskStatus()
-        const lineno = line('.')
-        var line = getline(lineno)
-        if line =~ '\v^\s*- \[X\] '
-            line = substitute(line, '\v(^\s*- )@<=\[X\] ', '', '')
-        elseif line =~ '\v^\s*- \[ \] '
-            line = substitute(line, '\v(^\s*- \[)@<= ', 'X', '')
-        elseif line =~ '\v^\s*- '
-            line = substitute(line, '\v(^\s*-)@<= ', ' [ ] ', '')
-        endif
-        setline(lineno, line)
-    enddef
-    # }}}
-    au FileType markdown nnoremap <buffer>
-                \ <Space>;c <Cmd>call <SID>MarkdownToggleTaskStatus()<CR>
-
     # binary file editing. (ft=binary) {{{2
     # ReadBin / WriteBin impl {{{
     # avoid using busybox xxd. To use busybox xxd: `sed -E 's/  .*//' | xxd -r`;
@@ -1853,6 +1826,7 @@ def FuzzyRecentFiles() # {{{3
     const filesInCurrentTab = tabpagebuflist()
         ->mapnew((_, i) => i->getbufinfo())
         ->flattennew(1)->map((_, i) => i.name)
+    const blacklistName = ["COMMIT_EDITMSG", "ADD_EDIT.patch", "addp-hunk-edit.diff", "git-rebase-todo"]
     g:FuzzyFinder(
         'RecentFiles',
         v:none,
@@ -1861,6 +1835,7 @@ def FuzzyRecentFiles() # {{{3
         ->filter((_, i) => {
             const absName = i->ExpandHead()
             return absName->filereadable() && filesInCurrentTab->index(absName) < 0
+                && blacklistName->index(fnamemodify(absName, ':t')) < 0
         }),
         (s) => {
             execute 'e' fnameescape(s)
@@ -1912,7 +1887,9 @@ def FuzzyUserMapping() # {{{3
                     ->matchlist('\vLast set from (.*) line (\d+)$')
                 if !empty(line_info)
                     const [file, line] = line_info[1 : 2]
-                    execute 'edit' fnameescape(file)
+                    if bufname() != file
+                        execute 'edit' fnameescape(file)
+                    endif
                     execute $'normal {line}G'
                 endif
             endif
@@ -1946,7 +1923,9 @@ def FuzzyUserCommand() # {{{3
                     ->matchlist('\vLast set from (.*) line (\d+)$')
                 if !empty(line_info)
                     const [file, line] = line_info[1 : 2]
-                    execute 'edit' fnameescape(file)
+                    if bufname() != file
+                        execute 'edit' fnameescape(file)
+                    endif
                     execute $'normal {line}G'
                 endif
             endif
