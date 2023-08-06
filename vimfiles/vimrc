@@ -1862,17 +1862,23 @@ def FuzzyPromptFzf() # {{{3
 enddef
 
 def FuzzyUserMapping() # {{{3
+    if v:lang !~ '\v^(en|C$)'
+        # change lang to C, so command 'verb map' outputs like
+        # "Last set from", instead of using non-English message.
+        defer execute($'language messages {v:lang}')
+        language messages C
+    endif
     const data = execute('verb map | verb map! | verb tmap')->split("\n")
     var keys: list<string>
     var values: list<string>
     {
-        var idx = 0
+        var prev: string
         for i in data
-            idx += 1
-            if idx % 2 == 1
-                keys->add(i)
-            else
+            if i->match('\s*Last set from') >= 0
+                keys->add(prev)
                 values->add(i)
+            else
+                prev = i
             endif
         endfor
     }
@@ -1898,17 +1904,22 @@ def FuzzyUserMapping() # {{{3
 enddef
 
 def FuzzyUserCommand() # {{{3
+    if v:lang !~ '\v^(en|C$)'
+        # ... see above (FuzzyUserMapping)
+        defer execute($'language messages {v:lang}')
+        language messages C
+    endif
     const data = execute('verb command')->split("\n")
     var keys: list<string>
     var values: list<string>
     {
-        var idx = 0
-        for i in data[1 :]  # skip firstline
-            idx += 1
-            if idx % 2 == 1
-                keys->add(i)
-            else
+        var prev: string
+        for i in data
+            if i->match('\s*Last set from') >= 0
+                keys->add(prev)
                 values->add(i)
+            else
+                prev = i
             endif
         endfor
     }

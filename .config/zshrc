@@ -2,7 +2,7 @@
 # vim:fdm=marker
 # path: ~/.zshrc
 
-# info {{{1
+# about this file {{{1
 # # Description
 # shell env | rc file.
 #
@@ -20,7 +20,7 @@
 # If `ls` alias does not work (BSD ls, for example),
 # just unalias / re-alias it after source this file.
 
-# env {{{1
+# environment variable {{{1
 export EDITOR=vim
 
 case "$PATH" in
@@ -49,6 +49,9 @@ export BAT_THEME=ansi
 # https://github.com/kovidgoyal/kitty/issues/469
 export GLFW_IM_MODULE=ibus
 
+# mpd
+export MPD_HOST=~/.mpd/socket
+
 # finish if not interactive {{{1
 case "$-" in
     *i*) ;;
@@ -56,7 +59,7 @@ case "$-" in
 esac
 
 # rc {{{1
-# colorful man {{{2
+# man(): colorful man {{{2
 man() {
     # openSUSE requires MAN_POSIXLY_CORRECT to display without prompt.
     # openSUSE requires GROFF_NO_SGR to display color (but why?).
@@ -83,19 +86,48 @@ alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
 alias pq='proxychains -q'
 
+# OSTYPE is defined by bash / zsh; OS is defined by win32 OS.
+case "${OSTYPE:-$OS}" in
+    Windows_NT)
+        alias o='cmd /s /c start ""'
+        ;;
+    *darwin*)
+        alias o=open
+        ;;
+    *)
+        alias o=xdg-open
+        ;;
+esac
+
 # simple PS1 (zsh re-defines it) {{{2
 # TODO openSUSE busybox-static sh handle PS1 buggy?
 PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date +%Y-%m-%d\ %H:%M:%S)] \[\e[33m\]\w'$'\n''\[\e[32m\]\$\[\e[0m\] '
 
-# load vim-vimserver related setting after PS1. {{{2
+# load vim-vimserver related setting after PS1 {{{2
 # see lxhillwind/vim-vimserver
 if [ -f "$VIMSERVER_SH_SOURCE" ]; then
     source "$VIMSERVER_SH_SOURCE"
 fi
 
-# busybox can only set rc by $ENV, so source local config if exists. {{{2
+# busybox can only set rc by $ENV, so source local config if exists {{{2
 if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
     source "$SH_RC_LOCAL"
+fi
+
+# sv(): capture term output, pipe to vim (easy jump) {{{2
+# optional $1: start line from visible top; default: 1000
+if [ -n "$TMUX" ]; then
+    sv()
+    {
+        vim -c 'set buftype=nofile | %Sh -t=enew cat' <(tmux capture -e -p -S -${1:-0} -E $(tmux display -p "#{cursor_y}"))
+    }
+fi
+
+if [ -n "$DTACH_SESSION_FILE" ]; then
+    sv()
+    {
+        vim -c 'set buftype=nofile | %Sh -t=enew cat' <(dtach-session $1)
+    }
 fi
 
 # finish if not zsh {{{2
@@ -137,7 +169,7 @@ hh() {
 export DIRSTACKSIZE=16
 setopt auto_pushd pushd_ignore_dups pushd_minus
 
-# cd enhancement; j() {{{2
+# j(): cd enhancement {{{2
 _cd_history() {
     if [[ $PWD != $_cd_history_last ]]; then
         if [[ -v _cd_history_last ]]; then
@@ -211,93 +243,28 @@ j() {
     fi
 }
 
-# xargs-sh() {{{2
-# xargs runs a seperate process, so builtin cmd like `cd` won't work.
-# xargs-sh() trys to fix it.
-# difference from xargs:
-#   always use -r;
-#   always quote param;
-#   param is newline delimited;
-# TODO: add more flag? (like -P, -I)
-# example:
-#   \ls | fzf | xargs-sh cd
-# since xargs-sh is not a valid function name for busybox sh,
-# just put it here (in zshrc).
-xargs-sh()
-{
-    local s
-    while read s; do
-        "${@:-echo}" "$s"
-    done
-}
-
-# vi insert mode {{{2
-bindkey -v \^A beginning-of-line
-bindkey -v \^E end-of-line
-bindkey -v \^F forward-char
-bindkey -v \^B backward-char
-bindkey -v \^N down-line-or-history
-bindkey -v \^P up-line-or-history
-bindkey -v \^D delete-char-or-list
-bindkey -v \^H backward-delete-char
-bindkey -v \^U backward-kill-line
-bindkey -v \^K kill-line
-bindkey -v \^W backward-kill-word
-bindkey -v \^Y yank
-
-zle-keymap-select()
-{
-    case $KEYMAP in
-        vicmd) print -n '\e[1 q' ;;  # block cursor
-        viins|main) print -n '\e[5 q' ;;  # less visible cursor
-    esac
-}
-zle -N zle-keymap-select
-
-# TODO load on `set -o emacs`
-_fix_cursor()
-{
-    print -n '\e[1 q'
-}
-
 # readline keybindings {{{2
 bindkey -e
 bindkey \^U backward-kill-line
 
-# '#' at begin-of-line as comment
+# '#' at begin-of-line as comment {{{2
 setopt interactivecomments
 
 # simple PS1 {{{2
 PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
 
-# edit command line (C-x C-e) {{{2
+# <C-x><C-e>: edit command line {{{2
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey \^x\^e edit-command-line
 
-# capture term output, pipe to vim (easy jump); func: sv() {{{2
-# optional $1: start line from visible top; default: 1000
-if [ -n "$TMUX" ]; then
-sv()
-{
-    vim -c 'set buftype=nofile | %Sh -t=enew cat' <(tmux capture -e -p -S -${1:-0} -E $(tmux display -p "#{cursor_y}"))
-}
-fi
-
-if [ -n "$DTACH_SESSION_FILE" ]; then
-sv()
-{
-    vim -c 'set buftype=nofile | %Sh -t=enew cat' <(dtach-session $1)
-}
-fi
-
-# put fzf result to zle buffer. fz() {{{2
+# fz(): put fzf result to zle buffer {{{2
 fz()
 {
     command fzf | xargs-sh print -z
 }
 
-# bubblewrap. {{{2
+# bubblewrap {{{2
 if [[ $OSTYPE =~ linux ]]; then
     if [[ "$(readlink /proc/1/exe)" =~ bwrap ]]; then
         PS1="(bwrap) $PS1"
@@ -306,15 +273,10 @@ if [[ $OSTYPE =~ linux ]]; then
     fi
 fi
 
-# finish. {{{2
+# finish {{{2
 compinit
 
-# TODO merge into zshrc block above. {{{1
-alias o=xdg-open
-
-export MPD_HOST=~/.mpd/socket
-
-# x11 / wayland; func: s() or x() {{{2
+# s() or x(): x11 / wayland {{{1
 if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
     export GTK_IM_MODULE=fcitx
     export QT_IM_MODULE=fcitx
@@ -344,7 +306,7 @@ if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; the
     }
 fi
 
-# zsh: startx automatically in linux {{{1
+# startx automatically in linux console {{{1
 if [[ $OSTYPE =~ linux ]] && [ "$TTY" = /dev/tty1 ] && [ "$TERM" = linux ]; then
     x  # defined above
 fi

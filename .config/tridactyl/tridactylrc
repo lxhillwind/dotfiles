@@ -53,10 +53,12 @@ set searchurls.bd https://www.baidu.com/s?wd=%s
 set searchurls.bg https://www.bing.com/search?q=%s&ensearch=1
 set searchurls.bl https://search.bilibili.com/all?keyword=%s
 set searchurls.cd https://www.bing.com/dict/search?mkt=zh-CN&q=%s
+set searchurls.cnf https://command-not-found.com/%s
 set searchurls.co https://www.collinsdictionary.com/english/%s
 set searchurls.dg https://duckduckgo.com/?q=%s
 set searchurls.gg https://www.google.com/search?q=%s
 set searchurls.man https://man.archlinux.org/search?q=%s&go=Go
+set searchurls.pkg https://pkgs.org/search/?q=%s
 set searchurls.sh http://symbolhound.com/?q=%s
 set searchurls.tr https://www.microsofttranslator.com/bv.aspx?from=&to=zh-CHS&a=%s
 set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s
