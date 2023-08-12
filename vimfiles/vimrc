@@ -78,12 +78,12 @@ g:markdown_fenced_languages = [
 packadd! matchit
 
 packadd! securemodelines
-packadd! vim9-syntax
-packadd! vim-tridactyl
 
+# directory viewer
 packadd! vim-dirvish
 g:loaded_netrwPlugin = 1
 
+# motion
 packadd! vim-sneak
 g:sneak#label = 1
 # sneak unmap f / t when one of them is pressed after sneak key. {{{
@@ -102,18 +102,34 @@ vmap S <Plug>Sneak_S
 omap s <Plug>Sneak_s
 omap S <Plug>Sneak_S
 
-packadd! vim-markdown-folding
-g:markdown_fold_style = 'nested'
-g:markdown_fold_override_foldtext = 0
-
-# colorscheme
-packadd! sitruuna.vim
+# register
+packadd! vim-peekaboo
 
 # clipboard
 const use_oscyank = !(has_gui || !empty($TMUX))
 if use_oscyank
     packadd! vim-oscyank
 endif
+
+# git url
+packadd! vim-gh-line
+g:gh_line_map_default = 0
+g:gh_line_blame_map_default = 0
+if !has_gui
+    # echo url only.
+    g:gh_open_command = ''
+endif
+command! GitRepoUrl feedkeys("\<Plug>(gh-repo)")
+
+# colorscheme
+packadd! sitruuna.vim
+
+# filetype / syntax
+packadd! vim9-syntax
+packadd! vim-tridactyl
+packadd! vim-markdown-folding
+g:markdown_fold_style = 'nested'
+g:markdown_fold_override_foldtext = 0
 
 # completion {{{2
 # source for dictionary, current or other loaded buffers, see ':help cpt'
@@ -417,7 +433,7 @@ if is_win32 && has('vim_starting')
     # like this:
     #   :!echo \"hello world\"
     # (so just use :Sh if possible: it is more user friendly, and does not
-    # depends on &shell related setting) }}}
+    # depend on &shell related setting) }}}
     if &shell->match('\v(bash|zsh|busybox(|.exe) sh)(|.exe)$') >= 0
         # these settings are from vim_faq, modified.
         # https://vimhelp.org/vim_faq.txt.html#faq-33.6
@@ -1059,12 +1075,25 @@ def FuzzyJumpCurrentBuffer()
     )
 enddef
 
+# cd; search cword with bing dict (in web browser) {{{2
+nnoremap cd <ScriptCmd>OpenDict()<CR>
+def OpenDict()
+    const word = expand('<cword>')
+    if !empty(word)
+        execute 'Sh -g' shellescape($'https://www.bing.com/dict/search?mkt=zh-CN&q={word}')
+    endif
+enddef
+
 # Autocmd {{{1
 
 augroup vimrc
     # misc (filetype related) {{{2
-    # NOTE: "au BufNewFile,BufRead XXX setl ft=YYY" should be put in ftdetect/;
+    # NOTE: "au BufNewFile,BufRead XXX setf YYY" should be put in
+    # ftdetect/ (if filetype will not be detected by system filetype.vim)
+    # or filetype.vim (to take higher priority over system filetype.vim);
     # otherwise "au FileType YYY .*" stmt won't work.
+    #
+    # complex filetype setting should be put in ftplugin/.
     au FileType yaml setl indentkeys-=0#
     au FileType zig setl fp=zig\ fmt\ --stdin
     # ":h ft-sh-syntax"
@@ -1488,9 +1517,44 @@ def JobClear(num: number)
     endfor
 enddef
 
+# :Lf; call lf in current buffer (as a replacement to vim-dirvish) {{{2
+command! Lf Lf()
+
+def Lf()
+    if !executable('lf')
+        throw 'lf is not found in $PATH!'
+    endif
+    const result_file = tempname()
+    const shcmd = 'lf -selection-path ' .. shellescape(result_file)
+    var cmd_opt = execute($'Sh -n {shcmd}')->json_decode()
+    cmd_opt.opt->extend({
+        curwin: true, term_finish: 'close', hidden: true,
+        exit_cb: (_, _) => {
+            if !filereadable(result_file)
+                return
+            endif
+            # TODO multiple line / file in result?
+            const result = result_file->readfile()->get(0, "")
+            if filereadable(result)
+                execute 'edit' fnameescape(result)
+            endif
+        }
+    })
+    term_start(cmd_opt.cmd, cmd_opt.opt)
+enddef
+
 # :MatchLongLine {number} {{{2
 # Refer: https://stackoverflow.com/a/1117367
 command! -nargs=1 MatchLongLine exe ':/\%>' .. <args> .. 'v.\+'
+
+# :OpenWithVSCode {{{2
+command! OpenWithVSCode {
+    const file = expand('%:p')
+    const line = line('.')
+    const column = charcol('.')
+    const param = printf('code -n ./ && code -r -g %s:%s:%s', shellescape(file), line, column)
+    execute 'Cdproject' 'Sh' param
+    }
 
 # :PluginReadme {plugin}; open README file for specified plugin. {{{2
 command! -nargs=1 -complete=custom,PluginReadmeComp PluginReadme

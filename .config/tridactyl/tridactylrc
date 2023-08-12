@@ -21,6 +21,11 @@
 "   - ui.key.menuAccessKey => 17 (then we can press alt-somekey without opening menu; ff restart required!);
 "   - ui.key.menuAccessKeyFocuses => false (press alt does not focus on menu); }}}
 "
+" firefox plugin setup {{{
+" - Tridactyl: :nativeinstall;
+" - Simple Tab Groups (stg): bind physical key <A-g> / <A-e> via global preference
+"   (they may be different keys in windows (autohotkey) / macos (karabiner)); }}}
+"
 " - \ at end of line is used for line-continuation, see: {{{
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61 }}}
 "

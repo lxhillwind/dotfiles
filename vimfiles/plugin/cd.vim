@@ -7,8 +7,7 @@ command! -nargs=* -complete=command Cdhome Cd('home', <q-args>)
 command! -nargs=* -complete=command Cdbuffer Cd('buffer', <q-args>)
 command! -nargs=* -complete=command Cdproject Cd('project', <q-args>)
 
-nnoremap <Space>c <Cmd>call <SID>GotoWhichDir()<CR>
-
+nnoremap <Space>c <ScriptCmd>GotoWhichDir()<CR>
 
 # utility (copied from ~/vimfiles/vimrc) {{{
 const is_win32 = has('win32')

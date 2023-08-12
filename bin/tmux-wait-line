@@ -1,11 +1,6 @@
 #!/bin/bash
 set -e
 
-if [ -z "$TMUX" ]; then
-    echo 'not in tmux session.' >&2
-    exit 1
-fi
-
 help='
 description:
 send alert (tmux) when expected line is shown (line is checked every 5s)

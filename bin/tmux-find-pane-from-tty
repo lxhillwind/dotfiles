@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+help='
+Description:
+    find which tmux pane is associated with expected tty.
+
+Usage:
+    {prog} {ttyid}
+
+Example:
+    {prog} ttys037
+    # or, with full name:
+    {prog} /dev/ttys037
+'
+
+if [ -z "$1" ]; then
+    printf '%s\n' "$help"
+    exit 1
+fi
+
+tmux list-panes -aF 'session: #{session_name} > window_index: #{window_index} > pane_index: #{pane_index}' -f '#{==:#{pane_tty},/dev/'"${1##*/}"'}'
