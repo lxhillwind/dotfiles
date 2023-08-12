@@ -1289,36 +1289,29 @@ if !exists('g:colors_name')
     endif
 endif
 
-# terminal statusline tweak {{{2
-augroup vimrc
-    # colorscheme may not change at startup.
-    au ColorScheme * hi! link StatusLineTermNC StatusLineNC
-augroup END
-hi! link StatusLineTermNC StatusLineNC
+# colorscheme tweak {{{2
+def ColorSchemeTweak()
+    hi! link StatusLineTermNC StatusLineNC
 
-# terminal 16color {{{2
-def TerminalAnsiColor()
-    if !(has('gui_running') || &tgc)
-        return
+    # terminal 16color
+    if (has('gui_running') || &tgc)
+        # https://github.com/lxhillwind/base16-dynamic.vim
+        if &bg == 'dark'
+            g:terminal_ansi_colors = ["#263238", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#EEFFFF", "#546E7A", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#FFFFFF"]
+        else
+            g:terminal_ansi_colors = ["#fafafa", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#383a42", "#a0a1a7", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#090a0b"]
+        endif
     endif
-    # https://github.com/lxhillwind/base16-dynamic.vim
-    if &bg == 'dark'
-        g:terminal_ansi_colors = ["#263238", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#EEFFFF", "#546E7A", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#FFFFFF"]
-    else
-        g:terminal_ansi_colors = ["#fafafa", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#383a42", "#a0a1a7", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#090a0b"]
-    endif
+
+    # fix cterm underline in CursorLineNr
+    hi CursorLineNr cterm=NONE
 enddef
 
 augroup vimrc
-    au ColorScheme * TerminalAnsiColor()
+    # colorscheme may not change at startup.
+    au ColorScheme * ColorSchemeTweak()
 augroup END
-TerminalAnsiColor()
-
-# fix cterm underline in CursorLineNr {{{2
-augroup vimrc
-    au ColorScheme * hi CursorLineNr cterm=NONE
-augroup END
-hi CursorLineNr cterm=NONE
+ColorSchemeTweak()
 
 # Command {{{1
 
