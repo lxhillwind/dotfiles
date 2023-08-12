@@ -1314,6 +1314,12 @@ augroup vimrc
 augroup END
 TerminalAnsiColor()
 
+# fix cterm underline in CursorLineNr {{{2
+augroup vimrc
+    au ColorScheme * hi CursorLineNr cterm=NONE
+augroup END
+hi CursorLineNr cterm=NONE
+
 # Command {{{1
 
 # :CopyMatches  {{{2

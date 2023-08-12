@@ -147,10 +147,7 @@ g:colors_name = "base16-dynamic"
 
 # Highlighting function
 # Optional variables are attributes and guisp
-def g:Base16hi(group: string, guifg: string, guibg: string, ctermfg: string, ctermbg: string, ...args: list<string>)
-  var attr = get(args, 0, "")
-  var guisp = get(args, 1, "")
-
+def Hi(group: string, guifg: string, guibg: string, ctermfg: string, ctermbg: string, attr: string, guisp: string)
   if guifg != ""
     exec "hi " .. group .. " guifg=#" .. guifg
   endif
@@ -171,10 +168,6 @@ def g:Base16hi(group: string, guifg: string, guibg: string, ctermfg: string, cte
   endif
 enddef
 
-
-def Hi(group: string, guifg: string, guibg: string, ctermfg: string, ctermbg: string, attr: string, guisp: string)
-  g:Base16hi(group, guifg, guibg, ctermfg, ctermbg, attr, guisp)
-enddef
 
 # Vim editor colors
 Hi("Normal",        gui05, gui00, cterm05, cterm00, "", "")
