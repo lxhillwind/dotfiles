@@ -42,6 +42,19 @@ augroup vimrc
 augroup END
 
 # Plugins {{{1
+#
+# vim-plug <https://github.com/junegunn/vim-plug> is added as submodule,
+# but not loaded by default.
+# Example usage:
+#
+# ```
+# packadd vim-plug
+# call plug#begin('~/vimfiles/bundle')
+# Plug 'plugin-url'
+# # do this before plug#end, since vim-plug executes :filetype... in it.
+# source ~/vimfiles/vimrc
+# call plug#end()
+# ```
 
 set pp^=~/vimfiles
 
