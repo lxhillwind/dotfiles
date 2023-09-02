@@ -336,7 +336,7 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 " }}}
 
 " reddit.com {{{
-autocmd DocStart ^http(s?)://www.reddit.com urlmodify -t www old
+autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
 bindurl old.reddit.com --mode=normal c hint -bJc a.bylink.comments.may-blank
 " }}}
 

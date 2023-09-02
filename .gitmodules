@@ -43,6 +43,3 @@
 [submodule "vimfiles/pack/rc/opt/vim-gh-line"]
 	path = vimfiles/pack/rc/opt/vim-gh-line
 	url = https://github.com/ruanyl/vim-gh-line
-[submodule "vimfiles/pack/rc/opt/vim-plug/autoload"]
-	path = vimfiles/pack/rc/opt/vim-plug/autoload
-	url = https://github.com/junegunn/vim-plug
