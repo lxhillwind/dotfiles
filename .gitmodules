@@ -43,3 +43,9 @@
 [submodule "vimfiles/pack/rc/opt/vim-gh-line"]
 	path = vimfiles/pack/rc/opt/vim-gh-line
 	url = https://github.com/ruanyl/vim-gh-line
+[submodule "vimfiles/pack/rc/opt/vim-yaml"]
+	path = vimfiles/pack/rc/opt/vim-yaml
+	url = https://github.com/stephpy/vim-yaml
+[submodule "vimfiles/pack/rc/opt/tabular"]
+	path = vimfiles/pack/rc/opt/tabular
+	url = https://github.com/godlygeek/tabular

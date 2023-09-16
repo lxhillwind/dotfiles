@@ -78,6 +78,7 @@ g:markdown_fenced_languages = [
 packadd! matchit
 
 packadd! securemodelines
+packadd! tabular
 
 # directory viewer
 packadd! vim-dirvish
@@ -130,6 +131,8 @@ packadd! vim-tridactyl
 packadd! vim-markdown-folding
 g:markdown_fold_style = 'nested'
 g:markdown_fold_override_foldtext = 0
+# default yaml syntax is quite slow.
+packadd! vim-yaml
 
 # completion {{{2
 # source for dictionary, current or other loaded buffers, see ':help cpt'
@@ -304,6 +307,7 @@ set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 # why not using = here? since we may want to add package before souring this
 # file; `set rtp=XXX` here will cause problem.
 set rtp^=~/vimfiles
+set rtp+=~/vimfiles/after
 
 # add ~/bin to $PATH {{{2
 # Even when set ~/bin in $PATH via ~/.config/zshrc, it may not be added when
