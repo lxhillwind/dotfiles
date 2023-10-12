@@ -86,7 +86,8 @@ function showClipboard() -- {{{
     end
     hs.alert.show(text)
 end -- }}}
-hs.hotkey.bind(meta, "i", showClipboard)
+-- use copyq instead.
+--hs.hotkey.bind(meta, "i", showClipboard)
 -- need to bind option+l to shift+option+l in karabiner.
 hs.hotkey.bind({"alt", "shift"}, "l", hs.caffeinate.lockScreen)
 

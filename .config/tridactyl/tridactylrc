@@ -280,6 +280,13 @@ unbind A
 bind yf hint -y
 bind af hint -qb
 
+" yank (ip)
+bind --mode=normal y1 composite js document.location.hostname | clipboard yank
+" yank (ip:port)
+bind --mode=normal y2 composite js document.location.host | clipboard yank
+" yank (url decoded)
+bind yY composite js decodeURI(document.location) | clipboard yank
+
 " let's keep <C-f> for native function (it's search in windows / linux)
 unbind <C-f>
 unbind <C-b>
@@ -293,10 +300,19 @@ unbind --mode=normal <C-i>
 bind --mode=ex <C-b> text.backward_char
 bind --mode=ex <C-f> text.forward_char
 bind --mode=ex <C-h> text.delete_backward_char
-" cannot bind <C-w>;
 " cannot bind sth (<C-/>) as select_all (then cannot occupy <C-a>);
+" <C-w> for windows / linux does not work; requires customize omni.ja.
+bind --mode=ex <C-w> text.backward_kill_word
+bind --mode=input <C-w> text.backward_kill_word
+bind --mode=insert <C-w> text.backward_kill_word
+bind --mode=ex <C-u> text.backward_kill_line
+bind --mode=input <C-u> text.backward_kill_line
+bind --mode=insert <C-u> text.backward_kill_line
 
 " Site Settings {{{1
+
+" prevent autofocus
+seturl pkgs.org/search preventautofocusjackhammer true
 
 " some general rule:
 " - bind c for site specific hint;

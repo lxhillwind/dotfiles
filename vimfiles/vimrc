@@ -135,6 +135,7 @@ g:markdown_fold_override_foldtext = 0
 packadd! vim-yaml
 
 # completion {{{2
+# non-lsp {{{
 # source for dictionary, current or other loaded buffers, see ':help cpt'
 set cpt=.,k,w,b
 # don't select the first item.
@@ -164,9 +165,48 @@ inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 packadd! vim-dict
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
 execute 'set dict+=' .. globpath(&rtp, 'dict/text.dict', 0, 1)->get(0, '')->fnameescape()
+# }}}
 
-# {{{
+# lsp configuration helper function {{{
+# convert {"x.y.z": xx} to {"x": {"y": {"z": xx} }}
+# (vscode configuration style to canonical)
+def ExpandJsonPtr(d: dict<any>): dict<any>
+    var result = {}
+    for [k_old, v] in items(d)
+        var k: string = k_old
+        var ptr: any = result
+        while true
+            const dot = match(k, '\V.')
+            if dot > 0
+                const key = k[ : dot - 1]
+                if !has_key(ptr, key)
+                    ptr[key] = {}
+                endif
+                ptr = ptr[key]
+                k = k[dot + 1 : ]
+            else
+                ptr[k] = v
+                break
+            endif
+        endwhile
+    endfor
+    return result
+enddef
+
+# for debug
+#def g:ExpandJsonPtr(d: dict<any>): dict<any>
+#    return ExpandJsonPtr(d)
+#enddef
+# }}}
+
+# lsp server configuration {{{
 var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
+    {
+        name: 'ansible',
+        filetype: ['yaml.ansible'],
+        path: exepath('ansible-language-server'),
+        args: ['--stdio'],
+    },
     {
         name: 'golang',
         filetype: ['go', 'gomod'],
@@ -179,12 +219,28 @@ var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
         filetype: ['python'],
         path: exepath('pylsp'),
         args: [],
+        # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
+        workspaceConfig: ExpandJsonPtr({
+            # disable (default enabled) style checking plugin:
+            'pylsp.plugins.pyflakes.enabled': false,
+            'pylsp.plugins.pycodestyle.enabled': false,
+            # pylint reports [no-member], which is necessary;
+            'pylsp.plugins.pylint.enabled': true,
+            # only report error
+            'pylsp.plugins.pylint.args': ['-E'],
+        }),
     },
     {
         name: 'scala',
         filetype: ['scala'],
         path: exepath('metals'),
         args: [],
+    },
+    {
+        name: 'typescript',
+        filetype: ['typescript', 'typescriptreact'],
+        path: exepath('typescript-language-server'),
+        args: ['--stdio'],
     },
     {
         name: 'ziglang',
@@ -195,7 +251,8 @@ var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
 ] # }}}
 ->filter((_, i) => !i.path->empty())
 
-if !empty(lspConfig) # {{{
+# load lsp on demand {{{
+if !empty(lspConfig)
     for ft in lspConfig->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
         execute $'au FileType {ft} LspSetup()'
     endfor
@@ -1382,7 +1439,7 @@ def FuzzyAnyCli(cli: string)
         cli,
         v:none,
         (s) => {
-            execute('e ' .. fnameescape(s)) 
+            execute('e ' .. fnameescape(s))
         }
     )
 enddef
