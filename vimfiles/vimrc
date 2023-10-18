@@ -217,7 +217,11 @@ var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
     {
         name: 'python',
         filetype: ['python'],
-        path: exepath('pylsp'),
+        path: (
+            (!is_win32 && executable('pylsp')) ?
+            expand('~/bin/pylsp-env-helper') :
+            exepath('pylsp')
+        ),
         args: [],
         # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
         workspaceConfig: ExpandJsonPtr({
@@ -267,18 +271,24 @@ if !empty(lspConfig)
             g:LspOptionsSet({
                 # :help lsp-options
                 showDiagWithSign: false,
+                hoverInPreview: true,
             })
         endif
 
-        nnoremap <buffer> [g :LspDiag prev<CR>
-        nnoremap <buffer> ]g :LspDiag next<CR>
+        # gq
+        setlocal formatexpr=lsp#lsp#FormatExpr()
+        # K
+        setlocal keywordprg=:LspHover
+        # ctrl-]
+        setlocal tagfunc=lsp#lsp#TagFunc
 
-        nnoremap <buffer> gd :LspGotoDefinition<CR>
-        nnoremap <buffer> gy :LspGotoTypeDef<CR>
-        nnoremap <buffer> gi :LspGotoImpl<CR>
-        nnoremap <buffer> gr :LspShowReferences<CR>
+        nnoremap <buffer> <silent> [g :LspDiag prev<CR>
+        nnoremap <buffer> <silent> ]g :LspDiag next<CR>
 
-        nnoremap <buffer> K :LspHover<CR>
+        nnoremap <buffer> <silent> gd :LspGotoDefinition<CR>
+        nnoremap <buffer> <silent> gy :LspGotoTypeDef<CR>
+        nnoremap <buffer> <silent> gi :LspGotoImpl<CR>
+        nnoremap <buffer> <silent> gr :LspShowReferences<CR>
     enddef
 endif # }}}
 # }}}2
@@ -891,48 +901,32 @@ noremap <expr> n 'Nn'[v:searchforward]
 noremap <expr> N 'nN'[v:searchforward]
 
 # v_* / v_#; like `g*` / `g#`, dep: Selection() {{{2
-vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
-vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 't')<CR>
-
-# Normal: <c-n> / <c-p> to switch buffer. {{{2
-nnoremap <C-n> <Cmd>call <SID>SwitchBuffer(v:true)<CR>
-nnoremap <C-p> <Cmd>call <SID>SwitchBuffer(v:false)<CR>
-def SwitchBuffer(reverse: bool = false)
-    var current: number = bufnr()
-
-    const single_window: bool = tabpagebuflist()->len() == 1
-    if !single_window
-        tabe
-    endif
-
-    const term_list = term_list()
-    const all_bufs = getbufinfo()
-        ->filter((_, i) => !empty(i.name) && !empty(i.listed)
-        && index(term_list, i.bufnr) < 0)
-        ->mapnew((_, i) => i.bufnr)
-
-    if empty(all_bufs)
-        # avoid divide zero
-        return
-    endif
-
-    var idx = index(all_bufs, current)
-    if idx < 0 && reverse
-        idx = 0
-    endif
-    if single_window
-        idx += (reverse ? 1 : -1)
-    endif
-    idx = idx % len(all_bufs)
-
-    execute ':' string(all_bufs[idx]) 'b'
-enddef
+# feedkeys() second param: why not using 't'? {{{
+#   because if using 't', then "\n" in first param will trigger <C-j> event,
+#   which is what we define for other functions (see via `nmap <C-j>`). }}}
+vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
+vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
 
 # gF / v_gF {{{2
 # (handle column nr; v_gF handle line / column nr)
 # using plugin/jump.vim.
 nmap gF <Plug>(jump_to_file)
 vmap gF <Plug>(jump_to_file)
+
+# <C-j> / <C-k>: navigate preview window without focusing on it {{{2
+def MoveInPreviewWindow(direction: string, repeat: number)
+    wincmd P
+    execute $'normal ${repeat}{direction}'
+    wincmd p
+enddef
+
+noremap <silent> <C-j> <ScriptCmd>MoveInPreviewWindow('j', v:count)<CR>
+noremap <silent> <C-k> <ScriptCmd>MoveInPreviewWindow('k', v:count)<CR>
+noremap! <silent> <C-j> <ScriptCmd>MoveInPreviewWindow('j', v:count)<CR>
+noremap! <silent> <C-k> <ScriptCmd>MoveInPreviewWindow('k', v:count)<CR>
+
+# <C-p>: toggle previewwindow {{{2
+nnoremap <C-p> :setlocal previewwindow!<CR>
 
 # terminal escape; {{{2
 # used to use <C-Space>, but it may be occupied by DE / OS. {{{
@@ -1612,7 +1606,9 @@ command! OpenWithVSCode {
     const file = expand('%:p')
     const line = line('.')
     const column = charcol('.')
-    const param = printf('code -n ./ && code -r -g %s:%s:%s', shellescape(file), line, column)
+    const param = empty(file) ? 'code -n ./' : (
+        printf('code -n ./ && code -r -g %s:%s:%s', shellescape(file), line, column)
+    )
     execute 'Cdproject' 'Sh' param
     }
 
@@ -1853,18 +1849,6 @@ def g:FuzzyFinder(Title: string = '', Cmd: string = '', Lines: list<string> = []
 enddef
 
 # private fuzzy function {{{2
-def FuzzyGotoBuffer() # {{{3
-    g:FuzzyFinder(
-        'Buffer',
-        v:none,
-        execute('ls')->split("\n"),
-        (chosen) => {
-            const bufnr = chosen->matchstr('\v^\s*\zs(\d+)\ze')
-            execute ':' .. bufnr .. 'b'
-        }
-    )
-enddef
-
 def FuzzyGotoProject() # {{{3
     g:FuzzyFinder(
         'Project',
@@ -2077,7 +2061,6 @@ const fuzzy_all = {
         # [key, name, func]
         ['c', 'color', FuzzyColorScheme],
         ['e', 'project_dir', FuzzyGotoProject],
-        ['b', 'buffer', FuzzyGotoBuffer],
         ['t', 'tabwin', FuzzyGotoTabWin],
     ],
     f: [

@@ -356,6 +356,24 @@ autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
 bindurl old.reddit.com --mode=normal c hint -bJc a.bylink.comments.may-blank
 " }}}
 
+" Misc {{{1
+
+" read it later (all thing about <C-b>) {{{2
+
+" preview current page.
+bind --mode=normal <C-b> js window.location = 'https://www.instapaper.com/text?u=' + encodeURIComponent(window.location.href);
+
+" ... then save it to read list.
+bindurl https://www.instapaper.com/text\?u=.* --mode=normal <C-b> hint -Jc .js_read_later
+
+" open instapaper easily. (t <CR> <C-b>)
+bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.com/u
+
+" ... rapid mode in various site;
+" show hint in sibling node instead of target node, so we can see full title.
+bindurl https://news.ycombinator.com/(\?p=.*|)$ <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
+bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
+
 " Load local config and alert for finish {{{1
 source ~/.tridactylrc
 js alert("tridactylrc loaded.")

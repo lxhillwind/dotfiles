@@ -1,0 +1,12 @@
+#!/bin/sh
+# TODO: implement this in cross-platform way.
+# - MS Windows is not supported now;
+# - does not work when open file inside sub dir;
+set -e
+
+if [ -d ./venv ] && [ -e ./.git ]; then
+    t=$(\ls -d $PWD/venv/lib/python*/site-packages)
+    export PYTHONPATH=${PYTHONPATH:-:}${t}:
+fi
+
+exec pylsp "$@"
