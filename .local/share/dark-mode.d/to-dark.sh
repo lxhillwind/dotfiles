@@ -4,6 +4,7 @@
 # - darkman
 # - xfce-theme-manager
 # - arc-gtk-theme
+# - papirus-icon-theme
 #
 # optional dep:
 # - xfce4-terminal
@@ -19,11 +20,15 @@ case "${0##*/}" in
         exit 1 ;;
 esac
 
+# xfce-theme-manager: set --panels=0 to avoid reset other panels' size.
+#   (may not work; try to set in xfce-theme-manager -> Advanced -> "Panel Size")
+# xfce-theme-manager: set icons in a separate line, since it won't work if set with other options.
 if [ "$theme" = dark ]; then
-    xfce-theme-manager --theme=Arc-Dark-solid --wmborder=Arc-Dark-solid --controls=Arc-Dark-solid
+    xfce-theme-manager --theme=Arc-Dark-solid --wmborder=Arc-Dark-solid --controls=Arc-Dark-solid --panel=0
 else
-    xfce-theme-manager --theme=Arc-Lighter-solid --wmborder=Arc-Lighter-solid --controls=Arc-Lighter-solid
+    xfce-theme-manager --theme=Arc-Lighter-solid --wmborder=Arc-Lighter-solid --controls=Arc-Lighter-solid --panel=0
 fi
+xfce-theme-manager --icons=Papirus
 
 # git-delta {{{
 if [ "$theme" = dark ]; then

@@ -64,6 +64,7 @@ set searchurls.dg https://duckduckgo.com/?q=%s
 set searchurls.gg https://www.google.com/search?q=%s
 set searchurls.man https://man.archlinux.org/search?q=%s&go=Go
 set searchurls.pkg https://pkgs.org/search/?q=%s
+set searchurls.r https://old.reddit.com/r/%s
 set searchurls.sh http://symbolhound.com/?q=%s
 set searchurls.tr https://www.microsofttranslator.com/bv.aspx?from=&to=zh-CHS&a=%s
 set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s
@@ -296,18 +297,48 @@ unbind <C-x>
 unbind --mode=normal <C-o>
 unbind --mode=normal <C-i>
 
-" ex mode readline
-bind --mode=ex <C-b> text.backward_char
+" readline
+" <C-/> as select_all works natively on GTK (linux) (without bind).
+" - TODO: test if select_all (<C-/>) work for windows.
+" - TODO: impl select_all for ex mode.
+" custom select_all in ex mode won't work: {{{
+"bind --mode=ex <C-/> js document.activeElement.select()
+" }}}
+bind --mode=input <C-/> js document.activeElement.select()
+bind --mode=insert <C-/> js document.activeElement.select()
+bind --mode=ex <C-a> text.beginning_of_line
+bind --mode=input <C-a> text.beginning_of_line
+bind --mode=insert <C-a> text.beginning_of_line
+bind --mode=ex <C-e> text.end_of_line
+bind --mode=input <C-e> text.end_of_line
+bind --mode=insert <C-e> text.end_of_line
 bind --mode=ex <C-f> text.forward_char
+bind --mode=input <C-f> text.forward_char
+bind --mode=insert <C-f> text.forward_char
+bind --mode=ex <C-b> text.backward_char
+bind --mode=input <C-b> text.backward_char
+bind --mode=insert <C-b> text.backward_char
 bind --mode=ex <C-h> text.delete_backward_char
-" cannot bind sth (<C-/>) as select_all (then cannot occupy <C-a>);
+bind --mode=input <C-h> text.delete_backward_char
+bind --mode=insert <C-h> text.delete_backward_char
+bind --mode=ex <C-d> text.delete_char
+bind --mode=input <C-d> text.delete_char
+bind --mode=insert <C-d> text.delete_char
 " <C-w> for windows / linux does not work; requires customize omni.ja.
 bind --mode=ex <C-w> text.backward_kill_word
 bind --mode=input <C-w> text.backward_kill_word
 bind --mode=insert <C-w> text.backward_kill_word
+" use <C-Backspace> to backward_kill_word in all OS; {{{
+" this is default on linux / windows }}}
+bind --mode=ex <C-Backspace> text.backward_kill_word
+bind --mode=input <C-Backspace> text.backward_kill_word
+bind --mode=insert <C-Backspace> text.backward_kill_word
 bind --mode=ex <C-u> text.backward_kill_line
 bind --mode=input <C-u> text.backward_kill_line
 bind --mode=insert <C-u> text.backward_kill_line
+bind --mode=ex <C-k> text.kill_line
+bind --mode=input <C-k> text.kill_line
+bind --mode=insert <C-k> text.kill_line
 
 " Site Settings {{{1
 
@@ -351,9 +382,14 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 
 " }}}
 
-" reddit.com {{{
-autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
+" bind c for sub pages {{{
+bindurl lobste.rs --mode=normal c hint -bJc span.comments_label > a
+bindurl news.ycombinator.com --mode=normal c hint -bJc span.subline > a:nth-child(6)
 bindurl old.reddit.com --mode=normal c hint -bJc a.bylink.comments.may-blank
+" }}}
+
+" site redirection {{{
+autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
 " }}}
 
 " Misc {{{1
