@@ -1,30 +1,20 @@
 " vim: set filetype=tridactyl
 " About {{{1
 "
-" For syntax highlighting see https://github.com/tridactyl/vim-tridactyl
-"
-" NOTE:
-"
 " - ~/.tridactylrc will be sourced at last; it can be used for local config. {{{
 "   (see `:help source` in tridactyl about configuration file priority) }}}
 "
-" - search "A-6" in this file, if OS is windows or linux: we need additional setting.
-"
-" - firefox setup: (TODO set them via tridactyl?) {{{
-"   - browser.tabs.warnOnClose => true
-"     simple-tab-group cannot recover local (file:// schema) webpages properly,
-"     if STG is not the last window to close. (last is private window seems fine)
-"     **
-"     It may help to show this info in homepage, which gets shown when creating new window
-"     **
-"   - browser.startup.page => 3 (default 1; set to 3, then last closed tabs get recovered on startup)
-"   - ui.key.menuAccessKey => 17 (then we can press alt-somekey without opening menu; ff restart required!);
-"   - ui.key.menuAccessKeyFocuses => false (press alt does not focus on menu); }}}
+" - search "A-6" in this file, if OS is windows: we need additional setting.
 "
 " firefox plugin setup {{{
 " - Tridactyl: :nativeinstall;
 " - Simple Tab Groups (stg): bind physical key <A-g> / <A-e> via global preference
-"   (they may be different keys in windows (autohotkey) / macos (karabiner)); }}}
+"   (they may be different keys in windows (autohotkey) / macos (karabiner),
+"   so we cannot set them via `setpref`);
+"   "打开弹出窗口": <A-g>; "移动选中标签页到自定义群组": <A-e> }}}
+"
+" firefox theme setup {{{
+" https://codeberg.org/Freeplay/Firefox-Onebar }}}
 "
 " - \ at end of line is used for line-continuation, see: {{{
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61 }}}
@@ -37,6 +27,27 @@ set configversion 2.0
 
 " WARNING: use this to clear config (binding, etc) in memory.
 sanitise tridactyllocal
+
+" about:config {{{1
+
+" simple-tab-group cannot recover local (file:// schema) webpages properly,
+" if STG is not the last window to close. (last is private window seems fine)
+" **
+" It may help to show this info in homepage, which gets shown when creating new window
+" **
+setpref browser.tabs.warnOnClose true
+
+" default 1; set to 3, then last closed tabs get recovered on startup
+setpref browser.startup.page 3
+
+" then we can press alt-somekey without opening menu; ff restart required!
+setpref ui.key.menuAccessKey 17
+
+" press alt does not focus on menu
+setpref ui.key.menuAccessKeyFocuses false
+
+" this is required for userChrome.css (Firefox-Onebar)
+setpref toolkit.legacyUserProfileCustomizations.stylesheets true
 
 " General Settings {{{1
 set allowautofocus false
@@ -250,18 +261,13 @@ bind --mode=browser <C-6> tab #
 " so we bind <C-6> to <A-6> in ahk, then <C-6> and <A-6> produce different keys:
 "
 " When we pressing <A-6>, <C-6> is recognized by firefox, so <C-6> should be unbind.
-" But tridactylrc is used in different OS,
-" so we need to put these in ~/.tridactylrc, depending on OS:
 "
-" - unbind <C-6>, and bind <A-6> for windows:
+" But tridactylrc is used in different OS,
+" so we need to put these in ~/.tridactylrc only if using Windows:
 "
 "    bind --mode=browser <A-6> tab #
 "    unbind <C-6>
 "    unbind --mode=browser <C-6>
-"
-" - unbind <A-6> for linux (if it is binded by default):
-"
-"    unbind --mode=browser <A-6>
 " }}}
 
 " search with...
