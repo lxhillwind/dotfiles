@@ -524,6 +524,19 @@ if is_win32 && has('vim_starting')
     endif
 endif
 
+# macvim {{{2
+if has('gui_macvim') && has('vim_starting')
+    color macvim
+    set gfn=Monaco:h14
+    for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
+        execute $"map \<D-{i}> \<M-{i}>"
+        execute $"map! \<D-{i}> \<M-{i}>"
+        execute $"tmap \<D-{i}> \<M-{i}>"
+    endfor
+    # adjust $PATH, like homebrew, python venv which are set via shell.
+    $PATH = system("zsh -ic 'echo $PATH'")->trim()
+endif
+
 # Leader key {{{2
 # set leader / localleader to unused key, so plugin is hardly to clash with
 # our key.

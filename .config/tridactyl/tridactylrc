@@ -40,14 +40,23 @@ setpref browser.tabs.warnOnClose true
 " default 1; set to 3, then last closed tabs get recovered on startup
 setpref browser.startup.page 3
 
-" then we can press alt-somekey without opening menu; ff restart required!
+" press alt-somekey without opening menu; ff restart required!
 setpref ui.key.menuAccessKey 17
 
 " press alt does not focus on menu
 setpref ui.key.menuAccessKeyFocuses false
 
-" this is required for userChrome.css (Firefox-Onebar)
+" disable typing / to quick find
+setpref accessibility.typeaheadfind.manual false
+
+" required for userChrome.css (Firefox-Onebar)
 setpref toolkit.legacyUserProfileCustomizations.stylesheets true
+
+" thin tabbar
+setpref browser.uidensity 1
+
+" I don't use pocket
+setpref extensions.pocket.enabled false
 
 " General Settings {{{1
 set allowautofocus false
@@ -55,6 +64,7 @@ set smoothscroll true
 set hintchars asdfgqwertzxcv
 set modeindicatorshowkeys true
 set followpagepatterns {"next":"^(next|newer|上一章|上一篇|上一页)\\b|»|>>|more","prev":"^(prev(ious)?|older|下一章|下一篇|下一页)\\b|«|<<"}
+set tabopencontaineraware true
 " tabo default alias (tabonly) is dangerous, so let's remap it.
 alias tabo tabopen
 

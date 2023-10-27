@@ -411,7 +411,7 @@ function! s:sh(cmd, opt) abort " {{{2
       if has_key(opt_dict, 't')
         execute opt_dict.t[-1]
       else
-        execute 'bel' &cmdwinheight . 'split'
+        bel split
       endif
     endif
 
