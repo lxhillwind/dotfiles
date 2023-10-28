@@ -30,6 +30,16 @@ else
 fi
 xfce-theme-manager --icons=Papirus
 
+# qt theme on gtk desktop; application restart required! {{{
+if command -v kvantummanager >/dev/null; then
+    if [ "$theme" = dark ]; then
+        kvantummanager --set KvArcDark
+    else
+        kvantummanager --set KvArc
+    fi
+fi
+# }}}
+
 # git-delta {{{
 if [ "$theme" = dark ]; then
     git config --global delta.light false

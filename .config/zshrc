@@ -278,6 +278,10 @@ compinit
 
 # s() or x(): x11 / wayland {{{1
 if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
+    # let qt use kvantum theme in gtk;
+    # TODO: disable it if using kde plasma.
+    export QT_STYLE_OVERRIDE=kvantum
+
     export GTK_IM_MODULE=fcitx
     export QT_IM_MODULE=fcitx
     export XMODIFIERS=@im=fcitx

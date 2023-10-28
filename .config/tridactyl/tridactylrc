@@ -26,7 +26,14 @@
 set configversion 2.0
 
 " WARNING: use this to clear config (binding, etc) in memory.
-sanitise tridactyllocal
+" It clears our quickmark, so comment it by default.
+" here's how to "backup" quickmark first:
+"
+" - :viewconfig nmaps
+"    (get nmaps, and copy them to clipboard)
+" - pbpaste | jq | sed -En 's/"[,]$//; s/": "open//; s/^\s*"go/quickmark /p'
+"    (pretty print it for execution)
+"sanitise tridactyllocal
 
 " about:config {{{1
 
@@ -48,6 +55,9 @@ setpref ui.key.menuAccessKeyFocuses false
 
 " disable typing / to quick find
 setpref accessibility.typeaheadfind.manual false
+
+" make sites' autofocus harder
+setpref browser.autofocus false
 
 " required for userChrome.css (Firefox-Onebar)
 setpref toolkit.legacyUserProfileCustomizations.stylesheets true
@@ -91,152 +101,13 @@ set searchurls.tr https://www.microsofttranslator.com/bv.aspx?from=&to=zh-CHS&a=
 set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s
 set searchurls.yh https://search.yahoo.com/search?q=%s
 
-" Default Binding created via ":mktridactylrc -f" {{{1
-" tridactyl takes 1/3s for every excmd (info: from a github issue), so we
-" comment out default binding here to speedup loading.
-
-"bind <C-6> buffer #
-"bind <F1> help
-"bind o fillcmdline open
-"bind O current_url open
-"bind w fillcmdline winopen
-"bind W current_url winopen
-"bind t fillcmdline tabopen
-"bind ]] followpage next
-"bind [[ followpage prev
-"bind [c urlincrement -1
-"bind ]c urlincrement 1
-"bind <C-x> urlincrement -1
-"bind <C-a> urlincrement 1
-"bind T current_url tabopen
-"bind yy clipboard yank
-"bind ys clipboard yankshort
-"bind yc clipboard yankcanon
-"bind ym clipboard yankmd
-"bind yo clipboard yankorg
-"bind yt clipboard yanktitle
-"bind gh home
-"bind gH home true
-"bind p clipboard open
-"bind P clipboard tabopen
-"bind j scrollline 10
-"bind <C-e> scrollline 10
-"bind k scrollline -10
-"bind <C-y> scrollline -10
-"bind h scrollpx -50
-"bind l scrollpx 50
-"bind G scrollto 100
-"bind gg scrollto 0
-"bind <C-u> scrollpage -0.5
-"bind <C-d> scrollpage 0.5
-"bind <C-f> scrollpage 1
-"bind <C-b> scrollpage -1
-"bind <C-v> nmode ignore 1 mode normal
-"bind $ scrollto 100 x
-"bind ^ scrollto 0 x
-"bind H back
-"bind L forward
-"bind <C-o> jumpprev
-"bind <C-i> jumpnext
-"bind D composite tabprev; tabclose #
-"bind gx0 tabclosealltoleft
-"bind gx$ tabclosealltoright
-"bind << tabmove -1
-"bind >> tabmove +1
-"bind U undo window
-"bind r reload
-"bind R reloadhard
-"bind gi focusinput -l
-"bind g? rot13
-"bind g! jumble
-"bind g; changelistjump -1
-"bind J tabprev
-"bind K tabnext
-"bind gt tabnext_gt
-"bind gT tabprev
-"bind g^ tabfirst
-"bind g0 tabfirst
-"bind g$ tablast
-"bind ga tabaudio
-"bind gr reader
-"bind gu urlparent
-"bind gU urlroot
-"bind : fillcmdline_notrail
-"bind s fillcmdline open search
-"bind S fillcmdline tabopen search
-"bind M gobble 1 quickmark
-"bind B fillcmdline taball
-"bind b fillcmdline tab
-"bind ZZ qall
-"bind f hint
-"bind F hint -b
-"bind gF hint -qb
-"bind ;i hint -i
-"bind ;b hint -b
-"bind ;o hint
-"bind ;I hint -I
-"bind ;k hint -k
-"bind ;K hint -K
-"bind ;y hint -y
-"bind ;Y hint -cF img i => tri.excmds.yankimage(tri.urlutils.getAbsoluteURL(i.src))
-"bind ;p hint -p
-"bind ;h hint -h
-"bind v hint -h
-"bind ;P hint -P
-"bind ;r hint -r
-"bind ;s hint -s
-"bind ;S hint -S
-"bind ;a hint -a
-"bind ;A hint -A
-"bind ;; hint -; *
-"bind ;# hint -#
-"bind ;v hint -W mpvsafe
-"bind ;V hint -V
-"bind ;w hint -w
-"bind ;t hint -W tabopen
-"bind ;O hint -W fillcmdline_notrail open 
-"bind ;W hint -W fillcmdline_notrail winopen 
-"bind ;T hint -W fillcmdline_notrail tabopen 
-"bind ;z hint -z
-"bind ;m composite hint -Jpipe img src | open images.google.com/searchbyimage?image_url=
-"bind ;M composite hint -Jpipe img src | tabopen images.google.com/searchbyimage?image_url=
-"bind ;gi hint -qi
-"bind ;gI hint -qI
-"bind ;gk hint -qk
-"bind ;gy hint -qy
-"bind ;gp hint -qp
-"bind ;gP hint -qP
-"bind ;gr hint -qr
-"bind ;gs hint -qs
-"bind ;gS hint -qS
-"bind ;ga hint -qa
-"bind ;gA hint -qA
-"bind ;g; hint -q;
-"bind ;g# hint -q#
-"bind ;gv hint -qW mpvsafe
-"bind ;gw hint -qw
-"bind ;gb hint -qb
-"bind ;gF hint -qb
-"bind ;gf hint -q
-"bind <S-Insert> mode ignore
-"bind <AC-Escape> mode ignore
-"bind <AC-`> mode ignore
-"bind <S-Escape> mode ignore
-"bind <Escape> composite mode normal ; hidecmdline
-"bind <C-[> composite mode normal ; hidecmdline
-"bind a current_url bmark
-"bind A bmark
-"bind zi zoom 0.1 true
-"bind zo zoom -0.1 true
-"bind zm zoom 0.5 true
-"bind zr zoom -0.5 true
-"bind zM zoom 0.5 true
-"bind zR zoom -0.5 true
-"bind zz zoom 1
-"bind zI zoom 3
-"bind zO zoom 0.3
-"bind . repeat
-"bind <AS-ArrowUp><AS-ArrowUp><AS-ArrowDown><AS-ArrowDown><AS-ArrowLeft><AS-ArrowRight><AS-ArrowLeft><AS-ArrowRight>ba open https://www.youtube.com/watch?v=M3iOROuTuMA
+" Default Binding can be viewed here: {{{1
+" moz-extension://26bcd09d-5ca9-41d3-bceb-069caf61445b/static/docs/classes/_src_lib_config_.default_config.html
+" (**open it with firefox**; get this by `:help` then read the second paragraph.)
+"
+" tridactyl takes 100ms for every excmd, so we do re-bind default binding
+" here to speedup loading.
+" https://github.com/tridactyl/tridactyl/issues/1409#issuecomment-581299773
 
 " Binds {{{1
 bind x tabclose
@@ -254,6 +125,7 @@ bind m gobble 1 markadd
 " default is `, which is hard to press in most 60% keyboard.
 bind ' gobble 1 markjump
 bind gC tabduplicate
+bind gi hint input:read-write,textarea:read-write
 
 bind --mode=normal ZZ js alert("before closing window, ensure STG is the last window!")
 
@@ -286,8 +158,6 @@ bind --mode=visual S composite js " " + document.getSelection().toString() | fil
 
 " easy translation
 bind --mode=visual cd composite js "cd " + document.getSelection().toString() | tabopen
-" this is heavy on CPU, so only use it for specific sites.
-seturl www.bing.com/dict preventautofocusjackhammer true
 
 " do not use bmark, and we use `af` as binding; so unbind a / A.
 unbind a
@@ -306,14 +176,17 @@ bind yY composite js decodeURI(document.location) | clipboard yank
 
 " let's keep <C-f> for native function (it's search in windows / linux)
 unbind <C-f>
-unbind <C-b>
 " some others.
+unbind <C-b>
 unbind <C-a>
 unbind <C-x>
-unbind --mode=normal <C-o>
+unbind <C-o>
+unbind <C-d>
+unbind <C-u>
+" <C-i> in input / insert mode should be kept (edit-with-vim)
 unbind --mode=normal <C-i>
 
-" readline
+" readline {{{2
 " <C-/> as select_all works natively on GTK (linux) (without bind).
 " - TODO: test if select_all (<C-/>) work for windows.
 " - TODO: impl select_all for ex mode.
@@ -355,11 +228,12 @@ bind --mode=insert <C-u> text.backward_kill_line
 bind --mode=ex <C-k> text.kill_line
 bind --mode=input <C-k> text.kill_line
 bind --mode=insert <C-k> text.kill_line
+" }}}2
 
 " Site Settings {{{1
 
-" prevent autofocus
-seturl pkgs.org/search preventautofocusjackhammer true
+" this is heavy on CPU, so only use it for specific sites.
+seturl www.bing.com/dict preventautofocusjackhammer true
 
 " some general rule:
 " - bind c for site specific hint;
