@@ -29,7 +29,7 @@ set configversion 2.0
 " It clears our quickmark, so comment it by default.
 " here's how to "backup" quickmark first:
 "
-" - :viewconfig nmaps
+" - :viewconfig --user nmaps
 "    (get nmaps, and copy them to clipboard)
 " - pbpaste | jq | sed -En 's/"[,]$//; s/": "open//; s/^\s*"go/quickmark /p'
 "    (pretty print it for execution)
@@ -213,10 +213,10 @@ bind --mode=insert <C-h> text.delete_backward_char
 bind --mode=ex <C-d> text.delete_char
 bind --mode=input <C-d> text.delete_char
 bind --mode=insert <C-d> text.delete_char
-" <C-w> for windows / linux does not work; requires customize omni.ja.
-bind --mode=ex <C-w> text.backward_kill_word
-bind --mode=input <C-w> text.backward_kill_word
-bind --mode=insert <C-w> text.backward_kill_word
+
+" <C-w> for windows / linux does not work;
+" so just do not bind it, to get a universal experience.
+
 " use <C-Backspace> to backward_kill_word in all OS; {{{
 " this is default on linux / windows }}}
 bind --mode=ex <C-Backspace> text.backward_kill_word
