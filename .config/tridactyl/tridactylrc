@@ -26,14 +26,10 @@
 set configversion 2.0
 
 " WARNING: use this to clear config (binding, etc) in memory.
-" It clears our quickmark, so comment it by default.
-" here's how to "backup" quickmark first:
-"
-" - :viewconfig --user nmaps
-"    (get nmaps, and copy them to clipboard)
-" - pbpaste | jq | sed -En 's/"[,]$//; s/": "open//; s/^\s*"go/quickmark /p'
-"    (pretty print it for execution)
-"sanitise tridactyllocal
+" reason to do this:
+" - if we do not clear config, it is easy to mess up (`:source` won't help);
+" - store "temporary config" in file will make it easier to manage.
+sanitise tridactyllocal
 
 " about:config {{{1
 
@@ -229,6 +225,15 @@ bind --mode=ex <C-k> text.kill_line
 bind --mode=input <C-k> text.kill_line
 bind --mode=insert <C-k> text.kill_line
 " }}}2
+
+" read novel (with numpad) {{{
+bind <Enter> scrollpage 0.95
+bind <Delete> scrollpage -0.95
+bind <Backspace> scrollpage -0.95
+bind + hint -f 下一章
+bind = hint -f 下一章
+bind - hint -f 上一章
+" }}}
 
 " Site Settings {{{1
 
