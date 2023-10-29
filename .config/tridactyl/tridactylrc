@@ -263,6 +263,12 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 ,div.view-more > div.view-more-default > span.view-more-btn\
 ,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
 
+bindurl bilibili.com --mode=normal f hint -Jc div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,\
+div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
+
+bindurl bilibili.com --mode=normal gf hint -tJc \
+div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
+
 " emulate arrow key (to control video player).
 " this takes high cpu, use with care.
 "bindurl bilibili.com --mode=normal j exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{DOWN}')"
@@ -276,10 +282,19 @@ bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 bindurl lobste.rs --mode=normal c hint -bJc span.comments_label > a
 bindurl news.ycombinator.com --mode=normal c hint -bJc span.subline > a:nth-child(6)
 bindurl old.reddit.com --mode=normal c hint -bJc a.bylink.comments.may-blank
+
+" discourse site
+bindurl emacs-china.org|forum.suse.org.cn|ziggit.dev --mode=normal c hint -bJc td.main-link > span > a.title
 " }}}
 
 " site redirection {{{
 autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
+" }}}
+
+" toggle dark mode {{{
+command toggle-color js ( () => { let target = 'invert(100%)'; let style = document.querySelector('html').style; if (style.filter == target) { style.filter = ''; } else { style.filter = target; } } )()
+
+autocmd DocStart ziggit.dev toggle-color
 " }}}
 
 " Misc {{{1
