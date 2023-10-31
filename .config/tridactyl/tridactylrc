@@ -5,6 +5,9 @@
 "   (see `:help source` in tridactyl about configuration file priority) }}}
 "
 " - search "A-6" in this file, if OS is windows: we need additional setting.
+" - search "ContextMenu" in this file, if OS is mac: we need additional setting.
+"
+" NOTE: js tri.excmds.unbind in tridactylrc may not work!
 "
 " firefox plugin setup {{{
 " - Tridactyl: :nativeinstall;
@@ -224,16 +227,35 @@ bind --mode=insert <C-u> text.backward_kill_line
 bind --mode=ex <C-k> text.kill_line
 bind --mode=input <C-k> text.kill_line
 bind --mode=insert <C-k> text.kill_line
-" }}}2
 
-" read novel (with numpad) {{{
-bind <Enter> scrollpage 0.95
-bind <Delete> scrollpage -0.95
-bind <Backspace> scrollpage -0.95
-bind + hint -f 下一章
-bind = hint -f 下一章
-bind - hint -f 上一章
-" }}}
+" read novel (with numpad) {{{2
+" <Insert> key cannot be not recognized, according to:
+" https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values#editing_keys
+" So we add a key which is both recognisable in Firefox and bindable in karabiner.
+"   we choosed <ContextMenu>
+
+command novel_mode composite \
+bind <Enter> scrollpage 0.95; \
+bind <Delete> scrollpage -0.95; \
+bind + hint -f 下一章; \
+bind - hint -f 上一章; \
+unbind <Insert>; \
+unbind <ContextMenu>; \
+bind <Backspace> novel_mode_exit; \
+js alert('<Enter> is binded!')
+
+command novel_mode_exit composite \
+unbind <Enter>; \
+unbind <Delete>; \
+unbind +; \
+unbind -; \
+unbind <Backspace>; \
+bind <Insert> novel_mode; \
+bind <ContextMenu> novel_mode; \
+js alert('<Enter> is un-binded.')
+
+bind <Insert> novel_mode
+bind <ContextMenu> novel_mode
 
 " Site Settings {{{1
 
@@ -283,6 +305,12 @@ div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a
 
 " }}}
 
+" zhihu.com {{{
+" scroll in zhihu.com (if we block modal with uBlock Origin)
+bindurl (zhuanlan.|)zhihu.com --mode=normal <Space> scrollpage 0.90
+bindurl (zhuanlan.|)zhihu.com --mode=normal <S-Space> scrollpage -0.90
+" }}}
+
 " bind c for sub pages {{{
 bindurl lobste.rs --mode=normal c hint -bJc span.comments_label > a
 bindurl news.ycombinator.com --mode=normal c hint -bJc span.subline > a:nth-child(6)
@@ -290,6 +318,10 @@ bindurl old.reddit.com --mode=normal c hint -bJc a.bylink.comments.may-blank
 
 " discourse site
 bindurl emacs-china.org|forum.suse.org.cn|ziggit.dev --mode=normal c hint -bJc td.main-link > span > a.title
+" }}}
+
+" override binding for some sites {{{
+bindurl protectedtext.com/[^/]+$ f hint -Jc a.ui-tabs-anchor,button.ui-button:enabled
 " }}}
 
 " site redirection {{{
@@ -319,6 +351,13 @@ bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.
 " show hint in sibling node instead of target node, so we can see full title.
 bindurl https://news.ycombinator.com/(\?p=.*|)$ <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
 bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
+
+" native {{{2
+command quickmark_fs js -p let cmd_prefix = /Mac/.test(navigator.platform) ? 'export PATH=/opt/homebrew/bin:$PATH; ' : ''; tri.native.run(`${cmd_prefix}gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`))
+bind M gobble 1 quickmark_fs
+
+" requires qrencode; mpv (macos) / feh (others)
+command qrcode js let cmd_prefix = /Mac/.test(navigator.platform) ? 'export PATH=/opt/homebrew/bin:$PATH; ' : ''; tri.native.run(`${cmd_prefix}printf ${btoa(document.location)} | base64 -d | xargs -r -I {} qrencode {} -o - | ${/Mac/.test(navigator.platform) ? "mpv - --keep-open --geometry=300x300" : "feh -"}`)
 
 " Load local config and alert for finish {{{1
 source ~/.tridactylrc
