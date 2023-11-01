@@ -39,7 +39,14 @@ sanitise tridactyllocal
 " so we do this magic (monkey patch?).
 " search `magic_define` for usage.
 
-command magic_define js tri.lx = {}; tri.lx.sh = cmd => { let cmd_prefix = /Mac/.test(navigator.platform) ? 'export PATH=/opt/homebrew/bin:$PATH; ' : ''; return tri.native.run(`${cmd_prefix}${cmd}`); }
+command magic_define js \
+tri.lx = {}; \
+tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
+tri.lx.is_mac = /^Mac/.test(navigator.platform); \
+tri.lx.is_linux = /^Linux/.test(navigator.platform); \
+tri.lx.sh = cmd => tri.native.run(cmd); \
+if (tri.lx.is_mac) tri.lx.sh = cmd => tri.native.run(`export PATH=/opt/homebrew/bin:$PATH; ${cmd}`); \
+if (tri.lx.is_win32) tri.lx.sh = cmd => { let cmd_new = cmd; cmd_new = cmd_new.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd_new = '"' + cmd_new + '"'; cmd_new = cmd_new.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd_new}`); }
 
 jsb tri.excmds.composite('magic_define')
 
@@ -374,10 +381,10 @@ bind M gobble 1 quickmark_fs
 " qrcode (native) {{{2
 " requires qrencode; mpv (macos) / feh (others)
 
-command qrcode js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${btoa(document.location)} | base64 -d | qrencode -r /dev/stdin -o - | ${/Mac/.test(navigator.platform) ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
+command qrcode js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${btoa(document.location)} | base64 -d | qrencode -r /dev/stdin -o - | ${tri.lx.is_mac ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
 
 bind --mode=visual cq qrcode_visual
-command qrcode_visual js let utoa = data => btoa(unescape(encodeURIComponent(data))); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${utoa(document.getSelection().toString())} | base64 -d | qrencode -r /dev/stdin -o - | ${/Mac/.test(navigator.platform) ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
+command qrcode_visual js let utoa = data => btoa(unescape(encodeURIComponent(data))); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${utoa(document.getSelection().toString())} | base64 -d | qrencode -r /dev/stdin -o - | ${tri.lx.is_mac ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
 
 " custom Menus {{{1
 jsb browser.contextMenus.create({ id: "qrcode", title: "生成二维码: 当前网址", contexts: ["page"], });
