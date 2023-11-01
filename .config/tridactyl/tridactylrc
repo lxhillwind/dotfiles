@@ -34,6 +34,15 @@ set configversion 2.0
 " - store "temporary config" in file will make it easier to manage.
 sanitise tridactyllocal
 
+" Inject our functions to js / jsb. {{{1
+" there is no way to define it to make new page see it automatically;
+" so we do this magic (monkey patch?).
+" search `magic_define` for usage.
+
+command magic_define js tri.lx = {}; tri.lx.sh = cmd => { let cmd_prefix = /Mac/.test(navigator.platform) ? 'export PATH=/opt/homebrew/bin:$PATH; ' : ''; return tri.native.run(`${cmd_prefix}${cmd}`); }
+
+jsb tri.excmds.composite('magic_define')
+
 " about:config {{{1
 
 " simple-tab-group cannot recover local (file:// schema) webpages properly,
@@ -72,7 +81,7 @@ set allowautofocus false
 set smoothscroll true
 set hintchars asdfgqwertzxcv
 set modeindicatorshowkeys true
-set followpagepatterns {"next":"^(next|newer|上一章|上一篇|上一页)\\b|»|>>|more","prev":"^(prev(ious)?|older|下一章|下一篇|下一页)\\b|«|<<"}
+set followpagepatterns {"next":"^(next|newer|下一章|下一篇|下一页)\\b|»|>>|more","prev":"^(prev(ious)?|older|上一章|上一篇|上一页)\\b|«|<<"}
 set tabopencontaineraware true
 " tabo default alias (tabonly) is dangerous, so let's remap it.
 alias tabo tabopen
@@ -229,10 +238,12 @@ bind --mode=input <C-k> text.kill_line
 bind --mode=insert <C-k> text.kill_line
 
 " read novel (with numpad) {{{2
-" <Insert> key cannot be not recognized, according to:
+" <Insert> key on Mac cannot be not recognized, according to:
 " https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values#editing_keys
-" So we add a key which is both recognisable in Firefox and bindable in karabiner.
-"   we choosed <ContextMenu>
+" So we add <ContextMenu> which is both recognisable in Firefox and bindable in karabiner.
+"
+" the following rule should be enabled in karabiner if os is mac:
+"   ~/.config/karabiner/assets/complex_modifications/numpad.json
 
 command novel_mode composite \
 bind <Enter> scrollpage 0.95; \
@@ -261,6 +272,9 @@ bind <ContextMenu> novel_mode
 
 " this is heavy on CPU, so only use it for specific sites.
 seturl www.bing.com/dict preventautofocusjackhammer true
+
+" certain sites are broken. auto enter ignore mode on them.
+blacklistadd docs.google.com
 
 " some general rule:
 " - bind c for site specific hint;
@@ -352,13 +366,33 @@ bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.
 bindurl https://news.ycombinator.com/(\?p=.*|)$ <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
 bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
 
-" native {{{2
-command quickmark_fs js -p let cmd_prefix = /Mac/.test(navigator.platform) ? 'export PATH=/opt/homebrew/bin:$PATH; ' : ''; tri.native.run(`${cmd_prefix}gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`))
+" quickmark (native) {{{2
+command quickmark_fs js -p tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`)))
+
 bind M gobble 1 quickmark_fs
 
+" qrcode (native) {{{2
 " requires qrencode; mpv (macos) / feh (others)
-command qrcode js let cmd_prefix = /Mac/.test(navigator.platform) ? 'export PATH=/opt/homebrew/bin:$PATH; ' : ''; tri.native.run(`${cmd_prefix}printf ${btoa(document.location)} | base64 -d | xargs -r -I {} qrencode {} -o - | ${/Mac/.test(navigator.platform) ? "mpv - --keep-open --geometry=300x300" : "feh -"}`)
+
+command qrcode js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${btoa(document.location)} | base64 -d | qrencode -r /dev/stdin -o - | ${/Mac/.test(navigator.platform) ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
+
+bind --mode=visual cq qrcode_visual
+command qrcode_visual js let utoa = data => btoa(unescape(encodeURIComponent(data))); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${utoa(document.getSelection().toString())} | base64 -d | qrencode -r /dev/stdin -o - | ${/Mac/.test(navigator.platform) ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
+
+" custom Menus {{{1
+jsb browser.contextMenus.create({ id: "qrcode", title: "生成二维码: 当前网址", contexts: ["page"], });
+jsb browser.contextMenus.create({ id: "qrcode_visual", title: "生成二维码: '%s'", contexts: ["selection"], });
+
+" NOTE: avoid addListener repeatedly.
+jsb if (tri.lx_menus_listener) browser.contextMenus.onClicked.removeListener(tri.lx_menus_listener); \
+tri.lx_menus_listener = (info, tab) => { \
+    if (info.menuItemId === "qrcode") { tri.excmds.composite('qrcode'); } \
+    if (info.menuItemId === "qrcode_visual") { tri.excmds.composite('qrcode_visual'); }; \
+}; browser.contextMenus.onClicked.addListener(tri.lx_menus_listener);
 
 " Load local config and alert for finish {{{1
 source ~/.tridactylrc
 js alert("tridactylrc loaded.")
+
+" (<Visual>:ctt<Tab>) copy multiline stmt to be use in tridactyl exmode. {{{1 }}}
+" vim9 command! -buffer -range CopyToTridactyl @" = getline(<line1>, <line2>)->map((_, line) => line->substitute('[\\]$', '', ''))->join(' ') | feedkeys("\<Space>y")
