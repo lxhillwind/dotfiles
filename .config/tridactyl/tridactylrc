@@ -45,7 +45,7 @@ tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
 tri.lx.is_mac = /^Mac/.test(navigator.platform); \
 tri.lx.is_linux = /^Linux/.test(navigator.platform); \
 tri.lx.sh = cmd => tri.native.run(cmd); \
-if (tri.lx.is_mac) tri.lx.sh = cmd => tri.native.run(`export PATH=/opt/homebrew/bin:$PATH; ${cmd}`); \
+if (tri.lx.is_mac) tri.lx.sh = cmd => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${cmd}`); \
 if (tri.lx.is_win32) tri.lx.sh = cmd => { let cmd_new = cmd; cmd_new = cmd_new.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd_new = '"' + cmd_new + '"'; cmd_new = cmd_new.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd_new}`); }
 
 jsb tri.excmds.composite('magic_define')
@@ -140,7 +140,6 @@ bind m gobble 1 markadd
 " default is `, which is hard to press in most 60% keyboard.
 bind ' gobble 1 markjump
 bind gC tabduplicate
-bind gi hint input:read-write,textarea:read-write
 
 bind --mode=normal ZZ js alert("before closing window, ensure STG is the last window!")
 
@@ -188,6 +187,8 @@ bind --mode=normal y1 composite js document.location.hostname | clipboard yank
 bind --mode=normal y2 composite js document.location.host | clipboard yank
 " yank (url decoded)
 bind yY composite js decodeURI(document.location) | clipboard yank
+" yank image url
+bind yi composite hint -Jpipe img src | clipboard yank
 
 " let's keep <C-f> for native function (it's search in windows / linux)
 unbind <C-f>
@@ -281,55 +282,32 @@ bind <ContextMenu> novel_mode
 seturl www.bing.com/dict preventautofocusjackhammer true
 
 " certain sites are broken. auto enter ignore mode on them.
-blacklistadd docs.google.com
+blacklistadd ^https://docs.google.com/.*/edit
 
 " some general rule:
 " - bind c for site specific hint;
 
 " qidian.com {{{
-bindurl qidian.com --mode=normal c hint -Jc span.review-count\
+bindurl ^https://www.qidian.com --mode=normal c hint -Jc span.review-count\
 ,div.chapter-control > a\
 ,span.j-open-reply\
 ,div.nav-btn-group > a.nav-btn\
 ,button.flex.items-center.text-s-gray-500.font-medium.text-s3.mt-8px.h-28px\
 ,.review-replies-popup > .close-btn
-seturl qidian.com hintchars vzcxsda
+seturl ^https://www.qidian.com hintchars vzcxsda
 " don't know why with default hintfiltermode (simple), it's easy to click wrong hint.
 " so use vimperator-mode to allow filtering by pressing number (which is in review-count).
-seturl qidian.com hintfiltermode vimperator
-" native <Space> blocks sometimes.
-bindurl qidian.com --mode=normal <Space> scrollpage 0.97
-bindurl qidian.com --mode=normal <S-Space> scrollpage -0.97
+seturl ^https://www.qidian.com hintfiltermode vimperator
 " }}}
 
 " bilibili.com {{{
-bindurl bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
+bindurl ^https://www.bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
 ,div.list-box > div > div.item.sortable\
 ,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
 ,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
 ,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
 ,div.view-more > div.view-more-default > span.view-more-btn\
 ,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
-
-bindurl bilibili.com --mode=normal f hint -Jc div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,\
-div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
-
-bindurl bilibili.com --mode=normal gf hint -tJc \
-div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
-
-" emulate arrow key (to control video player).
-" this takes high cpu, use with care.
-"bindurl bilibili.com --mode=normal j exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{DOWN}')"
-"bindurl bilibili.com --mode=normal k exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{UP}')"
-"bindurl bilibili.com --mode=normal h exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{LEFT}')"
-"bindurl bilibili.com --mode=normal l exclaim_quiet powershell -Command "(New-Object -ComObject WScript.Shell).SendKeys('{RIGHT}')"
-
-" }}}
-
-" zhihu.com {{{
-" scroll in zhihu.com (if we block modal with uBlock Origin)
-bindurl (zhuanlan.|)zhihu.com --mode=normal <Space> scrollpage 0.90
-bindurl (zhuanlan.|)zhihu.com --mode=normal <S-Space> scrollpage -0.90
 " }}}
 
 " bind c for sub pages {{{
@@ -342,7 +320,21 @@ bindurl emacs-china.org|forum.suse.org.cn|ziggit.dev --mode=normal c hint -bJc t
 " }}}
 
 " override binding for some sites {{{
+bindurl ^https://www.bilibili.com --mode=normal f hint -Jc div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,\
+div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
+bindurl ^https://www.bilibili.com --mode=normal gf hint -tJc \
+div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
+
 bindurl protectedtext.com/[^/]+$ f hint -Jc a.ui-tabs-anchor,button.ui-button:enabled
+bindurl ^https://www.protopage.com f hint -Jc div.scheme-header-text
+
+" native <Space> blocks sometimes.
+bindurl ^https://www.qidian.com --mode=normal <Space> scrollpage 0.97
+bindurl ^https://www.qidian.com --mode=normal <S-Space> scrollpage -0.97
+
+" (if we block modal with uBlock Origin)
+bindurl (zhuanlan.|)zhihu.com --mode=normal <Space> scrollpage 0.90
+bindurl (zhuanlan.|)zhihu.com --mode=normal <S-Space> scrollpage -0.90
 " }}}
 
 " site redirection {{{
@@ -352,8 +344,20 @@ autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
 " toggle dark mode {{{
 command toggle-color js ( () => { let target = 'invert(100%)'; let style = document.querySelector('html').style; if (style.filter == target) { style.filter = ''; } else { style.filter = target; } } )()
 
-autocmd DocStart ziggit.dev toggle-color
+autocmd DocStart ^https://ziggit.dev toggle-color
 " }}}
+
+" Command / Bind override {{{1
+
+" then ":! " and ":!s " also work.
+command exclaim js -d€ tri.excmds.composite('magic_define').then(_ => tri.lx.sh(JS_ARGS.join(' '))).then(res => tri.excmds.fillcmdline(res.content))€
+command exclaim_quiet js -d€ tri.excmds.composite('magic_define').then(_ => tri.lx.sh(JS_ARGS.join(' ')))€
+
+" fix image search
+bind ;m composite hint -Jpipe img src | js -p tri.excmds.open(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
+bind ;M composite hint -Jpipe img src | js -p tri.excmds.tabopen(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
+
+bind gi hint input:read-write,textarea:read-write
 
 " Misc {{{1
 
@@ -366,12 +370,13 @@ bind --mode=normal <C-b> js window.location = 'https://www.instapaper.com/text?u
 bindurl https://www.instapaper.com/text\?u=.* --mode=normal <C-b> hint -Jc .js_read_later
 
 " open instapaper easily. (t <CR> <C-b>)
-bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.com/u
+bindurl moz-extension://.*/static/newtab.html --mode=normal <C-b> open https://www.instapaper.com/u
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
-bindurl https://news.ycombinator.com/(\?p=.*|)$ <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
-bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
+bindurl https://news.ycombinator.com/(\?p=.*|)$ --mode=normal <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
+bindurl https://lobste.rs/(page/.*|)$ --mode=normal <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
+bindurl https://www.protopage.com/lxhillwind --mode=normal <C-b> hint -qJc span.feed-widget-headline -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.parentNode.parentNode.parentNode.href)); }
 
 " quickmark (native) {{{2
 command quickmark_fs js -p tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`)))
@@ -396,6 +401,11 @@ tri.lx_menus_listener = (info, tab) => { \
     if (info.menuItemId === "qrcode") { tri.excmds.composite('qrcode'); } \
     if (info.menuItemId === "qrcode_visual") { tri.excmds.composite('qrcode_visual'); }; \
 }; browser.contextMenus.onClicked.addListener(tri.lx_menus_listener);
+
+" Private {{{1
+
+quickmark p https://www.protopage.com/lxhillwind
+quickmark t https://www.protectedtext.com/lxhillwind
 
 " Load local config and alert for finish {{{1
 source ~/.tridactylrc
