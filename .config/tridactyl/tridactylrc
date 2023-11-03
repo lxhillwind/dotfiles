@@ -23,6 +23,9 @@
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61 }}}
 "
 " - use `seturl` / `bindurl` for speical case.
+"
+" - vmap fix: don't know if it is tridactyl's bug; even if we use "--mode=normal", the key is vmap-ed;
+"   so here is some "unbind --mode=visual " stmt.
 
 " Pre {{{1
 
@@ -46,7 +49,8 @@ tri.lx.is_mac = /^Mac/.test(navigator.platform); \
 tri.lx.is_linux = /^Linux/.test(navigator.platform); \
 tri.lx.sh = cmd => tri.native.run(cmd); \
 if (tri.lx.is_mac) tri.lx.sh = cmd => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${cmd}`); \
-if (tri.lx.is_win32) tri.lx.sh = cmd => { let cmd_new = cmd; cmd_new = cmd_new.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd_new = '"' + cmd_new + '"'; cmd_new = cmd_new.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd_new}`); }
+if (tri.lx.is_win32) tri.lx.sh = cmd => { let cmd_new = cmd; cmd_new = cmd_new.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd_new = '"' + cmd_new + '"'; cmd_new = cmd_new.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd_new}`); }; \
+;
 
 jsb tri.excmds.composite('magic_define')
 
@@ -169,9 +173,6 @@ bind --mode=browser <C-6> tab #
 " search with...
 bind --mode=visual s composite js " " + document.getSelection().toString() | fillcmdline open ; text.beginning_of_line ; text.forward_word ; text.forward_char
 bind --mode=visual S composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
-
-" easy translation
-bind --mode=visual cd composite js "cd " + document.getSelection().toString() | tabopen
 
 " do not use bmark, and we use `af` as binding; so unbind a / A.
 unbind a
@@ -361,6 +362,14 @@ bind gi hint input:read-write,textarea:read-write
 
 " Misc {{{1
 
+" unbind visual c and bind it for function {{{2
+unbind --mode=visual c
+
+" easy translation
+bind --mode=visual cd composite js "cd " + document.getSelection().toString() | tabopen
+
+" some others defined below; like cq
+
 " read it later (all thing about <C-b>) {{{2
 
 " preview current page.
@@ -378,6 +387,8 @@ bindurl https://news.ycombinator.com/(\?p=.*|)$ --mode=normal <C-b> hint -qJc td
 bindurl https://lobste.rs/(page/.*|)$ --mode=normal <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
 bindurl https://www.protopage.com/lxhillwind --mode=normal <C-b> hint -qJc span.feed-widget-headline -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.parentNode.parentNode.parentNode.href)); }
 
+unbind --mode=visual <C-b>
+
 " quickmark (native) {{{2
 command quickmark_fs js -p tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`)))
 
@@ -386,10 +397,9 @@ bind M gobble 1 quickmark_fs
 " qrcode (native) {{{2
 " requires qrencode; mpv (macos) / feh (others)
 
-command qrcode js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${btoa(document.location)} | base64 -d | qrencode -r /dev/stdin -o - | ${tri.lx.is_mac ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
-
+command qrcode js -d● let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = document.location; if (JS_ARGS.length > 1) { if (JS_ARGS.length === 2 && JS_ARGS[1] === 'qrcode_visual') text = document.getSelection().toString(); else text = JS_ARGS.join(' '); } tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${utoa(text)} | base64 -d | qrencode -r /dev/stdin -o - | ${tri.lx.is_mac ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))●
+command qrcode_visual qrcode qrcode_visual
 bind --mode=visual cq qrcode_visual
-command qrcode_visual js let utoa = data => btoa(unescape(encodeURIComponent(data))); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${utoa(document.getSelection().toString())} | base64 -d | qrencode -r /dev/stdin -o - | ${tri.lx.is_mac ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))
 
 " custom Menus {{{1
 jsb browser.contextMenus.create({ id: "qrcode", title: "生成二维码: 当前网址", contexts: ["page"], });
