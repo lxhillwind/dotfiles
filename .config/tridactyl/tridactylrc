@@ -24,8 +24,9 @@
 "
 " - use `seturl` / `bindurl` for speical case.
 "
-" - vmap fix: don't know if it is tridactyl's bug; even if we use "--mode=normal", the key is vmap-ed;
-"   so here is some "unbind --mode=visual " stmt.
+" - vmap fix: even if we use "--mode=normal", the key is vmap-ed;
+"   so here is some "unbind --mode=visual " stmt;
+"   no need to specify "--mode=normal" when bind.
 
 " Pre {{{1
 
@@ -47,9 +48,9 @@ tri.lx = {}; \
 tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
 tri.lx.is_mac = /^Mac/.test(navigator.platform); \
 tri.lx.is_linux = /^Linux/.test(navigator.platform); \
-tri.lx.sh = cmd => tri.native.run(cmd); \
-if (tri.lx.is_mac) tri.lx.sh = cmd => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${cmd}`); \
-if (tri.lx.is_win32) tri.lx.sh = cmd => { let cmd_new = cmd; cmd_new = cmd_new.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd_new = '"' + cmd_new + '"'; cmd_new = cmd_new.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd_new}`); }; \
+tri.lx.sh = (...arg) => tri.native.run(...arg); \
+if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${arg[0]}`, ...arg.slice(1)); \
+if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
 ;
 
 jsb tri.excmds.composite('magic_define')
@@ -145,7 +146,7 @@ bind m gobble 1 markadd
 bind ' gobble 1 markjump
 bind gC tabduplicate
 
-bind --mode=normal ZZ js alert("before closing window, ensure STG is the last window!")
+bind ZZ js alert("before closing window, ensure STG is the last window!")
 
 " make <Escape> able to exit simple-tab-group's switch group page.
 unbind --mode=normal <Escape>
@@ -183,17 +184,16 @@ bind yf hint -y
 bind af hint -qb
 
 " yank (ip)
-bind --mode=normal y1 composite js document.location.hostname | clipboard yank
+bind y1 composite js document.location.hostname | clipboard yank
 " yank (ip:port)
-bind --mode=normal y2 composite js document.location.host | clipboard yank
+bind y2 composite js document.location.host | clipboard yank
 " yank (url decoded)
 bind yY composite js decodeURI(document.location) | clipboard yank
 " yank image url
 bind yi composite hint -Jpipe img src | clipboard yank
 
-" let's keep <C-f> for native function (it's search in windows / linux)
+" unbind some keys for firefox's native function {{{2
 unbind <C-f>
-" some others.
 unbind <C-b>
 unbind <C-a>
 unbind <C-x>
@@ -289,7 +289,7 @@ blacklistadd ^https://docs.google.com/.*/edit
 " - bind c for site specific hint;
 
 " qidian.com {{{
-bindurl ^https://www.qidian.com --mode=normal c hint -Jc span.review-count\
+bindurl ^https://www.qidian.com c hint -Jc span.review-count\
 ,div.chapter-control > a\
 ,span.j-open-reply\
 ,div.nav-btn-group > a.nav-btn\
@@ -302,7 +302,7 @@ seturl ^https://www.qidian.com hintfiltermode vimperator
 " }}}
 
 " bilibili.com {{{
-bindurl ^https://www.bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.toggle-btn\
+bindurl ^https://www.bilibili.com c hint -Jc li.be-tab-item,div.toggle-btn\
 ,div.list-box > div > div.item.sortable\
 ,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
 ,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
@@ -312,30 +312,32 @@ bindurl ^https://www.bilibili.com --mode=normal c hint -Jc li.be-tab-item,div.to
 " }}}
 
 " bind c for sub pages {{{
-bindurl lobste.rs --mode=normal c hint -bJc span.comments_label > a
-bindurl news.ycombinator.com --mode=normal c hint -bJc span.subline > a:nth-child(6)
-bindurl old.reddit.com --mode=normal c hint -bJc a.bylink.comments.may-blank
+bindurl lobste.rs c hint -bJc span.comments_label > a
+bindurl news.ycombinator.com c hint -bJc span.subline > a:nth-child(6)
+bindurl old.reddit.com c hint -bJc a.bylink.comments.may-blank
 
 " discourse site
-bindurl emacs-china.org|forum.suse.org.cn|ziggit.dev --mode=normal c hint -bJc td.main-link > span > a.title
+bindurl emacs-china.org|forum.suse.org.cn|ziggit.dev c hint -qbJc td.main-link > span > a.title
 " }}}
 
 " override binding for some sites {{{
-bindurl ^https://www.bilibili.com --mode=normal f hint -Jc div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,\
+bindurl ^https://www.bilibili.com f hint -Jc div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,\
 div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
-bindurl ^https://www.bilibili.com --mode=normal gf hint -tJc \
+bindurl ^https://www.bilibili.com F hint -bJc \
 div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
+bindurl ^https://www.bilibili.com/account/history f hint -Jc li.history-record a.title,i.history-delete
+bindurl ^https://www.bilibili.com/account/history F hint -bJc li.history-record a.title
 
 bindurl protectedtext.com/[^/]+$ f hint -Jc a.ui-tabs-anchor,button.ui-button:enabled
-bindurl ^https://www.protopage.com f hint -Jc div.scheme-header-text
+bindurl ^https://www.protopage.com f hint -Jc td > div.scheme-header-text
 
 " native <Space> blocks sometimes.
-bindurl ^https://www.qidian.com --mode=normal <Space> scrollpage 0.97
-bindurl ^https://www.qidian.com --mode=normal <S-Space> scrollpage -0.97
+bindurl ^https://www.qidian.com <Space> scrollpage 0.97
+bindurl ^https://www.qidian.com <S-Space> scrollpage -0.97
 
 " (if we block modal with uBlock Origin)
-bindurl (zhuanlan.|)zhihu.com --mode=normal <Space> scrollpage 0.90
-bindurl (zhuanlan.|)zhihu.com --mode=normal <S-Space> scrollpage -0.90
+bindurl (zhuanlan.|)zhihu.com <Space> scrollpage 0.90
+bindurl (zhuanlan.|)zhihu.com <S-Space> scrollpage -0.90
 " }}}
 
 " site redirection {{{
@@ -373,19 +375,22 @@ bind --mode=visual cd composite js "cd " + document.getSelection().toString() | 
 " read it later (all thing about <C-b>) {{{2
 
 " preview current page.
-bind --mode=normal <C-b> js window.location = 'https://www.instapaper.com/text?u=' + encodeURIComponent(window.location.href);
+bind <C-b> js window.location = 'https://www.instapaper.com/text?u=' + encodeURIComponent(window.location.href);
 
 " ... then save it to read list.
-bindurl https://www.instapaper.com/text\?u=.* --mode=normal <C-b> hint -Jc .js_read_later
+bindurl https://www.instapaper.com/text\?u=.* <C-b> hint -Jc .js_read_later
+
+" add link from instapaper webpage (main / next-pages / parse_url-error)
+bindurl https://www.instapaper.com/u(|/\d+|\?parse_url=.*)$ <C-b> hint -Jc a.article_add
 
 " open instapaper easily. (t <CR> <C-b>)
-bindurl moz-extension://.*/static/newtab.html --mode=normal <C-b> open https://www.instapaper.com/u
+bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.com/u
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
-bindurl https://news.ycombinator.com/(\?p=.*|)$ --mode=normal <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
-bindurl https://lobste.rs/(page/.*|)$ --mode=normal <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
-bindurl https://www.protopage.com/lxhillwind --mode=normal <C-b> hint -qJc span.feed-widget-headline -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.parentNode.parentNode.parentNode.href)); }
+bindurl https://news.ycombinator.com/(news|)(\?p=.*|)$ <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
+bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
+bindurl https://www.protopage.com/lxhillwind <C-b> hint -qJc span.feed-widget-headline -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.parentNode.parentNode.parentNode.href)); }
 
 unbind --mode=visual <C-b>
 
@@ -395,11 +400,14 @@ command quickmark_fs js -p tri.excmds.composite('magic_define').then(_ => tri.lx
 bind M gobble 1 quickmark_fs
 
 " qrcode (native) {{{2
-" requires qrencode; mpv (macos) / feh (others)
+" requires qrencode; mpv
 
-command qrcode js -d● let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = document.location; if (JS_ARGS.length > 1) { if (JS_ARGS.length === 2 && JS_ARGS[1] === 'qrcode_visual') text = document.getSelection().toString(); else text = JS_ARGS.join(' '); } tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`printf ${utoa(text)} | base64 -d | qrencode -r /dev/stdin -o - | ${tri.lx.is_mac ? "mpv - --keep-open --geometry=300x300" : "feh -"}`))●
+command qrcode js -d● let text = document.location.toString(); if (JS_ARGS.length > 1) { if (JS_ARGS.length === 2 && JS_ARGS[1] === 'qrcode_visual') text = document.getSelection().toString(); else text = JS_ARGS.join(' '); } tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`qrencode -r /dev/stdin -o - | mpv - --keep-open --geometry=300x300 --title=from-tridactyl`, text))●
 command qrcode_visual qrcode qrcode_visual
 bind --mode=visual cq qrcode_visual
+
+" edit selection in vim (native) {{{2
+bind --mode=visual <C-i> js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim -f -`, document.getSelection().toString()))
 
 " custom Menus {{{1
 jsb browser.contextMenus.create({ id: "qrcode", title: "生成二维码: 当前网址", contexts: ["page"], });
