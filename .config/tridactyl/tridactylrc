@@ -392,6 +392,9 @@ bindurl https://news.ycombinator.com/(news|)(\?p=.*|)$ <C-b> hint -qJc td.voteli
 bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
 bindurl https://www.protopage.com/lxhillwind <C-b> hint -qJc span.feed-widget-headline -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.parentNode.parentNode.parentNode.href)); }
 
+" multi mode
+bind ;<C-b> hint -qJc a -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.href)); }
+
 unbind --mode=visual <C-b>
 
 " quickmark (native) {{{2
