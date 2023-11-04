@@ -547,11 +547,11 @@ g:maplocalleader = "\<S-F11>"
 # use <Space> as *true* leader key.
 noremap <Space> <Nop>
 #nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
-nnoremap <Space><Space> <ScriptCmd>FuzzyDisplayMap()<CR>
+nnoremap <Space><Space> <ScriptCmd>PickDisplayMap()<CR>
 nnoremap <Space>;; :map <buffer><CR>
 
-def FuzzyDisplayMap() # {{{
-    g:FuzzyFinder(
+def PickDisplayMap() # {{{
+    g:Pick(
         'display map',
         v:none,
         execute('map | map! | tmap')->split("\n"),
@@ -728,11 +728,6 @@ endif
 map <F19> <S-Space>
 map! <F19> <S-Space>
 tmap <F19> <S-Space>
-
-# set env for embedded terminal. {{{2
-if !exists('$FZF_DEFAULT_OPTS')
-    $FZF_DEFAULT_OPTS = '--cycle --no-sort --no-mouse --color=16'
-endif
 
 # disable mouse support by default. make terminal happier. {{{2
 if !has('gui_running')
@@ -1129,20 +1124,6 @@ def SwitchReaderMode()
     endif
 enddef
 
-# <space>gg; like :vim // %, but with fzf {{{2
-nnoremap <Space>gg <ScriptCmd>FuzzyJumpCurrentBuffer()<CR>
-
-def FuzzyJumpCurrentBuffer()
-    g:FuzzyFinder(
-        'CurrentBuffer',
-        v:none,
-        getline(1, '$')->mapnew((idx, i) => $'{idx + 1}: {i}'),
-        (chosen) => {
-            execute 'normal ' .. chosen->matchstr('\v^[0-9]+') .. 'G'
-        }
-    )
-enddef
-
 # cd; search cword with bing dict (in web browser) {{{2
 nnoremap cd <ScriptCmd>OpenDict()<CR>
 def OpenDict()
@@ -1437,11 +1418,11 @@ enddef
 command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
     | diffthis | wincmd p | diffthis
 
-# :FuzzyFinder {shellcmd...} (depends on g:FuzzyFinder()) {{{2
-command! -nargs=+ -complete=shellcmd FuzzyFinder FuzzyAnyCli(<q-args>)
+# :Pick {shellcmd...} (depends on g:Pick()) {{{2
+command! -nargs=+ -complete=shellcmd Pick PickAnyCli(<q-args>)
 
-def FuzzyAnyCli(cli: string)
-    g:FuzzyFinder(
+def PickAnyCli(cli: string)
+    g:Pick(
         v:none,
         cli,
         v:none,
@@ -1815,55 +1796,28 @@ def g:NoteIdNew(): string # {{{2
     return strftime('%Y%m%d_%H%M%S')
 enddef
 
-def g:FuzzyFinder(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{2
-    const fzf = executable('zf') ? 'zf --keep-order -l 30' : (
-        is_win32 && windowsversion()->str2float() <= 5.1
-        ? 'fzf --no-sort --reverse --inline-info'  # old fzf does not support --info.
-        : 'fzf --no-sort --reverse --info=inline'
-    )
-    var shcmd = ''
-    const file_result = tempname()
-    if empty(Cmd)  # Lines may be empty but provided; so checking Cmd is better.
-        const file_input = tempname()
-        Lines->writefile(file_input)
-        shcmd = printf('%s < %s > %s', fzf, shellescape(file_input), shellescape(file_result))
+def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{2
+    if &modified
+        belowright split
+    endif
+    enew | setl buftype=nofile
+    &l:statusline = empty(Title) ? Cmd : Title
+    if empty(Cmd)
+        append(0, Lines)
+        normal "_dd
+        :1
     else
-        shcmd = printf('{ %s; } | %s > %s', Cmd, fzf, shellescape(file_result))
+        execute $'Sh -r {Cmd}'
+        normal "_dd
     endif
-    # use :Sh instead of :term, since latter does not work in win32:
-    # e.g. `:term ++shell ls -l` will be trimmed as `ls`.
-    var cmd_opt = execute($'Sh -n {shcmd}')->json_decode()
-    cmd_opt.opt->extend({term_finish: 'close', hidden: true})
-    const term_buf = term_start(cmd_opt.cmd, cmd_opt.opt)
-    const height = max([&lines / 3, 10])
-    const winid = popup_create(term_buf, {
-        title: empty(Title) ? Cmd : Title,
-        pos: 'botleft',  # use bot instead of top, since latter hides tab info.
-        minwidth: &columns,
-        minheight: height,
-        maxheight: height,
-        line: &lines,  # use 1 if use top as pos.
-    })
-    TerminalSetup()  # mainly for keybinding.
-    if is_win32
-        # in win32, double <Esc> exits fzf; let's make it behave same as other OS.
-        tnoremap <buffer> <Esc> <C-c>
-    endif
-    term_getjob(term_buf)
-        ->job_setoptions({ exit_cb: (_, _) => {
-            popup_close(winid)
-            const res: string = file_result->readfile()->get(0, '')
-            if !empty(res)
-                redraws  # this is required to make Exception shown; {{{
-                # like editing files already opened in another instance. }}}
-                Callback(res)
-            endif
-        }})
+    b:Callback = Callback
+    nnoremap <buffer> <silent> <CR> :call b:Callback(getline('.'))<CR>
+    nnoremap <buffer> ! :v//d _<Left><Left><Left><Left>
 enddef
 
-# private fuzzy function {{{2
-def FuzzyGotoProject() # {{{3
-    g:FuzzyFinder(
+# private pick function {{{2
+def PickGotoProject() # {{{3
+    g:Pick(
         'Project',
         ProjectListCmd(),
         v:none,
@@ -1904,8 +1858,8 @@ def ProjectListCmd(): string
     )
 enddef
 
-def FuzzyGotoTabWin() # {{{3
-    g:FuzzyFinder(
+def PickGotoTabWin() # {{{3
+    g:Pick(
         'TabWin',
         v:none,
         TabWinLines(),
@@ -1932,8 +1886,8 @@ def TabWinLines(): list<string>
     return buf_list
 enddef
 
-def FuzzyColorScheme() # {{{3
-    g:FuzzyFinder(
+def PickColorScheme() # {{{3
+    g:Pick(
         'VimColorscheme',
         v:none,
         globpath(&rtp, 'colors/*.vim', 0, 1)->map((_, i) => i->matchstr('\v[^\/]+\ze\.vim$')),
@@ -1943,12 +1897,12 @@ def FuzzyColorScheme() # {{{3
     )
 enddef
 
-def FuzzyRecentFiles() # {{{3
+def PickRecentFiles() # {{{3
     const filesInCurrentTab = tabpagebuflist()
         ->mapnew((_, i) => i->getbufinfo())
         ->flattennew(1)->map((_, i) => i.name)
     const blacklistName = ["COMMIT_EDITMSG", "ADD_EDIT.patch", "addp-hunk-edit.diff", "git-rebase-todo"]
-    g:FuzzyFinder(
+    g:Pick(
         'RecentFiles',
         v:none,
         v:oldfiles
@@ -1964,9 +1918,9 @@ def FuzzyRecentFiles() # {{{3
     )
 enddef
 
-def FuzzyCwdFzf() # {{{3
-    g:FuzzyFinder(
-        'CurrentDirFzf',
+def PickCwdFiles() # {{{3
+    g:Pick(
+        'CurrentDirFiles',
         "find '!' -type d",
         v:none,
         (s) => {
@@ -1975,14 +1929,14 @@ def FuzzyCwdFzf() # {{{3
     )
 enddef
 
-def FuzzyPromptFzf() # {{{3
-    const cmd_1 = 'FuzzyFinder find ./'
+def PickPromptFiles() # {{{3
+    const cmd_1 = 'Pick find ./'
     const cmd_2 = " '!' -type d"
     const offset = "\<Home>" .. repeat("\<Right>", len(cmd_1))
     feedkeys($":{cmd_1}{cmd_2}{offset}", 't')
 enddef
 
-def FuzzyUserMapping() # {{{3
+def PickUserMapping() # {{{3
     if v:lang !~ '\v^(en|C$)'
         # change lang to C, so command 'verb map' outputs like
         # "Last set from", instead of using non-English message.
@@ -2003,7 +1957,7 @@ def FuzzyUserMapping() # {{{3
             endif
         endfor
     }
-    g:FuzzyFinder(
+    g:Pick(
         'UserMapping',
         v:none,
         keys,
@@ -2024,9 +1978,9 @@ def FuzzyUserMapping() # {{{3
     )
 enddef
 
-def FuzzyUserCommand() # {{{3
+def PickUserCommand() # {{{3
     if v:lang !~ '\v^(en|C$)'
-        # ... see above (FuzzyUserMapping)
+        # ... see above (PickUserMapping)
         defer execute($'language messages {v:lang}')
         language messages C
     endif
@@ -2044,7 +1998,7 @@ def FuzzyUserCommand() # {{{3
             endif
         endfor
     }
-    g:FuzzyFinder(
+    g:Pick(
         'UserCommand',
         v:none,
         keys,
@@ -2069,25 +2023,25 @@ enddef
 nnoremap <Space>a <ScriptCmd>SelectFromSources('a')<CR>
 nnoremap <Space>f <ScriptCmd>SelectFromSources('f')<CR>
 
-const fuzzy_all = {
+const pick_all = {
     a: [
         # [key, name, func]
-        ['c', 'color', FuzzyColorScheme],
-        ['e', 'project_dir', FuzzyGotoProject],
-        ['t', 'tabwin', FuzzyGotoTabWin],
+        ['c', 'color', PickColorScheme],
+        ['e', 'project_dir', PickGotoProject],
+        ['t', 'tabwin', PickGotoTabWin],
     ],
     f: [
-        ['F', 'fzf_cwd', FuzzyCwdFzf],
-        ['f', 'fzf_prompt', FuzzyPromptFzf],
-        ['r', 'recent_files', FuzzyRecentFiles],
-        ['m', 'mapping', FuzzyUserMapping],
-        ['c', 'user_command', FuzzyUserCommand],
+        ['F', 'cwd_files', PickCwdFiles],
+        ['f', 'prompt_files', PickPromptFiles],
+        ['r', 'recent_files', PickRecentFiles],
+        ['m', 'mapping', PickUserMapping],
+        ['c', 'user_command', PickUserCommand],
     ],
 }
 
 def SelectFromSources(set: string)
     # TODO highlight
-    const selection = fuzzy_all[set]
+    const selection = pick_all[set]
 
     # Is is possible to use ordered dict, so we migrate selection /
     # selection_dict?
