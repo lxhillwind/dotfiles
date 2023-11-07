@@ -1241,7 +1241,9 @@ augroup vimrc
             text = g:ExpandHead(text)
         endif
         echom text
-        execute 'Sh -g' text->shellescape()
+        if has_gui
+            execute 'Sh -g' text->shellescape()
+        endif
     enddef
 
     # Remember the positions in files with some git-specific exceptions {{{2

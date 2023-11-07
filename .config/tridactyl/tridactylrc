@@ -190,7 +190,7 @@ bind y2 composite js document.location.host | clipboard yank
 " yank (url decoded)
 bind yY composite js decodeURI(document.location) | clipboard yank
 " yank image url
-bind yi composite hint -Jpipe img src | clipboard yank
+bind yi composite hint -Jpipe img src | js -p if (JS_ARG) tri.excmds.clipboard('yank', JS_ARG)
 
 " unbind some keys for firefox's native function {{{2
 unbind <C-f>
@@ -321,12 +321,20 @@ bindurl emacs-china.org|forum.suse.org.cn|ziggit.dev c hint -qbJc td.main-link >
 " }}}
 
 " override binding for some sites {{{
-bindurl ^https://www.bilibili.com f hint -Jc div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,\
-div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
+bindurl ^https://www.bilibili.com f hint -Jc \
+div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
+,a.rank-ogv-card,a.rank-video-card,a.rank-article-card\
+,li.history-record a.title\
+,a.video-awesome-img,div.framepreview-box > a.box-a\
+,div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,i.history-delete\
+ -F e => { if (/bilibili.com\/((video)|(bangumi\/play))\//.test(e.href)) tri.excmds.open(e.href); else e.click(); }
+
 bindurl ^https://www.bilibili.com F hint -bJc \
-div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a,a.rank-ogv-card,a.rank-video-card,a.rank-article-card,a.video-awesome-img
-bindurl ^https://www.bilibili.com/account/history f hint -Jc li.history-record a.title,i.history-delete
-bindurl ^https://www.bilibili.com/account/history F hint -bJc li.history-record a.title
+div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
+,a.rank-ogv-card,a.rank-video-card,a.rank-article-card\
+,li.history-record a.title\
+,a.video-awesome-img,div.framepreview-box > a.box-a\
+,video.wrong-match-to-align-with-above
 
 bindurl protectedtext.com/[^/]+$ f hint -Jc a.ui-tabs-anchor,button.ui-button:enabled
 bindurl ^https://www.protopage.com f hint -Jc td > div.scheme-header-text
@@ -357,8 +365,8 @@ command exclaim js -d€ tri.excmds.composite('magic_define').then(_ => tri.lx.s
 command exclaim_quiet js -d€ tri.excmds.composite('magic_define').then(_ => tri.lx.sh(JS_ARGS.join(' ')))€
 
 " fix image search
-bind ;m composite hint -Jpipe img src | js -p tri.excmds.open(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
-bind ;M composite hint -Jpipe img src | js -p tri.excmds.tabopen(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
+bind ;m composite hint -Jpipe img src | js -p if (JS_ARG) tri.excmds.open(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
+bind ;M composite hint -Jpipe img src | js -p if (JS_ARG) tri.excmds.tabopen(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
 
 bind gi hint input:read-write,textarea:read-write
 
