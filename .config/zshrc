@@ -1,6 +1,5 @@
 #!/usr/bin/env false
 # vim:fdm=marker
-# path: ~/.zshrc
 
 # about this file {{{1
 # # Description
@@ -31,11 +30,6 @@ esac
 case "$PATH" in
     ~/bin:*|*:~/bin:*) ;;
     *) export PATH=~/bin:$PATH ;;
-esac
-
-case "$PYTHONPATH" in
-    ~/lib/python:*|*:~/lib/python) ;;
-    *) export PYTHONPATH=~/lib/python:$PYTHONPATH ;;
 esac
 
 # fzf
@@ -79,7 +73,6 @@ man() {
 }
 
 # some short alias & functions {{{2
-alias exa='exa -F --color=always'
 alias less='less -R'
 alias diff='diff --color=auto'
 alias grep='grep --color=auto'
@@ -102,17 +95,6 @@ esac
 # simple PS1 (zsh re-defines it) {{{2
 # TODO openSUSE busybox-static sh handle PS1 buggy?
 PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date +%Y-%m-%d\ %H:%M:%S)] \[\e[33m\]\w'$'\n''\[\e[32m\]\$\[\e[0m\] '
-
-# load vim-vimserver related setting after PS1 {{{2
-# see lxhillwind/vim-vimserver
-if [ -f "$VIMSERVER_SH_SOURCE" ]; then
-    source "$VIMSERVER_SH_SOURCE"
-fi
-
-# busybox can only set rc by $ENV, so source local config if exists {{{2
-if [ -n "$ENV" ] && [ -n "$SH_RC_LOCAL" ] && [ -r "$SH_RC_LOCAL" ]; then
-    source "$SH_RC_LOCAL"
-fi
 
 # sv(): capture term output, pipe to vim (easy jump) {{{2
 # optional $1: start line from visible top; default: 1000

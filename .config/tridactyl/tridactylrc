@@ -406,7 +406,7 @@ bind ;<C-b> hint -qJc a -F e => { tri.excmds.tabopen("-b",'https://www.instapape
 unbind --mode=visual <C-b>
 
 " quickmark (native) {{{2
-command quickmark_fs js -p tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`)))
+command quickmark_fs js -p if (/^[a-zA-Z0-9]$/.test(JS_ARG)) tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`)))
 
 bind M gobble 1 quickmark_fs
 

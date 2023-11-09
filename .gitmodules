@@ -7,9 +7,6 @@
 [submodule "vimfiles/pack/rc/opt/securemodelines/after"]
 	path = vimfiles/pack/rc/opt/securemodelines/after
 	url = https://github.com/ciaranm/securemodelines
-[submodule "vimfiles/pack/rc/opt/sitruuna.vim"]
-	path = vimfiles/pack/rc/opt/sitruuna.vim
-	url = https://github.com/eemed/sitruuna.vim
 [submodule "vimfiles/pack/rc/opt/vim9-syntax"]
 	path = vimfiles/pack/rc/opt/vim9-syntax
 	url = https://github.com/lacygoill/vim9-syntax
@@ -52,3 +49,6 @@
 [submodule ".config/firefoxCSS/Firefox-Onebar"]
 	path = .config/firefoxCSS/Firefox-Onebar
 	url = https://codeberg.org/Freeplay/Firefox-Onebar
+[submodule "vimfiles/pack/rc/opt/miniSnip"]
+	path = vimfiles/pack/rc/opt/miniSnip
+	url = https://github.com/Jorengarenar/miniSnip

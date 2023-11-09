@@ -1,10 +1,10 @@
 vim9script
 
 nnoremap <Space>bb <ScriptCmd>BookmarkAdd()<CR>
-nnoremap <Space>bo <ScriptCmd>FuzzyGotoBookmark()<CR>
+nnoremap <Space>bo <ScriptCmd>GotoBookmark()<CR>
 nnoremap <Space>be <ScriptCmd>BookmarkEdit()<CR>
 
-# depends on ":SetCmdText", g:FuzzyFinder().
+# depends on ":SetCmdText", g:Pick().
 
 
 command! -nargs=* BookmarkAdd BookmarkAdd(<args>)
@@ -61,8 +61,8 @@ def BookmarkOpenExFn(line: string): dict<string>
     }
 enddef
 
-def FuzzyGotoBookmark()
-    g:FuzzyFinder(
+def GotoBookmark()
+    g:Pick(
         'Bookmark',
         v:none,
         BookmarkOpenFn(),

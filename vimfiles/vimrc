@@ -122,9 +122,6 @@ if !has_gui
 endif
 command! GitRepoUrl feedkeys("\<Plug>(gh-repo)")
 
-# colorscheme
-packadd! sitruuna.vim
-
 # filetype / syntax
 packadd! vim9-syntax
 packadd! vim-tridactyl
@@ -133,6 +130,11 @@ g:markdown_fold_style = 'nested'
 g:markdown_fold_override_foldtext = 0
 # default yaml syntax is quite slow.
 packadd! vim-yaml
+
+# snippet (it uses <C-j> in normal / insert select mode)
+packadd! miniSnip
+# security: do not load snippets from cwd.
+g:miniSnip_local = ''
 
 # completion {{{2
 # non-lsp {{{
@@ -526,7 +528,6 @@ endif
 
 # macvim {{{2
 if has('gui_macvim') && has('vim_starting')
-    color macvim
     set gfn=Monaco:h14
     for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
         execute $"map \<D-{i}> \<M-{i}>"
@@ -921,21 +922,6 @@ vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), 
 nmap gF <Plug>(jump_to_file)
 vmap gF <Plug>(jump_to_file)
 
-# <C-j> / <C-k>: navigate preview window without focusing on it {{{2
-def MoveInPreviewWindow(direction: string, repeat: number)
-    wincmd P
-    execute $'normal ${repeat}{direction}'
-    wincmd p
-enddef
-
-noremap <silent> <C-j> <ScriptCmd>MoveInPreviewWindow('j', v:count)<CR>
-noremap <silent> <C-k> <ScriptCmd>MoveInPreviewWindow('k', v:count)<CR>
-noremap! <silent> <C-j> <ScriptCmd>MoveInPreviewWindow('j', v:count)<CR>
-noremap! <silent> <C-k> <ScriptCmd>MoveInPreviewWindow('k', v:count)<CR>
-
-# <C-p>: toggle previewwindow {{{2
-nnoremap <C-p> :setlocal previewwindow!<CR>
-
 # terminal escape; {{{2
 # used to use <C-Space>, but it may be occupied by DE / OS. {{{
 # I don't use <C-t> key in terminal, so it's ok to map it. }}}
@@ -1147,6 +1133,12 @@ augroup vimrc
     au FileType zig setl fp=zig\ fmt\ --stdin
     # ":h ft-sh-syntax"
     g:is_posix = 1
+    au FileType snip {
+        const ft = expand('<afile>')->split('/')->get(-2)
+        if ft != 'all' && ft->match('\v^[a-zA-Z0-9_.]+$') >= 0
+            execute $'setlocal filetype=snip.{ft}'
+        endif
+        }
 
     # quickfix window {{{2
     au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
