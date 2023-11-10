@@ -15,8 +15,7 @@
 
 	archive-worktree = !f() { cd "${GIT_PREFIX:-.}/$1" || return -1 \n git ls-files 2>/dev/null | xargs tar -cf /dev/stdout -- \n } \n f
 
-	# should be called from repo root directory;
-	add-dir-as-submodule = !f() { : ${1:?one dir expected} \n dir=$(cd "$1" && pwd) \n dir=$(printf %s "$dir" | sed -E "s#^$GIT_WORK_TREE/##") \n git submodule add -f "$(git --git-dir="$dir/.git" --work-tree="$dir" config remote.origin.url)" "$dir" \n } \n set -e \n f
+	add-dir-as-submodule = !f() { : ${1:?one dir expected} \n repo_root=$PWD \n cd "${GIT_PREFIX:-.}" \n repo_url=$(git --git-dir="$1/.git" config remote.origin.url) \n target=$(cd "$1" && pwd) \n target=$(printf %s "$target" | sed "s#$repo_root/##") \n cd - >/dev/null \n echo $repo_root $repo_url $target \n git submodule add -f "$repo_url" "$target" \n } \n set -e \n f
 
 	au = add -u
 	dc = diff --cached

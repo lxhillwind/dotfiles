@@ -135,11 +135,11 @@ packadd! vim-yaml
 packadd! miniSnip
 # security: do not load snippets from cwd.
 g:miniSnip_local = ''
+# Spelling suggestions is usually not available, so let's override it.
+g:miniSnip_complkey = '<C-x>s'
 
 # completion {{{2
 # non-lsp {{{
-# source for dictionary, current or other loaded buffers, see ':help cpt'
-set cpt=.,k,w,b
 # don't select the first item.
 set completeopt=menu,menuone,noselect
 # suppress annoy messages.
@@ -147,16 +147,25 @@ set shortmess+=c
 
 packadd! vim-mucomplete
 
-# disable its imap <Tab> (and some others)
 g:mucomplete#enable_auto_at_startup = 1
+# disable its imap <Tab> (and some others)
 g:mucomplete#no_mappings = 1
-# disable keyn / dict: included in c-n via option 'complete' ('cpt');
+# disable keyn: included in c-n via option 'complete' ('cpt');
 # about these chains description: help 'mucomplete-methods'
 g:mucomplete#chains = {
-    default: ['path', 'omni', 'user', 'c-n', 'uspl'],
-    vim:     ['path', 'cmd',  'user', 'c-n', 'uspl'],
-    # sql: disable omni, since it causes trouble. (sth missing?)
-    sql:     ['path',         'user', 'c-n', 'uspl'],
+    default: ['path', 'omni', 'snippet', 'user', 'c-n', 'dict'],
+    vim:     ['path', 'cmd',  'snippet', 'user', 'c-n', 'dict'],
+    # sql: disable omni, since it causes trouble. (dbext plugin is not installed)
+    sql:     ['path',         'snippet', 'user', 'c-n', 'dict'],
+}
+g:mucomplete#user_mappings = {
+    'snippet': "\<C-x>s",
+}
+g:mucomplete#can_complete = {
+    default: {
+        # it's completed even if word length is not enough; let's fix it.
+        snippet: (s) => s->matchstr('\v\w+$')->len() >= 2,
+    },
 }
 
 imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
@@ -814,6 +823,9 @@ endif
 
 # Key mapping {{{1
 
+# make <C-r> in select mode work as expected for snippet plugin {{{2
+snoremap <C-r> ;<C-h><C-r>
+
 # custom text object {{{2
 # all
 vnoremap aa :<C-u>normal! ggVG<CR>
@@ -1139,6 +1151,9 @@ augroup vimrc
             execute $'setlocal filetype=snip.{ft}'
         endif
         }
+    # completion from vim's help page into vim
+    au FileType help setl iskeyword+=^'
+    au FileType vim setl iskeyword+=:
 
     # quickfix window {{{2
     au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
