@@ -308,6 +308,7 @@ bindurl ^https://www.bilibili.com c hint -Jc li.be-tab-item,div.toggle-btn\
 ,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
 ,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
 ,div.view-more > div.view-more-default > span.view-more-btn\
+,a.btn-more\
 ,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
 " }}}
 

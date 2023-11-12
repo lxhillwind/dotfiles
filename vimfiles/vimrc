@@ -138,14 +138,61 @@ g:miniSnip_local = ''
 # Spelling suggestions is usually not available, so let's override it.
 g:miniSnip_complkey = '<C-x>s'
 
-# completion {{{2
+var using_coc = exists('g:did_coc_loaded')
+# completion with coc {{{2
+# coc.nvim setup: {{{
+# - install from https://github.com/neoclide/coc.nvim;
+# - `packadd coc.nvim` from $MYVIMRC;
+# - recommend plugin:
+#     CocInstall coc-json coc-pairs
+# - useful setting:
+#    "suggest.noselect": true
+#    "diagnostic.enableSign": false
+#    "suggest.minTriggerInputLength": 2
+# }}}
+if using_coc
+    # Highlight the symbol and its references when holding the cursor
+    autocmd CursorHold * silent call g:CocActionAsync('highlight')
+
+    # Use `[g` and `]g` to navigate diagnostics
+    # Use `:CocDiagnostics` to get all diagnostics of current buffer in location list
+    nmap <silent> [g <Plug>(coc-diagnostic-prev)
+    nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+    # GoTo code navigation
+    nmap <silent> gd <Plug>(coc-definition)
+    nmap <silent> gy <Plug>(coc-type-definition)
+    nmap <silent> gi <Plug>(coc-implementation)
+    nmap <silent> gr <Plug>(coc-references)
+
+    # C-n C-p
+    inoremap <expr> <C-n> (coc#pum#visible() ? coc#pum#next(1) : coc#refresh())
+    inoremap <expr> <C-p> (coc#pum#visible() ? coc#pum#prev(1) : coc#refresh())
+
+    # Use K to show documentation in preview window
+    nnoremap <silent> K <ScriptCmd>ShowDocumentation()<CR>
+    def ShowDocumentation() # {{{
+        if g:CocAction('hasProvider', 'hover')
+            g:CocActionAsync('doHover')
+        else
+            feedkeys('K', 'in')
+        endif
+    enddef # }}}
+endif
+
+# completion without coc {{{2
 # non-lsp {{{
+# avoid i / t in 'cpt', since it may mess status bar when completion starts.
+# - lsp or mucomplete?
+set cpt=.,w,b,u
 # don't select the first item.
 set completeopt=menu,menuone,noselect
 # suppress annoy messages.
 set shortmess+=c
 
-packadd! vim-mucomplete
+if !using_coc
+    packadd! vim-mucomplete
+endif
 
 g:mucomplete#enable_auto_at_startup = 1
 # disable its imap <Tab> (and some others)
@@ -168,10 +215,12 @@ g:mucomplete#can_complete = {
     },
 }
 
-imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
-imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
-# make <CR> always add newline.
-inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
+if !using_coc
+    imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
+    imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
+    # make <CR> always add newline.
+    inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
+endif
 
 packadd! vim-dict
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
@@ -267,7 +316,7 @@ var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
 ->filter((_, i) => !i.path->empty())
 
 # load lsp on demand {{{
-if !empty(lspConfig)
+if !using_coc && !empty(lspConfig)
     for ft in lspConfig->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
         execute $'au FileType {ft} LspSetup()'
     endfor
