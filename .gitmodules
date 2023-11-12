@@ -34,9 +34,6 @@
 [submodule "vimfiles/pack/rc/opt/lsp"]
 	path = vimfiles/pack/rc/opt/lsp
 	url = https://github.com/yegappan/lsp
-[submodule "vimfiles/pack/rc/opt/vim-peekaboo"]
-	path = vimfiles/pack/rc/opt/vim-peekaboo
-	url = https://github.com/junegunn/vim-peekaboo
 [submodule "vimfiles/pack/rc/opt/vim-gh-line"]
 	path = vimfiles/pack/rc/opt/vim-gh-line
 	url = https://github.com/ruanyl/vim-gh-line

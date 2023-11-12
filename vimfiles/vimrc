@@ -103,9 +103,6 @@ vmap S <Plug>Sneak_S
 omap s <Plug>Sneak_s
 omap S <Plug>Sneak_S
 
-# register
-packadd! vim-peekaboo
-
 # clipboard
 const use_oscyank = !(has_gui || !empty($TMUX))
 if use_oscyank
