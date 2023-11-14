@@ -322,7 +322,6 @@ if !using_coc && !empty(lspConfig)
             g:LspOptionsSet({
                 # :help lsp-options
                 showDiagWithSign: false,
-                hoverInPreview: true,
             })
         endif
 
@@ -978,6 +977,31 @@ vmap gF <Plug>(jump_to_file)
 # used to use <C-Space>, but it may be occupied by DE / OS. {{{
 # I don't use <C-t> key in terminal, so it's ok to map it. }}}
 tnoremap <C-t> <C-\><C-n>
+
+# <Space>g; prompt to run code (and remember last command) {{{2
+nnoremap <expr> <Space>g SpaceGSetup()
+def SpaceGSetup(): string
+    if !exists('b:space_g')
+        const cmd = {
+            go: 'go run %',
+            javascript: 'node %',
+            python: 'python3 %',
+            scheme: 'scheme-run %',
+            sh: (getline(1)->match('\v^\#\!.*<bash>') >= 0 ? 'bash' : 'sh') .. ' %:p',
+            zig: 'zig run %',
+            zsh: 'zsh %:p',
+        }->get(&ft, '')
+        b:space_g = $'up | Sh! -bt {cmd}'
+    endif
+    feedkeys($':SpaceG {b:space_g}', 'n')
+    return ''
+enddef
+
+command! -nargs=+ -complete=shellcmd SpaceG SpaceG(<q-args>)
+def SpaceG(arg: string)
+    b:space_g = arg
+    execute b:space_g
+enddef
 
 # <Space>l {{{2
 nnoremap <silent> <Space>l :noh<CR>
