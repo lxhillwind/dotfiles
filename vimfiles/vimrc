@@ -251,27 +251,24 @@ enddef
 # }}}
 
 # lsp server configuration {{{
-var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
-    {
-        name: 'ansible',
+const lspConfigDict = {
+    ansible: {
         filetype: ['yaml.ansible'],
-        path: exepath('ansible-language-server'),
+        path: 'ansible-language-server',
         args: ['--stdio'],
     },
-    {
-        name: 'golang',
+    golang: {
         filetype: ['go', 'gomod'],
-        path: exepath('gopls'),
+        path: 'gopls',
         args: ['serve'],
         syncInit: true,
     },
-    {
-        name: 'python',
+    python: {
         filetype: ['python'],
         path: (
             (!is_win32 && executable('pylsp')) ?
             expand('~/bin/pylsp-env-helper') :
-            exepath('pylsp')
+            'pylsp'
         ),
         args: [],
         # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
@@ -285,44 +282,60 @@ var lspConfig = [  # will be modified in LspAddServer, so do not use `const`
             'pylsp.plugins.pylint.args': ['-E'],
         }),
     },
-    {
-        name: 'scala',
+    scala: {
         filetype: ['scala'],
-        path: exepath('metals'),
+        path: 'metals',
         args: [],
     },
-    {
-        name: 'typescript',
+    typescript: {
         filetype: ['typescript', 'typescriptreact'],
-        path: exepath('typescript-language-server'),
+        path: 'typescript-language-server',
         args: ['--stdio'],
     },
-    {
-        name: 'ziglang',
+    ziglang: {
         filetype: ['zig'],
-        path: exepath('zls'),
+        path: 'zls',
         args: [],
     },
-] # }}}
-->filter((_, i) => !i.path->empty())
+} # }}}
+# allow extending / overriding from $MYVIMRC with var g:vimrc_lsp_config
+->extend(exists('g:vimrc_lsp_config') ? g:vimrc_lsp_config : {})
 
 # load lsp on demand {{{
-if !using_coc && !empty(lspConfig)
-    for ft in lspConfig->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
+if !using_coc
+    for ft in lspConfigDict->values()->mapnew((_, i) => i.filetype)->flattennew()->sort()->uniq()
         execute $'au FileType {ft} LspSetup()'
     endfor
 
-    var lsp_is_started = false
+    var lsp_is_started: dict<bool> = {}
     def LspSetup()
-        if !lsp_is_started
-            lsp_is_started = true
-            # no ! here.
-            packadd lsp
-            g:LspAddServer(lspConfig)
-            g:LspOptionsSet({
-                # :help lsp-options
-                showDiagWithSign: false,
-            })
+        if !lsp_is_started->get(&ft, false)
+            var config = {}
+            for [k, v] in lspConfigDict->items()
+                if v.filetype->index(&ft) >= 0
+                    const exepath = exepath(v.path)
+                    if empty(exepath)
+                        return
+                    endif
+                    config = copy(v)
+                    config.path = exepath
+                    break
+                endif
+            endfor
+            if empty(config)
+                return
+            endif
+            lsp_is_started[&ft] = true
+            if exists(':LspHover') != 2
+                # lsp plugin is not loaded yet.
+                # no ! here.
+                packadd lsp
+                g:LspOptionsSet({
+                    # :help lsp-options
+                    showDiagWithSign: false,
+                })
+            endif
+            g:LspAddServer([config])
         endif
 
         # gq
