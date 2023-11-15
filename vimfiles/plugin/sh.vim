@@ -11,7 +11,7 @@ endif
 let g:loaded_sh = 1
 
 " "item" or "item|alias"
-let s:sh_programs_builtin = ['kitty', 'alacritty|alac', 'konsole|kde', 'xfce4Terminal|xfce', 'urxvt', 'WindowsTerminal|wt', 'ConEmu|conemu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
+let s:sh_programs_builtin = ['kitty', 'alacritty|alac', 'konsole|kde', 'xfce4Terminal|xfce', 'urxvt', 'ConEmu|conemu', 'mintty', 'cmd', 'tmux', 'tmuxc', 'tmuxs', 'tmuxv']
 
 " main {{{1
 " common var def {{{2
@@ -753,29 +753,6 @@ function! s:program_cmd(context) abort
   if !s:is_win32 | return 0 | endif
 
   call a:context.start_fn(a:context.cmd, {'term_name': a:context.term_name})
-  return 1
-endfunction
-
-function! s:program_WindowsTerminal(context) abort
-  if !s:is_win32 | return 0 | endif
-  if !executable('wt') | return 0 | endif
-  " NOTE win32 vim seems to resolve path on exepath();
-  " wt is located here (according to `busybox which`):
-  "   ~/AppData/Local/Microsoft/WindowsApps/wt.exe
-  " but in vim, exepath('wt') gives another result (`:p` of which is not even
-  " in $PATH).
-  " we can even get wt version from exepath().
-  if exepath('wt')->match('WindowsTerminal') < 0 | return 0 | endif
-
-  " wt.exe cannot handle this:
-  "   wt -- busybox sh -c '"$@";' '' sh
-  " because wt use ; as its own seperator.
-  " TODO skip this check once
-  "   https://github.com/microsoft/terminal/issues/13264
-  " is resolved. (use exepath() to extract wt version, then compare)
-  if a:context.cmd->match(';') >= 0 | return 0 | endif
-
-  call a:context.start_fn(['wt', 'nt', '--title', a:context.term_name] + a:context.cmd)
   return 1
 endfunction
 
