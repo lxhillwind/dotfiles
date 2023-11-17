@@ -104,11 +104,12 @@ def LabelLine()
     var param = {
         items: [],
         Callback: (text) => {
-            if has('linux')
-                system('pbcopy', text)
-            else
-                execute '@+ = text'
-            endif
+            # Avoid using "@+ = text", since it cannot compile when + register
+            # is not available. (E354 is raised)
+            # It's safe to use 'pbcopy', since it is available in all OS where
+            # tmux is used (if tmux is available, then sh is available, then
+            # ~/bin/pbpaste).
+            system('pbcopy', text)
         }
     }
 
