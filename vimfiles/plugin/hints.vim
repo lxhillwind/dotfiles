@@ -90,7 +90,7 @@ def Label(param: dict<any>)
         })
         # move check here, so even only one item is hinted, we still need to
         # confirm.
-        if param.items->len() <= 1
+        if param.items->len() <= 1 && len(input) == label_length
             break
         endif
     endwhile
