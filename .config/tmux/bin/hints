@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+# also see:
+# ~/vimfiles/plugin/hints.vim
+
+popup_width=$(tmux display -p '#{pane_width}')
+# vim requires 1 line at bottom.
+popup_height=$(( $(tmux display -p '#{pane_height}') + 1 ))
+
+pane_bottom=$(tmux display -p '#{pane_bottom}')
+# make vim bottom align with pane (2: popup_height (+1); as 0-based index (+1))
+pane_bottom=$(( pane_bottom + 2 ))
+
+# NOTE tmux capture: -e option may add a final newline (e.g. when running vim / less),
+# so do not use -e option.
+tmux popup -E -w "$popup_width" -h "$popup_height" -x P -y "$pane_bottom" -B \
+    sh -c "tmux capture -p -S -0 -E - | vim - -c HintsMode"

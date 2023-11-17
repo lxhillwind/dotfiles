@@ -318,7 +318,7 @@ bindurl news.ycombinator.com c hint -bJc span.subline > a:nth-child(6)
 bindurl old.reddit.com c hint -bJc a.bylink.comments.may-blank
 
 " discourse site
-bindurl emacs-china.org|forum.suse.org.cn|ziggit.dev c hint -qbJc td.main-link > span > a.title
+autocmd DocLoad .* js if (document.querySelector('tbody.topic-list-body')) tri.excmds.bindurl(document.location.href, 'c', 'hint -qbJc td.main-link > span > a.title')
 " }}}
 
 " override binding for some sites {{{

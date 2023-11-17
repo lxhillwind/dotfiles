@@ -26,5 +26,9 @@ def TerraformDoc(...arg: list<string>)
             const url = $'https://registry.terraform.io/providers/{group}/{provider}/latest/docs/{type}/{resource}'
             execute 'Sh -g' shellescape(url)
         endif
+    else
+        if exists(':LspHover') == 2
+            execute 'LspHover'
+        endif
     endif
 enddef
