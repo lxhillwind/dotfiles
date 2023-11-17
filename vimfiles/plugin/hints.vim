@@ -24,7 +24,7 @@ enddef
 
 # data structure:
 # {items: [item], Callback: cb}
-# item: {pos: [x, y], label: ..., text: ..., ids: [match_ids]}
+# item: {pos: [x, y], label: ..., text: ..., ids: [match_ids or prop_ids]}
 # Callback: (text) => lambda
 
 const hintchars = 'asdfgzxcvwert'
@@ -49,6 +49,7 @@ def Label(param: dict<any>)
             label_length += 1
         endwhile
     }
+    prop_type_add('Conceal', {highlight: 'Conceal'})
     for item in param.items
         {
             item.label = ''
@@ -66,8 +67,21 @@ def Label(param: dict<any>)
         var pos_y = item.pos[1]
         for ch in item.label
             const pat = $'\%{pos_x}l\%{pos_y}c.'
+            const matched = search(pat) > 0
+            if matched
+                item.ids->add({
+                    type: 'match',
+                    id: matchadd('Conceal', pat, 999, -1, { conceal: ch })
+                })
+            else
+                # handle double width char (CJK);
+                # NOTE monkey patch. needs revisit when it does not work.
+                item.ids->add({
+                    type: 'prop',
+                    id: prop_add(pos_x, pos_y + 1, {type: 'Conceal', text: ch})
+                })
+            endif
             pos_y += 1
-            item.ids->add(matchadd('Conceal', pat, 999, -1, { conceal: ch }))
         endfor
     endfor
 
@@ -82,7 +96,11 @@ def Label(param: dict<any>)
         param.items->filter((_, item) => {
             if item.label->match($'^{input}') < 0
                 for id in item.ids
-                    matchdelete(id)
+                    if id.type == 'match'
+                        matchdelete(id.id)
+                    elseif id.type == 'prop'
+                        prop_remove({id: id.id})
+                    endif
                 endfor
                 return false
             endif
