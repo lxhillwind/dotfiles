@@ -1504,20 +1504,6 @@ enddef
 command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
     | diffthis | wincmd p | diffthis
 
-# :Pick {shellcmd...} (depends on g:Pick()) {{{2
-command! -nargs=+ -complete=shellcmd Pick PickAnyCli(<q-args>)
-
-def PickAnyCli(cli: string)
-    g:Pick(
-        v:none,
-        cli,
-        v:none,
-        (s) => {
-            execute('e ' .. fnameescape(s))
-        }
-    )
-enddef
-
 # <range>:J sep... (`J` with custom seperator) {{{2
 command! -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
 def JoinLines(sep: string, range: number, line1: number, line2: number)
@@ -1691,6 +1677,20 @@ command! OpenWithVSCode {
     )
     execute 'Cdproject' 'Sh' param
     }
+
+# :Pick {shellcmd...} (depends on g:Pick()) {{{2
+command! -nargs=+ -complete=shellcmd Pick PickAnyCli(<q-args>)
+
+def PickAnyCli(cli: string)
+    g:Pick(
+        v:none,
+        cli,
+        v:none,
+        (s) => {
+            execute('e ' .. fnameescape(s))
+        }
+    )
+enddef
 
 # :PluginReadme {plugin}; open README file for specified plugin. {{{2
 command! -nargs=1 -complete=custom,PluginReadmeComp PluginReadme

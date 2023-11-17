@@ -7,6 +7,7 @@ command! HintsMode HintsMode()
 def HintsMode()
     setlocal buftype=nofile
     setlocal nonumber norelativenumber nofoldenable nocursorcolumn nocursorline
+    setlocal nohlsearch
     redraw
     echon 'hint: [l]ine [u]rl <<< [q]uit '
     const ch = getcharstr()
@@ -29,11 +30,11 @@ enddef
 const hintchars = 'asdfgzxcvwert'
 
 def Label(param: dict<any>)
+    # param needs to be modifiable (var)
     if param.items->len() == 0
         quit
     endif
 
-    # param needs to be modifiable (var)
     setlocal concealcursor=ncv conceallevel=2
     hi Conceal guifg=white guibg=blue ctermfg=white ctermfg=blue
 
@@ -155,7 +156,6 @@ def LabelUrl()
 
     urls = []
     execute $'keeppatterns :%s/\v{url_pattern}/\=AddUrl(line("."), col("."), submatch(0))/gne'
-    setlocal nohlsearch
 
     hi url cterm=bold ctermbg=lightgrey ctermfg=black gui=bold guibg=lightgrey guifg=black
     prop_type_add('url', {highlight: 'url'})
