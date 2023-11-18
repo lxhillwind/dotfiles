@@ -37,6 +37,16 @@ prop_type_add('Conceal', {highlight: 'Conceal'})
 
 def Label(param: dict<any>)
     # param needs to be modifiable (var)
+
+    # filter out items not visible.
+    {
+        const line_top = line('w0')
+        const line_bot = line('w$')
+        param.items->filter(
+            (_, item) => item.pos[0] <= line_bot && item.pos[0] >= line_top
+        )
+    }
+
     if param.items->len() == 0
         quit
     endif

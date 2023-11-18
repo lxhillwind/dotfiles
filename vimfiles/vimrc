@@ -802,6 +802,10 @@ if is_win32
     set iminsert=2
 endif
 
+# fix scroll behavior (H, L, zz, zt, zb ...) {{{2
+# this may be set by /etc/vimrc (e.g. in fedora); let's recover it.
+set scrolloff=0
+
 # term & gui (but not colorscheme) {{{2
 # TODO g:terminal_ansi_colors works even if (no gui && no tgc). is this a bug?
 # NOTE: no `set bg`; seems that terminal theme (dark / light) can be detected.
