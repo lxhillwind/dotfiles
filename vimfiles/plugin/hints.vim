@@ -150,17 +150,26 @@ def AddToList(line: number, col: number, text: string): string
     return ''
 enddef
 
+def CopyText(text: string)
+    # Avoid using "@+ = text" directly, since it cannot compile when +
+    # register is not available. (E354 is raised)
+    #
+    # use b: var, since it is available in both vim9 content and execute().
+    if has('clipboard') && !has('linux')
+        # do not use @+ on linux, since clipboard content is not available
+        # after gvim exits.
+        b:hints_text = text
+        execute('@+ = b:hints_text')
+    else
+        # replace with e.g. 'xsel -ib' if desired.
+        system('pbcopy', text)
+    endif
+enddef
+
 def LabelLine() # {{{1
     var param = {
         items: [],
-        Callback: (text) => {
-            # Avoid using "@+ = text", since it cannot compile when + register
-            # is not available. (E354 is raised)
-            # It's safe to use 'pbcopy', since it is available in all OS where
-            # tmux is used (if tmux is available, then sh is available, then
-            # ~/bin/pbpaste).
-            system('pbcopy', text)
-        }
+        Callback: CopyText,
     }
 
     var linenr = 0
@@ -183,9 +192,7 @@ enddef
 def LabelWord() # {{{1
     var param = {
         items: [],
-        Callback: (text) => {
-            system('pbcopy', text)
-        }
+        Callback: CopyText,
     }
 
     const word_pattern = (
