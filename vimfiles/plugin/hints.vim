@@ -22,12 +22,15 @@ def HintsMode()
     endif
 enddef
 
-# data structure:
+# param data structure:
 # {items: [item], Callback: cb}
 # item: {pos: [x, y], label: ..., text: ..., ids: [match_ids or prop_ids]}
 # Callback: (text) => lambda
 
+# Label impl {{{1
 const hintchars = 'asdfgzxcvwert'
+const hint_size = hintchars->len()
+prop_type_add('Conceal', {highlight: 'Conceal'})
 
 def Label(param: dict<any>)
     # param needs to be modifiable (var)
@@ -38,7 +41,6 @@ def Label(param: dict<any>)
     setlocal concealcursor=ncv conceallevel=3
     hi Conceal guifg=white guibg=blue ctermfg=white ctermfg=blue
 
-    const hint_size = hintchars->len()
     var item_idx = 0
     const items_size = param.items->len()
     var label_length = 1
@@ -49,53 +51,62 @@ def Label(param: dict<any>)
             label_length += 1
         endwhile
     }
-    prop_type_add('Conceal', {highlight: 'Conceal'})
     for item in param.items
-        {
-            item.label = ''
-            var len = label_length
-            var idx = item_idx
-            while len > 0
-                len -= 1
-                item.label = hintchars[idx % hint_size] .. item.label
-                idx /= hint_size
-            endwhile
-        }
+        AddLabel(item, item_idx, label_length)
         item_idx += 1
-        item.ids = []
-        const pos_x = item.pos[0]
-        const pos_y = item.pos[1]
-        var pat = $'\%{pos_y}c.'
-        const line = getline(pos_x)
-        var to_be_hidden = line->matchstr(pat)
-        while to_be_hidden->strdisplaywidth() < item.label->strdisplaywidth()
-            var next_match = line->matchstr(pat .. '.')
-            if empty(next_match)
-                # pat span over line.
-                break
-            endif
-            pat ..= '.'
-            to_be_hidden = next_match
-        endwhile
-        const padding = to_be_hidden->strdisplaywidth() - item.label->strdisplaywidth()
-
-        item.ids->add({
-            type: 'prop',
-            id: prop_add(pos_x, pos_y, {
-                type: 'Conceal',
-                text: item.label .. ' '->repeat(padding)
-            })
-        })
-
-        item.ids->add({
-            type: 'match',
-            id: matchadd('Conceal', $'\%{pos_x}l' .. pat, 999, -1,
-            {
-                conceal: '&'  # any char is ok; we will hide it.
-            })
-        })
     endfor
+    HandleInput(param, label_length)
+    quit
+enddef
 
+def AddLabel(item: dict<any>, item_idx: number, label_length: number)
+    {
+        item.label = ''
+        var len = label_length
+        var idx = item_idx
+        while len > 0
+            len -= 1
+            item.label = hintchars[idx % hint_size] .. item.label
+            idx /= hint_size
+        endwhile
+    }
+    const pos_x = item.pos[0]
+    const pos_y = item.pos[1]
+    var pat = $'\%{pos_y}c.'
+
+    # calculate padding
+    const line = getline(pos_x)
+    var to_be_hidden = line->matchstr(pat)
+    while to_be_hidden->strdisplaywidth() < item.label->strdisplaywidth()
+        var next_match = line->matchstr(pat .. '.')
+        if empty(next_match)
+            # pat span over line.
+            break
+        endif
+        pat ..= '.'
+        to_be_hidden = next_match
+    endwhile
+    const padding = to_be_hidden->strdisplaywidth() - item.label->strdisplaywidth()
+
+    # add label; hide overlapped string
+    item.ids = []
+    item.ids->add({
+        type: 'prop',
+        id: prop_add(pos_x, pos_y, {
+            type: 'Conceal',
+            text: item.label .. ' '->repeat(padding)
+        })
+    })
+    item.ids->add({
+        type: 'match',
+        id: matchadd('Conceal', $'\%{pos_x}l' .. pat, 999, -1,
+        {
+            conceal: '&'  # any char is ok; we will hide it.
+        })
+    })
+enddef
+
+def HandleInput(param: dict<any>, label_length: number)
     var input = ''
     while true
         redraw
@@ -127,10 +138,9 @@ def Label(param: dict<any>)
     if param.items->len() == 1
         param.Callback(param.items[0].text)
     endif
-    quit
 enddef
 
-def LabelLine()
+def LabelLine() # {{{1
     var param = {
         items: [],
         Callback: (text) => {
@@ -160,13 +170,14 @@ def LabelLine()
     Label(param)
 enddef
 
+# helper {{{1
 var urls = []
 def AddUrl(line: number, col: number, text: string): string
     urls->add({line: line, col: col, url: text})
     return ''
 enddef
 
-def LabelUrl()
+def LabelUrl() # {{{1
     var param = {
         items: [],
         Callback: (text) => {
