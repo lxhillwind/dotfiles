@@ -23,6 +23,10 @@ esac
 # xfce-theme-manager: set --panels=0 to avoid reset other panels' size.
 #   (may not work; try to set in xfce-theme-manager -> Advanced -> "Panel Size")
 # xfce-theme-manager: set icons in a separate line, since it won't work if set with other options.
+
+# after fedora 38 -> fedora 39, this is required to make xfce-theme-manager work!
+export DISPLAY=:0.0
+
 if [ "$theme" = dark ]; then
     xfce-theme-manager --theme=Arc-Dark-solid --wmborder=Arc-Dark-solid --controls=Arc-Dark-solid --panel=0
 else
