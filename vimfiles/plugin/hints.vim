@@ -7,18 +7,21 @@ command! HintsMode HintsMode()
 def HintsMode()
     setlocal buftype=nofile
     setlocal nonumber norelativenumber nofoldenable nocursorcolumn nocursorline
-    setlocal nohlsearch
+    setlocal nowrap # if some line is full, vim display incorrectly; avoid it.
+    setlocal nohlsearch # avoid last search causing visual distraction
     redraw
-    echon 'hint: [l]ine [u]rl <<< [q]uit '
+    echon 'hint: [l]ine [u]rl <<< other key to quit '
     const ch = getcharstr()
     # avoid press enter to continue msg.
     echo "\n" | redrawstatus
-    if ch == 'q' || ch == "\x1b"
-        quit
-    elseif ch == 'l'
+    if ch == 'l'
         LabelLine()
+    elseif ch == 'w'
+        LabelWord()
     elseif ch == 'u'
         LabelUrl()
+    else
+        quit
     endif
 enddef
 
@@ -111,7 +114,7 @@ def HandleInput(param: dict<any>, label_length: number)
     while true
         redraw
         const ch = getcharstr()
-        if ch == 'q' || ch == "\x1b"
+        if hintchars->match(ch) < 0
             quit
         endif
         input ..= ch
@@ -138,6 +141,13 @@ def HandleInput(param: dict<any>, label_length: number)
     if param.items->len() == 1
         param.Callback(param.items[0].text)
     endif
+enddef
+
+# helper {{{1
+var matched_items = []
+def AddToList(line: number, col: number, text: string): string
+    matched_items->add({line: line, col: col, text: text})
+    return ''
 enddef
 
 def LabelLine() # {{{1
@@ -170,11 +180,30 @@ def LabelLine() # {{{1
     Label(param)
 enddef
 
-# helper {{{1
-var urls = []
-def AddUrl(line: number, col: number, text: string): string
-    urls->add({line: line, col: col, url: text})
-    return ''
+def LabelWord() # {{{1
+    var param = {
+        items: [],
+        Callback: (text) => {
+            system('pbcopy', text)
+        }
+    }
+
+    const word_pattern = (
+        '[a-zA-Z0-9./@\\-]{4,}'  # only collect words at least 4+1 chars long.
+        .. '[a-zA-Z0-9./-]'  # avoid @ at end (e.g. `ls -F` output)
+    )->substitute('/', '\\/', 'ge')
+
+    matched_items = []
+    execute $'keeppatterns :%s/\v{word_pattern}/\=AddToList(line("."), col("."), submatch(0))/gne'
+
+    hi word cterm=bold ctermbg=lightgrey ctermfg=black gui=bold guibg=lightgrey guifg=black
+    prop_type_add('word', {highlight: 'word'})
+    for item in matched_items
+        prop_add(item.line, item.col, {type: 'word', length: item.text->len()})
+        param.items->add({pos: [item.line, item.col], text: item.text})
+    endfor
+
+    Label(param)
 enddef
 
 def LabelUrl() # {{{1
@@ -194,19 +223,19 @@ def LabelUrl() # {{{1
         .. ')'
     )->substitute('/', '\\/', 'ge')
 
-    urls = []
-    execute $'keeppatterns :%s/\v{url_pattern}/\=AddUrl(line("."), col("."), submatch(0))/gne'
+    matched_items = []
+    execute $'keeppatterns :%s/\v{url_pattern}/\=AddToList(line("."), col("."), submatch(0))/gne'
 
     hi url cterm=bold ctermbg=lightgrey ctermfg=black gui=bold guibg=lightgrey guifg=black
     prop_type_add('url', {highlight: 'url'})
-    for item in urls
-        prop_add(item.line, item.col, {type: 'url', length: item.url->len()})
-        param.items->add({pos: [item.line, item.col], text: item.url})
+    for item in matched_items
+        prop_add(item.line, item.col, {type: 'url', length: item.text->len()})
+        param.items->add({pos: [item.line, item.col], text: item.text})
     endfor
 
     # debug url detection.
     #echo url_pattern
-    #echo urls
+    #echo matched_items
     #return
 
     Label(param)
