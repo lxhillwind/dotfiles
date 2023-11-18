@@ -35,7 +35,7 @@ def Label(param: dict<any>)
         quit
     endif
 
-    setlocal concealcursor=ncv conceallevel=2
+    setlocal concealcursor=ncv conceallevel=3
     hi Conceal guifg=white guibg=blue ctermfg=white ctermfg=blue
 
     const hint_size = hintchars->len()
@@ -64,25 +64,36 @@ def Label(param: dict<any>)
         item_idx += 1
         item.ids = []
         const pos_x = item.pos[0]
-        var pos_y = item.pos[1]
-        for ch in item.label
-            const pat = $'\%{pos_x}l\%{pos_y}c.'
-            const matched = search(pat) > 0
-            if matched
-                item.ids->add({
-                    type: 'match',
-                    id: matchadd('Conceal', pat, 999, -1, { conceal: ch })
-                })
-            else
-                # handle double width char (CJK);
-                # NOTE monkey patch. needs revisit when it does not work.
-                item.ids->add({
-                    type: 'prop',
-                    id: prop_add(pos_x, pos_y + 1, {type: 'Conceal', text: ch})
-                })
+        const pos_y = item.pos[1]
+        var pat = $'\%{pos_y}c.'
+        const line = getline(pos_x)
+        var to_be_hidden = line->matchstr(pat)
+        while to_be_hidden->strdisplaywidth() < item.label->strdisplaywidth()
+            var next_match = line->matchstr(pat .. '.')
+            if empty(next_match)
+                # pat span over line.
+                break
             endif
-            pos_y += 1
-        endfor
+            pat ..= '.'
+            to_be_hidden = next_match
+        endwhile
+        const padding = to_be_hidden->strdisplaywidth() - item.label->strdisplaywidth()
+
+        item.ids->add({
+            type: 'prop',
+            id: prop_add(pos_x, pos_y, {
+                type: 'Conceal',
+                text: item.label .. ' '->repeat(padding)
+            })
+        })
+
+        item.ids->add({
+            type: 'match',
+            id: matchadd('Conceal', $'\%{pos_x}l' .. pat, 999, -1,
+            {
+                conceal: '&'  # any char is ok; we will hide it.
+            })
+        })
     endfor
 
     var input = ''
