@@ -5,12 +5,12 @@ vim9script
 command! HintsMode HintsMode()
 
 def HintsMode()
-    setlocal buftype=nofile
+    setlocal buftype=nofile filetype=
     setlocal nonumber norelativenumber nofoldenable nocursorcolumn nocursorline
     setlocal nowrap # if some line is full, vim display incorrectly; avoid it.
     setlocal nohlsearch # avoid last search causing visual distraction
     redraw
-    echon 'hint: [l]ine [u]rl <<< other key to quit '
+    echon 'hint: [l]ine [w]ord [u]rl <<< other key to quit '
     const ch = getcharstr()
     # avoid press enter to continue msg.
     echo "\n" | redrawstatus
@@ -206,8 +206,8 @@ def LabelWord() # {{{1
     }
 
     const word_pattern = (
-        '[a-zA-Z0-9./@\\-]{4,}'  # only collect words at least 4+1 chars long.
-        .. '[a-zA-Z0-9./-]'  # avoid @ at end (e.g. `ls -F` output)
+        '[a-zA-Z0-9./_@~\\-]{4,}'  # only collect words at least 4+1 chars long.
+        .. '[a-zA-Z0-9./_-]'  # avoid @ at end (e.g. `ls -F` output)
     )->substitute('/', '\\/', 'ge')
 
     matched_items = []
@@ -234,7 +234,7 @@ def LabelUrl() # {{{1
         '(' # == normal url
         .. 'http[s]\://'  # protocol
         .. '[a-zA-Z0-9._-]+[a-zA-Z0-9]'  # domain; no . at end.
-        .. '((/[a-zA-Z0-9_/%?#.-]+[a-zA-Z0-9_/-])|)'  # path; some char not at end.
+        .. '((/[a-zA-Z0-9_/%?#.=-]+[a-zA-Z0-9_/-])|)'  # path; some char not at end.
         .. ')|(' # == <> quoted url
         .. '\<\zs((http\://)|(https\://))[^>]+\ze\>'
         .. ')'

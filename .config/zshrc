@@ -184,7 +184,8 @@ j() {
         fi
     fi
     if [[ $(wc -l ~/.cache/cd_history | awk '{ print $1 }') -gt 10000 ]]; then
-        echo 'warning: cd history (~/.cache/cd_history) too large!' >&2
+        # delete first 5000 lines silently.
+        sed -i '1,5000d' ~/.cache/cd_history
     fi
     s=$(sort ~/.cache/cd_history | uniq -c | sort -nk1 | sed -E 's/^\s*[0-9]+\s*//' \
         | { while read x; do if [ -d "$x" ]; then echo "$x"; fi; done; } \
