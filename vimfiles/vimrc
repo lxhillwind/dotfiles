@@ -33,7 +33,12 @@ const is_linux = has('linux')
 const is_mac = has('mac')
 const is_wsl = executable('/mnt/c/Windows/notepad.exe')
 const has_gui = has('gui_running') || is_mac || is_win32
-    || (is_linux && (!empty($DISPLAY) || !empty($WAYLAND_DISPLAY)))
+    || (is_linux && (
+        # desktop
+        !empty($DISPLAY) || !empty($WAYLAND_DISPLAY)
+        # android
+        || executable('/data/data/com.termux/files/usr/bin/termux-open')
+    ))
 
 const is_conemu = is_win32 && !has('gui_running') && $CONEMUANSI ==? 'ON'
 
@@ -1231,7 +1236,7 @@ augroup vimrc
         if ft != 'all' && ft->match('\v^[a-zA-Z0-9_.]+$') >= 0
             execute $'setlocal filetype=snip.{ft}'
         endif
-        }
+    }
     # completion from vim's help page into vim
     au FileType help setl iskeyword+=^'
     au FileType vim setl iskeyword+=:
@@ -1680,7 +1685,7 @@ command! OpenWithVSCode {
         printf('code -n ./ && code -r -g %s:%s:%s', shellescape(file), line, column)
     )
     execute 'Cdproject' 'Sh' param
-    }
+}
 
 # :Pick {shellcmd...} (depends on g:Pick()) {{{2
 command! -nargs=+ -complete=shellcmd Pick PickAnyCli(<q-args>)
