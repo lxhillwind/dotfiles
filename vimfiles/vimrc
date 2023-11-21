@@ -1887,22 +1887,49 @@ def g:NoteIdNew(): string # {{{2
 enddef
 
 def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{2
-    if &modified
-        belowright split
-    endif
-    enew | setl buftype=nofile
-    &l:statusline = empty(Title) ? Cmd : Title
-    if empty(Cmd)
-        append(0, Lines)
-        normal "_dd
-        :1
+    const fzf = (
+        is_win32 && windowsversion()->str2float() <= 5.1
+        ? 'fzf --color=16 --sort --cycle --reverse --inline-info'  # old fzf does not support --info.
+        : 'fzf --color=16 --sort --cycle --reverse --info=inline'
+    )
+    var shcmd = ''
+    const file_result = tempname()
+    if empty(Cmd)  # Lines may be empty but provided; so checking Cmd is better.
+        const file_input = tempname()
+        Lines->writefile(file_input)
+        shcmd = printf('%s < %s > %s', fzf, shellescape(file_input), shellescape(file_result))
     else
-        execute $'Sh -r {Cmd}'
-        normal "_dd
+        shcmd = printf('{ %s 2>/dev/null; } | %s > %s', Cmd, fzf, shellescape(file_result))
     endif
-    b:Callback = Callback
-    nnoremap <buffer> <silent> <CR> :call b:Callback(getline('.'))<CR>
-    nnoremap <buffer> ! :v//d _<Left><Left><Left><Left>
+    # use :Sh instead of :term, since latter does not work in win32:
+    # e.g. `:term ++shell ls -l` will be trimmed as `ls`.
+    var cmd_opt = execute($'Sh -n {shcmd}')->json_decode()
+    cmd_opt.opt->extend({term_finish: 'close', hidden: true})
+    const term_buf = term_start(cmd_opt.cmd, cmd_opt.opt)
+    const height = max([&lines / 2, 10])
+    const winid = popup_create(term_buf, {
+        title: empty(Title) ? Cmd : Title,
+        pos: 'botleft',  # use bot instead of top, since latter hides tab info.
+        minwidth: &columns,
+        minheight: height,
+        maxheight: height,
+        line: &lines,  # use 1 if use top as pos.
+    })
+    TerminalSetup()  # mainly for keybinding.
+    if is_win32
+        # in win32, double <Esc> exits fzf; let's make it behave same as other OS.
+        tnoremap <buffer> <Esc> <C-c>
+    endif
+    term_getjob(term_buf)
+        ->job_setoptions({ exit_cb: (_, _) => {
+            popup_close(winid)
+            const res: string = file_result->readfile()->get(0, '')
+            if !empty(res)
+                redraws  # this is required to make Exception shown; {{{
+                # like editing files already opened in another instance. }}}
+                Callback(res)
+            endif
+        }})
 enddef
 
 # private pick function {{{2
@@ -1976,13 +2003,13 @@ def TabWinLines(): list<string>
     return buf_list
 enddef
 
-def PickColorScheme() # {{{3
+def PickJumpCurrentBuffer() # {{{3
     g:Pick(
-        'VimColorscheme',
+        'CurrentBuffer',
         v:none,
-        globpath(&rtp, 'colors/*.vim', 0, 1)->map((_, i) => i->matchstr('\v[^\/]+\ze\.vim$')),
-        (s) => {
-            execute('color ' .. fnameescape(s))
+        getline(1, '$')->mapnew((idx, i) => $'{idx + 1}: {i}'),
+        (chosen) => {
+            execute 'normal ' .. chosen->matchstr('\v^[0-9]+') .. 'G'
         }
     )
 enddef
@@ -2011,19 +2038,12 @@ enddef
 def PickCwdFiles() # {{{3
     g:Pick(
         'CurrentDirFiles',
-        "find '!' -type d",
+        executable('bfs') ? "bfs '!' -type d" : "find '!' -type d",
         v:none,
         (s) => {
             execute 'e' fnameescape(s)
         }
     )
-enddef
-
-def PickPromptFiles() # {{{3
-    const cmd_1 = 'Pick find ./'
-    const cmd_2 = " '!' -type d"
-    const offset = "\<Home>" .. repeat("\<Right>", len(cmd_1))
-    feedkeys($":{cmd_1}{cmd_2}{offset}", 't')
 enddef
 
 def PickUserMapping() # {{{3
@@ -2109,21 +2129,20 @@ def PickUserCommand() # {{{3
     )
 enddef
 
-# (keymap) popup to select from sources. {{{3
+# (keymap) popup to select from sources. {{{2
 nnoremap <Space>a <ScriptCmd>SelectFromSources('a')<CR>
 nnoremap <Space>f <ScriptCmd>SelectFromSources('f')<CR>
 
 const pick_all = {
     a: [
         # [key, name, func]
-        ['c', 'color', PickColorScheme],
-        ['e', 'project_dir', PickGotoProject],
         ['t', 'tabwin', PickGotoTabWin],
+        ['b', 'current_buffer', PickJumpCurrentBuffer],
     ],
     f: [
-        ['F', 'cwd_files', PickCwdFiles],
-        ['f', 'prompt_files', PickPromptFiles],
+        ['f', 'cwd_files', PickCwdFiles],
         ['r', 'recent_files', PickRecentFiles],
+        ['p', 'project_dir', PickGotoProject],
         ['m', 'mapping', PickUserMapping],
         ['c', 'user_command', PickUserCommand],
     ],

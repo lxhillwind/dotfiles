@@ -32,9 +32,6 @@ case "$PATH" in
     *) export PATH=~/bin:$PATH ;;
 esac
 
-# fzf
-export FZF_DEFAULT_OPTS='--cycle --no-sort --no-mouse --color=16'
-
 # bat
 # git-delta theme is also controlled by `BAT_THEME`.
 export BAT_THEME=ansi
@@ -62,7 +59,7 @@ man() {
     MAN_POSIXLY_CORRECT=1 \
     GROFF_NO_SGR=yes \
     LANG=en_US.UTF-8 \
-    PAGER="sh -c 'sed -E \"s/[—−‐]/-/g\" | less'" \
+    PAGER="sh -c 'sed -E \"s/[—−‐]/-/g; s/ˆ/^/g\" | less'" \
     LESS_TERMCAP_md=$'\e[01;31m' \
     LESS_TERMCAP_me=$'\e[0m' \
     LESS_TERMCAP_se=$'\e[0m' \
@@ -240,12 +237,6 @@ PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey \^x\^e edit-command-line
-
-# fz(): put fzf result to zle buffer {{{2
-fz()
-{
-    command fzf | xargs-sh print -z
-}
 
 # bubblewrap {{{2
 if [[ $OSTYPE =~ linux ]]; then
