@@ -259,7 +259,7 @@ bind <Enter> scrollpage 0.95; \
 bind <Delete> scrollpage -0.95; \
 bind + hint -f 下一章; \
 bind - hint -f 上一章; \
-unbind <Insert>; \
+bind <Insert> reload; \
 unbind <ContextMenu>; \
 bind <Backspace> novel_mode_exit; \
 js alert('<Enter> is binded!')

@@ -9,12 +9,10 @@ def HintsMode()
     setlocal nonumber norelativenumber nofoldenable nocursorcolumn nocursorline
     setlocal nowrap # if some line is full, vim display incorrectly; avoid it.
     setlocal nohlsearch # avoid last search causing visual distraction
-    redraw
-    echon 'hint: [l]ine [w]ord [u]rl <<< other key to quit '
-    const ch = getcharstr()
-    # avoid press enter to continue msg.
-    echo "\n" | redrawstatus
-    if ch == 'l'
+    const ch = GetChar('hint: [i]nside [l]ine [w]ord [u]rl ')
+    if ch == 'i'
+        LabelInside()
+    elseif ch == 'l'
         LabelLine()
     elseif ch == 'w'
         LabelWord()
@@ -141,16 +139,16 @@ def HandleInput(param: dict<any>, label_length: number)
             endif
             return true
         })
+        if param.items->len() == 0
+            quit
+        endif
         # move check here, so even only one item is hinted, we still need to
         # confirm.
-        if param.items->len() <= 1 && len(input) == label_length
+        if param.items->len() == 1 && len(input) == label_length
             break
         endif
     endwhile
-    # if we press wrong hint char, then len will be zero.
-    if param.items->len() == 1
-        param.Callback(param.items[0].text)
-    endif
+    param.Callback(param.items[0].text)
 enddef
 
 # helper {{{1
@@ -176,6 +174,40 @@ def CopyText(text: string)
     endif
 enddef
 
+def GetChar(prompt: string): string
+    redrawstatus
+    echon prompt
+    const resp = getcharstr()
+    if resp == "\x1b"  #  (^[)
+        quit
+    endif
+    # avoid press enter to continue msg.
+    echo "\n" | redrawstatus
+    return resp
+enddef
+
+def LabelInside() # {{{1
+    var param = {
+        items: [],
+        Callback: CopyText,
+    }
+    const inside_char = GetChar('input delimiter char: ')
+    const ch_l = escape(inside_char, '\]')
+    const ch_r = {
+        '<': '>',
+        '(': ')',
+        '[': '\]',
+        '{': '}',
+    }->get(ch_l, ch_l)
+    LabelWord('(' ..
+        $'[{ch_l}]\zs[^{ch_l}{ch_r}]+\ze[{ch_r}]'
+        .. ')|(' ..
+        $'([{ch_l}]|\s|^)\zs[^{ch_l}{ch_r} ]+\ze[{ch_r}]'
+        .. ')|(' ..
+        $'[{ch_l}]\zs[^{ch_l}{ch_r} ]+\ze([{ch_r}]|\s|$)'
+        .. ')')
+enddef
+
 def LabelLine() # {{{1
     var param = {
         items: [],
@@ -199,15 +231,17 @@ def LabelLine() # {{{1
     Label(param)
 enddef
 
-def LabelWord() # {{{1
+def LabelWord(regex: string = '') # {{{1
     var param = {
         items: [],
         Callback: CopyText,
     }
 
     const word_pattern = (
-        '[a-zA-Z0-9./_@~\\-]{4,}'  # only collect words at least 4+1 chars long.
-        .. '[a-zA-Z0-9./_-]'  # avoid @ at end (e.g. `ls -F` output)
+        regex->empty() ? (
+            '[a-zA-Z0-9./_@~#:\\-]{4,}'  # only collect words at least 4+1 chars long.
+            .. '[a-zA-Z0-9./_-]'  # avoid @ at end (e.g. `ls -F` output)
+        ) : regex
     )->substitute('/', '\\/', 'ge')
 
     matched_items = []
@@ -232,11 +266,15 @@ def LabelUrl() # {{{1
     }
     const url_pattern = (
         '(' # == normal url
-        .. 'http[s]\://'  # protocol
+        .. 'https?\://'  # protocol
         .. '[a-zA-Z0-9._-]+[a-zA-Z0-9]'  # domain; no . at end.
-        .. '((/[a-zA-Z0-9_/%?#.=-]+[a-zA-Z0-9_/-])|)'  # path; some char not at end.
+        .. '((/[a-zA-Z0-9_/%?#.=&:-]+[a-zA-Z0-9_/-])|)'  # path; some char not at end.
         .. ')|(' # == <> quoted url
-        .. '\<\zs((http\://)|(https\://))[^>]+\ze\>'
+        .. '\<\zshttps?\://[^>]+\ze\>'
+        .. ')|(' # == () quoted url in markdown
+        .. '\]\(\zshttps?\://[^)]+\ze\)'
+        .. ')|(' # == "" url in html attr
+        .. '\="\zshttps?\://[^"]+\ze"'
         .. ')'
     )->substitute('/', '\\/', 'ge')
 

@@ -75,6 +75,8 @@ bindApp(",", "Firefox", true)
 bindApp(".", "sioyek")
 -- selection in tmux: it's visually better with kitty than iterm2.
 bindApp("/", "kitty")
+-- this is actually option+e on keyboard; it is set by karabiner (option-e.json)
+bindApp("e", "Double Commander", true)
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
 -- if hammerspoon is not started yet.

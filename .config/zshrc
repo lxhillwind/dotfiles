@@ -223,6 +223,12 @@ j() {
     fi
 }
 
+# lf: auto cd on finish {{{2
+lf()
+{
+    builtin cd "$(command lf -print-last-dir "$@")"
+}
+
 # readline keybindings {{{2
 bindkey -e
 bindkey \^U backward-kill-line
