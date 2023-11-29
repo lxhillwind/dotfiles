@@ -109,6 +109,34 @@ if [ -n "$DTACH_SESSION_FILE" ]; then
     }
 fi
 
+# lf: auto cd on finish {{{2
+lf()
+{
+    local x=$(command lf -print-last-dir "$@")
+    if [ "$x" != "$PWD" ]; then
+        cd "$x"
+    fi
+}
+
+# vim's Cdproject / Cdp in shell {{{2
+Cdproject()
+{
+    local x=$(git rev-parse --show-toplevel)
+    if [ -z "$x" ]; then
+        # use git's return code.
+        return 128
+    fi
+    cd "$x"
+    if [ $# -gt 0 ]; then
+        "$@"
+        local x=$?
+        cd - >/dev/null
+        return $x
+    fi
+}
+
+alias Cdp=Cdproject
+
 # finish if not zsh {{{2
 # Following code may cause syntax error in strict POSIX shell
 # (like array construction), so return early.
@@ -125,13 +153,13 @@ autoload -Uz compinit promptinit
 # arrow-key driven autocompletion
 zstyle ':completion:*' menu select
 
-# history {{{2
+# history setting {{{2
 # let's see if the performance is accessible.
 SAVEHIST=1000000
 HISTSIZE=$SAVEHIST
 HISTFILE=~/.zsh_history
 
-# history enhancement. put history search result in zle; hh() {{{2
+# hh(): history enhancement. put history search result in zle {{{2
 hh() {
     if ! command -v fzf &>/dev/null; then
         echo 'fzf not found!' >&2
@@ -144,7 +172,7 @@ hh() {
     fi
 }
 
-# cd {{{2
+# cd setting {{{2
 export DIRSTACKSIZE=16
 setopt auto_pushd pushd_ignore_dups pushd_minus
 
@@ -223,34 +251,6 @@ j() {
     fi
 }
 
-# lf: auto cd on finish {{{2
-lf()
-{
-    local x=$(command lf -print-last-dir "$@")
-    if [ "$x" != "$PWD" ]; then
-        builtin cd "$x"
-    fi
-}
-
-# vim's Cdproject / Cdp in shell {{{2
-Cdproject()
-{
-    local x=$(git rev-parse --show-toplevel)
-    if [ -z "$x" ]; then
-        # use git's return code.
-        return 128
-    fi
-    builtin cd "$x"
-    if [ $# -gt 0 ]; then
-        "$@"
-        local x=$?
-        cd - >/dev/null
-        return $x
-    fi
-}
-
-alias Cdp=Cdproject
-
 # readline keybindings {{{2
 bindkey -e
 bindkey \^U backward-kill-line
@@ -258,15 +258,15 @@ bindkey \^U backward-kill-line
 # '#' at begin-of-line as comment {{{2
 setopt interactivecomments
 
-# simple PS1 {{{2
-PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
-
 # <C-x><C-e>: edit command line {{{2
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey \^x\^e edit-command-line
 
-# bubblewrap {{{2
+# simple PS1 {{{2
+PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
+
+# PS1 for bubblewrap {{{2
 if [[ $OSTYPE =~ linux ]]; then
     if [[ "$(readlink /proc/1/exe)" =~ bwrap ]]; then
         PS1="(bwrap) $PS1"
@@ -275,10 +275,7 @@ if [[ $OSTYPE =~ linux ]]; then
     fi
 fi
 
-# finish {{{2
-compinit
-
-# s() or x(): x11 / wayland {{{1
+# s() or x(): x11 / wayland {{{2
 if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
     # let qt use kvantum theme in gtk;
     # TODO: disable it if using kde plasma.
@@ -312,7 +309,10 @@ if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; the
     }
 fi
 
-# startx automatically in linux console {{{1
+# startx automatically in linux console {{{2
 if [[ $OSTYPE =~ linux ]] && [ "$TTY" = /dev/tty1 ] && [ "$TERM" = linux ]; then
     x  # defined above
 fi
+# finish {{{2
+compinit
+

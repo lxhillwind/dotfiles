@@ -8,6 +8,7 @@ map R reload
 #   (leading : is to make block copy&paste work)
 #:set shell lf-shell
 #:set shellflag -c
+#:cmd doc $lf -doc | less
 #:cmd open &cmd /s /c start '' "$F"
 #:map e $vi "$F"
 #:map i $less "$F"
