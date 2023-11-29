@@ -1,0 +1,30 @@
+{
+    "title": "option-e",
+    "rules": [
+        {
+            "description": "modify option-e to cmd+shift+e (to be map in hammerspoon",
+            "manipulators": [
+                {
+                    "from": {
+                        "key_code": "e",
+                        "modifiers": {
+                            "mandatory": [
+                                "left_option"
+                            ]
+                        }
+                    },
+                    "to": [
+                        {
+                            "key_code": "e",
+                            "modifiers": [
+                                "left_command",
+                                "shift"
+                            ]
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        }
+    ]
+}

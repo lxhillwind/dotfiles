@@ -226,8 +226,30 @@ j() {
 # lf: auto cd on finish {{{2
 lf()
 {
-    builtin cd "$(command lf -print-last-dir "$@")"
+    local x=$(command lf -print-last-dir "$@")
+    if [ "$x" != "$PWD" ]; then
+        builtin cd "$x"
+    fi
 }
+
+# vim's Cdproject / Cdp in shell {{{2
+Cdproject()
+{
+    local x=$(git rev-parse --show-toplevel)
+    if [ -z "$x" ]; then
+        # use git's return code.
+        return 128
+    fi
+    builtin cd "$x"
+    if [ $# -gt 0 ]; then
+        "$@"
+        local x=$?
+        cd - >/dev/null
+        return $x
+    fi
+}
+
+alias Cdp=Cdproject
 
 # readline keybindings {{{2
 bindkey -e

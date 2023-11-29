@@ -687,8 +687,6 @@ def TerminalSetup()
     if exists(':Dirvish') == 2
         nnoremap <buffer> - <Cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
     endif
-    # <C-w> as in terminal.
-    tnoremap <buffer> <C-w> <C-w>.
 enddef
 
 augroup vimrc
@@ -951,6 +949,10 @@ execute "tnoremap \<M-9> \<C-w>:tablast<CR>"
 execute "nnoremap \<M-9> :tablast<CR>"
 execute "inoremap \<M-9> \<C-o>:tablast<CR>"
 # preserve <M-0> for DE / wm.
+
+# t_<C-w> {{{2
+# <C-w> as in terminal.
+tnoremap <C-w> <C-w>.
 
 # i_<C-u> {{{2
 # from defaults.vim
@@ -1396,6 +1398,20 @@ augroup vimrc
     # `run-some-shellcmd | vim -`, without "No write since..." warning {{{2
     au StdinReadPre * setl bt=nofile noswapfile
 
+    # prompt creating parent directory for files. {{{2
+    au BufWritePre * {
+        const dir = expand('%:p:h')
+        if !isdirectory(dir)
+            redrawstatus
+            echo $'dir [{dir}] does not exist. create it? [y/N] '
+            const input = getcharstr()
+            echo "\n" | redrawstatus
+            if input->tolower() == 'y'
+                mkdir(dir, 'p')
+            endif
+        endif
+    }
+
     # day/light theme switching {{{2
     def DayLightTheme()
         if executable('darkman') && system('darkman get') =~ 'light'
@@ -1647,19 +1663,26 @@ def JobClear(num: number)
 enddef
 
 # :Lf; call lf in current buffer (as a replacement to vim-dirvish) {{{2
-command! Lf Lf()
+command! -nargs=* Lf Lf(<q-args>)
 
-def Lf()
+def Lf(arg: string)
     if !executable('lf')
         throw 'lf is not found in $PATH!'
     endif
     const result_file = tempname()
     const shcmd = 'lf -selection-path ' .. shellescape(result_file)
+        .. (arg->empty() ? '' : ' ' .. shellescape(expand(arg)))
     var cmd_opt = execute($'Sh -n {shcmd}')->json_decode()
+    const old_bufnr = bufnr()
     cmd_opt.opt->extend({
         curwin: true, term_finish: 'close', hidden: true,
         exit_cb: (_, _) => {
             if !filereadable(result_file)
+                if bufexists(old_bufnr)
+                        # only restore buffer when it does not show
+                        && tabpagebuflist()->index(old_bufnr) < 0
+                    execute $'buffer {old_bufnr}'
+                endif
                 return
             endif
             # TODO multiple line / file in result?
@@ -1920,7 +1943,6 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
         maxheight: height,
         line: &lines,  # use 1 if use top as pos.
     })
-    TerminalSetup()  # mainly for keybinding.
     if is_win32
         # in win32, double <Esc> exits fzf; let's make it behave same as other OS.
         tnoremap <buffer> <Esc> <C-c>
