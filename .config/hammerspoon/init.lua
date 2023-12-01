@@ -1,10 +1,10 @@
--- link this file to ~/.hammerspoon/init.lua
+-- link this directory to ~/.hammerspoon
 
 -- config is largely token from:
 -- https://github.com/kbd/setup/blob/master/HOME/.hammerspoon/init.lua
 
--- import:
--- https://github.com/dbalatero/SkyRocket.spoon (commit: 358c683)
+-- submodule:
+-- https://github.com/dbalatero/SkyRocket.spoon
 
 hs.alert.show("Hammerspoon config loaded")
 

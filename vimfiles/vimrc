@@ -693,6 +693,9 @@ augroup vimrc
     au TerminalWinOpen * TerminalSetup()
 augroup END
 
+# window title {{{2
+set title
+
 # statusline {{{2
 set ruler
 &rulerformat = '%20('
@@ -1016,6 +1019,10 @@ def SpaceGSetup(): string
             zsh: 'zsh %:p',
         }->get(&ft, '')
         b:space_g = $'up | Sh! -bt {cmd}'
+        if &ft == 'gitcommit'
+            b:space_g = 'Sh -t=vs,c ' .. (
+                $GIT_DIR =~ $'{$HOME}/dotfiles/.git' ? 'git g dc' : 'git dc')
+        endif
     endif
     feedkeys($':SpaceG {b:space_g}', 'n')
     return ''
@@ -1309,6 +1316,8 @@ augroup vimrc
     # network (non-local) file editing {{{2
     au BufReadCmd ftp://*,http://*,https://* {
         setl buftype=nofile
+        # required if editing the same file (url) twice.
+        setl modifiable
         execute 'Sh -r curl -sL --' shellescape(expand('<amatch>'))
         normal gg"_dd
         setl nomodifiable
