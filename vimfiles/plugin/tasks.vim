@@ -401,10 +401,21 @@ function! s:ui(mode) abort
     let items = get(result_d, key, [])
     if len(items) >= 1
       let item = items[0]
+      echo ''
+      echohl String
+      echon key
       if len(items) > 1
-        echo key "\t[" .. item.origin .. "]..."
+        echohl Function
+        echon '...'
+      endif
+      echohl Comment
+      if len(items) > 1
+        echon "\t" .. item.origin
+        echohl None
       else
-        echo key "\t[" .. item.section .. "]\t" item.cmd
+        echon "\t" .. item.section
+        echohl None
+        echon "\t" item.cmd
       endif
     endif
   endfor
@@ -419,7 +430,13 @@ function! s:ui(mode) abort
     let idx = 0
     for item in result_l
       let idx += 1
-      echon idx . ')' "\t" item.section "\t" item.cmd "\n"
+      echo ''
+      echohl String
+      echon idx
+      echohl Comment
+      echon "\t" .. item.section
+      echohl None
+      echon "\t" .. item.cmd
     endfor
     echo "select task by its index (1-based): "
     let choice = nr2char(getchar())

@@ -1022,6 +1022,8 @@ def SpaceGSetup(): string
         if &ft == 'gitcommit'
             b:space_g = 'Sh -t=vs,c ' .. (
                 $GIT_DIR =~ $'{$HOME}/dotfiles/.git' ? 'git g dc' : 'git dc')
+        elseif &ft == 'vim'
+            b:space_g = ':%so'
         endif
     endif
     feedkeys($':SpaceG {b:space_g}', 'n')
