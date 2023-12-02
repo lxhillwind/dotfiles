@@ -19,11 +19,11 @@ def Mpc()
     endfor
     const nr = str2nr(system('mpc current -f "%position%"'))
     execute 'norm' nr .. 'G'
-    nnoremap <buffer> <silent> <CR> <Cmd>call <SID>MpcPlay()<CR>
+    nnoremap <buffer> <CR> <ScriptCmd>MpcPlay()<CR>
     # should we map <2-LeftMouse> to <CR> globally?
-    nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call <SID>MpcPlay()<CR>
-    nnoremap <buffer> <silent> <C-l> <Cmd>call <SID>MpcJumpToPlay()<CR>
-    nnoremap <buffer> <silent> <C-g> <Cmd>call <SID>MpcStatus()<CR>
+    nnoremap <buffer> <2-LeftMouse> <ScriptCmd>MpcPlay()<CR>
+    nnoremap <buffer> <C-l> <ScriptCmd>MpcJumpToPlay()<CR>
+    nnoremap <buffer> <C-g> <ScriptCmd>MpcStatus()<CR>
 enddef
 
 def MpcPlay()

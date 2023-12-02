@@ -613,20 +613,6 @@ g:maplocalleader = "\<S-F11>"
 
 # use <Space> as *true* leader key.
 noremap <Space> <Nop>
-#nnoremap <Space><Space> :nmap <Char-60>Space<Char-62><CR>
-nnoremap <Space><Space> <ScriptCmd>PickDisplayMap()<CR>
-nnoremap <Space>;; :map <buffer><CR>
-
-def PickDisplayMap() # {{{
-    g:Pick(
-        'display map',
-        v:none,
-        execute('map | map! | tmap')->split("\n"),
-        (s) => {
-                # do nothing
-            }
-    )
-enddef # }}}
 
 # shell {{{2
 # 'shelltemp' or 'noshelltemp': {{{
@@ -681,8 +667,8 @@ def TerminalSetup()
     nmap <buffer> <CR> <Plug>(jump_to_file)
     vmap <buffer> <CR> <Plug>(jump_to_file)
     # clipboard
-    nnoremap <buffer> p :<C-u>call <SID>TerminalPaste()<CR>
-    nnoremap <buffer> P :<C-u>call <SID>TerminalPaste()<CR>
+    nnoremap <buffer> p <ScriptCmd>TerminalPaste()<CR>
+    nnoremap <buffer> P <ScriptCmd>TerminalPaste()<CR>
     # dirvish
     if exists(':Dirvish') == 2
         nnoremap <buffer> - <Cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
@@ -969,7 +955,7 @@ endfor
 nnoremap <Space>t9 <Cmd>tablast<CR>
 # note there is a final <Space>.
 nnoremap <Space>tm :tabmove 
-nnoremap <Space>tt <Cmd>call <SID>TabOpenOrClose()<CR>
+nnoremap <Space>tt <ScriptCmd>TabOpenOrClose()<CR>
 
 def TabOpenOrClose()
     if empty(&buftype) && empty(bufname()) && &swapfile && !&modified
@@ -1104,15 +1090,17 @@ def ClipboardPaste(cmd_: string)
 enddef
 
 # <Space><CR>; execute current line (or select lines), comment removed {{{2
-nnoremap <Space><CR> <Cmd>call <SID>ExecuteLines('n')<CR>
-vnoremap <Space><CR> :<C-u>call <SID>ExecuteLines('v')<CR>
+nnoremap <Space><CR> <ScriptCmd>ExecuteLines('n')<CR>
+vnoremap <Space><CR> <ScriptCmd>ExecuteLines('v')<CR>
 
 def ExecuteLines(mode: string)
     var lines: list<string>
     if mode == 'n'
         lines = [getline('.')]
     elseif mode == 'v'
-        lines = getline("'<", "'>")
+        const l1 = line('v')
+        const l2 = line('.')
+        lines = getline(min([l1, l2]), max([l1, l2]))
     endif
     var result_l = []
     for i in lines
@@ -1133,7 +1121,7 @@ def ExecuteLines(mode: string)
 enddef
 
 # <Space>n; switch number / relativenumber {{{2
-nnoremap <silent> <Space>n <Cmd>call <SID>Switch_nu_rnu()<CR>
+nnoremap <Space>n <ScriptCmd>Switch_nu_rnu()<CR>
 
 def Switch_nu_rnu()
     # no [0, 1]
@@ -1144,9 +1132,9 @@ def Switch_nu_rnu()
 enddef
 
 # <Space>m; switch mouse {{{2
-nnoremap <silent> <Space>m <Cmd>call <SID>Switch_mouse()<CR>
+nnoremap <Space>m <ScriptCmd>SwitchMouse()<CR>
 
-def Switch_mouse()
+def SwitchMouse()
     if &mouse == 'a'
         set mouse=
     else
@@ -1155,7 +1143,7 @@ def Switch_mouse()
 enddef
 
 # <Space>q; switch quickfix window (open / focus or close) {{{2
-nnoremap <silent> <Space>q <Cmd>call <SID>SwitchQuickfixWindow()<CR>
+nnoremap <Space>q <ScriptCmd>SwitchQuickfixWindow()<CR>
 
 def SwitchQuickfixWindow()
     if &ft == 'qf'
@@ -1167,13 +1155,13 @@ enddef
 
 # <Space>v; shortcut for reader mode. (view code / text easily.) {{{2
 # TODO map more key (one hand); provide help page (double ? to enter search mode).
-nnoremap <Space>v <Cmd>call <SID>SwitchReaderMode()<CR>
+nnoremap <Space>v <ScriptCmd>SwitchReaderMode()<CR>
 var reader_mode = exists('reader_mode') ? reader_mode :
     {on: false, winid: -1, timeoutlen: 0}
 
 def SwitchReaderMode()
     const mapping =<< trim END
-        q <Cmd>call <SID>SwitchReaderMode()<CR>
+        q <ScriptCmd>SwitchReaderMode()<CR>
         <Space> <C-f>
         <S-Space> <C-b>
         f <C-f>
@@ -1326,8 +1314,10 @@ augroup vimrc
     }
 
     # gx related (NOTE: key `gx` overwritten) {{{2
-    nnoremap <silent> gx <ScriptCmd>Gx('n')<CR>
+    nnoremap gx <ScriptCmd>Gx('n')<CR>
+    # we cannot get visual selection if using <ScriptCmd>
     vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
+    #vnoremap gx <ScriptCmd>Gx('v')<CR>
 
     def Gx(mode: string)
         var text: string
@@ -1339,6 +1329,8 @@ augroup vimrc
             if &buftype == 'terminal'
                 text = substitute(text, "\n", '', 'g')
             endif
+            # recover visual mode to match <ScriptCmd> behavior.
+            silent normal gv
         else
             text = expand(get(g:, 'netrw_gx', '<cfile>'))
         endif

@@ -26,7 +26,7 @@ syntax match Todo /\v(^|\W)\zsTODO\ze(\W|$)/
 
 # function
 nnoremap <buffer> <Space>;c <ScriptCmd>MarkdownToggleTaskStatus()<CR>
-nnoremap <silent> <buffer> gO <ScriptCmd>ShowToc()<CR>
+nnoremap <buffer> gO <ScriptCmd>ShowToc()<CR>
 
 def MarkdownToggleTaskStatus() # {{{
     const lineno = line('.')
