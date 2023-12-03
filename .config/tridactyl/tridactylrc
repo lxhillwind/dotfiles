@@ -117,7 +117,7 @@ set searchurls.man https://man.archlinux.org/search?q=%s&go=Go
 set searchurls.pkg https://pkgs.org/search/?q=%s
 set searchurls.r https://old.reddit.com/r/%s
 set searchurls.sh http://symbolhound.com/?q=%s
-set searchurls.tr https://www.microsofttranslator.com/bv.aspx?from=&to=zh-CHS&a=%s
+set searchurls.tr http://webtrans.yodao.com/webTransPc/index.html?from=en&to=zh-CHS&type=2&url=%s
 set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s
 set searchurls.yh https://search.yahoo.com/search?q=%s
 
@@ -172,6 +172,8 @@ bind --mode=browser <C-6> tab #
 " }}}
 
 " search with...
+bind s composite js " " + document.location.href.toString() | fillcmdline open ; text.beginning_of_line ; text.forward_word ; text.forward_char
+bind S composite js " " + document.location.href.toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
 bind --mode=visual s composite js " " + document.getSelection().toString() | fillcmdline open ; text.beginning_of_line ; text.forward_word ; text.forward_char
 bind --mode=visual S composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
 
@@ -354,9 +356,9 @@ autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
 " }}}
 
 " toggle dark mode {{{
-command toggle-color js ( () => { let target = 'invert(100%)'; let style = document.querySelector('html').style; if (style.filter == target) { style.filter = ''; } else { style.filter = target; } } )()
+command toggle-color js ( () => { let target = 'invert(100%)'; let style = document.querySelector('html').style; if (style.filter == target) { style.filter = ''; document.querySelectorAll('img').forEach(i => { i.style.filter = ''; }) } else { style.filter = target; document.querySelectorAll('img').forEach(i => { i.style.filter = target; }); } } )()
 
-autocmd DocStart ^https://ziggit.dev toggle-color
+autocmd DocLoad ^https://ziggit.dev toggle-color
 " }}}
 
 " Command / Bind override {{{1
