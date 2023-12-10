@@ -59,7 +59,7 @@ man() {
     MAN_POSIXLY_CORRECT=1 \
     GROFF_NO_SGR=yes \
     LANG=en_US.UTF-8 \
-    PAGER="sh -c 'sed -E \"s/[—−‐]/-/g; s/ˆ/^/g; s/˜/~/g\" | less'" \
+    PAGER="sh -c 'sed -E \"s/[—−‐]/-/g; s/ˆ/^/g; s/˜/~/g; s/[‘’]/'\''/g; \" | less'" \
     LESS_TERMCAP_md=$'\e[01;31m' \
     LESS_TERMCAP_me=$'\e[0m' \
     LESS_TERMCAP_se=$'\e[0m' \

@@ -50,7 +50,7 @@ def Label(param: dict<any>)
     endif
 
     setlocal concealcursor=ncv conceallevel=3
-    hi Conceal guifg=white guibg=blue ctermfg=white ctermfg=blue
+    hi Conceal guibg=blue guifg=white ctermbg=blue ctermfg=white
 
     var item_idx = 0
     const items_size = param.items->len()
@@ -268,6 +268,7 @@ def LabelUrl() # {{{1
         '(' # == normal url
         .. 'https?\://'  # protocol
         .. '[a-zA-Z0-9._-]+[a-zA-Z0-9]'  # domain; no . at end.
+        .. '(\:[0-9]+|)'  # port
         .. '((/[a-zA-Z0-9_/%?#.=&:-]+[a-zA-Z0-9_/-])|)'  # path; some char not at end.
         .. ')|(' # == <> quoted url
         .. '\<\zshttps?\://[^>]+\ze\>'
