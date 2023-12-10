@@ -82,6 +82,12 @@ g:markdown_fenced_languages = [
 # https://github.com/vim/vim/issues/7628
 packadd! matchit
 
+# my {{{2
+packadd! vim-jump
+packadd! vim-sh
+packadd! base16-dynamic.vim
+# }}}2
+
 packadd! securemodelines
 packadd! tabular
 

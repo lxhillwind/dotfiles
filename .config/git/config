@@ -12,6 +12,7 @@
 	a = !git config --get-regexp alias. | grep ^alias | sort
 
 	g = !git --git-dir ~/dotfiles/.git --work-tree ~
+	g-update-my-submodule = "!git --git-dir ~/dotfiles/.git --work-tree ~ submodule foreach 'if git config remote.origin.url | grep -qE \"^https://github.com/lxhillwind/\"; then git pull; else echo skipped.; fi'"
 
 	archive-worktree = !f() { cd "${GIT_PREFIX:-.}/$1" || return -1 \n git ls-files 2>/dev/null | xargs tar -cf /dev/stdout -- \n } \n f
 
