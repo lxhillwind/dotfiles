@@ -1,6 +1,7 @@
 vim9script
 
-nnoremap <Space><Space> <ScriptCmd>WhichKey()<CR>
+nnoremap <Space><Space> <ScriptCmd>WhichKey("n")<CR>
+vnoremap <Space><Space> <ScriptCmd>WhichKey("v")<CR>
 
 # Why do we use popupwin (textprop) instead of just echo (echohl)?
 #
@@ -12,16 +13,17 @@ nnoremap <Space><Space> <ScriptCmd>WhichKey()<CR>
 # Anyway, keep this change. And it's easier to do more customize, like
 # highlight with "Search")
 
-def WhichKey()
-    var mappings = execute('nmap <Space>')->split("\n")
+def WhichKey(mode: string)
+    var mappings = execute($'{mode}map <Space>')->split("\n")
         # remove mapping to <Nop>
-        ->filter((_, i) => i->match('^n') >= 0)
+        ->filter((_, i) => i->match('^' .. mode) >= 0)
         # example:
         #   n  <Space>y    * <ScriptCmd>ClipboardCopy("")<CR>
         #   n  <Space>y    *@<ScriptCmd>ClipboardCopy("")<CR>
         #      1             2
         # (*@ means buffer mapping)
-        ->mapnew((_, i) => i->matchlist('\vn\s+(\S+)\s+(\*\@|)\s*(.+)')->slice(1, 4))
+        # [nvxsoilct]: get this list from "help :map"
+        ->mapnew((_, i) => i->matchlist('\v^[nvxsoilct]\s+(\S+)\s+(\*\@|)\s*(.+)')->slice(1, 4))
         ->mapnew((_, i) => ({
             lhs: i[0]->substitute('^\V<Space>', '', ''),
             rhs: i[2],
