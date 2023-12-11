@@ -393,6 +393,18 @@ augroup END
 " }}}
 
 function! s:ui(mode) abort
+  let l:more = &more
+  try
+    set nomore
+    call s:ui_impl(a:mode)
+  finally
+    if l:more
+      set more
+    endif
+  endtry
+endfunction
+
+function! s:ui_impl(mode) abort
   let [order, result_d] = s:check(a:mode)
   if empty(result_d)
     redrawstatus | echon 'task not found.' | return
@@ -401,7 +413,7 @@ function! s:ui(mode) abort
     let items = get(result_d, key, [])
     if len(items) >= 1
       let item = items[0]
-      echo ''
+      echo ' '
       echohl String
       echon key
       if len(items) > 1
@@ -430,7 +442,7 @@ function! s:ui(mode) abort
     let idx = 0
     for item in result_l
       let idx += 1
-      echo ''
+      echo ' '
       echohl String
       echon idx
       echohl Comment
@@ -466,4 +478,4 @@ endfunction
 nnoremap <Plug>(tasks-select) :call <SID>ui('n')<CR>
 vnoremap <Plug>(tasks-select) :<C-u>call <SID>ui('v')<CR>
 
-" vim:fdm=marker
+" vim:fdm=marker:sw=2

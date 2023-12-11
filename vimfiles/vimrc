@@ -918,7 +918,7 @@ endfor
 # t0 do nothing.
 nnoremap <Space>t9 <Cmd>tablast<CR>
 # note there is a final <Space>.
-nnoremap <Space>tm :tabmove 
+nnoremap <Space>tm :tabmove<Space>
 nnoremap <Space>tt <ScriptCmd>TabOpenOrClose()<CR>
 
 def TabOpenOrClose()
@@ -999,8 +999,8 @@ nnoremap <expr> <Space>ss
 nnoremap <Space>st :Sh -t
 nnoremap <Space>sw :Sh -w
 # add space after vmap, since we usually want to do sth on input.
-vnoremap <Space>st :Sh -vt 
-vnoremap <Space>sw :Sh -vw 
+vnoremap <Space>st :Sh -vt<Space>
+vnoremap <Space>sw :Sh -vw<Space>
 
 # <Space>y / <Space>p; Clipboard {{{2
 if use_oscyank
@@ -2123,55 +2123,83 @@ def PickUserCommand() # {{{3
     )
 enddef
 
-# (keymap) popup to select from sources. {{{2
-nnoremap <Space>a <ScriptCmd>SelectFromSources('a')<CR>
-nnoremap <Space>f <ScriptCmd>SelectFromSources('f')<CR>
-
-const pick_all = {
-    a: [
-        # [key, name, func]
-        ['t', 'tabwin', PickGotoTabWin],
-        ['b', 'current_buffer', PickJumpCurrentBuffer],
-    ],
-    f: [
-        ['f', 'cwd_files', PickCwdFiles],
-        ['r', 'recent_files', PickRecentFiles],
-        ['p', 'project_dir', PickGotoProject],
-        ['m', 'mapping', PickUserMapping],
-        ['c', 'user_command', PickUserCommand],
-    ],
-}
-
-def SelectFromSources(set: string)
-    # TODO highlight
-    const selection = pick_all[set]
-
-    # Is is possible to use ordered dict, so we migrate selection /
-    # selection_dict?
-    var selection_dict = {}
-    var lists = []
-    for [k, v, f] in selection
-        add(lists, $'[{k}] {v}')
-        selection_dict[k] = f
+def PickUniversal() # {{{3
+    var data: list<dict<any>> = []
+    for i in execute('nmap <Space>')->split("\n")
+        data->add({
+            type: 'keymap',
+            show: i->matchstr('\v\S+\s+\S+\s+(\*\s+|)\zs.*'),
+            put: printf(
+                'call feedkeys("%s", "m")',
+                i->matchstr('\v\S+\s+\zs\S+\ze\s+.*')
+                ->substitute('\V<', '\\&', 'g')
+                ->substitute('"', '\\&', 'g'),
+            ),
+        })
     endfor
-    var popup_opt = {
-        pos: 'center',
-        title: 'Select... (any other key to quit)',
-        minwidth: min([40, &columns / 2]),
-        border: [1, 1, 1, 1],
-        mapping: false,
-        filter: (winid: number, key: string): bool => {
-            const Res = get(selection_dict, key)
-            if !empty(Res)
-                Res()
-            endif
-            # finally.
-            popup_close(winid)
-            return true
+    for i in execute('command')->split("\n")->filter((idx, _) => idx > 0)
+        const cmd = i->matchstr('\v^\S?\s+\zs\S+')
+        data->add({
+            type: 'command',
+            show: cmd,
+            put: cmd,
+        })
+    endfor
+    for i in exists('g:hh_task_list') ? g:hh_list : []
+        data->add({
+            type: 'task',
+            show: i.desc,
+            put: i.cmd,
+        })
+    endfor
+
+    def CmpString(a: string, b: string): number
+        if a == b
+            return 0
+        elseif a < b
+            return -1
+        else
+            return 1
+        endif
+    enddef
+
+    data->sort((a, b) => {
+        if a.type != b.type
+            return CmpString(a.type, b.type)
+        else
+            return CmpString(a.show, b.show)
+        endif
+    })
+    data->map((idx, item) => {
+        item.id = idx
+        return item
+    })
+
+    g:Pick(
+        'hh for vim (put in cmdline)',
+        v:none,
+        data->mapnew((_, i) => $'{i.id}) [{i.type}] {i.show}'),
+        (s) => {
+            echom s
+            const idx = s->matchstr('\v^\d+\ze\)')->str2nr()
+            echom idx
+            # TODO setcmdline() does not work.
+            execute 'SetCmdText' data[idx].put
         }
-    }
-    popup_create(lists, popup_opt)
+    )
 enddef
+
+# Pick related keymap. {{{2
+nnoremap <Space>ff <ScriptCmd>PickCwdFiles()<CR>
+nnoremap <Space>fr <ScriptCmd>PickRecentFiles()<CR>
+nnoremap <Space>fp <ScriptCmd>PickGotoProject()<CR>
+nnoremap <Space>fc <ScriptCmd>PickUserCommand()<CR>
+nnoremap <Space>fm <ScriptCmd>PickUserMapping()<CR>
+nnoremap <Space>fa :Pick<Space>
+nnoremap <Space>fb <ScriptCmd>PickJumpCurrentBuffer()<CR>
+nnoremap <Space>ft <ScriptCmd>PickGotoTabWin()<CR>
+
+nnoremap <Space>hh <ScriptCmd>PickUniversal()<CR>
 
 # TODO {{{1
 

@@ -304,7 +304,7 @@ seturl ^https://www.qidian.com hintfiltermode vimperator
 " }}}
 
 " bilibili.com {{{
-bindurl ^https://www.bilibili.com c hint -Jc li.be-tab-item,div.toggle-btn\
+bindurl ^https://(search|www).bilibili.com c hint -Jc li.be-tab-item,div.toggle-btn\
 ,div.list-box > div > div.item.sortable\
 ,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
 ,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
@@ -324,7 +324,7 @@ autocmd DocLoad .* js if (document.querySelector('tbody.topic-list-body')) tri.e
 " }}}
 
 " override binding for some sites {{{
-bindurl ^https://www.bilibili.com f hint -Jc \
+bindurl ^https://(search|www).bilibili.com f hint -Jc \
 div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
 ,a.rank-ogv-card,a.rank-video-card,a.rank-article-card\
 ,li.history-record a.title\
@@ -332,7 +332,7 @@ div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
 ,div.bpx-player-ctrl-full,div.squirtle-video-fullscreen,i.history-delete\
  -F e => { if (/bilibili.com\/((video)|(bangumi\/play))\//.test(e.href)) tri.excmds.open(e.href); else e.click(); }
 
-bindurl ^https://www.bilibili.com F hint -bJc \
+bindurl ^https://(search|www).bilibili.com F hint -bJc \
 div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
 ,a.rank-ogv-card,a.rank-video-card,a.rank-article-card\
 ,li.history-record a.title\
