@@ -2201,6 +2201,29 @@ nnoremap <Space>ft <ScriptCmd>PickGotoTabWin()<CR>
 
 nnoremap <Space>hh <ScriptCmd>PickUniversal()<CR>
 
+# Key mapping helper {{{1
+# e.g. when pressing <Space>f and forget which key follows, then press <Space>
+# again, to trigger <Space><Space>f ("<Space><Space>" then "f").
+#
+# depends on ./plugin/which-key.vim
+au VimEnter * {
+    var leading_map = {}
+    for i in execute('nmap <Space>')->split("\n")
+            ->filter((_, i) => i->match('^[inv]') >= 0)
+            ->map((_, i) => i->matchstr('\v^\w\s+\zs\S+\ze')->substitute('\V\^<Space>', '', ''))
+            ->filter((_, i) => i->match('\V<') < 0)
+        if !leading_map->has_key(i[0])
+            leading_map[i[0]] = []
+        endif
+        leading_map[i[0]]->add(i)
+    endfor
+    for i in leading_map->keys()
+        if leading_map[i]->len() > 1
+            execute $'nmap <Space>{i}<Space> <Space><Space>{i}'
+        endif
+    endfor
+}
+
 # TODO {{{1
 
 # - toc / content: 'gO' in neovim; (help / markdown, etc.)
