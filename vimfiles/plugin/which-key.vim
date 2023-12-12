@@ -46,6 +46,8 @@ def WhichKey(mode: string)
             prefix ..= key
             const matched = GetMatched(mappings, prefix)
             if matched->len() == 1
+                    # only when user input the whole sequence
+                    && matched[0].lhs == prefix
                 winid->popup_close()
                 feedkeys("\<Space>" .. prefix, 'm')
             elseif matched->len() == 0
