@@ -145,6 +145,8 @@ bind m gobble 1 markadd
 " default is `, which is hard to press in most 60% keyboard.
 bind ' gobble 1 markjump
 bind gC tabduplicate
+bind gr reader
+bind yq text2qr --popup
 
 bind ZZ js alert("before closing window, ensure STG is the last window!")
 
@@ -391,6 +393,10 @@ bind <C-b> js window.location = 'https://www.instapaper.com/text?u=' + encodeURI
 " ... then save it to read list.
 bindurl https://www.instapaper.com/text\?u=.* <C-b> hint -Jc .js_read_later
 
+" save from tridactyl reader mode.
+" id "tricanonlink" is from https://github.com/tridactyl/tridactyl/pull/3938/files#diff-f001cb9a1f05bafde7fad2a8ee1f61e63fde31a7ab69119ccb8405a0a79b6e3aR22
+bindurl moz-extension://.*/static/reader.html#.* <C-b> js const url = document.head.querySelector('#tricanonlink').href; window.location = 'https://www.instapaper.com/text?u=' + encodeURIComponent(url);
+
 " add link from instapaper webpage (main / next-pages / parse_url-error)
 bindurl https://www.instapaper.com/u(|/\d+|\?parse_url=.*)$ <C-b> hint -Jc a.article_add
 
@@ -413,10 +419,11 @@ command quickmark_fs js -p if (/^[a-zA-Z0-9]$/.test(JS_ARG)) tri.excmds.composit
 
 bind M gobble 1 quickmark_fs
 
-" qrcode (native) {{{2
-" requires qrencode; mpv
-
-command qrcode js -d● let text = document.location.toString(); if (JS_ARGS.length > 1) { if (JS_ARGS.length === 2 && JS_ARGS[1] === 'qrcode_visual') text = document.getSelection().toString(); else text = JS_ARGS.join(' '); } tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`qrencode -r /dev/stdin -o - | mpv - --keep-open --geometry=300x300 --title=from-tridactyl ${tri.lx.is_mac ? "--vo=libmpv" : ""}`, text))●
+" qrcode {{{2
+" Why using qrcode_visual, instead of using text2qr directly? {{{
+" because if we did that, then in visual mode, contextMenus gen qrcode won't
+" work as expected: it will gen qrcode for current url instead of selection. }}}
+command qrcode js -d● let text = document.location.toString(); if (JS_ARGS.length > 1) { if (JS_ARGS.length === 2 && JS_ARGS[1] === 'qrcode_visual') text = document.getSelection().toString(); else text = JS_ARGS.join(' '); } tri.excmds.text2qr('--popup', text)●
 command qrcode_visual qrcode qrcode_visual
 bind --mode=visual cq qrcode_visual
 
