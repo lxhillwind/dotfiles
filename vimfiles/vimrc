@@ -799,10 +799,8 @@ else # unix-like system, in terminal emulator
     &t_EI = "\<Esc>[1 q"
 
     # strikethrough
-    if &term !~ 'xterm'
-        &t_Ts = "\<Esc>[9m"
-        &t_Te = "\<Esc>[0m"
-    endif
+    &t_Ts = "\<Esc>[9m"
+    &t_Te = "\<Esc>[0m"
 
     # 256color or tgc
     if &term !~ 'xterm'
@@ -910,6 +908,9 @@ tnoremap <C-w> <C-w>.
 # i_<C-u> {{{2
 # from defaults.vim
 inoremap <C-U> <C-G>u<C-U>
+
+# i_<C-r>!; easy insert shell output {{{2
+inoremap <C-r>! <C-r>=trim(system('exec 2>/dev/null; '))<Left><Left><Left>
 
 # <Space>t... for tab operation {{{2
 for i in range(1, 8)
