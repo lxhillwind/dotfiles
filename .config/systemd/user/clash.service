@@ -2,7 +2,7 @@
 After = sockets.target
 
 [Service]
-ExecStart = %h/lx/linux/clash-wrapper.sh
+ExecStart = %h/notes/linux/clash-wrapper.sh
 
 [Install]
 WantedBy = default.target

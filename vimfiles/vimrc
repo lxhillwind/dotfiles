@@ -177,12 +177,23 @@ g:mucomplete#chains = {
 g:mucomplete#user_mappings = {
     'snippet': "\<C-x>s",
 }
-g:mucomplete#can_complete = {
-    default: {
-        # it's completed even if word length is not enough; let's fix it.
-        snippet: (s) => s->matchstr('\v\w+$')->len() >= 2,
-    },
-}
+
+# why not construct dict directly? {{{
+# because if we did so, after reloading vimrc, g:mucomplete#can_complete
+# will be reset to contain only what we defined here, which causes trouble.
+#
+# mucomplete plugin will operate on g:mucomplete#can_complete when `packadd`,
+# but at the next time (e.g. source $MYVIMRC) it cannot do anything
+# because of vim's plugin load mechanism.
+if !exists('g:mucomplete#can_complete')
+    g:mucomplete#can_complete = {}
+endif
+if !exists('g:mucomplete#can_complete.default')
+    g:mucomplete#can_complete.default = {}
+endif
+# }}}
+# it's completed even if word length is not enough; let's fix it.
+g:mucomplete#can_complete.default.snippet = (s) => s->matchstr('\v\w+$')->len() >= 2
 
 packadd! vim-dict
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
@@ -932,6 +943,9 @@ def TabOpenOrClose()
     endif
 enddef
 
+# consistent Y, like C / D {{{2
+nnoremap Y y$
+
 # Normal: n / N {{{2
 # always search forward / backward.
 # https://vi.stackexchange.com/questions/2365/how-can-i-get-n-to-go-forward-even-if-i-started-searching-with-or#
@@ -1395,6 +1409,28 @@ augroup vimrc
             # but when run inside tmux, it cannot. So run this anyway.
             DayLightTheme()
         endif
+    endif
+
+    # fix C-j / C-m misconfiguration when vim is invoked from zsh zle {{{2
+    # see https://unix.stackexchange.com/a/485467
+    def CtrlJ_CtrlM_fix()
+        const pid = getpid()
+        var tty = system($'ps -p {pid} -o tty=')->trim()
+        if empty(tty)
+            return
+        endif
+        tty = $'/dev/{tty}'
+        if !filewritable(tty)
+            return
+        endif
+        if system($'stty -F {tty}')->match('\v(\-)@!inlcr') >= 0
+            # we need to run stty in a tty; run via system() / ":!" won't work.
+            term_start($'stty -F {tty} -inlcr', {hidden: true})
+        endif
+    enddef
+
+    if isdirectory('/dev') && !has('gui_running')
+        au VimEnter * CtrlJ_CtrlM_fix()
     endif
 
 augroup END  # {{{2
