@@ -430,15 +430,21 @@ bind --mode=visual cq qrcode_visual
 " edit selection in vim (native) {{{2
 bind --mode=visual <C-i> js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim -f -`, document.getSelection().toString()))
 
+" notepad (add selection and url to a text file) (native) {{{2
+command save_notes js let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString().replace(/^/gm, ' '.repeat(4)); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/web.md +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`))
+bind --mode=visual cs save_notes
+
 " custom Menus {{{1
 jsb browser.contextMenus.create({ id: "qrcode", title: "生成二维码: 当前网址", contexts: ["page"], });
 jsb browser.contextMenus.create({ id: "qrcode_visual", title: "生成二维码: '%s'", contexts: ["selection"], });
+jsb browser.contextMenus.create({ id: "save_notes", title: "保存笔记...: '%s'", contexts: ["selection"], });
 
 " NOTE: avoid addListener repeatedly.
 jsb if (tri.lx_menus_listener) browser.contextMenus.onClicked.removeListener(tri.lx_menus_listener); \
 tri.lx_menus_listener = (info, tab) => { \
     if (info.menuItemId === "qrcode") { tri.excmds.composite('qrcode'); } \
     if (info.menuItemId === "qrcode_visual") { tri.excmds.composite('qrcode_visual'); }; \
+    if (info.menuItemId === "save_notes") { tri.excmds.composite('save_notes'); }; \
 }; browser.contextMenus.onClicked.addListener(tri.lx_menus_listener);
 
 " Private {{{1
