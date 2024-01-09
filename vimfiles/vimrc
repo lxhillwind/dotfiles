@@ -1415,7 +1415,7 @@ augroup vimrc
     # see https://unix.stackexchange.com/a/485467
     def CtrlJ_CtrlM_fix()
         const pid = getpid()
-        var tty = system($'ps -p {pid} -o tty=')->trim()
+        silent var tty = system($'ps -p {pid} -o tty=')->trim()
         if empty(tty)
             return
         endif
@@ -1423,7 +1423,7 @@ augroup vimrc
         if !filewritable(tty)
             return
         endif
-        if system($'stty -F {tty}')->match('\v(\-)@!inlcr') >= 0
+        silent if system($'stty -F {tty}')->match('\v(\-)@!inlcr') >= 0
             # we need to run stty in a tty; run via system() / ":!" won't work.
             term_start($'stty -F {tty} -inlcr', {hidden: true})
         endif
