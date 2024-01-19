@@ -1011,11 +1011,11 @@ nnoremap <expr> <Space>ss
             \ .. $' {v:this_session ?? "~/.vim/sessions/"}'
 
 # <Space>s...; :Sh related. {{{2
-nnoremap <Space>st :Sh -t
-nnoremap <Space>sw :Sh -w
+nnoremap <Space>st :Cdb Sh -t
+nnoremap <Space>sw :Cdb Sh -w
 # add space after vmap, since we usually want to do sth on input.
-vnoremap <Space>st :Sh -vt<Space>
-vnoremap <Space>sw :Sh -vw<Space>
+vnoremap <Space>st :Cdb Sh -vt<Space>
+vnoremap <Space>sw :Cdb Sh -vw<Space>
 
 # <Space>y / <Space>p; Clipboard {{{2
 if use_oscyank

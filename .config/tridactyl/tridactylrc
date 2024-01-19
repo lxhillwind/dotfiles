@@ -450,7 +450,7 @@ tri.lx_menus_listener = (info, tab) => { \
 " Private {{{1
 
 quickmark p https://www.protopage.com/lxhillwind
-quickmark t https://www.protectedtext.com/lxhillwind
+quickmark s http://127.0.0.1:8384/
 
 " Load local config and alert for finish {{{1
 source ~/.tridactylrc

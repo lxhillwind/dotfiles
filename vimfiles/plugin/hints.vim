@@ -56,9 +56,7 @@ def Label(param: dict<any>)
     const items_size = param.items->len()
     var label_length = 1
     {
-        var sum = items_size
-        while sum > hint_size
-            sum /= hint_size
+        while items_size > pow(hint_size, label_length)->float2nr()
             label_length += 1
         endwhile
     }
