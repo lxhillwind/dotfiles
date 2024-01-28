@@ -1014,8 +1014,8 @@ nnoremap <expr> <Space>ss
 nnoremap <Space>st :Cdb Sh -t
 nnoremap <Space>sw :Cdb Sh -w
 # add space after vmap, since we usually want to do sth on input.
-vnoremap <Space>st :Cdb Sh -vt<Space>
-vnoremap <Space>sw :Cdb Sh -vw<Space>
+vnoremap <Space>st :<C-u>Cdb :*Sh -vt<Space>
+vnoremap <Space>sw :<C-u>Cdb :*Sh -vw<Space>
 
 # <Space>y / <Space>p; Clipboard {{{2
 if use_oscyank

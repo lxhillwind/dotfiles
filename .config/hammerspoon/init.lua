@@ -74,7 +74,12 @@ end -- }}}
 bindApp(",", "Firefox", true)
 bindApp(".", "sioyek")
 -- selection in tmux: it's visually better with kitty than iterm2.
-bindApp("/", "kitty")
+--
+-- 2024-01-22 update: kitty cmd+p (default: hint action) cannot be unmapped,
+-- which causes trouble (I use it heavily in tmux).
+-- Switch back to iterm2.
+--bindApp("/", "kitty")
+bindApp("/", "iterm")
 -- this is actually option+e on keyboard; it is set by karabiner (option-e.json)
 bindApp("e", "Double Commander", true)
 

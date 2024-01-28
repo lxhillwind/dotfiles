@@ -1,6 +1,9 @@
 map D delete
 map R reload
 
+# <backspace> is <c-h>, while the latter does not work in lf.
+map <backspace> set hidden!
+
 # for win32 with busybox and lf-shell installed:
 #   busybox-w32: https://frippery.org/busybox/
 #   lf-shell: https://github.com/lxhillwind/utils/blob/main/lf-shell.zig
