@@ -108,7 +108,8 @@ set searchurls.blank http://localhost/maybe-pressed-wrong-key?%s
 set searchurls.bd https://www.baidu.com/s?wd=%s
 set searchurls.bg https://www.bing.com/search?q=%s&ensearch=1
 set searchurls.bl https://search.bilibili.com/all?keyword=%s
-set searchurls.cd https://www.bing.com/dict/search?mkt=zh-CN&q=%s
+"set searchurls.cd https://www.bing.com/dict/search?mkt=zh-CN&q=%s
+set searchurls.cd https://dictionary.cambridge.org/zhs/词典/英语-汉语-简体/%s
 set searchurls.cnf https://command-not-found.com/%s
 set searchurls.co https://www.collinsdictionary.com/english/%s
 set searchurls.dg https://duckduckgo.com/?q=%s
@@ -362,6 +363,9 @@ command toggle-color js ( () => { let target = 'invert(100%)'; let style = docum
 
 autocmd DocLoad ^https://ziggit.dev toggle-color
 " }}}
+
+" cambridge dictionary: close search button on load (to save space).
+autocmd DocLoad dictionary.cambridge.org hint -Jc span.hdib>span.hao
 
 " Command / Bind override {{{1
 

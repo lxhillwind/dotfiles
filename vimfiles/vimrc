@@ -1191,7 +1191,7 @@ nnoremap cd <ScriptCmd>OpenDict()<CR>
 def OpenDict()
     const word = expand('<cword>')
     if !empty(word)
-        execute 'Sh -g' shellescape($'https://www.bing.com/dict/search?mkt=zh-CN&q={word}')
+        execute 'Sh -g' shellescape($'https://dictionary.cambridge.org/zhs/词典/英语-汉语-简体/{word}')
     endif
 enddef
 
