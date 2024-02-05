@@ -324,6 +324,10 @@ bindurl old.reddit.com c hint -bJc a.bylink.comments.may-blank
 
 " discourse site
 autocmd DocLoad .* js if (document.querySelector('tbody.topic-list-body')) tri.excmds.bindurl(document.location.href, 'c', 'hint -qbJc td.main-link > span > a.title')
+
+" close popup
+bindurl tieba.baidu.com c hint -Jc span.close-btn
+bindurl zhihu.com c hint -Jc button[aria-label="关闭"]
 " }}}
 
 " override binding for some sites {{{
