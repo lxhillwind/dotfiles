@@ -86,6 +86,9 @@ packadd! matchit
 packadd! vim-jump
 packadd! vim-sh
 packadd! base16-dynamic.vim
+packadd! table-im
+g:table_im#auto_commit = true
+g:table_im#table_file = expand('~/notes-local/鹤形-related/all-utf8.ini')
 # }}}2
 
 packadd! securemodelines
