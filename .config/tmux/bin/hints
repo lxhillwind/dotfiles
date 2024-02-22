@@ -15,4 +15,4 @@ pane_bottom=$(( pane_bottom + 2 ))
 # NOTE tmux capture: -e option may add a final newline (e.g. when running vim / less),
 # so do not use -e option.
 tmux popup -E -w "$popup_width" -h "$popup_height" -x P -y "$pane_bottom" -B \
-    sh -c "tmux capture -p -S -0 -E - | vim - -c HintsMode"
+    sh -c "tmux capture -p | vim - -c HintsMode"
