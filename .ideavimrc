@@ -15,8 +15,8 @@ noremap <C-w>c :close<CR>
 
 inoremap <C-u> <C-o>d0
 
-nnoremap ]e :action GotoNextError<CR>
-nnoremap [e :action GotoPreviousError<CR>
+nnoremap ]g :action GotoNextError<CR>
+nnoremap [g :action GotoPreviousError<CR>
 
 nnoremap <Leader>f :action Switcher<CR>
 
