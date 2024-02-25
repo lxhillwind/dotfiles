@@ -88,7 +88,18 @@ packadd! vim-sh
 packadd! base16-dynamic.vim
 packadd! table-im
 g:table_im#auto_commit = true
-g:table_im#table_file = expand('~/notes-local/鹤形-related/all-utf8.ini')
+g:table_im#table_file = () => {
+    for i in [
+            '~/vimfiles/config/flypy.ini',
+            '~/notes-local/鹤形-related/all-utf8.ini',
+    ]
+        const p = expand(i)
+        if filereadable(p)
+            return p
+        endif
+    endfor
+    return ''
+}()
 # }}}2
 
 packadd! securemodelines
