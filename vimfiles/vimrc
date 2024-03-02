@@ -937,26 +937,6 @@ inoremap <C-U> <C-G>u<C-U>
 # i_<C-r>!; easy insert shell output {{{2
 inoremap <C-r>! <C-r>=trim(system('exec 2>/dev/null; '))<Left><Left><Left>
 
-# <Space>t... for tab operation {{{2
-for i in range(1, 8)
-    execute $'nnoremap <Space>t{i} {i}gt'
-endfor
-# t0 do nothing.
-nnoremap <Space>t9 <Cmd>tablast<CR>
-# note there is a final <Space>.
-nnoremap <Space>tm :tabmove<Space>
-nnoremap <Space>tt <ScriptCmd>TabOpenOrClose()<CR>
-
-def TabOpenOrClose()
-    if empty(&buftype) && empty(bufname()) && &swapfile && !&modified
-            # avoid closing last tab.
-            && tabpagenr('$') != 1
-        wincmd c
-    else
-        tabe
-    endif
-enddef
-
 # consistent Y, like C / D {{{2
 nnoremap Y y$
 
@@ -966,12 +946,29 @@ nnoremap Y y$
 noremap <expr> n 'Nn'[v:searchforward]
 noremap <expr> N 'nN'[v:searchforward]
 
-# v_* / v_#; like `g*` / `g#`, dep: Selection() {{{2
+# v_* / v_#; like `g*` / `g#` {{{2
 # feedkeys() second param: why not using 't'? {{{
 #   because if using 't', then "\n" in first param will trigger <C-j> event,
 #   which is what we define for other functions (see via `nmap <C-j>`). }}}
-vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
-vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
+vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(<SID>Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
+vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(<SID>Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
+
+def Selection(): string
+    const tmp = @"
+    var result = ''
+    var success = false
+    try
+        silent normal gvy
+        success = true
+    finally
+        result = @"
+        @" = tmp
+        if !success
+            throw 'Selection() failed!'
+        endif
+    endtry
+    return result
+enddef
 
 # gF / v_gF {{{2
 # (handle column nr; v_gF handle line / column nr)
@@ -1503,45 +1500,6 @@ def CopyMatches()
     @" = join(hits, "\n") .. "\n"
 enddef
 
-# :ChdirTerminal [path]; default path: selection / <cfile>; expand() is applied; use existing terminal if possible; bang: using Sh -w (default: Sh -t) {{{2
-# depends on g:Selection().
-command! -bang -nargs=* -range=0 ChdirTerminal ChdirTerminal(<bang>false, <range>, <q-args>)
-
-def ChdirTerminal(bang: bool, range: number, path_a: string)
-    var path = path_a ?? ( range > 0 ? g:Selection() : expand('<cfile>') )
-    if match(path, '\v^[~$<%]') >= 0
-        path = g:ExpandHead(path)
-    endif
-    path = fnamemodify(path, ':p')
-    if filereadable(path)
-        path = fnamemodify(path, ':h')
-    endif
-    if !isdirectory(path)
-        throw 'is not directory or not readable: ' .. path
-    endif
-
-    const bufs: list<number> = tabpagebuflist()
-    if !bang
-        for i in term_list()->filter(
-                (_, x) => x->term_getstatus() == 'running'
-                )
-            const idx: number = index(bufs, i)
-            if idx >= 0
-                echo $'chdir in window [{idx + 1}]? [y/N] '
-                if nr2char(getchar())->tolower() == 'y'
-                    execute ':' .. (idx + 1) 'wincmd w'
-                    call feedkeys(printf('%scd %s', mode() == 'n' ? 'i' : '', shellescape(path)), 't')
-                else
-                    redrawstatus | echon 'cancelled.'
-                endif
-                return
-            endif
-        endfor
-    endif
-    const cmd = bang ? 'Sh -w' : 'Sh -t'
-    execute 'Cd' path ':' .. cmd
-enddef
-
 # :DiffOrig {{{2
 # see help :DiffOrig
 command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
@@ -1554,163 +1512,6 @@ def JoinLines(sep: string, range: number, line1: number, line2: number)
     deletebufline('%', line1, line2)
     append(max([line1 - 1, 0]), result)
     normal k
-enddef
-
-# :Jobrun / :Jobqfrun / :Jobstop / :Joblist / :Jobclear {{{2
-command! -range=0 -nargs=+ -complete=shellcmd Jobrun
-    | JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: false})
-command! -range=0 -nargs=+ -complete=shellcmd Jobqfrun
-    | JobRun(<q-args>, {range: <range>, line1: <line1>, line2: <line2>, qf: true})
-command! -nargs=* -bang -complete=custom,JobStopComp Jobstop
-    | JobStop(<q-args>, <bang>0 ? 'kill' : 'term')
-command! Joblist JobList()
-command! -count Jobclear JobClear(<count>)
-
-var job_dict = exists('job_dict') ? job_dict : {}
-
-def JobOutCb(ctx: dict<any>, _: channel, msg: string)
-    const buf = ctx.bufnr
-    setqflist([], 'a', {nr: buf, lines: [msg]})
-enddef
-
-def JobExitCb(ctx: dict<any>, job: job, ret: number)
-    const buf = ctx.bufnr
-    var data = []
-    add(data, '')
-    add(data, '===========================')
-    add(data, 'command finished with code ' .. ret)
-    if ctx.qf
-        setqflist([], 'a', {nr: buf, lines: data})
-    else
-        appendbufline(buf, '$', data)
-    endif
-enddef
-
-def JobRun(cmd_a: string, opt: dict<any>)
-    if exists(':Sh') != 2
-        throw 'depends on vim-sh plugin!'
-    endif
-    if exists(':ScratchNew') != 2
-        throw 'depends on `:ScratchNew`!'
-    endif
-    var cmd: string = cmd_a
-    var flag: string = '-n'
-    if match(cmd, '^-') >= 0
-        var tmp = matchlist(cmd, '\v^(-\S+)\s+(.*)$')
-        cmd = tmp[2]
-        flag = tmp[1] .. 'n'
-    endif
-    var cmd_short = cmd
-    if opt.range != 0
-        cmd = $':{opt.line1},{opt.line2}Sh {flag} {cmd}'
-    else
-        cmd = $'Sh {flag} {cmd}'
-    endif
-    var job_d = json_decode(execute(cmd))
-
-    # in case running with ":Cd... [path]"
-    extend(job_d.opt, {cwd: getcwd()})
-
-    var bufnr: number
-    if opt.qf
-        var current_max = getqflist({nr: '$'}).nr
-        bufnr = current_max + 1
-        setqflist([], ' ',
-            {
-                title: '(:Joblist to check state) ' .. cmd_short, nr: bufnr,
-            })
-        extend(job_d.opt, {
-            out_cb: function(JobOutCb, [{bufnr: bufnr}]),
-            err_cb: function(JobOutCb, [{bufnr: bufnr}]),
-        })
-    else
-        ScratchNew
-        bufnr = bufnr()
-        wincmd p
-        extend(job_d.opt, {
-            out_io: 'buffer', err_io: 'buffer',
-            out_buf: bufnr, err_buf: bufnr,
-        })
-    endif
-    extend(job_d.opt, {
-        exit_cb: function(JobExitCb, [{bufnr: bufnr, qf: opt.qf}]),
-    })
-
-    extend(job_dict, {
-        [bufnr]: {
-            job: job_start(job_d.cmd, job_d.opt),
-            cmd: cmd_short,
-        }
-    })
-enddef
-
-def JobStop(id_a: string, sig: string)
-    var id = empty(id_a) ? bufnr() : str2nr(matchstr(id_a, '\v^\d+'))
-    if has_key(job_dict, id)
-        job_stop(job_dict[id].job, sig)
-    else
-        throw 'job not found: buffer id ' .. id
-    endif
-enddef
-
-def JobStopComp(...arg: list<any>): string
-    var result = []
-    for [k, v] in items(job_dict)
-        if v.job->job_status() == 'run'
-            add(result, $'{k}: {v.cmd}')
-        endif
-    endfor
-    return join(result, "\n")
-enddef
-
-def JobList()
-    for [k, v] in items(job_dict)
-        echo $"{k}:\t{v.job->string()}\t{v.cmd}"
-    endfor
-enddef
-
-def JobClear(num: number)
-    for item in num > 0 ? [num] : keys(job_dict)
-        var job = get(job_dict, item)
-        if !empty(job)
-            if job.job->job_info().status != 'run'
-                remove(job_dict, item)
-            endif
-        endif
-    endfor
-enddef
-
-# :Lf; call lf in current buffer (as a replacement to vim-dirvish) {{{2
-command! -nargs=* Lf Lf(<q-args>)
-
-def Lf(arg: string)
-    if !executable('lf')
-        throw 'lf is not found in $PATH!'
-    endif
-    const result_file = tempname()
-    const shcmd = 'lf -selection-path ' .. shellescape(result_file)
-        .. (arg->empty() ? '' : ' ' .. shellescape(expand(arg)))
-    var cmd_opt = execute($'Sh -n {shcmd}')->json_decode()
-    const old_bufnr = bufnr()
-    cmd_opt.opt->extend({
-        curwin: true, term_finish: 'close', hidden: true,
-        exit_cb: (_, _) => {
-            if !filereadable(result_file)
-                if bufexists(old_bufnr)
-                        # only restore buffer when it does not show
-                        && tabpagebuflist()->index(old_bufnr) < 0
-                    execute $'buffer {old_bufnr}'
-                endif
-                return
-            endif
-            # TODO multiple line / file in result?
-            const result = result_file->readfile()->get(0, "")
-            if filereadable(result)
-                execute 'edit' fnameescape(result)
-            endif
-        }
-    })
-    term_start(cmd_opt.cmd, cmd_opt.opt)
 enddef
 
 # :MatchLongLine {number} {{{2
@@ -1742,53 +1543,8 @@ def PickAnyCli(cli: string)
     )
 enddef
 
-# :PluginReadme {plugin}; open README file for specified plugin. {{{2
-command! -nargs=1 -complete=custom,PluginReadmeComp PluginReadme
-    | PluginReadme(<q-args>)
-
-def PluginReadme(plugin: string)
-    for i in PluginReadmeCache()
-        if i->match(plugin) >= 0
-            exec 'edit' i->fnameescape()
-            return
-        endif
-    endfor
-    echoerr 'plugin README not found: ' .. plugin
-enddef
-
-def PluginReadmeComp(..._: list<any>): string
-    return PluginReadmeCache()
-        ->mapnew((_, i) => i->substitute('\v.*/\ze[^/]+/[^/]+$', '', ''))
-        ->join("\n")
-enddef
-
-var plugin_readme_cache: list<string> = []
-var plugin_readme_set: bool = false
-def PluginReadmeCache(): list<string>
-    if !plugin_readme_set
-        plugin_readme_cache = globpath(&rtp, 'README*', 0, 1)
-        plugin_readme_set = true
-    endif
-    return plugin_readme_cache
-enddef
-
-# :QutebrowserEditCmd {{{2
-if !empty($QUTE_FIFO)
-    command! QutebrowserEditCmd QutebrowserEditCmd()
-
-    def QutebrowserEditCmd()
-        setl buftype=nofile noswapfile
-        setline(1, $QUTE_COMMANDLINE_TEXT[1 :])
-        setline(2, '')
-        setline(3, 'hit `<Space>q` to save cmd (first line) and quit')
-        # weired bug with `map ... \| q...` in vim9script.
-        legacy nnoremap <buffer> <Space>q :call writefile(['set-cmd-text -s :' .. getline(1)], $QUTE_FIFO) \| q<CR>
-    enddef
-endif
-
-# :Scratch [filetype] / :ScratchNew [filetype] (with new window) {{{2
+# :Scratch [filetype]; make current buffer as scratch pad {{{2
 command -nargs=? -complete=filetype Scratch Scratch(<q-args>)
-command! -nargs=? -complete=filetype ScratchNew SnippetInNewWindow(<q-args>)
 
 def Scratch(ft: string)
     enew | setl buftype=nofile noswapfile bufhidden=hide
@@ -1796,40 +1552,6 @@ def Scratch(ft: string)
         exe 'setl ft=' .. ft
     endif
 enddef
-
-def SnippetInNewWindow(ft: string)
-    exe $'bel :{&cwh}new'
-    setl buftype=nofile noswapfile
-    setl bufhidden=hide
-    if !empty(ft)
-        exe 'setl ft=' .. ft
-    endif
-enddef
-
-# Selection() {{{2
-def g:Selection(): string
-    const tmp = @"
-    var result = ''
-    var success = false
-    try
-        silent normal gvy
-        success = true
-    finally
-        result = @"
-        @" = tmp
-        if !success
-            throw 'g:Selection() failed!'
-        endif
-    endtry
-    return result
-enddef
-
-# :SetCmdText / SetCmdText() {{{2
-def g:SetCmdText(text: string)
-    feedkeys(':' .. text, 't')
-enddef
-
-command! -nargs=+ SetCmdText g:SetCmdText(<q-args>)
 
 # :ShebangInsert [content after "#!/usr/bin/env "] {{{2
 command! -nargs=* -complete=shellcmd ShebangInsert ShebangInsert(<q-args>)
@@ -1872,65 +1594,10 @@ def ShebangInsert(args: string)
     endif
 enddef
 
-# :VimRun {vim_command}... (run vim command) {{{2
-command! -nargs=+ -complete=command VimRun ShowOutput(execute(<q-args>))
-
-# :VimExpr {vim_expr}... (run vim expr) {{{2
-command! -nargs=+ -complete=expression VimExpr ShowOutput(eval(<q-args>))
-
-def ShowOutput(...data_: list<any>)
-    # eval() return type may not be string, so use list<any> here.
-    const data = type(data_[0]) == type('') ? data_[0] : string(data_[0])
-    ScratchNew
-    for line in split(data, "\n")
-        append('$', line)
-    endfor
-    norm gg"_dd
-enddef
-
-# :EditFilenameInScratch (edit filename in scratch buffer) {{{2
-command! EditFilenameInScratch EditFilenameInScratch()
-
-def EditFilenameInScratch()
-    wincmd s
-    const title = expand('%:p')
-    Scratch
-    setline(1, title)
-enddef
-
-# :<range>Reverse (reverse selected lines) {{{2
-command! -range Reverse keeppatterns :<line1>,<line2>g/^/m <line1>-1
-
 # :Yank [...] (yank; default filename; otherwise expand(<q-args>)) {{{2
 command! -nargs=* Yank @" = expand(empty(<q-args>) ? '%:t' : <q-args>)
 
-# :ScratchWithName (like :Scratch, named; so it can be saved with `mksession`) {{{2
-command! -nargs=? ScratchWithName ScratchWithName(<q-args>)
-def ScratchWithName(name: string)
-    const scratch_dirs = expand('~/.vim/scratch/')
-    var filename = scratch_dirs .. name
-    if empty(name)
-        const files = globpath(scratch_dirs, '*', 0, 1)
-        var i = 0
-        while i < 10000
-            filename = scratch_dirs .. string(i)
-            if index(files, filename) < 0
-                break
-            endif
-            i += 1
-        endwhile
-        if index(files, filename) >= 0
-            throw 'too many files in scratch dir! "' .. scratch_dirs .. '"'
-        endif
-    endif
-    exec 'e' fnameescape(filename)
-enddef
-
 # UserFunction {{{1
-
-def g:NoteIdNew(): string # {{{2
-    return strftime('%Y%m%d_%H%M%S')
-enddef
 
 def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{2
     const fzf = (
@@ -2174,72 +1841,6 @@ def PickUserCommand() # {{{3
     )
 enddef
 
-def PickUniversal() # {{{3
-    var data: list<dict<any>> = []
-    for i in execute('nmap <Space>')->split("\n")
-        data->add({
-            type: 'keymap',
-            show: i->matchstr('\v\S+\s+\S+\s+(\*\s+|)\zs.*'),
-            put: printf(
-                'call feedkeys("%s", "m")',
-                i->matchstr('\v\S+\s+\zs\S+\ze\s+.*')
-                ->substitute('\V<', '\\&', 'g')
-                ->substitute('"', '\\&', 'g'),
-            ),
-        })
-    endfor
-    for i in execute('command')->split("\n")->filter((idx, _) => idx > 0)
-        const cmd = i->matchstr('\v^\S?\s+\zs\S+')
-        data->add({
-            type: 'command',
-            show: cmd,
-            put: cmd,
-        })
-    endfor
-    for i in exists('g:hh_task_list') ? g:hh_list : []
-        data->add({
-            type: 'task',
-            show: i.desc,
-            put: i.cmd,
-        })
-    endfor
-
-    def CmpString(a: string, b: string): number
-        if a == b
-            return 0
-        elseif a < b
-            return -1
-        else
-            return 1
-        endif
-    enddef
-
-    data->sort((a, b) => {
-        if a.type != b.type
-            return CmpString(a.type, b.type)
-        else
-            return CmpString(a.show, b.show)
-        endif
-    })
-    data->map((idx, item) => {
-        item.id = idx
-        return item
-    })
-
-    g:Pick(
-        'hh for vim (put in cmdline)',
-        v:none,
-        data->mapnew((_, i) => $'{i.id}) [{i.type}] {i.show}'),
-        (s) => {
-            echom s
-            const idx = s->matchstr('\v^\d+\ze\)')->str2nr()
-            echom idx
-            # TODO setcmdline() does not work.
-            execute 'SetCmdText' data[idx].put
-        }
-    )
-enddef
-
 # Pick related keymap. {{{2
 nnoremap <Space>ff <ScriptCmd>PickCwdFiles()<CR>
 nnoremap <Space>fr <ScriptCmd>PickRecentFiles()<CR>
@@ -2249,8 +1850,6 @@ nnoremap <Space>fm <ScriptCmd>PickUserMapping()<CR>
 nnoremap <Space>fa :Pick<Space>
 nnoremap <Space>fb <ScriptCmd>PickJumpCurrentBuffer()<CR>
 nnoremap <Space>ft <ScriptCmd>PickGotoTabWin()<CR>
-
-nnoremap <Space>hh <ScriptCmd>PickUniversal()<CR>
 
 # Key mapping helper {{{1
 # e.g. when pressing <Space>f and forget which key follows, then press <Space>

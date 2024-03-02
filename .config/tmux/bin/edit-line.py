@@ -19,7 +19,9 @@ edit_buffer = '/tmp/tmux-edit-line-temp.txt'
 
 
 def current_pane():
-    return subprocess.check_output(shlex_split('tmux capture -p'), text=True).rstrip()
+    # -J: join wrapping line
+    # -N: keep trailing whitespace
+    return subprocess.check_output(shlex_split('tmux capture -p -N -J'), text=True).rstrip()
 
 
 def main():
@@ -29,6 +31,11 @@ def main():
 
     # if tty is slow (e.g. ssh into remote server), then wait until content is refreshed.
     retry_left = 20 # 20 * 0.1 = 2s.
+
+    if subprocess.check_output(shlex_split('tmux display -p "#{pane_current_command}"'), text=True).strip() != 'ssh':
+        # ...only wait that long for ssh.
+        retry_left = 1
+
     while retry_left > 0:
         retry_left -= 1
         i = current_pane()
@@ -37,6 +44,11 @@ def main():
             break
         time.sleep(0.1)
 
+    if content_old.splitlines()[-1] == content_new.splitlines()[-1]:
+        # if it's tmux, strip statusline.
+        content_old = content_old[:content_old.rfind('\n')].rstrip()
+        content_new = content_new[:content_new.rfind('\n')].rstrip()
+
     # use last line as content fallback
     content_diff = content_new.splitlines()[-1]
 
@@ -44,9 +56,6 @@ def main():
     if content_old.startswith(content_new):
         content_diff = content_old[len(content_new):]
         content_diff = content_diff.lstrip()
-
-    # "tmux capture"'s -J option does not work; so remove newline here.
-    content_diff = content_diff.replace('\n', '', -1)
 
     with open(edit_buffer, 'w') as f:
         f.write(content_diff)

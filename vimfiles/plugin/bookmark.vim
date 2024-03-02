@@ -4,9 +4,6 @@ nnoremap <Space>bb <ScriptCmd>BookmarkAdd()<CR>
 nnoremap <Space>bo <ScriptCmd>GotoBookmark()<CR>
 nnoremap <Space>be <ScriptCmd>BookmarkEdit()<CR>
 
-# depends on ":SetCmdText", g:Pick().
-
-
 command! -nargs=* BookmarkAdd BookmarkAdd(<args>)
 const bookmark_file = expand('~/.vim/files/bookmark.txt')
 
@@ -22,7 +19,7 @@ def BookmarkAdd(args: dict<any> = {})
         'BookmarkAdd {"file": "%s", "line": "%d", "title": ""}',
         current_file->escape('"'), line('.'),
         )
-        execute 'SetCmdText' cmdline .. "\<Left>"->repeat(2)
+        feedkeys(':' .. cmdline .. "\<Left>"->repeat(2), 'n')
     else
         const file: string = args.file
         const line: number = args.line->str2nr()
