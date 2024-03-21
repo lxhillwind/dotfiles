@@ -108,8 +108,7 @@ set searchurls.blank http://localhost/maybe-pressed-wrong-key?%s
 set searchurls.bd https://www.baidu.com/s?wd=%s
 set searchurls.bg https://www.bing.com/search?q=%s&ensearch=1
 set searchurls.bl https://search.bilibili.com/all?keyword=%s
-"set searchurls.cd https://www.bing.com/dict/search?mkt=zh-CN&q=%s
-set searchurls.cd https://dictionary.cambridge.org/zhs/词典/英语-汉语-简体/%s
+set searchurls.cd https://www.iciba.com/word?w=%s
 set searchurls.cnf https://command-not-found.com/%s
 set searchurls.co https://www.collinsdictionary.com/english/%s
 set searchurls.dg https://duckduckgo.com/?q=%s
@@ -288,9 +287,6 @@ bind <ContextMenu> novel_mode
 
 " Site Settings {{{1
 
-" this is heavy on CPU, so only use it for specific sites.
-seturl www.bing.com/dict preventautofocusjackhammer true
-
 " certain sites are broken. auto enter ignore mode on them.
 blacklistadd ^https://docs.google.com/.*/edit
 
@@ -337,6 +333,12 @@ bindurl tieba.baidu.com c hint -Jc span.close-btn
 bindurl zhihu.com c hint -Jc button[aria-label="关闭"]
 " }}}
 
+" bind c to click on some button {{{
+bindurl https://netcut.cn/ c hint -fr ^(读取)$
+bindurl protectedtext.com/[^/]+$ c hint -Jc a.ui-tabs-anchor,button.ui-button:enabled
+bindurl ^https://www.protopage.com c hint -Jc td > div.scheme-header-text
+" }}}
+
 " override binding for some sites {{{
 bindurl ^https://(search|www).bilibili.com f hint -Jc \
 div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
@@ -352,9 +354,6 @@ div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
 ,li.history-record a.title\
 ,a.video-awesome-img,div.framepreview-box > a.box-a\
 ,video.wrong-match-to-align-with-above
-
-bindurl protectedtext.com/[^/]+$ f hint -Jc a.ui-tabs-anchor,button.ui-button:enabled
-bindurl ^https://www.protopage.com f hint -Jc td > div.scheme-header-text
 
 " native <Space> blocks sometimes.
 bindurl ^https://www.qidian.com <Space> scrollpage 0.97
@@ -374,9 +373,6 @@ command toggle-color js ( () => { let target = 'invert(100%)'; let style = docum
 
 autocmd DocLoad ^https://ziggit.dev toggle-color
 " }}}
-
-" cambridge dictionary: close search button on load (to save space).
-autocmd DocLoad dictionary.cambridge.org hint -Jc span.hdib>span.hao
 
 " Command / Bind override {{{1
 
