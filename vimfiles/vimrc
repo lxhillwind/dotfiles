@@ -1534,9 +1534,16 @@ def InitScratchPad(force: bool)
     set columns=36
     set lines=30
     if has('gui_running')
-        # TODO add &guifont for windows / linux.
         if is_mac
-            set guifont=Monaco:h21
+            &guifont = 'Monaco:h21'
+        elseif is_linux
+            &guifont = 'DejaVu Sans Mono 16'
+        elseif is_win32
+            if windowsversion()->str2float() <= 5.1
+                &guifont = 'Courier_New:h16:cANSI:qDRAFT'
+            else
+                &guifont = 'Consolas:h18:cANSI:qDRAFT'
+            endif
         endif
     endif
     const scratch_home = $'{$HOME}/.vim/scratch'
