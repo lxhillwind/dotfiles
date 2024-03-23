@@ -1224,7 +1224,6 @@ augroup vimrc
     }
     # completion from vim's help page into vim
     au FileType help setl iskeyword+=^'
-    au FileType vim setl iskeyword+=:
 
     # quickfix window {{{2
     au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
