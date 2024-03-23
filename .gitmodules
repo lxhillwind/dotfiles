@@ -13,9 +13,6 @@
 [submodule "vimfiles/pack/rc/opt/vim-dirvish"]
 	path = vimfiles/pack/rc/opt/vim-dirvish
 	url = https://github.com/justinmk/vim-dirvish
-[submodule "vimfiles/pack/rc/opt/vim-mucomplete"]
-	path = vimfiles/pack/rc/opt/vim-mucomplete
-	url = https://github.com/lifepillar/vim-mucomplete
 [submodule "vimfiles/pack/rc/opt/vim-sneak"]
 	path = vimfiles/pack/rc/opt/vim-sneak
 	url = https://github.com/justinmk/vim-sneak
@@ -61,3 +58,6 @@
 [submodule "vimfiles/pack/lx/opt/table-im"]
 	path = vimfiles/pack/lx/opt/table-im
 	url = https://github.com/lxhillwind/table-im.git
+[submodule "vimfiles/pack/rc/opt/vimcomplete"]
+	path = vimfiles/pack/rc/opt/vimcomplete
+	url = https://github.com/girishji/vimcomplete

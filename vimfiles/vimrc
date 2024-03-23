@@ -170,44 +170,38 @@ set completeopt=menu,menuone,noselect
 # suppress annoy messages.
 set shortmess+=c
 
-packadd! vim-mucomplete
-
-imap <expr> <Tab> (pumvisible() ? "\<plug>(MUcompleteCycFwd)" : "\<plug>(MUcompleteFwd)")
-imap <expr> <S-Tab> (pumvisible() ? "\<plug>(MUcompleteCycBwd)" : "\<plug>(MUcompleteBwd)")
 # make <CR> always add newline.
 inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 
-g:mucomplete#enable_auto_at_startup = 1
-# disable its imap <Tab> (and some others)
-g:mucomplete#no_mappings = 1
-# disable keyn: included in c-n via option 'complete' ('cpt');
-# about these chains description: help 'mucomplete-methods'
-g:mucomplete#chains = {
-    default: ['path', 'omni', 'snippet', 'user', 'c-n', 'dict'],
-    vim:     ['path', 'cmd',  'snippet', 'user', 'c-n', 'dict'],
-    # sql: disable omni, since it causes trouble. (dbext plugin is not installed)
-    sql:     ['path',         'snippet', 'user', 'c-n', 'dict'],
-}
-g:mucomplete#user_mappings = {
-    'snippet': "\<C-x>s",
-}
+packadd! vimcomplete
 
-# why not construct dict directly? {{{
-# because if we did so, after reloading vimrc, g:mucomplete#can_complete
-# will be reset to contain only what we defined here, which causes trouble.
-#
-# mucomplete plugin will operate on g:mucomplete#can_complete when `packadd`,
-# but at the next time (e.g. source $MYVIMRC) it cannot do anything
-# because of vim's plugin load mechanism.
-if !exists('g:mucomplete#can_complete')
-    g:mucomplete#can_complete = {}
+var vimcomplete_options = { # {{{
+    # priority default 10.
+    vimscript: { enable: true, priority: 11 },
+    dictionary: { enable: true, filetypes: ['*'] },
+} # }}}
+au VimEnter * g:VimCompleteOptionsSet(vimcomplete_options)
+
+def Completor4miniSnip(findstart: number, base: string): any # {{{
+    if findstart == 2
+        return 1
+    elseif findstart == 1
+        const line = getline('.')->strpart(0, col('.') - 1)
+        const prefix = line->matchstr('\w\+$')
+        const startcol = col('.') - prefix->strlen()
+        if prefix->len() < 2
+            return -2
+        else
+            return startcol
+        endif
+    else
+        return miniSnip#completeFunc(findstart, base)
+    endif
+enddef # }}}
+if has('vim_starting')
+    import autoload 'vimcomplete/completor.vim'
 endif
-if !exists('g:mucomplete#can_complete.default')
-    g:mucomplete#can_complete.default = {}
-endif
-# }}}
-# it's completed even if word length is not enough; let's fix it.
-g:mucomplete#can_complete.default.snippet = (s) => s->matchstr('\v\w+$')->len() >= 2
+au VimEnter * completor.Register('snip', Completor4miniSnip, ['*'], 12)
 
 packadd! vim-dict
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
