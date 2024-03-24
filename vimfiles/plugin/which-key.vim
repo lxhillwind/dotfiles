@@ -1,7 +1,7 @@
 vim9script
 
 nnoremap <Space><Space> <ScriptCmd>WhichKey("n")<CR>
-vnoremap <Space><Space> <ScriptCmd>WhichKey("v")<CR>
+xnoremap <Space><Space> <ScriptCmd>WhichKey("v")<CR>
 
 # Why do we use popupwin (textprop) instead of just echo (echohl)?
 #

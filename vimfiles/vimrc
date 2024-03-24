@@ -124,7 +124,7 @@ g:sneak#label = 1
 g:sneak#f_reset = 1
 g:sneak#t_reset = 0
 # I do not use vim-surround, so preserve s / S for vim-sneak.
-vmap S <Plug>Sneak_S
+xmap S <Plug>Sneak_S
 omap s <Plug>Sneak_s
 omap S <Plug>Sneak_S
 
@@ -648,7 +648,7 @@ def TerminalSetup()
     setl nonu | setl nornu
     # plugin/jump.vim
     nmap <buffer> <CR> <Plug>(jump_to_file)
-    vmap <buffer> <CR> <Plug>(jump_to_file)
+    xmap <buffer> <CR> <Plug>(jump_to_file)
     # clipboard
     nnoremap <buffer> p <ScriptCmd>TerminalPaste()<CR>
     nnoremap <buffer> P <ScriptCmd>TerminalPaste()<CR>
@@ -852,27 +852,24 @@ endif
 
 # Key mapping {{{1
 
-# make <C-r> in select mode work as expected for snippet plugin {{{2
-snoremap <C-r> ;<C-h><C-r>
-
 # custom text object {{{2
 # <silent> to avoid "Press Enter..." msg in too narrow screen.
 
 # all
-vnoremap <silent> aa :<C-u>normal! ggVG<CR>
+xnoremap <silent> aa :<C-u>normal! ggVG<CR>
 onoremap <silent> aa :<C-u>normal! ggVG<CR>
 # line
-vnoremap <silent> al :<C-u>normal! 0v$h<CR>
+xnoremap <silent> al :<C-u>normal! 0v$h<CR>
 onoremap <silent> al :<C-u>normal! 0v$h<CR>
 # line, strip space
-vnoremap <silent> il :<C-u>normal! ^vg_<CR>
+xnoremap <silent> il :<C-u>normal! ^vg_<CR>
 onoremap <silent> il :<C-u>normal! ^vg_<CR>
 # fold
-vnoremap <silent> az V]zo[zo
+xnoremap <silent> az V]zo[zo
 onoremap <silent> az :<C-u>normal! V]zo[zo<CR>
 # fold, without marker. (trailing marker is not un-select. press k if it
 # exists.)
-vnoremap <silent> iz V]zo[zjo
+xnoremap <silent> iz V]zo[zjo
 onoremap <silent> iz :<C-u>normal! V]zo[zjo<CR>
 
 # mswin: disable v_CTRL-X (which is not compatible with unix) {{{2
@@ -946,8 +943,8 @@ noremap <expr> N 'nN'[v:searchforward]
 # feedkeys() second param: why not using 't'? {{{
 #   because if using 't', then "\n" in first param will trigger <C-j> event,
 #   which is what we define for other functions (see via `nmap <C-j>`). }}}
-vnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(<SID>Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
-vnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(<SID>Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
+xnoremap <silent> * :<C-u>call feedkeys('/\V' .. substitute(escape(<SID>Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
+xnoremap <silent> # :<C-u>call feedkeys('?\V' .. substitute(escape(<SID>Selection(), '\/'), "\n", '\\n', 'g') .. "\n", 'n')<CR>
 
 def Selection(): string
     const tmp = @"
@@ -970,7 +967,7 @@ enddef
 # (handle column nr; v_gF handle line / column nr)
 # using plugin/jump.vim.
 nmap gF <Plug>(jump_to_file)
-vmap gF <Plug>(jump_to_file)
+xmap gF <Plug>(jump_to_file)
 
 # terminal escape; {{{2
 # used to use <C-Space>, but it may be occupied by DE / OS. {{{
@@ -1020,9 +1017,9 @@ nnoremap <expr> <Space>ss
 # <Space>s...; :Sh related. {{{2
 nnoremap <Space>st :Cdb Sh -t
 nnoremap <Space>sw :Cdb Sh -w
-# add space after vmap, since we usually want to do sth on input.
-vnoremap <Space>st :<C-u>Cdb :*Sh -vt<Space>
-vnoremap <Space>sw :<C-u>Cdb :*Sh -vw<Space>
+# add space after xmap, since we usually want to do sth on input.
+xnoremap <Space>st :<C-u>Cdb :*Sh -vt<Space>
+xnoremap <Space>sw :<C-u>Cdb :*Sh -vw<Space>
 
 # <Space>y / <Space>p; Clipboard {{{2
 if use_oscyank
@@ -1077,7 +1074,7 @@ enddef
 
 # <Space><CR>; execute current line (or select lines), comment removed {{{2
 nnoremap <Space><CR> <ScriptCmd>ExecuteLines('n')<CR>
-vnoremap <Space><CR> <ScriptCmd>ExecuteLines('v')<CR>
+xnoremap <Space><CR> <ScriptCmd>ExecuteLines('v')<CR>
 
 def ExecuteLines(mode: string)
     var lines: list<string>
@@ -1301,8 +1298,8 @@ augroup vimrc
     # gx related (NOTE: key `gx` overwritten) {{{2
     nnoremap gx <ScriptCmd>Gx('n')<CR>
     # we cannot get visual selection if using <ScriptCmd>
-    vnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
-    #vnoremap gx <ScriptCmd>Gx('v')<CR>
+    xnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
+    #xnoremap gx <ScriptCmd>Gx('v')<CR>
 
     def Gx(mode: string)
         var text: string
@@ -1438,6 +1435,56 @@ augroup vimrc
     if isdirectory('/dev') && !has('gui_running')
         au VimEnter * CtrlJ_CtrlM_fix()
     endif
+
+    # remove printable key mapping in Select-Mode {{{2
+    au VimEnter * {
+        for i in execute('smap')
+                ->split("\n")
+                # skip maps defined via smap
+                ->filter((_, i) => i->match('^s') < 0)
+                # skip <Plug>
+                ->filter((_, i) => i->match('\c^.\s*<plug>') < 0)
+                # skip <buffer>
+                ->filter((_, i) => i->match('^.\s*\S\+\s*\*@') < 0)
+                # extract lhs
+                ->map((_, i) => i->matchstr('^.\s*\zs\S\+\ze'))
+                ->sort()->uniq()
+            execute $'sunmap {i}'
+        endfor
+    }
+
+    # after executing this, `smap` still leaves some mappings;
+    # handle them manually.
+
+    # mapped in /usr/share/vim/vim91/ftplugin/vim.vim
+    au FileType vim {
+        for i in ['[[', ']]', '[]', '][', ']"', '["']
+            execute $'sunmap <buffer> {i}'
+        endfor
+    }
+
+    # which-key helper {{{2
+    # e.g. when pressing <Space>f and forget which key follows, then press <Space>
+    # again, to trigger <Space><Space>f ("<Space><Space>" then "f").
+    #
+    # depends on ./plugin/which-key.vim
+    au VimEnter * {
+        var leading_map = {}
+        for i in execute('nmap <Space>')->split("\n")
+                ->filter((_, i) => i->match('^[inv]') >= 0)
+                ->map((_, i) => i->matchstr('\v^\w\s+\zs\S+\ze')->substitute('\V\^<Space>', '', ''))
+                ->filter((_, i) => i->match('\V<') < 0)
+            if !leading_map->has_key(i[0])
+                leading_map[i[0]] = []
+            endif
+            leading_map[i[0]]->add(i)
+        endfor
+        for i in leading_map->keys()
+            if leading_map[i]->len() > 1
+                execute $'nmap <Space>{i}<Space> <Space><Space>{i}'
+            endif
+        endfor
+    }
 
 augroup END  # {{{2
 
@@ -1882,29 +1929,6 @@ nnoremap <Space>fm <ScriptCmd>PickUserMapping()<CR>
 nnoremap <Space>fa :Pick<Space>
 nnoremap <Space>fb <ScriptCmd>PickJumpCurrentBuffer()<CR>
 nnoremap <Space>ft <ScriptCmd>PickGotoTabWin()<CR>
-
-# Key mapping helper {{{1
-# e.g. when pressing <Space>f and forget which key follows, then press <Space>
-# again, to trigger <Space><Space>f ("<Space><Space>" then "f").
-#
-# depends on ./plugin/which-key.vim
-au VimEnter * {
-    var leading_map = {}
-    for i in execute('nmap <Space>')->split("\n")
-            ->filter((_, i) => i->match('^[inv]') >= 0)
-            ->map((_, i) => i->matchstr('\v^\w\s+\zs\S+\ze')->substitute('\V\^<Space>', '', ''))
-            ->filter((_, i) => i->match('\V<') < 0)
-        if !leading_map->has_key(i[0])
-            leading_map[i[0]] = []
-        endif
-        leading_map[i[0]]->add(i)
-    endfor
-    for i in leading_map->keys()
-        if leading_map[i]->len() > 1
-            execute $'nmap <Space>{i}<Space> <Space><Space>{i}'
-        endif
-    endfor
-}
 
 # TODO {{{1
 

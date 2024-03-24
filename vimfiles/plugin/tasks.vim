@@ -88,7 +88,7 @@ if v:version < 703
 endif
 
 nmap <Space>r <Plug>(tasks-select)
-vmap <Space>r <Plug>(tasks-select)
+xmap <Space>r <Plug>(tasks-select)
 
 " impl {{{1
 function! s:raise(msg, line) abort
@@ -476,6 +476,6 @@ function! s:ui_impl(mode) abort
 endfunction
 
 nnoremap <Plug>(tasks-select) :call <SID>ui('n')<CR>
-vnoremap <Plug>(tasks-select) :<C-u>call <SID>ui('v')<CR>
+xnoremap <Plug>(tasks-select) :<C-u>call <SID>ui('v')<CR>
 
 " vim:fdm=marker:sw=2
