@@ -16,14 +16,14 @@ xnoremap <Space><Space> <ScriptCmd>WhichKey("v")<CR>
 def WhichKey(mode: string)
     var mappings = execute($'{mode}map <Space>')->split("\n")
         # remove mapping to <Nop>
-        ->filter((_, i) => i->match('^' .. mode) >= 0)
+        ->filter((_, i) => i->match('\*.<Nop>$') < 0)
         # example:
         #   n  <Space>y    * <ScriptCmd>ClipboardCopy("")<CR>
         #   n  <Space>y    *@<ScriptCmd>ClipboardCopy("")<CR>
         #      1             2
         # (*@ means buffer mapping)
-        # [nvxsoilct]: get this list from "help :map"
-        ->mapnew((_, i) => i->matchlist('\v^[nvxsoilct]\s+(\S+)\s+(\*\@|)\s*(.+)')->slice(1, 4))
+        # ^.{3}: mode takes the first 3 characters.
+        ->mapnew((_, i) => i->matchlist('\v^.{3}(\S+)\s+(\*\@|)\s*(.+)')->slice(1, 4))
         ->mapnew((_, i) => ({
             lhs: i[0]->substitute('^\V<Space>', '', ''),
             rhs: i[2],
