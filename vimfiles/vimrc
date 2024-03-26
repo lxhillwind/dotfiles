@@ -176,11 +176,15 @@ inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 packadd! vimcomplete
 
 var vimcomplete_options = { # {{{
-    # priority default 10.
-    vimscript: { enable: true, priority: 11 },
+    # priority (except path, which is 12) default 10
+    lsp: { priority: 12 },
+    vimscript: { enable: true, priority: 12 },
+    buffer: { priority: 11 },
     dictionary: { enable: true, filetypes: ['*'] },
 } # }}}
-au VimEnter * g:VimCompleteOptionsSet(vimcomplete_options)
+augroup vimrc
+    au VimEnter * g:VimCompleteOptionsSet(vimcomplete_options)
+augroup END
 
 def Completor4miniSnip(findstart: number, base: string): any # {{{
     if findstart == 2
@@ -198,10 +202,37 @@ def Completor4miniSnip(findstart: number, base: string): any # {{{
         return miniSnip#completeFunc(findstart, base)
     endif
 enddef # }}}
+def Completor4Vimscript(findstart: number, base: string): any # {{{
+    # In vimcomplete's codebase, cmdline completion is disabled
+    # because of performance issue.
+    # We may also encounter the problem; be careful.
+    if findstart == 2
+        return 1
+    else
+        const line = getline('.')->strpart(0, col('.') - 1)
+        const prefix = line->matchstr('\S\+$')
+        const startcol = col('.') - prefix->strlen()
+        const prefix4completion = line->matchstr('\v^.*\S+\s+\S+$')
+        if findstart == 1
+            if prefix4completion->len() == 0
+                return -2
+            else
+                return startcol
+            endif
+        else
+            return prefix4completion->getcompletion('cmdline')
+                ->mapnew((_, i) => ({word: i, menu: '', kind: 'c'}))
+        endif
+    endif
+enddef # }}}
 if has('vim_starting')
     import autoload 'vimcomplete/completor.vim'
 endif
-au VimEnter * completor.Register('snip', Completor4miniSnip, ['*'], 12)
+augroup vimrc
+    au VimEnter * completor.Register('snip', Completor4miniSnip, ['*'], 12)
+    # make cmd completion's priority higher than vimcomplete plugin's builtin.
+    au VimEnter * completor.Register('cmd', Completor4Vimscript, ['vim'], 14)
+augroup END
 
 packadd! vim-dict
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
