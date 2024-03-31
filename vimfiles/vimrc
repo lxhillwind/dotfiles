@@ -210,7 +210,8 @@ def Completor4Vimscript(findstart: number, base: string): any # {{{
         return 1
     else
         const line = getline('.')->strpart(0, col('.') - 1)
-        const prefix = line->matchstr('\S\+$')
+        # use \k to match words defined by &iskeyword
+        const prefix = line->matchstr('\k\+$')
         const startcol = col('.') - prefix->strlen()
         const prefix4completion = line->matchstr('\v^.*\S+\s+\S+$')
         if findstart == 1
@@ -600,9 +601,11 @@ if is_win32 && has('vim_starting')
         # shellpipe / shellredir seems not required.
     endif
 
-    # fix cjk inside vim inside conemu.
     if is_conemu
-        &encoding = 'cp' .. libcallnr('kernel32.dll', 'GetACP', 0)
+        # fix cjk inside vim inside conemu...
+        # but if doing so, vimscripts including non-ascii printable chars
+        # break (like table-im / vimcomplete); so comment it out.
+        #&encoding = 'cp' .. libcallnr('kernel32.dll', 'GetACP', 0)
     endif
 endif
 
@@ -1480,7 +1483,11 @@ augroup vimrc
                 # extract lhs
                 ->map((_, i) => i->matchstr('^.\s*\zs\S\+\ze'))
                 ->sort()->uniq()
-            execute $'sunmap {i}'
+            try
+                execute $'sunmap {i}'
+            catch /.*:E31:/
+                # raises in Windows console vim; just catch it.
+            endtry
         endfor
     }
 

@@ -31,9 +31,10 @@ RunOrRaise(class, run, where)
 
 ; run or raise list. {{{1
 !,::RunOrRaise("ahk_exe firefox.exe", "firefox", Home)
-; TODO: vscode shows cmd window when launches via ahk (though the window can be closed manually)
-!.::RunOrRaise("ahk_exe Code.exe", "code", Home)
+!.::RunOrRaise("ahk_exe gvim.exe", "gvim", Home)
 !/::RunOrRaise("ahk_exe WindowsTerminal.exe", "wt", Home)
+; if wt is not available, consider using busybox:
+;!/::RunOrRaise("ahk_exe busybox.exe", "busybox sh", Home)
 
 ; multimedia key. {{{1
 #,::Send {Media_Prev}
