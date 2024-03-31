@@ -13,9 +13,10 @@ from shlex import split as shlex_split
 import subprocess
 import os
 import time
+import tempfile
 
 
-edit_buffer = '/tmp/tmux-edit-line-temp.txt'
+edit_buffer = tempfile.gettempdir() + '/tmux-edit-line-temp.txt'
 
 
 def current_pane():
@@ -59,7 +60,7 @@ def main():
 
     with open(edit_buffer, 'w') as f:
         f.write(content_diff)
-    subprocess.run(shlex_split(f'tmux popup -E vim -c "setf bash" {edit_buffer}'), text=True)
+    subprocess.run(shlex_split('tmux popup -E vim -c "setf bash"') + [edit_buffer], text=True)
     with open(edit_buffer) as f:
         line = f.read().rstrip()
     os.remove(edit_buffer)
