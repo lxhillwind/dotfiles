@@ -1386,14 +1386,14 @@ augroup vimrc
         if filename->filereadable()
             return
         endif
-        if filename->matchstr('\v^.*\ze:[0-9]+:?$')->filereadable()
-            line = filename->matchstr('\v.*:\zs[0-9]+\ze:?$')->str2nr()
-            filename = filename->matchstr('\v^.*\ze:[0-9]+:?$')
-        elseif filename->matchstr('\v^.*\ze:[0-9]+:[0-9]+:?$')->filereadable()
-            column = filename->matchstr('\v.*:\zs[0-9]+\ze:?$')->str2nr()
-            line = filename->matchstr('\v.*:\zs[0-9]+\ze:[0-9]+:?$')->str2nr()
-            filename = filename->matchstr('\v^.*\ze:[0-9]+:[0-9]+:?$')
-        endif
+        for pat in ['\v^(.*):([0-9]+):?$', '\v^(.*):([0-9]+):([0-9]+):?$']
+            const group = filename->matchlist(pat)
+            if !!group && group[1]->filereadable()
+                # str2nr('') returns 0.
+                [filename, line, column] = [group[1], group[2]->str2nr(), group[3]->str2nr()]
+                break
+            endif
+        endfor
         if filename->filereadable()
             execute 'edit' filename->fnameescape()
             # this is used to make ftdetect (and many other things) work
@@ -1654,6 +1654,14 @@ def Scratch(ft: string)
     if !empty(ft)
         exe 'setl ft=' .. ft
     endif
+enddef
+
+# :Search {string}; like simple search in other GUI applications. {{{2
+command -nargs=+ Search Search(<q-args>)
+
+def Search(s: string)
+    const pattern = s->escape('\/?')
+    feedkeys('/\V' .. pattern, 'n')
 enddef
 
 # :ShebangInsert [content after "#!/usr/bin/env "] {{{2

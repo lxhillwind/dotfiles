@@ -31,6 +31,8 @@ RunOrRaise(class, run, where)
 
 ; run or raise list. {{{1
 !,::RunOrRaise("ahk_exe firefox.exe", "firefox", Home)
+; if in quite limited device (like in vm), consider using IE:
+;!,::RunOrRaise("ahk_exe iexplore.exe", "iexplore", Home)
 !.::RunOrRaise("ahk_exe gvim.exe", "gvim", Home)
 !/::RunOrRaise("ahk_exe WindowsTerminal.exe", "wt", Home)
 ; if wt is not available, consider using busybox:

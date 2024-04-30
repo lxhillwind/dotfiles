@@ -75,6 +75,7 @@ alias diff='diff --color=auto'
 alias grep='grep --color=auto'
 alias ls='ls --color=auto -F'
 alias pq='proxychains -q'
+tmp() { vim "+Scratch $*"; }
 
 # OSTYPE is defined by bash / zsh; OS is defined by win32 OS.
 case "${OSTYPE:-$OS}" in
