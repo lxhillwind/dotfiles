@@ -82,7 +82,11 @@ def Up()
 enddef
 
 def Down()
-    const entry = entries[line('.') - 1]
+    const index = line('.') - 1
+    if index >= len(entries)
+        return
+    endif
+    const entry = entries[index]
     if !entry.type->TypeIsDir()
         return
     endif
