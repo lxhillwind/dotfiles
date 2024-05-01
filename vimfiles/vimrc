@@ -1660,7 +1660,7 @@ enddef
 command -nargs=+ Search Search(<q-args>)
 
 def Search(s: string)
-    const pattern = s->escape('\/?')
+    const pattern = s->escape('\/')
     feedkeys('/\V' .. pattern, 'n')
 enddef
 

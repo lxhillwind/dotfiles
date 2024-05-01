@@ -110,10 +110,25 @@ if [ -n "$DTACH_SESSION_FILE" ]; then
     }
 fi
 
-# lf: auto cd on finish {{{2
-lf()
+# l: lf's auto cd on finish {{{2
+# Use l() as name instead of lf(), since there no easy way to detect if "lf"
+# executable is available.
+l()
 {
-    local x=$(command lf -print-last-dir "$@")
+    local x
+    if ! command -v lf >/dev/null; then
+        # use my "lf" vim-plugin.
+        local LF_TARGET="$(mktemp)"
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
+        LF_SELECT="$1" LF_TARGET="$LF_TARGET" vim +Lf
+        x="$(cat -- "$LF_TARGET")"
+    else
+        x=$(command lf -print-last-dir "$@"; printf x)
+        # ? => lf always outputs "\n" at end; x => final char we add via printf.
+        x="${x%?x}"
+    fi
     if [ "$x" != "$PWD" ]; then
         cd "$x"
     fi
