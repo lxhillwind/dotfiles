@@ -1,47 +1,80 @@
 vim9script
 
 # emulate lf's basic movement function;
-# mainly used for directory traveling when lf executable is not available.
+# originally, mainly used for directory traveling when lf executable is not available.
+# But now it also replaces vim-dirvish plugin in my usecase.
 #
 # # this shell function is extracted from my zshrc;
-# # named l() (instead of lf()) to avoid conflict with lf executable.
 # l()
 # {
-#     local x
-#     if ! command -v lf >/dev/null; then
-#         # use my "lf" vim-plugin.
-#         local LF_TARGET="$(mktemp)"
-#         if [ $? -ne 0 ]; then
-#             return 1
-#         fi
-#         LF_SELECT="$1" LF_TARGET="$LF_TARGET" vim +Lf
-#         x="$(cat -- "$LF_TARGET")"
-#     else
-#         x=$(command lf -print-last-dir "$@"; printf x)
-#         # ? => lf always outputs "\n" at end; x => final char we add via printf.
-#         x="${x%?x}"
+#     local LF_TARGET="$(mktemp)"
+#     if [ $? -ne 0 ]; then
+#         return 1
+#     fi
+#     LF_SELECT="$1" LF_TARGET="$LF_TARGET" vim +LfMain
+#     local x="$(cat -- "$LF_TARGET")"
+#     if [ "$x" != / ]; then
+#         # path returned by lf.vim always end with '/';
+#         # so we need to remove it, if it is not filesystem root.
+#         x=${x%/}
 #     fi
 #     if [ "$x" != "$PWD" ]; then
 #         cd "$x"
 #     fi
 # }
 
-def SetupUI()
+def Lf(arg: string)
+    # simplify(): handle '..' in path.
+    var cwd = arg->fnamemodify(':p')->simplify()
+    # if arg is a file, then use its parent directory.
+    if !isdirectory(cwd)
+        cwd = cwd->substitute('\v[^/]+$', '', '')
+    endif
+    if !isdirectory(cwd)
+        echohl ErrorMsg | echo $'lf.vim: is not directory: "{cwd}"' | echohl None
+        return
+    endif
+    # assume that cwd is always end with '/'.
+    if has('win32') && !&shellslash
+        cwd = cwd->substitute('\', '/', 'g')
+    endif
+
+    enew
     set buftype=nofile
+    # this option is required to make <C-6> (switch back to this buffer) work
+    # as expected; otherwise props will lose, causing RefreshDir() raise.
+    set bufhidden=hide
+
+    b:lf = {cwd: cwd, find_char: '', entries: []}
     const buf = bufnr()
-    prop_type_add(prop_dir, {bufnr: buf, highlight: 'Function'})
+    prop_type_add(prop_dir, {bufnr: buf, highlight: 'Directory'})
     prop_type_add(prop_not_dir, {bufnr: buf, highlight: 'Normal'})
 
-    nnoremap q <ScriptCmd>Quit()<CR>
-    nnoremap h <ScriptCmd>Up()<CR>
-    nnoremap l <ScriptCmd>Down()<CR>
-    nnoremap f <ScriptCmd>Find('f')<CR>
-    nnoremap F <ScriptCmd>Find('F')<CR>
-    nnoremap ; <ScriptCmd>Find(';')<CR>
-    nnoremap , <ScriptCmd>Find(',')<CR>
+    nnoremap <buffer> h <ScriptCmd>Up()<CR>
+    nnoremap <buffer> l <ScriptCmd>Down()<CR>
+    nnoremap <buffer> f <ScriptCmd>Find('f')<CR>
+    nnoremap <buffer> F <ScriptCmd>Find('F')<CR>
+    nnoremap <buffer> ; <ScriptCmd>Find(';')<CR>
+    nnoremap <buffer> , <ScriptCmd>Find(',')<CR>
+    nnoremap <buffer> e <ScriptCmd>Edit()<CR>
+    # recover -'s mapping.
+    nnoremap <buffer> - -
+
+    RefreshDir()
 enddef
 
+const prop_dir = 'dir'
+const prop_not_dir = 'not_dir'
+
 def Quit()
+    if !(
+            tabpagenr('$') == 1 && winnr('$') == 1
+            )
+        # only do thing when quit from the last open window.
+        return
+    endif
+
+    var cwd = b:lf.cwd
     # cwd always ends with /;
     # so it is safe to use it from shell like this:
     # cd "$(cat "$LF_TARGET")"
@@ -58,14 +91,15 @@ enddef
 
 def Up()
     # '/': unix; '[drive CDE...]:/': win32
-    if cwd->count('/') <= 1
-        echohl Normal | echo $'Already at root.' | echohl None
+    # TODO: detect win32 UNC path root reliably.
+    if b:lf.cwd->count('/') <= 1
+        echohl Normal | echo $'lf.vim: already at root.' | echohl None
         return
     endif
-    const old_cwd = cwd
-    cwd = cwd->substitute('[^/]\+/$', '', '')
+    const old_cwd = b:lf.cwd
+    b:lf.cwd = b:lf.cwd->substitute('[^/]\+/$', '', '')
     if !RefreshDir()
-        cwd = old_cwd
+        b:lf.cwd = old_cwd
     else
         # move cursor to the dir entry where we go from.
         const target_name = old_cwd->substitute('/$', '', '')
@@ -83,37 +117,44 @@ enddef
 
 def Down()
     const index = line('.') - 1
-    if index >= len(entries)
+    if index >= len(b:lf.entries)
         return
     endif
-    const entry = entries[index]
+    const entry = b:lf.entries[index]
     if !entry.type->TypeIsDir()
         return
     endif
-    const old_cwd = cwd
-    cwd = cwd .. entry.name .. '/'
+    const old_cwd = b:lf.cwd
+    b:lf.cwd = b:lf.cwd .. entry.name .. '/'
     if !RefreshDir()
-        cwd = old_cwd
+        b:lf.cwd = old_cwd
     endif
 enddef
 
-var find_char: string = ''
 def Find(key: string)
     if key == 'f' || key == 'F'
-        find_char = getcharstr()
+        const find_char = getcharstr()
         if find_char == ''
-            find_char = ''
             return
         endif
+        b:lf.find_char = find_char
     endif
-    if find_char->empty()
+    if b:lf.find_char->empty()
         return
     endif
-    const search = '\V\^' .. escape(find_char, '\/')
+    const search = '\V\^' .. escape(b:lf.find_char, '\/')
     const order = (key == 'f' || key == ';') ? '/' : '?'
     # ':' is required in vim9.
     # 'silent!' to avoid not-found pattern causing break.
     silent! execute 'keeppattern' ':' .. order .. search
+enddef
+
+def Edit()
+    const filename = b:lf.cwd .. getline('.')
+    if isdirectory(filename)
+        return
+    endif
+    execute 'edit' fnameescape(filename)
 enddef
 
 def TypeIsDir(ty: string): bool
@@ -122,13 +163,20 @@ def TypeIsDir(ty: string): bool
 enddef
 
 def RefreshDir(): bool
+    const cwd = b:lf.cwd
     if !isdirectory(cwd)
-        echohl ErrorMsg | echo $'not directory: "{cwd}"' | echohl None
+        echohl ErrorMsg | echo $'lf.vim: not directory: "{cwd}"' | echohl None
         return false
     endif
-    entries = readdirex(cwd)
+    try
+        b:lf.entries = readdirex(cwd)
+    catch
+        echohl ErrorMsg | echo $'lf.vim: read dir error: "{cwd}"' | echohl None
+        return false
+    endtry
+
     normal! gg"_dG
-    entries->sort((a, b) => {
+    b:lf.entries->sort((a, b) => {
         const type_a = TypeIsDir(a.type) ? 1 : 0
         const type_b = TypeIsDir(b.type) ? 1 : 0
         if xor(type_a, type_b) > 0
@@ -138,8 +186,8 @@ def RefreshDir(): bool
         return a.name < b.name ? -1 : 1
     })
     const buf = bufnr()
-    for i in range(len(entries))
-        const entry = entries[i]
+    for i in range(len(b:lf.entries))
+        const entry = b:lf.entries[i]
         const is_dir = TypeIsDir(entry.type)
         append(i, entry.name .. (is_dir ? '/' : ''))
         prop_add(i + 1, 1, {length: len(entry.name) + 1, type: is_dir ? prop_dir : prop_not_dir,  bufnr: buf})
@@ -147,33 +195,23 @@ def RefreshDir(): bool
     normal! "_ddgg
 
     silent execute 'lcd' fnameescape(cwd)
-    # when cwd is long, "Press ENTER..." msg will show.
-    #echo cwd
+    # use bufnr to make filename unique.
+    execute 'file' fnameescape(cwd .. $' [{bufnr()}]')
     return true
 enddef
 
-# assume that cwd is always end with '/'.
-var cwd = ($LF_SELECT ?? '.')->fnamemodify(':p')
-if cwd[-1] != '/'
-    # $LF_SELECT is provided and is not a directory.
-    cwd = cwd->substitute('\v[^/]+$', '', '')
-endif
-
-var entries: list<any> = []
-const prop_dir = 'dir'
-const prop_not_dir = 'not_dir'
-
 def Main()
     if $LF_TARGET->empty()
-        echohl ErrorMsg | echo 'lf.vim: $LF_TARGET is not set! plugin stopped.' | echohl None
+        echohl ErrorMsg | echo 'lf.vim: $LF_TARGET is not set!' | echohl None
         return
     endif
-    if has('win32')
-        # always use '/' as path sep.
-        set shellslash
-    endif
-    SetupUI()
-    RefreshDir()
+    const cwd = $LF_SELECT ?? '.'
+    Lf(cwd)
+    nnoremap <buffer> q <ScriptCmd>Quit()<CR>
 enddef
 
-command Lf Main()
+command LfMain Main()
+command -nargs=+ Lf Lf(<q-args>)
+nnoremap - <Cmd>execute 'Lf' fnameescape(expand('%')) ?? '.'<CR>
+
+defc

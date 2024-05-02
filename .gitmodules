@@ -10,9 +10,6 @@
 [submodule "vimfiles/pack/rc/opt/vim-dict"]
 	path = vimfiles/pack/rc/opt/vim-dict
 	url = https://github.com/skywind3000/vim-dict
-[submodule "vimfiles/pack/rc/opt/vim-dirvish"]
-	path = vimfiles/pack/rc/opt/vim-dirvish
-	url = https://github.com/justinmk/vim-dirvish
 [submodule "vimfiles/pack/rc/opt/vim-sneak"]
 	path = vimfiles/pack/rc/opt/vim-sneak
 	url = https://github.com/justinmk/vim-sneak

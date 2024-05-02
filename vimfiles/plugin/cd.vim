@@ -149,8 +149,9 @@ def Get_project_dir(): string
     var path = Get_buf_dir()
     var parent: string
     while 1
-        if is_win32 && (path == '//' || path == '\\')
-            # UNC; isdirectory('///.git') is extremely slow, so stop early.
+        if is_win32 && !isdirectory(path)
+            # UNC; isdirectory('//XXX/.git') is extremely slow, so return
+            # early if already in dir root.
             return ''
         endif
         if isdirectory(path .. '/.git')

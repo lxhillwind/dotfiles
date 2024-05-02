@@ -78,8 +78,8 @@ def PickGotoProject() # {{{2
         v:none,
         (chosen) => {
             execute 'lcd' fnameescape(chosen)
-            if exists(':Dirvish') == 2
-                execute 'Dirvish' fnameescape(chosen)
+            if exists(':Lf') == 2
+                execute 'Lf' fnameescape(chosen)
             endif
         }
     )

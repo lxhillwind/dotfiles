@@ -106,7 +106,7 @@ packadd! securemodelines
 packadd! tabular
 
 # directory viewer
-packadd! vim-dirvish
+# use vim-dirvish previously; now use my lf.vim plugin instead.
 g:loaded_netrwPlugin = 1
 
 # motion
@@ -686,9 +686,8 @@ def TerminalSetup()
     # clipboard
     nnoremap <buffer> p <ScriptCmd>TerminalPaste()<CR>
     nnoremap <buffer> P <ScriptCmd>TerminalPaste()<CR>
-    # dirvish
-    if exists(':Dirvish') == 2
-        nnoremap <buffer> - <Cmd>execute 'Dirvish' fnameescape(getcwd())<CR>
+    if exists(':Lf') == 2
+        nnoremap <buffer> - <Cmd>execute 'Lf' fnameescape(getcwd())<CR>
     endif
 enddef
 
