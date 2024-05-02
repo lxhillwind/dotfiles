@@ -1,6 +1,8 @@
 vim9script
 
 # emulate kitty's hint mode.
+# usage:
+#   cat {content-to-hint-on} | vim - -c HintsMode
 
 command! HintsMode HintsMode()
 
@@ -9,6 +11,9 @@ def HintsMode()
     setlocal nonumber norelativenumber nofoldenable nocursorcolumn nocursorline
     setlocal nowrap # if some line is full, vim display incorrectly; avoid it.
     setlocal nohlsearch # avoid last search causing visual distraction
+
+    # getcharstr() cannot catch <C-c>; so map it to quit.
+    nnoremap <buffer> <C-c> <Cmd>quit<CR>
     const ch = GetChar('hint: [i]nside [l]ine [w]ord [u]rl ')
     if ch == 'i'
         LabelInside()
