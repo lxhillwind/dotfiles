@@ -45,7 +45,7 @@ def Lf(arg: string): bool
         cwd = cwd->substitute('\', '/', 'g')
     endif
 
-    enew
+    noswapfile enew
     set buftype=nofile
     # this option is required to make <C-6> (switch back to this buffer) work
     # as expected; otherwise props will lose, causing RefreshDir() raise.
