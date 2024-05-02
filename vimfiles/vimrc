@@ -687,7 +687,7 @@ def TerminalSetup()
     nnoremap <buffer> p <ScriptCmd>TerminalPaste()<CR>
     nnoremap <buffer> P <ScriptCmd>TerminalPaste()<CR>
     if exists(':Lf') == 2
-        nnoremap <buffer> - <Cmd>execute 'Lf' fnameescape(getcwd())<CR>
+        nnoremap <buffer> - <Cmd>execute 'Lf' getcwd()<CR>
     endif
 enddef
 

@@ -35,7 +35,10 @@ def Lf(arg: string)
         return
     endif
     # assume that cwd is always end with '/'.
-    if has('win32') && !&shellslash
+    if has('win32')
+        # ignore shellslash option; since if we edit a .lnk linking to a
+        # directory, then press '-', its path will contain '\' even if
+        # shellslash is set.
         cwd = cwd->substitute('\', '/', 'g')
     endif
 
@@ -212,6 +215,6 @@ enddef
 
 command LfMain Main()
 command -nargs=+ Lf Lf(<q-args>)
-nnoremap - <Cmd>execute 'Lf' fnameescape(expand('%')) ?? '.'<CR>
+nnoremap - <Cmd>execute 'Lf' expand('%') ?? '.'<CR>
 
 defc
