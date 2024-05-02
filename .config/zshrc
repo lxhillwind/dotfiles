@@ -119,12 +119,15 @@ l()
     fi
     LF_SELECT="$1" LF_TARGET="$LF_TARGET" vim +LfMain
     local x="$(cat -- "$LF_TARGET")"
-    if [ "$x" != / ]; then
-        # path returned by lf.vim always end with '/';
-        # so we need to remove it, if it is not filesystem root.
-        x=${x%/}
+    if [ -z "$x" ]; then
+        # if lf.vim gives error, then "$x" will be empty.
+        return 0
     fi
-    if [ "$x" != "$PWD" ]; then
+    if [ "$x" != "$PWD" ] && [ "$x" != "$PWD"/ ]; then
+        # $PWD may contain final /, if it's in directory root
+        # (also consider busybox-w32 UNC path, where $PWD may contain many /);
+        # $x (from lf.vim) always has final /;
+        # so to check if dir changes, just compare $x with $PWD and "$PWD"/.
         cd "$x"
     fi
 }
