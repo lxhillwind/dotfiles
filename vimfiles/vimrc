@@ -1596,12 +1596,8 @@ enddef
 # :InitScratchPad; simulate sticky notes {{{2
 command! -bang InitScratchPad InitScratchPad(<bang>false)
 def InitScratchPad(force: bool)
-    # TODO why? (this behavior only occurs when defined in def)
-    # def F()
-    #   echo !true && !false  # true
-    #   echo !true && (!false)  # false
-    # enddef
-    # F()
+    # Wrap !force with (); see:
+    # https://github.com/vim/vim/issues/14265 (patch 9.1.0197)
     if !has('gui_running') && (!force)
         throw 'only supported in GUI version! (add bang to force using it)'
     endif

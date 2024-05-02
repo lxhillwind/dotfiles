@@ -2,11 +2,9 @@ vim9script
 
 # emulate kitty's hint mode.
 # usage:
-#   cat {content-to-hint-on} | vim - -c HintsMode
+#   cat {content-to-hint-on} | vim - -S {path-to-this-file}
 
-command! HintsMode HintsMode()
-
-def HintsMode()
+def Main()
     setlocal buftype=nofile filetype=
     setlocal nonumber norelativenumber nofoldenable nocursorcolumn nocursorline
     setlocal nowrap # if some line is full, vim display incorrectly; avoid it.
@@ -165,8 +163,11 @@ def CopyText(text: string)
     # Avoid using "@+ = text" directly, since it cannot compile when +
     # register is not available. (E354 is raised)
     #
+    # Wrap !has('linux') with (): see:
+    # https://github.com/vim/vim/issues/14265 (patch 9.1.0197)
+    #
     # use b: var, since it is available in both vim9 content and execute().
-    if has('clipboard') && !has('linux')
+    if has('clipboard') && (!has('linux'))
         # do not use @+ on linux, since clipboard content is not available
         # after gvim exits.
         b:hints_text = text
@@ -299,3 +300,6 @@ def LabelUrl() # {{{1
 
     Label(param)
 enddef
+
+# start {{{1
+Main()
