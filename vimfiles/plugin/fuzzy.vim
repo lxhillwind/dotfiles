@@ -164,6 +164,12 @@ def PickRecentFiles() # {{{2
         ->mapnew((_, i) => i)
         ->filter((_, i) => {
             const absName = i->g:ExpandHead()
+            if is_win32 && absName->match('^//') >= 0
+                # skip unc path, since if the file is not readable, filereadable() will hang.
+                #
+                # we have "set shellslash", so only check // here.
+                return false
+            endif
             return absName->filereadable() && filesInCurrentTab->index(absName) < 0
                 && blacklistName->index(fnamemodify(absName, ':t')) < 0
         }),
