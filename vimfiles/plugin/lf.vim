@@ -63,6 +63,7 @@ def Lf(arg: string): bool
     nnoremap <buffer> ; <ScriptCmd>Find(';')<CR>
     nnoremap <buffer> , <ScriptCmd>Find(',')<CR>
     nnoremap <buffer> e <ScriptCmd>Edit()<CR>
+    nnoremap <buffer> yy <ScriptCmd>YankPath()<CR>
     # recover -'s mapping.
     nnoremap <buffer> - -
 
@@ -163,6 +164,12 @@ def Edit()
         return
     endif
     execute 'edit' fnameescape(filename)
+enddef
+
+def YankPath()
+    const filename = b:lf.cwd .. getline('.')
+    @" = filename
+    echo $'path yanked to " register: {filename}'
 enddef
 
 def TypeIsDir(ty: string): bool
