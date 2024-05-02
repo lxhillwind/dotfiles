@@ -23,7 +23,7 @@ vim9script
 #     fi
 # }
 
-def Lf(arg: string)
+def Lf(arg: string): bool
     # simplify(): handle '..' in path.
     var cwd = arg->fnamemodify(':p')->simplify()
     # if arg is a file, then use its parent directory.
@@ -32,7 +32,7 @@ def Lf(arg: string)
     endif
     if !isdirectory(cwd)
         echohl ErrorMsg | echo $'lf.vim: is not directory: "{cwd}"' | echohl None
-        return
+        return false
     endif
     # assume that cwd is always end with '/'.
     if has('win32')
@@ -64,6 +64,8 @@ def Lf(arg: string)
     nnoremap <buffer> - -
 
     RefreshDir()
+
+    return true
 enddef
 
 const prop_dir = 'dir'
@@ -209,8 +211,15 @@ def Main()
         return
     endif
     const cwd = $LF_SELECT ?? '.'
-    Lf(cwd)
-    nnoremap <buffer> q <ScriptCmd>Quit()<CR>
+    if Lf(cwd)
+        nnoremap <buffer> q <ScriptCmd>Quit()<CR>
+    else
+        echo 'press any key to quit'
+        # getchar() cannot catch <C-c>, so map it to quit.
+        nnoremap <buffer> <C-c> <Cmd>quit<CR>
+        getchar()
+        quit
+    endif
 enddef
 
 command LfMain Main()
