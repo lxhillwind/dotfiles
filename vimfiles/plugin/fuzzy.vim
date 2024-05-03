@@ -65,7 +65,23 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
             if !empty(res)
                 redraws  # this is required to make Exception shown; {{{
                 # like editing files already opened in another instance. }}}
-                Callback(res)
+                if is_win32
+                    # Why use timer here? {{{
+                    # Reproduce:
+                    # pick a file which is already opened in another vim
+                    # session;
+                    # then vim will show that swap file already exists.
+                    # When not using timer, vim will just hang, since it
+                    # cannot accept any input from user (I guess that it is
+                    # the terminal buffer catching keys we input).
+                    #
+                    # 100ms is used; a lower value (like 50ms) may not be
+                    # enough, like in conemu.
+                    # }}}
+                    timer_start(100, (_) => Callback(res))
+                else
+                    Callback(res)
+                endif
             endif
         }})
 enddef
