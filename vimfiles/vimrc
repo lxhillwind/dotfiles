@@ -600,13 +600,6 @@ if is_win32 && has('vim_starting')
         &shellxescape = ''
         # shellpipe / shellredir seems not required.
     endif
-
-    if is_conemu
-        # fix cjk inside vim inside conemu...
-        # but if doing so, vimscripts including non-ascii printable chars
-        # break (like table-im / vimcomplete); so comment it out.
-        #&encoding = 'cp' .. libcallnr('kernel32.dll', 'GetACP', 0)
-    endif
 endif
 
 # macvim {{{2
@@ -837,10 +830,12 @@ elseif is_win32 # win32 console version
         set tgc
     elseif is_conemu # DO NOT set term=xterm for windows 10+
         # https://conemu.github.io/en/VimXterm.html
-        set term=xterm
-        &t_Co = '256' # string required!
-        &t_AB = "\e[48;5;%dm"
-        &t_AF = "\e[38;5;%dm"
+        #
+        # But if we set this, unicode char will be rendered incorrectly!
+        #set term=xterm
+        #&t_Co = '256' # string required!
+        #&t_AB = "\e[48;5;%dm"
+        #&t_AF = "\e[38;5;%dm"
     endif
 elseif &term == 'linux' # linux console
     ::
@@ -1534,9 +1529,12 @@ if !exists('g:colors_name')
         color base16-dynamic
     else
         if is_win32
-            # cmd.exe window
-            color pablo
-            set nocursorcolumn
+            if is_conemu
+                color retrobox
+            else
+                # cmd.exe window
+                color default
+            endif
         else
             color default
         endif
@@ -1559,6 +1557,10 @@ def ColorSchemeTweak()
 
     # fix cterm underline in CursorLineNr
     hi CursorLineNr cterm=NONE
+
+    if is_conemu
+        hi CursorLine ctermbg=1
+    endif
 enddef
 
 augroup vimrc
