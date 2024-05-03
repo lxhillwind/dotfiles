@@ -125,11 +125,17 @@ def Up()
 enddef
 
 def Down()
-    const index = line('.') - 1
-    if index >= len(b:lf.entries)
+    const props = prop_list(line('.'))
+    if len(props) == 0
         return
     endif
-    const entry = b:lf.entries[index]
+
+    const id = props[-1].id
+    if id >= b:lf.entries->len()
+        return
+    endif
+
+    const entry = b:lf.entries[id]
     if !entry.type->TypeIsDir()
         return
     endif
@@ -205,7 +211,7 @@ def RefreshDir(): bool
         const entry = b:lf.entries[i]
         const is_dir = TypeIsDir(entry.type)
         append(i, entry.name .. (is_dir ? '/' : ''))
-        prop_add(i + 1, 1, {length: len(entry.name) + 1, type: is_dir ? prop_dir : prop_not_dir,  bufnr: buf})
+        prop_add(i + 1, 1, {id: i, length: len(entry.name) + 1, type: is_dir ? prop_dir : prop_not_dir,  bufnr: buf})
     endfor
     normal! "_ddgg
 
