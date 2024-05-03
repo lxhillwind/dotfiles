@@ -1559,7 +1559,7 @@ def ColorSchemeTweak()
     hi CursorLineNr cterm=NONE
 
     if is_conemu
-        hi CursorLine ctermbg=1
+        hi CursorLine cterm=NONE ctermbg=1
     endif
 enddef
 
