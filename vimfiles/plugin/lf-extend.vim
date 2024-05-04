@@ -15,6 +15,10 @@ command -range -nargs=* LfMoveTo LfMoveTo(<line1>, <line2>, <q-args>)
 command -range -nargs=* LfCopyTo LfCopyTo(<line1>, <line2>, <q-args>)
 command -range LfDelete LfDelete(<line1>, <line2>)
 
+augroup lf_extend
+    au!
+augroup END
+
 def LfMoveTo(line1: number, line2: number, dest: string)
     LfActionProxy(action_move, line1, line2, dest)
 enddef
@@ -159,10 +163,9 @@ enddef
 const job_info_success = 'SUCC'
 const job_info_fail = 'FAIL'
 const job_info_wait = 'WAIT'
-def JobCallback(ctx: dict<any>, job: any, exitcode: number)
-    if ctx.current_index >= 0
-        ctx.entries[ctx.current_index].state = exitcode == 0 ? job_info_success : job_info_fail
-    endif
+
+def JobProgress(bufnr: number)
+    var ctx = getbufvar(bufnr, 'lf_extend_ctx')
     setbufline(ctx.bufnr, 1, $'COPY TO: {ctx.dest}')
     for i in range(len(ctx.entries))
         var entry = ctx.entries[i]
@@ -173,10 +176,22 @@ def JobCallback(ctx: dict<any>, job: any, exitcode: number)
         # i: 0 based index; line 1: buffer header; entry begins from line no 2.
         setbufline(ctx.bufnr, i + 2, line)
     endfor
+    if ctx->has_key('finished_at')
+        appendbufline(ctx.bufnr, '$', $'Finished at {ctx.finished_at}.')
+        if buflisted(ctx.bufnr)
+            setbufvar(ctx.bufnr, '&buflisted', false)
+        endif
+    endif
+enddef
+
+def JobCallback(ctx: dict<any>, job: any, exitcode: number)
+    if ctx.current_index >= 0
+        ctx.entries[ctx.current_index].state = exitcode == 0 ? job_info_success : job_info_fail
+    endif
     ctx.current_index += 1
-    if ctx.current_index >= ctx.entries->len()
-        # all copy job finished.
-        setbufvar(ctx.bufnr, '&buflisted', false)
+
+    const finished = ctx.current_index >= ctx.entries->len()
+    if finished
         var [count_ok, count_err] = [0, 0]
         for entry in ctx.entries
             if entry.state == job_info_success
@@ -185,7 +200,7 @@ def JobCallback(ctx: dict<any>, job: any, exitcode: number)
                 count_err += 1
             endif
         endfor
-        appendbufline(ctx.bufnr, '$', $'Finished at {strftime("%Y-%m-%d %H:%M:%S")}.')
+        ctx.finished_at = strftime("%Y-%m-%d %H:%M:%S")
         if count_err > 0
             popup_notification($'lf.vim: copy action failed: ok: {count_ok}; err: {count_err}.', {
                 highlight: 'ErrorMsg',
@@ -195,8 +210,14 @@ def JobCallback(ctx: dict<any>, job: any, exitcode: number)
                 highlight: 'Normal',
             })
         endif
+    endif
+
+    setbufvar(ctx.bufnr, 'lf_extend_ctx', ctx)
+    JobProgress(ctx.bufnr)
+    if finished
         return
     endif
+
     const entry = ctx.entries[ctx.current_index]
     var path_src = entry.dir .. entry.name
     var path_dest = ctx.dest
@@ -269,6 +290,7 @@ def ImplCopyTo(src_entries: list<dict<string>>, dest: string)
 
     var ctx = {entries: src_entries->deepcopy(), dest: dest, current_index: -1, bufnr: bufnr}
     JobCallback(ctx, null, 0)
+    execute $'au BufReadCmd <buffer={bufnr}> JobProgress({bufnr})'
 enddef
 
 def ImplDelete(src_entries: list<dict<string>>, dest: string)
