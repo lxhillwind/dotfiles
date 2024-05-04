@@ -31,6 +31,25 @@ augroup lf_plugin
 augroup END
 
 def Lf(arg: string, opt: dict<any> = {reuse_buffer: false}): bool
+    {
+        # check if unc path will hang, in an external job;
+        # this help avoid hanging vim's main thread.
+        #
+        # xcopy will check only cwd's top level entries (not recursively), and
+        # '/l' (dry run) option is provided; so it should be safe.
+        if has('win32')
+            const cwd = arg->substitute('\', '/', 'g')
+            if cwd =~ '\v^//.+/.+'
+                const job = job_start(['xcopy', cwd->substitute('/', '\\', 'g'), '/l', '/c'])
+                sleep 100m
+                if job_status(job) == 'run'
+                    echohl ErrorMsg | echo $'lf.vim: may hang on: "{cwd}"' | echohl None
+                    job_stop(job)
+                    return false
+                endif
+            endif
+        endif
+    }
     # simplify(): handle '..' in path.
     var cwd = arg->fnamemodify(':p')->simplify()
     # if arg is a file, then use its parent directory.
