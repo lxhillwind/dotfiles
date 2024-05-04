@@ -129,7 +129,6 @@ def Up()
         # move cursor to the dir entry where we go from.
         const target_name = old_cwd->substitute('/$', '', '')
             ->substitute('\v.*/', '', '')
-            .. '/'
         for i in range(line('$'))
             const line_no = i + 1
             if getline(line_no) == target_name
@@ -231,7 +230,7 @@ def RefreshDir(): bool
     for i in range(len(b:lf.entries))
         const entry = b:lf.entries[i]
         const is_dir = TypeIsDir(entry.type)
-        append(i, entry.name .. (is_dir ? '/' : ''))
+        append(i, entry.name)
         prop_add(i + 1, 1, {id: i, length: len(entry.name) + 1, type: is_dir ? prop_dir : prop_not_dir,  bufnr: buf})
     endfor
     normal! "_ddgg
