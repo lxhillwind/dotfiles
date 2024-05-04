@@ -148,7 +148,7 @@ const job_info_success = 'SUCC'
 const job_info_fail = 'FAIL'
 const job_info_wait = 'WAIT'
 def JobCallback(ctx: dict<any>, job: any, exitcode: number)
-    if job != null
+    if ctx.current_index >= 0
         ctx.entries[ctx.current_index].state = exitcode == 0 ? job_info_success : job_info_fail
     endif
     setbufline(ctx.bufnr, 1, $'COPY TO: {ctx.dest}')
@@ -205,7 +205,14 @@ def JobCallback(ctx: dict<any>, job: any, exitcode: number)
         #
         # So we just create a file at destination, then xcopy to it.
         if !isdirectory(path_src) && (!filereadable(path_dest))
-            ['tempfile created by lf-extend.vim to make xcopy work']->writefile(path_dest)
+            try
+                ['tempfile created by lf-extend.vim to make xcopy work']->writefile(path_dest)
+            catch /^Vim\%((\a\+)\)\=:E482:/
+                timer_start(0, (_) => {
+                    JobCallback(ctx, null, -1)
+                })
+                return
+            endtry
         endif
     endif
     const args = has('win32') ? (
