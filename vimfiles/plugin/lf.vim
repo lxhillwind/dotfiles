@@ -26,7 +26,11 @@ vim9script
 #     fi
 # }
 
-def Lf(arg: string): bool
+augroup lf_plugin
+    au!
+augroup END
+
+def Lf(arg: string, opt: dict<any> = {reuse_buffer: false}): bool
     # simplify(): handle '..' in path.
     var cwd = arg->fnamemodify(':p')->simplify()
     # if arg is a file, then use its parent directory.
@@ -45,7 +49,14 @@ def Lf(arg: string): bool
         cwd = cwd->substitute('\', '/', 'g')
     endif
 
-    noswapfile enew
+    if !opt.reuse_buffer
+        noswapfile enew
+        # this BufReadCmd action is used for reusing buffer;
+        # because props lose after re-edit buffer.
+        augroup lf_plugin
+            au BufReadCmd <buffer> Lf('.', {reuse_buffer: true})
+        augroup END
+    endif
     set buftype=nofile
     # this option is required to make <C-6> (switch back to this buffer) work
     # as expected; otherwise props will lose, causing RefreshDir() raise.
@@ -106,7 +117,12 @@ def Up()
         return
     endif
     const old_cwd = b:lf.cwd
-    b:lf.cwd = b:lf.cwd->substitute('[^/]\+/$', '', '')
+    const new_cwd = b:lf.cwd->substitute('[^/]\+/$', '', '')
+    if win_findbuf(bufnr())->len() > 1
+        Lf(new_cwd)
+        return
+    endif
+    b:lf.cwd = new_cwd
     if !RefreshDir()
         b:lf.cwd = old_cwd
     else
@@ -140,7 +156,12 @@ def Down()
         return
     endif
     const old_cwd = b:lf.cwd
-    b:lf.cwd = b:lf.cwd .. entry.name .. '/'
+    const new_cwd = b:lf.cwd .. entry.name .. '/'
+    if win_findbuf(bufnr())->len() > 1
+        Lf(new_cwd)
+        return
+    endif
+    b:lf.cwd = new_cwd
     if !RefreshDir()
         b:lf.cwd = old_cwd
     endif
