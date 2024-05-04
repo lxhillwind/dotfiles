@@ -80,9 +80,21 @@ def GetSrcEntries(line1: number, line2: number): list<dict<string>>
     const dir = b:->get('lf', {})->get('cwd', '') ?? getcwd()->fnamemodify(':p')->NormPath()
     var result = []
     for i in getline(line1, line2)
-        if !i->empty()
-            result->add({dir: dir, name: i})
+        if i->empty()
+            continue
         endif
+        var path_from_line = i->simplify()
+        if has('win32')
+            path_from_line = path_from_line->substitute('\', '/', 'g')
+        endif
+        var [i_dir, i_name] = ['', '']
+        i_dir = path_from_line->matchstr('\v.*/\ze[^/]+/?$')
+        if !i_dir->empty()
+            i_name = path_from_line[i_dir->len() : ]
+        else
+            [i_dir, i_name] = [dir, i]
+        endif
+        result->add({dir: i_dir, name: i_name})
     endfor
     return result
 enddef
