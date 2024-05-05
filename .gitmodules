@@ -58,3 +58,6 @@
 [submodule "vimfiles/pack/rc/opt/vimcomplete"]
 	path = vimfiles/pack/rc/opt/vimcomplete
 	url = https://github.com/girishji/vimcomplete
+[submodule "vimfiles/pack/lx/opt/lf.vim"]
+	path = vimfiles/pack/lx/opt/lf.vim
+	url = https://github.com/lxhillwind/lf.vim
