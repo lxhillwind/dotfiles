@@ -397,31 +397,15 @@ bind --mode=visual cd composite js "cd " + document.getSelection().toString() | 
 " some others defined below; like cq
 
 " read it later (all thing about <C-b>) {{{2
+bind <C-b> js let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = '- `' + document.title + '`' + `\n <${document.URL}>`; tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`))
 
-" preview current page.
-bind <C-b> js window.location = 'https://www.instapaper.com/text?u=' + encodeURIComponent(window.location.href);
-
-" ... then save it to read list.
-bindurl https://www.instapaper.com/text\?u=.* <C-b> hint -Jc .js_read_later
-
-" save from tridactyl reader mode.
-" id "tricanonlink" is from https://github.com/tridactyl/tridactyl/pull/3938/files#diff-f001cb9a1f05bafde7fad2a8ee1f61e63fde31a7ab69119ccb8405a0a79b6e3aR22
-bindurl moz-extension://.*/static/reader.html#.* <C-b> js const url = document.head.querySelector('#tricanonlink').href; window.location = 'https://www.instapaper.com/text?u=' + encodeURIComponent(url);
-
-" add link from instapaper webpage (main / next-pages / parse_url-error)
-bindurl https://www.instapaper.com/u(|/\d+|\?parse_url=.*)$ <C-b> hint -Jc a.article_add
-
-" open instapaper easily. (t <CR> <C-b>)
-bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.com/u
+bindurl moz-extension://.*/static/reader.html#.* <C-b> js alert('<C-b> is not available in reader mode!')
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
-bindurl https://news.ycombinator.com/(news|)(\?p=.*|)$ <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('span.titleline > a').href)); }
-bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.nextElementSibling.querySelector('a.u-url').href)); }
-bindurl https://www.protopage.com/lxhillwind <C-b> hint -qJc span.feed-widget-headline -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.parentNode.parentNode.parentNode.href)); }
-
-" multi mode
-bind ;<C-b> hint -qJc a -F e => { tri.excmds.tabopen("-b",'https://www.instapaper.com/text?u=' + encodeURIComponent(e.href)); }
+bindurl https://news.ycombinator.com/(news|)(\?p=.*|)$ <C-b> hint -qJc td.votelinks -F e => { tri.excmds.tabopen("-b", e.nextElementSibling.querySelector('span.titleline > a').href); }
+bindurl https://lobste.rs/(page/.*|)$ <C-b> hint -qJc div.voters -F e => { tri.excmds.tabopen("-b", e.nextElementSibling.querySelector('a.u-url').href); }
+bindurl https://www.protopage.com/lxhillwind <C-b> hint -qJc span.feed-widget-headline -F e => { tri.excmds.tabopen("-b", e.parentNode.parentNode.parentNode.href); }
 
 unbind --mode=visual <C-b>
 

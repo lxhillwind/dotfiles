@@ -22,6 +22,7 @@ def TerraformDoc(...arg: list<string>)
                 alicloud: 'aliyun',
                 dyn: 'terraform-providers',
                 vultr: 'vultr',
+                grafana: 'grafana',
             }->get(provider, 'hashicorp')
             const url = $'https://registry.terraform.io/providers/{group}/{provider}/latest/docs/{type}/{resource}'
             execute 'Sh -g' shellescape(url)
