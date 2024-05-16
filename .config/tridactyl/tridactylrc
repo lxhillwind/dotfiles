@@ -397,9 +397,7 @@ bind --mode=visual cd composite js "cd " + document.getSelection().toString() | 
 " some others defined below; like cq
 
 " read it later (all thing about <C-b>) {{{2
-bind <C-b> js let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = '- `' + document.title + '`' + `\n <${document.URL}>`; tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`))
-
-bindurl moz-extension://.*/static/reader.html#.* <C-b> js alert('<C-b> is not available in reader mode!')
+bind <C-b> js let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`))
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
