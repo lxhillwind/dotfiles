@@ -26,6 +26,9 @@ def PickAnyCli(cli: string) # {{{1
 enddef
 
 def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{1
+    if !executable('fzf')
+        throw 'command not found: fzf'
+    endif
     const fzf = (
         is_win32 && windowsversion()->str2float() <= 5.1
         ? 'fzf --color=16 --sort --cycle --reverse --inline-info'  # old fzf does not support --info.

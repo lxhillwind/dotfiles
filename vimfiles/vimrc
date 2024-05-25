@@ -120,10 +120,11 @@ g:sneak#label = 1
 #   :map t
 # then mapping for t disappeared.
 #
-# since I only map t / T (f / F not mapped), only set t / T below.
+# But I need f_reset / t_reset!
+# So leave them as default (1); and do not map f / t.
+#g:sneak#f_reset = 0
+#g:sneak#t_reset = 0
 # }}}
-g:sneak#f_reset = 1
-g:sneak#t_reset = 0
 # I do not use vim-surround, so preserve s / S for vim-sneak.
 xmap S <Plug>Sneak_S
 omap s <Plug>Sneak_s
