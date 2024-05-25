@@ -223,8 +223,12 @@ def Completor4Vimscript(findstart: number, base: string): any # {{{
                 return startcol
             endif
         else
-            return prefix4completion->getcompletion('cmdline')
-                ->mapnew((_, i) => ({word: i, menu: '', kind: 'c'}))
+            var result: list<string>
+            try
+                result = prefix4completion->getcompletion('cmdline')
+            catch
+            endtry
+            return result->mapnew((_, i) => ({word: i, menu: '', kind: 'c'}))
         endif
     endif
 enddef # }}}
