@@ -997,6 +997,11 @@ def Selection(): string
     return result
 enddef
 
+# v_cx; swap selection with last deleted text. {{{2
+# https://vim.fandom.com/wiki/Swapping_characters,_words_and_lines#Visual-mode_swapping
+# slightly modified.
+vnoremap cx <Esc>`.``gvp``P
+
 # gF / v_gF {{{2
 # (handle column nr; v_gF handle line / column nr)
 # using plugin/jump.vim.
