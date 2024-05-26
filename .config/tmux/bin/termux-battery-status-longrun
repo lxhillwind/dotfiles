@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# usage:
+# add to tmux.conf:
+#   run -b '~/.config/tmux/bin/termux-battery-status-longrun'
+
+if ! command -v termux-battery-status >/dev/null; then
+    exit 0
+fi
+
+sh -c '
+while :; do
+    termux-battery-status | jq .percentage > "$TMPDIR"/termux-battery.log
+    flock -F -xn "$TMPDIR/termux-battery.lock" sleep 60 || break
+done
+' &
+
+sleep 2
+tmux set -ag status-right ' 电池:#(cat "$TMPDIR/termux-battery.log")%%'
