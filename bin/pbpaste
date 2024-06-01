@@ -13,10 +13,6 @@ elif [ -x /usr/bin/wslpath ]; then
     powershell.exe -command Get-Clipboard | tr '\n' '\0' | sed -E 's/\r//g; s/.$//' | tr '\0' '\n'
 elif [ -n "$DISPLAY" ]; then
     exec xsel -ob
-elif [ -n "$SSH_CLIENT" ] && \
-    [ "$CLIPBOARD_SSH" != '0' ] && \
-    timeout 1 curl -s -f "${CLIPBOARD_SSH:-10.0.2.2:8000}"/http-board-ping >/dev/null 2>&1; then
-    exec curl -s "${CLIPBOARD_SSH:-10.0.2.2:8000}"/raw
 elif [ -n "$TMUX" ]; then
     exec tmux saveb -
 else
