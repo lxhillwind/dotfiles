@@ -803,12 +803,6 @@ if !has('gui_running')
     set mouse=
 endif
 
-# IME {{{2
-if is_win32
-    # when im is on in insert mode, esc to normal mode with im off.
-    set iminsert=2
-endif
-
 # fix scroll behavior (H, L, zz, zt, zb ...) {{{2
 # this may be set by /etc/vimrc (e.g. in fedora); let's recover it.
 set scrolloff=0

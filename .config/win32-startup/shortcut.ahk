@@ -67,6 +67,17 @@ RunOrRaise(class, run, where)
 ; switch desktop (alt+[, alt+]) {{{1
 ![::Send #^{Left}
 !]::Send #^{Right}
-; ctrl-space to switch input method (windows 8+ only) {{{1
-; (requires setting en-us keyboard as default
-^space::Send, #{space}
+; ctrl-space to switch input method {{{1
+;
+; Install an external IME; then ctrl+space is the default key
+; to switch between IME / no-IME state; no need to set ahk keybinding.
+; But this does not work for windows 7.
+;
+; windows 8+ (if do not want to use external IME):
+; send key win+space (require adding en-US keyboard);
+;^space::Send, #{space}
+;
+; windows 7:
+; send key ctrl+shift (require adding en-US keyboard, and set
+; ctrl+shift as key to switch between input language);
+;^space::Send, ^{shift}
