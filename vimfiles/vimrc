@@ -991,18 +991,13 @@ def Selection(): string
     return result
 enddef
 
-# v_cx; swap selection with last deleted text. {{{2
-# https://vim.fandom.com/wiki/Swapping_characters,_words_and_lines#Visual-mode_swapping
-# slightly modified.
-vnoremap cx <Esc>`.``gvp``P
-
 # gF / v_gF {{{2
 # (handle column nr; v_gF handle line / column nr)
 # using plugin/jump.vim.
 nmap gF <Plug>(jump_to_file)
 xmap gF <Plug>(jump_to_file)
 
-# terminal escape; {{{2
+# t_<C-t>; escape from terminal {{{2
 # used to use <C-Space>, but it may be occupied by DE / OS. {{{
 # I don't use <C-t> key in terminal, so it's ok to map it. }}}
 tnoremap <C-t> <C-\><C-n>
@@ -1223,13 +1218,35 @@ def SwitchReaderMode()
     endif
 enddef
 
-# cd; search cword with bing dict (in web browser) {{{2
-nnoremap cd <ScriptCmd>OpenDict()<CR>
-def OpenDict()
-    const word = expand('<cword>')
-    if !empty(word)
-        execute 'Sh -g' shellescape($'https://www.iciba.com/word?w={word}')
+# v_<Space>cx; swap selection with last deleted text. {{{2
+# https://vim.fandom.com/wiki/Swapping_characters,_words_and_lines#Visual-mode_swapping
+# slightly modified.
+xnoremap <Space>cx <Esc>`.``gvp``P
+
+# v_<Space>w; search selection with browser (requires tridactyl config) {{{2
+xnoremap <Space>w :SearchWith<Space>
+command -range -nargs=1 SearchWith SearchWith(<q-args>)
+def SearchWith(keyword: string)
+    const tmp = @"
+    normal! gvy
+    const selection = @"
+    @" = tmp
+    const url_template = execute(
+        'Sh '
+        ..
+        $'grep -F -- "set searchurls."{shellescape(keyword)}" " ~/.config/tridactyl/tridactylrc'
+        ..
+        ' | awk "/^set/ { print \$3 }"'
+    )
+    if url_template->match('^http') < 0
+        throw $'vimrc: SearchWith: unable to get search engine "{keyword}"'
     endif
+    const i = url_template->match('\V%s')
+    if i < 0
+        throw $'vimrc: SearchWith: search engine "{keyword}" does not contain "%s"'
+    endif
+    const url = url_template[ : i - 1] .. selection .. url_template[i + 2 : ]
+    execute 'Sh -g' shellescape(url)
 enddef
 
 # Autocmd {{{1
@@ -1254,6 +1271,15 @@ augroup vimrc
     }
     # completion from vim's help page into vim
     au FileType help setl iskeyword+=^'
+
+    # set completeopt when entering insert mode; {{{2
+    # because vimcomplete set &completeopt unconditionally without honoring
+    # user's setting;
+    au InsertEnter * {
+        if has('patch-9.1.0463') && &completeopt->match('\<fuzzy\>') < 0
+            noautocmd set completeopt+=fuzzy
+        endif
+    }
 
     # quickfix window {{{2
     au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
