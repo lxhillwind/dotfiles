@@ -325,7 +325,7 @@ bindurl old.reddit.com c hint -bJc a.bylink.comments.may-blank
 bindurl v2ex.com c hint -bJc a.topic-link
 
 " discourse site
-autocmd DocLoad .* js if (document.querySelector('tbody.topic-list-body')) tri.excmds.bindurl(document.location.href, 'c', 'hint -qbJc td.main-link > span > a.title')
+autocmd DocLoad .* js if (document.querySelector('tbody.topic-list-body')) tri.excmds.bindurl(document.location.href, 'c', 'hint -bJc td.main-link > span > a.title')
  " }}}
 
 " bind c to close popup {{{
@@ -371,7 +371,8 @@ autocmd DocStart ^http(s?)://www.reddit.com/r/ urlmodify -t www old
 " toggle dark mode {{{
 command toggle-color js ( () => { let target = 'invert(100%)'; let style = document.querySelector('html').style; if (style.filter == target) { style.filter = ''; document.querySelectorAll('img').forEach(i => { i.style.filter = ''; }) } else { style.filter = target; document.querySelectorAll('img').forEach(i => { i.style.filter = target; }); } } )()
 
-autocmd DocLoad ^https://ziggit.dev toggle-color
+" as an example; commented out as it supports light color now (2024-06-08).
+"autocmd DocLoad ^https://ziggit.dev toggle-color
 " }}}
 
 " Command / Bind override {{{1
@@ -424,7 +425,7 @@ bind --mode=visual cq qrcode_visual
 bind --mode=visual <C-i> js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim -f -`, document.getSelection().toString()))
 
 " notepad (add selection and url to a text file) (native) {{{2
-command save_notes js let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString().replace(/^/gm, ' '.repeat(4)); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/web.md +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`))
+command save_notes js let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString().replace(/^/gm, ' '.repeat(4)); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/read-it-later/_web-clip-text.md +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`))
 bind --mode=visual cs save_notes
 
 " custom Menus {{{1

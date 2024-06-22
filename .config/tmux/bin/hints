@@ -2,7 +2,7 @@
 set -e
 
 # also see:
-# ~/vimfiles/plugin/hints.vim
+# ~/vimfiles/bin/hints.vim
 
 popup_width=$(tmux display -p '#{pane_width}')
 # vim requires 1 line at bottom.

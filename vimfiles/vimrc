@@ -82,6 +82,10 @@ g:markdown_fenced_languages = [
 # https://github.com/vim/vim/issues/7628
 packadd! matchit
 
+# use bundled comment plugin.
+# use ":silent!" since the plugin is introduced in quite recent commit.
+silent! packadd! comment
+
 # my {{{2
 packadd! vim-jump
 packadd! vim-sh
@@ -1008,7 +1012,19 @@ def SpaceGSetup(): string
     if !exists('b:space_g')
         const cmd = {
             go: 'go run %',
-            javascript: 'node %',
+            javascript: (() => {
+                if executable('qjs')
+                    return 'qjs %'
+                elseif executable('bun')
+                    return 'bun run %'
+                elseif executable('deno')
+                    return 'deno run %'
+                elseif executable('deno')
+                    return 'node %'
+                else
+                    return ''
+                endif
+            })(),
             python: 'python3 %',
             scheme: 'scheme-run %',
             sh: (getline(1)->match('\v^\#\!.*<bash>') >= 0 ? 'bash' : 'sh') .. ' %:p',
@@ -1231,10 +1247,11 @@ def SearchWith(keyword: string)
     normal! gvy
     const selection = @"
     @" = tmp
+    const pat = shellescape($'set searchurls.{keyword} ')
     const url_template = execute(
         'Sh '
         ..
-        $'grep -F -- "set searchurls."{shellescape(keyword)}" " ~/.config/tridactyl/tridactylrc'
+        $'grep -Fh -- {pat} ~/.config/tridactyl/tridactylrc ~/.tridactylrc 2>/dev/null'
         ..
         ' | awk "/^set/ { print \$3 }"'
     )
