@@ -910,6 +910,15 @@ if is_win32 && has('vim_starting') && !empty(maparg('<C-x>', 'v'))
     vunmap <C-x>
 endif
 
+# <M-c> / <M-v> in gui {{{2
+if has('gui_running')
+    xnoremap <M-c> "+y
+    nnoremap <M-v> "+p
+    inoremap <M-v> <C-r>+
+    cnoremap <M-v> <C-r>+
+    tnoremap <M-v> <C-w>"+
+endif
+
 # <M-hjkl> {{{2
 tnoremap <M-h> <C-w>h
 tnoremap <M-j> <C-w>j
