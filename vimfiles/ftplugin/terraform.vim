@@ -33,3 +33,14 @@ def TerraformDoc(...arg: list<string>)
         endif
     endif
 enddef
+
+# override vim's builtin terraform ftplugin.
+for terraform_ftlugin in [
+        globpath($VIMRUNTIME, 'ftplugin/terraform.vim'),
+        globpath(expand('~/vimfiles/pack'), '*/opt/vim-terraform/ftplugin/terraform.vim'),
+        ]
+    if terraform_ftlugin->filereadable()
+        silent! unlet b:did_ftplugin
+        exec 'source' terraform_ftlugin->fnameescape()
+    endif
+endfor

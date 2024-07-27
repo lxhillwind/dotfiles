@@ -1643,6 +1643,9 @@ enddef
 command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
     | diffthis | wincmd p | diffthis
 
+# :HtmlBeautify; command `tidy` does not work sometimes. {{{2
+command! -range=% HtmlBeautify :<line1>,<line2>s/>\ze</&\r/g
+
 # <range>:J sep... (`J` with custom seperator) {{{2
 command! -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
 def JoinLines(sep: string, range: number, line1: number, line2: number)

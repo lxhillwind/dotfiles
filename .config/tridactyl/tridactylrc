@@ -287,8 +287,22 @@ bind <ContextMenu> novel_mode
 
 " Site Settings {{{1
 
-" certain sites are broken. auto enter ignore mode on them.
+" If input is broken: {{{
+" If we want to avoid page stealing input on load, then
+" "preventautofocusjackhammer" may be used; but be aware that it costs high cpu.
+
+" If normal mode is preferred, but stealing focus from (non-standard) input should be allowed.
+"   aws / aliyun console: these are only used to illustrate how to set;
+" more sites (instances): grafana, ant design; (no fixed url, so set in ~/.tridactylrc)
+seturl ^https://.*console.aws.amazon.com allowautofocus true
+seturl ^https://.*console.aliyun.com allowautofocus true
+
+" Some sites steal input heavily. auto enter ignore mode on them.
 blacklistadd ^https://docs.google.com/.*/edit
+
+" If input should be completely controlled by page, like in vnc / rdp site, then
+" "superignore" may be used. NOTE that <C-,> won't work there.
+" }}}
 
 " some general rule:
 " - bind c for site specific hint;
@@ -362,6 +376,15 @@ bindurl ^https://www.qidian.com <S-Space> scrollpage -0.97
 " (if we block modal with uBlock Origin)
 bindurl (zhuanlan.|)zhihu.com <Space> scrollpage 0.90
 bindurl (zhuanlan.|)zhihu.com <S-Space> scrollpage -0.90
+" }}}
+
+" navigation fix for some sites {{{
+" bing.com
+autocmd DocLoad ^https?://(www|cn).bing.com/search js (document.querySelector('li > a[aria-label="Next page"]') || {}).rel = "next"; (document.querySelector('li > a[aria-label="Previous page"]') || {}).rel = "prev"
+
+" baidu.com: page button is not generated yet when `DocLoad`, so not able to set like bing.com.
+bindurl ^https?://www.baidu.com/s\? [[ js document.querySelectorAll('div#page a.n').forEach(i => /上一页/.test(i.innerText) && i.click())
+bindurl ^https?://www.baidu.com/s\? ]] js document.querySelectorAll('div#page a.n').forEach(i => /下一页/.test(i.innerText) && i.click())
 " }}}
 
 " site redirection {{{
