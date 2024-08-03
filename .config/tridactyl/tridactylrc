@@ -452,25 +452,36 @@ command save_notes js let utoa = data => btoa(unescape(encodeURIComponent(data))
 bind --mode=visual cs save_notes
 
 " custom Menus {{{1
-jsb browser.contextMenus.create({ id: "qrcode", title: "生成二维码: 当前网址", contexts: ["page"], });
-jsb browser.contextMenus.create({ id: "qrcode_visual", title: "生成二维码: '%s'", contexts: ["selection"], });
-jsb browser.contextMenus.create({ id: "save_notes", title: "保存笔记...: '%s'", contexts: ["selection"], });
+jsb tri.lx = tri.lx ?? {}
+jsb tri.lx.menus = tri.lx.menus ?? {}
+" object key is id;
+" and if `excmd` is not in value, id is also excmd.
+" To unset an entry, just assign value to null / undefined, then `refresh_menu`.
+jsb tri.lx.menus.qrcode = { title: "生成二维码: 当前网址", contexts: ["page"], }
+jsb tri.lx.menus.qrcode_visual = { title: "生成二维码: '%s'", contexts: ["selection"], }
+jsb tri.lx.menus.save_notes = { title: "保存笔记...: '%s'", contexts: ["selection"], }
+jsb tri.lx.menus.refresh_menu = { title: "刷新上下文菜单", contexts: ["page"], }
 
-" NOTE: avoid addListener repeatedly.
-jsb if (tri.lx_menus_listener) browser.contextMenus.onClicked.removeListener(tri.lx_menus_listener); \
-tri.lx_menus_listener = (info, tab) => { \
-    if (info.menuItemId === "qrcode") { tri.excmds.composite('qrcode'); } \
-    if (info.menuItemId === "qrcode_visual") { tri.excmds.composite('qrcode_visual'); }; \
-    if (info.menuItemId === "save_notes") { tri.excmds.composite('save_notes'); }; \
-}; browser.contextMenus.onClicked.addListener(tri.lx_menus_listener);
+command refresh_menu jsb \
+    if (tri.lx.menus_listener) \
+        browser.contextMenus.onClicked.removeListener(tri.lx.menus_listener); \
+    browser.contextMenus.removeAll().then(_ => \
+        Object.entries(tri.lx.menus).forEach(([key, val]) => { \
+            if (val) browser.contextMenus.create({ id: key, title: val.title, contexts: val.contexts, }) \
+    })); \
+    tri.lx.menus_listener = (info, tab) => { \
+        let val = tri.lx.menus[info.menuItemId]; \
+        if (val) { tri.excmds.composite(val.excmd ?? info.menuItemId); } \
+    }; browser.contextMenus.onClicked.addListener(tri.lx.menus_listener)
 
 " Private {{{1
 
 quickmark p https://www.protopage.com/lxhillwind
 quickmark s http://127.0.0.1:8384/
 
-" Load local config and alert for finish {{{1
+" Load local config, setup ContextMenu, and alert for finish {{{1
 source ~/.tridactylrc
+refresh_menu
 js alert("tridactylrc loaded.")
 
 " (<Visual>:ctt<Tab>) copy multiline stmt to be use in tridactyl exmode. {{{1 }}}
