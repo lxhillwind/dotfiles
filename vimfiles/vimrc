@@ -1688,6 +1688,27 @@ def InitScratchPad(force: bool)
     silent execute 'cd' scratch_home->fnameescape()
 enddef
 
+# :MacroDump / :MacroSet;  save / restore macro from line {{{2
+command! -nargs=1 MacroDump MacroDump(<q-args>)
+command! -nargs=1 MacroSet MacroSet(<q-args>)
+
+def MacroDump(reg: string)
+    if reg !~ '^[a-z]$' | throw 'except single char (register)' | endif
+    # in terminal vim, if set "ttimeoutlen" to a positive value,
+    # "<Esc>" will be recorded as "\x1b\x80\xfd5",
+    # which in file will cause trouble in encoding detection.
+    setline('.', getreg(reg)->substitute("\x1b\x80\xfd5", "\<Esc>", 'g'))
+enddef
+
+def MacroSet(reg: string)
+    if reg !~ '^[a-z]$' | throw 'except single char (register)' | endif
+    # "<Esc>" alone will not work if "ttimeoutlen" is a positive value in
+    # terminal vim;
+    # longer version of it works in other vim instance (gui or no ttimeoutlen);
+    # so set it unconditionally.
+    setreg(reg, getline('.')->substitute("\<Esc>", "\x1b\x80\xfd5", 'g'))
+enddef
+
 # :MatchLongLine {number} {{{2
 # Refer: https://stackoverflow.com/a/1117367
 command! -nargs=1 MatchLongLine exe ':/\%>' .. <args> .. 'v.\+'

@@ -32,7 +32,7 @@ sky = SkyRocket:new({
   -- Which mouse button to hold to resize a window?
   resizeMouseButton = 'right',
 
-  disabledApps = {},
+  disabledApps = {'UTM'},
 })
 -- }}}
 
@@ -77,14 +77,11 @@ bindApp(",", "Firefox", true)
 -- ref: https://superuser.com/a/1146999
 bindApp(".", "MacVim")
 -- selection in tmux: it's visually better with kitty than iterm2.
---
--- 2024-01-22 update: kitty cmd+p (default: hint action) cannot be unmapped,
--- which causes trouble (I use it heavily in tmux).
--- Switch back to iterm2.
---bindApp("/", "kitty")
-bindApp("/", "iterm")
+bindApp("/", "kitty")
 -- this is actually option+e on keyboard; it is set by karabiner (option-e.json)
-bindApp("e", "Double Commander", true)
+-- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
+-- revert to Finder.
+bindApp("e", "Finder", true)
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
 -- if hammerspoon is not started yet.
