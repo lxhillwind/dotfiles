@@ -1697,7 +1697,9 @@ def MacroDump(reg: string)
     # in terminal vim, if set "ttimeoutlen" to a positive value,
     # "<Esc>" will be recorded as "\x1b\x80\xfd5",
     # which in file will cause trouble in encoding detection.
-    setline('.', getreg(reg)->substitute("\x1b\x80\xfd5", "\<Esc>", 'g'))
+    #
+    # The "\x80\xfd5" occurs in some other places; replace them all.
+    setline('.', getreg(reg)->substitute("\x80\xfd5", "", 'g'))
 enddef
 
 def MacroSet(reg: string)
