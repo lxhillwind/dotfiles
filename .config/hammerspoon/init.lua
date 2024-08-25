@@ -59,10 +59,10 @@ hs.hotkey.bind(hyper, "return", toggleWindowMaximized)
 -- since macOS fullscreen will move window to new workspace,
 -- then app show all window won't work as expected
 
-function bindApp(char, app, with_shift) -- {{{
+function bindApp(char, app, modifier) -- {{{
     local key = hyper
-    if with_shift ~= nil then
-        key = hyper_shift
+    if modifier ~= nil then
+        key = modifier
     end
     hs.hotkey.bind(key, char, function()
         hs.application.launchOrFocus(app)
@@ -71,17 +71,18 @@ end -- }}}
 
 -- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
 -- 然后此处设置带 shift 的.
-bindApp(",", "Firefox", true)
+bindApp(",", "Firefox", hyper_shift)
 -- 将 gVim 设置为所有桌面可见, 充当记事本 (scratchpad);
 -- macos: "Right click on the application icon in the dock -> options -> All Desktops"
 -- ref: https://superuser.com/a/1146999
 bindApp(".", "MacVim")
 -- selection in tmux: it's visually better with kitty than iterm2.
 bindApp("/", "kitty")
--- this is actually option+e on keyboard; it is set by karabiner (option-e.json)
 -- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
 -- revert to Finder.
-bindApp("e", "Finder", true)
+bindApp("e", "Finder", meta)
+
+bindApp("s", "KeePassXC", meta)
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
 -- if hammerspoon is not started yet.
@@ -96,8 +97,7 @@ function showClipboard() -- {{{
 end -- }}}
 -- use copyq instead.
 --hs.hotkey.bind(meta, "i", showClipboard)
--- need to bind option+l to shift+option+l in karabiner.
-hs.hotkey.bind({"alt", "shift"}, "l", hs.caffeinate.lockScreen)
+hs.hotkey.bind(meta, "l", hs.caffeinate.lockScreen)
 
 -- move current window to the space
 -- https://stackoverflow.com/questions/46818712/using-hammerspoon-and-the-spaces-module-to-move-window-to-new-space

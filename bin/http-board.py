@@ -118,11 +118,12 @@ def api():
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--host', type=str, default='localhost', nargs='?')
     parser.add_argument('port', type=int, default=8000, nargs='?')
     parser.add_argument('-c', '--clipboard', action='store_true', help='using system clipboard')
     args = parser.parse_args()
     GLOBAL_OPTION['clipboard'] = args.clipboard
-    app.run(host='localhost', port=args.port)
+    app.run(host=args.host, port=args.port)
 
 
 if __name__ == '__main__':

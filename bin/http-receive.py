@@ -4,6 +4,7 @@
 reverse of http-serve
 '''
 
+import argparse
 import os
 from flask import request, abort, Flask
 from werkzeug.utils import secure_filename
@@ -33,5 +34,9 @@ def root():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', type=str, default='localhost', nargs='?')
+    parser.add_argument('port', type=int, default=8000, nargs='?')
     print(f'\x1b[1;36mcwd: {cwd}\x1b[0m')
-    app.run('localhost', port=8000)
+    args = parser.parse_args()
+    app.run(host=args.host, port=args.port)

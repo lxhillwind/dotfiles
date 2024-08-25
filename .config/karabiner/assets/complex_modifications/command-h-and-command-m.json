@@ -1,10 +1,18 @@
 {
-    "title": "Set Command+h to Option+h, Command+m to Option+m",
+    "title": "Set Command+h to Option+h, Command+m to Option+m (unless utm)",
     "rules": [
         {
-            "description": "Set Command+h to Option+h",
+            "description": "Set Command+h to Option+h (unless utm)",
             "manipulators": [
                 {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^com.utmapp.UTM$"
+                            ],
+                            "type": "frontmost_application_unless"
+                        }
+                    ],
                     "from": {
                         "key_code": "h",
                         "modifiers": {
@@ -26,9 +34,17 @@
             ]
         },
         {
-            "description": "Set Command+m to Option+m",
+            "description": "Set Command+m to Option+m (unless utm)",
             "manipulators": [
                 {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^com.utmapp.UTM$"
+                            ],
+                            "type": "frontmost_application_unless"
+                        }
+                    ],
                     "from": {
                         "key_code": "m",
                         "modifiers": {
