@@ -25,7 +25,8 @@
                         {
                             "key_code": "e",
                             "modifiers": [
-                                "left_option"
+                                "left_option",
+                                "shift"
                             ]
                         }
                     ],
