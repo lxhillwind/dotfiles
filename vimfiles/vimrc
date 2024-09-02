@@ -96,7 +96,19 @@ g:table_im#auto_commit = true
 g:table_im#table_file = () => {
     for i in [
             '~/vimfiles/config/flypy.ini',
-            '~/notes-local/鹤形-related/all-utf8.ini',
+            '~/notes-local/鹤形-related/flypy.ini',
+    ]
+        const p = expand(i)
+        if filereadable(p)
+            return p
+        endif
+    endfor
+    return ''
+}()
+g:table_im#table_second = () => {
+    for i in [
+            '~/vimfiles/config/tiger.ini',
+            '~/notes-local/鹤形-related/tiger.ini',
     ]
         const p = expand(i)
         if filereadable(p)
