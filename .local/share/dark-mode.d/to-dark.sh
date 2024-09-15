@@ -5,10 +5,6 @@
 # - xfce-theme-manager
 # - arc-gtk-theme
 # - papirus-icon-theme
-#
-# optional dep:
-# - xfce4-terminal
-# - git-delta
 
 case "${0##*/}" in
     *dark*)
@@ -88,18 +84,18 @@ if [ -e "$config_path" ] && [ -n "$old_config" ]; then
 fi
 
 # kitty terminal {{{1
-# requires files:
-# - ~/.config/kitty/Atom.conf
-# - ~/.config/kitty/AtomOneLight.conf
-# get them from:
-#   https://github.com/kovidgoyal/kitty-themes
 config_path=~/.config/kitty/local.conf
-sed -i '/include.*Atom.*conf/d' "$config_path"
+sed -E -i '/^(foreground|background)/d' "$config_path"
 {
+    # color is from base16-dynamic.vim
     if [ "$theme" = dark ]; then
-        printf '%s\n%s\n' '#include ./AtomOneLight.conf' 'include ./Atom.conf'
+        printf '%s\n%s\n' \
+            'background #383a42' \
+            'foreground #fafafa'
     else
-        printf '%s\n%s\n' 'include ./AtomOneLight.conf' '#include ./Atom.conf'
+        printf '%s\n%s\n' \
+            'foreground #383a42' \
+            'background #fafafa'
     fi
 } >> "$config_path"
 

@@ -80,8 +80,6 @@ bindApp(".", "MacVim")
 bindApp("/", "kitty")
 -- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
 -- revert to Finder.
---
--- in firefox, cmd-e is mapped to shift-option-e (instead of option-e).
 bindApp("e", "Finder", meta)
 
 bindApp("s", "KeePassXC", meta)

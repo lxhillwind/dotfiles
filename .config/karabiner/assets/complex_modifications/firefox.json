@@ -23,9 +23,9 @@
                     },
                     "to": [
                         {
-                            "key_code": "e",
+                            "key_code": "2",
                             "modifiers": [
-                                "left_option",
+                                "command",
                                 "shift"
                             ]
                         }
@@ -51,9 +51,10 @@
                     },
                     "to": [
                         {
-                            "key_code": "g",
+                            "key_code": "1",
                             "modifiers": [
-                                "left_option"
+                                "command",
+                                "shift"
                             ]
                         }
                     ],
