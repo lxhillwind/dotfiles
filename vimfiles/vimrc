@@ -1587,6 +1587,12 @@ augroup vimrc
         endfor
     }
 
+    # macvim: avoid stealing focus after closing a vim window. {{{2
+    # this is from ":h macvim-hints".
+    if has('gui_macvim')
+        au VimLeave * maca hide:
+    endif
+
 augroup END  # {{{2
 
 # Colorscheme {{{1

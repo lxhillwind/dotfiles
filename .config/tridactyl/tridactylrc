@@ -39,11 +39,11 @@ set configversion 2.0
 sanitise tridactyllocal
 
 " Inject our functions to js / jsb. {{{1
-" there is no way to define it to make new page see it automatically;
-" so we do this magic (monkey patch?).
-" search `magic_define` for usage.
+" learned this trick from:
+"   https://github.com/tridactyl/tridactyl/wiki/Commentary-of-Gholk's-Tridactylrc#reuse-js-code
+" search `js_magic` for usage.
 
-command magic_define js \
+command js_magic js \
 tri.lx = {}; \
 tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
 tri.lx.is_mac = /^Mac/.test(navigator.platform); \
@@ -53,7 +53,29 @@ if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic
 if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
 ;
 
-jsb tri.excmds.composite('magic_define')
+" copied from js_magic
+command js_magic_p js -p \
+tri.lx = {}; \
+tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
+tri.lx.is_mac = /^Mac/.test(navigator.platform); \
+tri.lx.is_linux = /^Linux/.test(navigator.platform); \
+tri.lx.sh = (...arg) => tri.native.run(...arg); \
+if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${arg[0]}`, ...arg.slice(1)); \
+if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
+;
+
+" copied from js_magic
+command js_magic_d js -d● \
+tri.lx = {}; \
+tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
+tri.lx.is_mac = /^Mac/.test(navigator.platform); \
+tri.lx.is_linux = /^Linux/.test(navigator.platform); \
+tri.lx.sh = (...arg) => tri.native.run(...arg); \
+if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${arg[0]}`, ...arg.slice(1)); \
+if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
+;
+
+jsb tri.excmds.composite('js_magic')
 
 " about:config {{{1
 
@@ -113,7 +135,7 @@ set searchurls.cnf https://command-not-found.com/%s
 set searchurls.co https://www.collinsdictionary.com/english/%s
 set searchurls.dg https://duckduckgo.com/?q=%s
 set searchurls.gd https://drive.google.com/drive/search?q=%s
-set searchurls.gg https://www.google.com/search?q=%s
+set searchurls.gg https://www.google.com/search?q=%s&hl=en_US
 set searchurls.ip https://www.ip138.com/iplookup.asp?ip=%s&action=2
 set searchurls.man https://man.archlinux.org/search?q=%s&go=Go
 set searchurls.man-a https://man.archlinux.org/search?q=%s
@@ -253,6 +275,12 @@ bind --mode=insert <C-u> text.backward_kill_line
 bind --mode=ex <C-k> text.kill_line
 bind --mode=input <C-k> text.kill_line
 bind --mode=insert <C-k> text.kill_line
+
+" <C-i> in exmode to edit cmdline with editor {{{2
+bind --mode=ex <C-i> js tri.editor.beginning_of_line(); tri.editor.insert_text('edit_cmdline '); tri.excmds.composite('ex.accept_line')
+" slice(1): JS_ARGS[0] is `""`, which is not needed;
+" printf "XXX": XXX may be empty, so quote it.
+command edit_cmdline js_magic_d let utoa = data => btoa(unescape(encodeURIComponent(data))); tri.lx.sh(`tmpfile=$(mktemp); printf "${utoa(JS_ARGS.slice(1).join(' '))}" | base64 -d > "$tmpfile"; gvim -f "$tmpfile"; cat "$tmpfile" && rm -- "$tmpfile"`).then(res => tri.excmds.fillcmdline(res.content))●
 
 " read novel (with numpad) {{{2
 " <Insert> key on Mac cannot be not recognized, according to:
@@ -401,8 +429,8 @@ command toggle-color js ( () => { let target = 'invert(100%)'; let style = docum
 " Command / Bind override {{{1
 
 " then ":! " and ":!s " also work.
-command exclaim js -d€ tri.excmds.composite('magic_define').then(_ => tri.lx.sh(JS_ARGS.join(' '))).then(res => tri.excmds.fillcmdline(res.content))€
-command exclaim_quiet js -d€ tri.excmds.composite('magic_define').then(_ => tri.lx.sh(JS_ARGS.join(' ')))€
+command exclaim js_magic_d tri.lx.sh(JS_ARGS.join(' ')).then(res => tri.excmds.fillcmdline(res.content))●
+command exclaim_quiet js_magic_d tri.lx.sh(JS_ARGS.join(' '))●
 
 " fix image search
 bind ;m composite hint -Jpipe img src | js -p if (JS_ARG) tri.excmds.open(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
@@ -421,7 +449,7 @@ bind --mode=visual cd composite js "cd " + document.getSelection().toString() | 
 " some others defined below; like cq
 
 " read it later (all thing about <C-b>) {{{2
-bind <C-b> js let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`))
+bind <C-b> js_magic let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`)
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
@@ -432,7 +460,7 @@ bindurl https://www.protopage.com/lxhillwind <C-b> hint -qJc span.feed-widget-he
 unbind --mode=visual <C-b>
 
 " quickmark (native) {{{2
-command quickmark_fs js -p if (/^[a-zA-Z0-9]$/.test(JS_ARG)) tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`)))
+command quickmark_fs js_magic_p if (/^[a-zA-Z0-9]$/.test(JS_ARG)) tri.lx.sh(`gvim ~/.tridactylrc +"normal G" +"keeppatterns ?^quickmark " +"r !printf ${btoa(document.location)} | base64 -d" +"normal Iquickmark ${JS_ARG} "`).then(_ => tri.excmds.fillcmdline(`quickmark ${JS_ARG}`))
 
 bind M gobble 1 quickmark_fs
 
@@ -445,10 +473,10 @@ command qrcode_visual qrcode qrcode_visual
 bind --mode=visual cq qrcode_visual
 
 " edit selection in vim (native) {{{2
-bind --mode=visual <C-i> js tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim -f -`, document.getSelection().toString()))
+bind --mode=visual <C-i> js_magic tri.lx.sh(`gvim -f -`, document.getSelection().toString())
 
 " notepad (add selection and url to a text file) (native) {{{2
-command save_notes js let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString().replace(/^/gm, ' '.repeat(4)); tri.excmds.composite('magic_define').then(_ => tri.lx.sh(`gvim ~/notes-local/read-it-later/_web-clip-text.md +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`))
+command save_notes js_magic let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString().replace(/^/gm, ' '.repeat(4)); tri.lx.sh(`gvim ~/notes-local/read-it-later/_web-clip-text.md +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`)
 bind --mode=visual cs save_notes
 
 " custom Menus {{{1
