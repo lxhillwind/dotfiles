@@ -27,6 +27,11 @@
 " - vmap fix: even if we use "--mode=normal", the key is vmap-ed;
 "   so here is some "unbind --mode=visual " stmt;
 "   no need to specify "--mode=normal" when bind.
+"
+" - base64 (pipe data from js to sh): win32 command line argument length is quite short,
+"   so use stdin to pass data if possible;
+"   In some case, we need to pass data to gvim (like in ":quickmark_fs"),
+"   where stdin does not work.
 
 " Pre {{{1
 
@@ -280,7 +285,7 @@ bind --mode=insert <C-k> text.kill_line
 bind --mode=ex <C-i> js tri.editor.beginning_of_line(); tri.editor.insert_text('edit_cmdline '); tri.excmds.composite('ex.accept_line')
 " slice(1): JS_ARGS[0] is `""`, which is not needed;
 " printf "XXX": XXX may be empty, so quote it.
-command edit_cmdline js_magic_d let utoa = data => btoa(unescape(encodeURIComponent(data))); tri.lx.sh(`tmpfile=$(mktemp); printf "${utoa(JS_ARGS.slice(1).join(' '))}" | base64 -d > "$tmpfile"; gvim -f "$tmpfile"; cat "$tmpfile" && rm -- "$tmpfile"`).then(res => tri.excmds.fillcmdline(res.content))●
+command edit_cmdline js_magic_d let utoa = data => btoa(unescape(encodeURIComponent(data))); tri.lx.sh(`tmpfile=$(mktemp); base64 -d > "$tmpfile"; gvim -f "$tmpfile"; cat "$tmpfile" && rm -- "$tmpfile"`, utoa(JS_ARGS.slice(1).join(' '))).then(res => tri.excmds.fillcmdline(res.content))●
 
 " read novel (with numpad) {{{2
 " <Insert> key on Mac cannot be not recognized, according to:
@@ -508,7 +513,7 @@ for (let item of arg.slice(2)) { \
 } \
 result += ` </channel>`; \
 result += `</rss>`; \
-tri.lx.sh(`mkdir -p /tmp/rss-from-tridactyl; printf ${utoa(result)} | base64 -d > /tmp/rss-from-tridactyl/${arg[0]}`); \
+tri.lx.sh(`mkdir -p /tmp/rss-from-tridactyl; base64 -d > /tmp/rss-from-tridactyl/${arg[0]}`, utoa(result)); \
 };
 
 " a real world example:
