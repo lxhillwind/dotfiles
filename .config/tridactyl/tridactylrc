@@ -479,6 +479,41 @@ bind --mode=visual <C-i> js_magic tri.lx.sh(`gvim -f -`, document.getSelection()
 command save_notes js_magic let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString().replace(/^/gm, ' '.repeat(4)); tri.lx.sh(`gvim ~/notes-local/read-it-later/_web-clip-text.md +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`)
 bind --mode=visual cs save_notes
 
+" generate rss file to be used by newsboat directly (native) {{{2
+
+" usage call tri.lx.to_rss with following args:
+" arg 1: shell-safe file basename (WE WILL NOT CHECK!)
+" arg 2: title / link / description (default: title)
+" arg 3-?: title / link / description (default: title) / guid (default: link)
+"
+" file will be created in /tmp/rss-from-tridactyl/
+
+command js_rss js_magic tri.lx.to_rss = (arg) => { \
+let escape = (s) => s.replace(/[&]/g, '&amp;').replace(/[<]/g, '&lt;').replace(/[>]/g, '&gt;'); \
+let utoa = data => btoa(unescape(encodeURIComponent(data))); \
+let result = ''; \
+let head = arg[1]; \
+result += `<rss version="2.0">`; \
+result += ` <channel>`; \
+result += `  <title>${escape(head.title)}</title>`; \
+result += `  <link>${escape(head.link)}</link>`; \
+result += `  <description>${escape(head.description ?? head.title)}</description>`; \
+for (let item of arg.slice(2)) { \
+    result += `  <item>`; \
+    result += `   <title>${escape(item.title)}</title>`; \
+    result += `   <link>${escape(item.link)}</link>`; \
+    result += `   <description>${escape(item.description ?? item.title)}</description>`; \
+    result += `   <guid>${escape(item.guid ?? item.link)}</guid>`; \
+    result += `  </item>`; \
+} \
+result += ` </channel>`; \
+result += `</rss>`; \
+tri.lx.sh(`mkdir -p /tmp/rss-from-tridactyl; printf ${utoa(result)} | base64 -d > /tmp/rss-from-tridactyl/${arg[0]}`); \
+};
+
+" a real world example:
+autocmd DocLoad ^https://emacs-china.org/$ js_rss ( () => { let args = ['emacs-china.xml', {title: 'emacs china', link: document.URL}]; document.querySelectorAll('table tbody.topic-list-body tr').forEach((i) => { if (i.querySelector('a.title')) args.push({title: i.querySelector('a.title').innerText + ' (' + i.querySelector('button span.number').innerText + ')', link: i.querySelector('a.title').href}); }); tri.lx.to_rss(args); } )()
+
 " custom Menus {{{1
 jsb tri.lx = tri.lx ?? {}
 jsb tri.lx.menus = tri.lx.menus ?? {}
@@ -513,4 +548,4 @@ refresh_menu
 js alert("tridactylrc loaded.")
 
 " (<Visual>:ctt<Tab>) copy multiline stmt to be use in tridactyl exmode. {{{1 }}}
-" vim9 command! -buffer -range CopyToTridactyl @" = getline(<line1>, <line2>)->map((_, line) => line->substitute('[\\]$', '', ''))->join(' ') | feedkeys("\<Space>y")
+" command! -range CopyToTridactyl vim9 getline(<line1>, <line2>)->map((_, line) => line->substitute('[\\]$', '', ''))->join(' ')->setreg('') | call feedkeys("\<Space>y")

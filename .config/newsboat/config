@@ -1,0 +1,37 @@
+# ui
+
+# remove %6L
+articlelist-format "%4i %f %D  %?T?|%-17T|?%t"
+
+datetime-format %Y-%m-%d
+
+# navigation
+
+goto-next-feed no
+
+browser xdg-open
+
+bind-key g home
+bind-key G end
+bind-key ^F pagedown
+bind-key ^B pageup
+bind-key f pagedown
+bind-key b pageup
+bind-key j down
+bind-key k up
+
+bind-key l open feedlist
+bind-key h quit articlelist
+
+unbind-key l articlelist
+unbind-key u articlelist
+
+bind-key J next-feed articlelist
+bind-key K prev-feed articlelist
+
+# got idea from https://github.com/thezeroalpha/dotfiles/blob/master/newsboat/config
+unbind-key ,
+bind-key SPACE macro-prefix
+macro c set browser "printf '%s' %u | pbcopy" ; open-in-browser ; set browser "linkhandler %u" -- "Copy link"
+macro u set browser "zsh -c \"printf '\\n%s\\n%s\\n\\n' %T %u; read -k 1\"" ; open-in-browser ; set browser "linkhandler %u" -- "Urlview"
+macro a set browser "printf '%s\\n' %u" ; open-all-unread-in-browser ; set browser "linkhandler %u" -- "Show all link"
