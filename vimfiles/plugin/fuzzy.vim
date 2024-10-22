@@ -1,5 +1,7 @@
 vim9script
 
+# set `g:fuzzy_force_builtin = true` to always use builtin fuzzy finder.
+
 command! -nargs=+ -complete=shellcmd Pick PickAnyCli(<q-args>)
 
 nnoremap <Space>ff <ScriptCmd>PickCwdFiles()<CR>
@@ -25,9 +27,132 @@ def PickAnyCli(cli: string) # {{{1
     )
 enddef
 
+# PickFallback {{{1
+var state: dict<any> = {}
+def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)
+    if has_key(state, 'job_id')
+        state->remove('job_id')
+    endif
+    state.callback = Callback
+    state.lines = []  # list<string>
+    state.need_refresh = false
+    state.input = ''
+    state.current_line = 1
+    state.move_cursor = ''
+    const height = max([&lines / 2, 10])
+    state.height = height
+    const winid = popup_create('', {
+        title: empty(Title) ? Cmd : Title,
+        pos: 'botleft',  # use bot instead of top, since latter hides tab info.
+        minwidth: &columns,
+        minheight: height,
+        maxheight: height,
+        line: &lines,  # use 1 if use top as pos.
+        mapping: false,
+        filter: PickFilter,
+        callback: PickCallback,
+    })
+    state.winid = winid
+    state.timer = timer_start(1000, (_) => Refresh(), {repeat: -1})
+    const buf = winbufnr(winid)
+    if empty(Cmd)
+        state.lines = Lines
+        state.need_refresh = true
+    else
+        var cmd_opt = execute($'Sh -n {Cmd}')->json_decode()
+        cmd_opt.opt.out_mode = 'nl'
+        cmd_opt.opt.out_cb = (_, msg) => {
+            state.lines->add(msg)
+            state.need_refresh = true
+        }
+        state.job_id = job_start(cmd_opt.cmd, cmd_opt.opt)
+    endif
+    Refresh()
+    # match id: use it + 1000 as line number.
+    matchadd('Function', '\%1l', 10, 1000 + 1, {window: state.winid})
+enddef
+
+def PickFilter(winid: number, key: string): bool
+    state.move_cursor = ''
+    if key == "\<Esc>" || key == "\<C-c>"
+        winid->popup_close()
+        return true
+    elseif key == "\<Cr>"
+        winid->popup_close()
+        # lines_shown is 0 based.
+        const line = state.lines_shown[state.current_line - 1]
+        const Fn = state.callback
+        redraws  # required to make msg / exception display
+        Fn(line)
+        return true
+    elseif key == "\<Backspace>" || key == "\<C-h>"
+        state.input = state.input[ : -2]
+    elseif key == "\<C-u>"
+        state.input = ''
+    elseif key == "\<C-w>"
+        if state.input->match('\s') >= 0
+            state.input = state.input->substitute('\v\S+\s?$', '', '')
+        else
+            state.input = ''
+        endif
+    elseif key == "\<C-k>" || key == "\<C-p>"
+        state.move_cursor = 'up'
+    elseif key == "\<C-j>" || key == "\<C-n>"
+        state.move_cursor = 'down'
+    else
+        state.input ..= key
+    endif
+    state.need_refresh = true
+    Refresh()
+    return true
+enddef
+
+def PickCallback(id: number, _: any)
+    if state->has_key('job_id')
+        job_stop(state.job_id)
+    endif
+    timer_stop(state.timer)
+enddef
+
+def Refresh()
+    if !state.need_refresh
+        return
+    endif
+    state.need_refresh = false
+    var lines: list<string> = []
+    lines->add('> ' .. state.input .. '|')
+    if state.input->empty()
+        lines->extend(state.lines[ : state.height])
+    else
+        lines->extend(matchfuzzy(state.lines, state.input))
+    endif
+    state.winid->popup_settext(lines)
+    state.lines_shown = lines
+    const current_line_old = state.current_line
+    if state.move_cursor == 'up'
+        state.current_line -= 1
+    elseif state.move_cursor == 'down'
+        state.current_line += 1
+    endif
+    if state.current_line < 2
+        state.current_line = 2
+    elseif state.current_line > lines->len()
+        state.current_line = lines->len()
+    endif
+    if current_line_old != state.current_line
+        if current_line_old >= 2
+            matchdelete(1000 + current_line_old, state.winid)
+        endif
+        if state.current_line >= 2
+            matchadd('Visual', $'\%{state.current_line}l', 10, 1000 + state.current_line, {window: state.winid})
+        endif
+    endif
+enddef
+
 def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{1
-    if !executable('fzf')
-        throw 'command not found: fzf'
+    if (exists('g:fuzzy_force_builtin') && g:fuzzy_force_builtin) || !executable('fzf')
+        PickFallback(Title, Cmd, Lines, Callback)
+        return
     endif
     const fzf = (
         is_win32 && windowsversion()->str2float() <= 5.1
