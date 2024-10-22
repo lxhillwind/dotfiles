@@ -80,6 +80,10 @@ def PickFilter(winid: number, key: string): bool
     elseif key == "\<Cr>"
         winid->popup_close()
         # lines_shown is 0 based.
+        if state.current_line < 2
+            redraws
+            return true
+        endif
         const line = state.lines_shown[state.current_line - 1]
         const Fn = state.callback
         redraws  # required to make msg / exception display
@@ -134,11 +138,14 @@ def Refresh()
     elseif state.move_cursor == 'down'
         state.current_line += 1
     endif
+
     if state.current_line < 2
         state.current_line = 2
-    elseif state.current_line > lines->len()
+    endif
+    if state.current_line > lines->len()
         state.current_line = lines->len()
     endif
+
     if current_line_old != state.current_line
         if current_line_old >= 2
             matchdelete(1000 + current_line_old, state.winid)
