@@ -101,7 +101,7 @@ def PopupFilter(winid: number, key: string): bool
         state.input = ''
     elseif key == "\<C-w>"
         if state.input->match('\s') >= 0
-            state.input = state.input->substitute('\v\S+\s*$', '', '')
+            state.input = state.input->substitute('\v(\S+|)\s*$', '', '')
         else
             state.input = ''
         endif
