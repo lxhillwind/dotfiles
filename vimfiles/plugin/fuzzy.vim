@@ -34,11 +34,13 @@ def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [],
         state->remove('job_id')
     endif
     state.callback = Callback
+    state.finished = false
     state.lines = []  # list<string>
     state.need_refresh = false
     state.input = ''
     state.current_line = 1
     state.move_cursor = ''
+    state.reltime = reltime()
     const height = max([&lines / 2, 10])
     state.height = height
     const winid = popup_create('', {
@@ -48,12 +50,17 @@ def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [],
         minheight: height,
         maxheight: height,
         line: &lines,  # use 1 if use top as pos.
+        highlight: 'Normal',
+        border: [1, 0, 0, 0],
+        borderhighlight: ['Pmenu'],
         mapping: false,
-        filter: PickFilter,
-        callback: PickCallback,
+        filter: PopupFilter,
+        callback: (_, _) => {
+            state.finished = true
+        },
     })
     state.winid = winid
-    state.timer = timer_start(1000, (_) => Refresh(), {repeat: -1})
+    state.timer = timer_start(50, (_) => Refresh(), {repeat: -1})
     const buf = winbufnr(winid)
     if empty(Cmd)
         state.lines = Lines
@@ -72,7 +79,7 @@ def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [],
     matchadd('Function', '\%1l', 10, 1000 + 1, {window: state.winid})
 enddef
 
-def PickFilter(winid: number, key: string): bool
+def PopupFilter(winid: number, key: string): bool
     state.move_cursor = ''
     if key == "\<Esc>" || key == "\<C-c>"
         winid->popup_close()
@@ -94,56 +101,39 @@ def PickFilter(winid: number, key: string): bool
         state.input = ''
     elseif key == "\<C-w>"
         if state.input->match('\s') >= 0
-            state.input = state.input->substitute('\v\S+\s?$', '', '')
+            state.input = state.input->substitute('\v\S+\s*$', '', '')
         else
             state.input = ''
         endif
     elseif key == "\<C-k>" || key == "\<C-p>"
-        state.move_cursor = 'up'
+        MoveCursor('up')
     elseif key == "\<C-j>" || key == "\<C-n>"
-        state.move_cursor = 'down'
+        MoveCursor('down')
     else
         state.input ..= key
     endif
+    GenHeader()->setbufline(winbufnr(winid), 1)
     state.need_refresh = true
-    Refresh()
     return true
 enddef
 
-def PickCallback(id: number, _: any)
-    if state->has_key('job_id')
-        job_stop(state.job_id)
-    endif
-    timer_stop(state.timer)
-    state = {}
+def GenHeader(): string
+    return '> ' .. state.input .. '|'
 enddef
 
-def Refresh()
-    if !state.need_refresh
-        return
-    endif
-    state.need_refresh = false
-    var lines: list<string> = []
-    lines->add('> ' .. state.input .. '|')
-    if state.input->empty()
-        lines->extend(state.lines[ : state.height])
-    else
-        lines->extend(matchfuzzy(state.lines, state.input))
-    endif
-    state.winid->popup_settext(lines)
-    state.lines_shown = lines
+def MoveCursor(pos: string)
     const current_line_old = state.current_line
-    if state.move_cursor == 'up'
+    if pos == 'up'
         state.current_line -= 1
-    elseif state.move_cursor == 'down'
+    elseif pos == 'down'
         state.current_line += 1
     endif
 
     if state.current_line < 2
         state.current_line = 2
     endif
-    if state.current_line > lines->len()
-        state.current_line = lines->len()
+    if state.current_line > state.lines_shown->len()
+        state.current_line = state.lines_shown->len()
     endif
 
     if current_line_old != state.current_line
@@ -151,9 +141,54 @@ def Refresh()
             matchdelete(1000 + current_line_old, state.winid)
         endif
         if state.current_line >= 2
-            matchadd('Visual', $'\%{state.current_line}l', 10, 1000 + state.current_line, {window: state.winid})
+            matchadd('PmenuSel', $'\%{state.current_line}l', 10, 1000 + state.current_line, {window: state.winid})
         endif
     endif
+enddef
+
+def StateCleanup()
+    # do clean up in timer instead of popup callback, so timer / job can be
+    # stopped cleanly.
+    if state->has_key('job_id')
+        job_stop(state.job_id)
+        sleep 100m
+        if job_status(state.job_id) == 'run'
+            job_stop(state.job_id, 'kill')
+        endif
+    endif
+    timer_stop(state.timer)
+    state = {}
+enddef
+
+const LINES_MANY = 5'000
+
+def Refresh()
+    if state.finished
+        StateCleanup()
+        return
+    endif
+    if !state.need_refresh
+        return
+    endif
+    if state.lines->len() > LINES_MANY
+        if state.reltime->reltime()->reltimefloat() < 0.1  # second
+            return
+        endif
+    endif
+    state.reltime = reltime()
+    state.need_refresh = false
+    var lines: list<string> = []
+    lines->add(GenHeader())
+    if state.input->empty()
+        lines->extend(state.lines[ : state.height])
+    else
+        lines->extend(matchfuzzy(state.lines, state.input))
+    endif
+    lines = lines[ : state.height - 1]
+    state.winid->popup_settext(lines)
+    state.lines_shown = lines
+    # if current_line is out of range, move it to the last line.
+    MoveCursor('')
 enddef
 
 def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{1
@@ -230,7 +265,8 @@ def PickGotoProject() # {{{2
         (chosen) => {
             execute 'lcd' fnameescape(chosen)
             if exists(':Lf') == 2
-                execute 'Lf .'
+                # use ":silent" to avoid prompt when using PickFallback.
+                silent execute 'Lf .'
             endif
         }
     )
