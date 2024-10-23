@@ -78,16 +78,15 @@ def PickFilter(winid: number, key: string): bool
         winid->popup_close()
         return true
     elseif key == "\<Cr>"
-        winid->popup_close()
         # lines_shown is 0 based.
-        if state.current_line < 2
-            redraws
-            return true
-        endif
         const line = state.lines_shown[state.current_line - 1]
+        const current_line = state.current_line
         const Fn = state.callback
+        winid->popup_close()
         redraws  # required to make msg / exception display
-        Fn(line)
+        if current_line >= 2
+            Fn(line)
+        endif
         return true
     elseif key == "\<Backspace>" || key == "\<C-h>"
         state.input = state.input[ : -2]
@@ -116,6 +115,7 @@ def PickCallback(id: number, _: any)
         job_stop(state.job_id)
     endif
     timer_stop(state.timer)
+    state = {}
 enddef
 
 def Refresh()
