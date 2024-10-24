@@ -34,9 +34,9 @@ def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [],
         state->remove('job_id')
     endif
     state.callback = Callback
-    state.finished = false
     state.lines = []  # list<string>
     state.need_refresh = false
+    state.has_running = false
     state.input = ''
     state.current_line = 1
     state.move_cursor = ''
@@ -56,11 +56,11 @@ def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [],
         mapping: false,
         filter: PopupFilter,
         callback: (_, _) => {
-            state.finished = true
+            StateCleanup()
         },
     })
     state.winid = winid
-    state.timer = timer_start(50, (_) => Refresh(), {repeat: -1})
+    state.timer = timer_start(1000, (_) => Refresh(), {repeat: -1})
     const buf = winbufnr(winid)
     if empty(Cmd)
         state.lines = Lines
@@ -74,7 +74,8 @@ def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [],
         }
         state.job_id = job_start(cmd_opt.cmd, cmd_opt.opt)
     endif
-    Refresh()
+    # enough time to display initial data.
+    timer_start(empty(Cmd) ? 50 : 200, (_) => Refresh())
     # match id: use it + 1000 as line number.
     matchadd('Function', '\%1l', 10, 1000 + 1, {window: state.winid})
 enddef
@@ -109,11 +110,15 @@ def PopupFilter(winid: number, key: string): bool
         MoveCursor('up')
     elseif key == "\<C-j>" || key == "\<C-n>"
         MoveCursor('down')
+    elseif key == "\<CursorHold>"
+        # <80><fd>`
+        return true
     else
         state.input ..= key
     endif
     GenHeader()->setbufline(winbufnr(winid), 1)
     state.need_refresh = true
+    timer_start(0, (_) => Refresh())
     return true
 enddef
 
@@ -149,6 +154,7 @@ enddef
 def StateCleanup()
     # do clean up in timer instead of popup callback, so timer / job can be
     # stopped cleanly.
+    timer_stop(state.timer)
     if state->has_key('job_id')
         job_stop(state.job_id)
         sleep 100m
@@ -156,15 +162,17 @@ def StateCleanup()
             job_stop(state.job_id, 'kill')
         endif
     endif
-    timer_stop(state.timer)
     state = {}
 enddef
 
 const LINES_MANY = 5'000
 
 def Refresh()
-    if state.finished
-        StateCleanup()
+    if !has_key(state, 'winid')
+        # when anonymous timer is scheduled after popup closing.
+        return
+    endif
+    if state.has_running
         return
     endif
     if !state.need_refresh
@@ -177,6 +185,7 @@ def Refresh()
     endif
     state.reltime = reltime()
     state.need_refresh = false
+    state.has_running = true
     var lines: list<string> = []
     lines->add(GenHeader())
     if state.input->empty()
@@ -189,6 +198,7 @@ def Refresh()
     state.lines_shown = lines
     # if current_line is out of range, move it to the last line.
     MoveCursor('')
+    state.has_running = false
 enddef
 
 def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{1
