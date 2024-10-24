@@ -1,7 +1,5 @@
 vim9script
 
-# set `g:fuzzy_force_builtin = true` to always use builtin fuzzy finder.
-
 command! -nargs=+ -complete=shellcmd Pick PickAnyCli(<q-args>)
 
 nnoremap <Space>ff <ScriptCmd>PickCwdFiles()<CR>
@@ -27,9 +25,10 @@ def PickAnyCli(cli: string) # {{{1
     )
 enddef
 
-# PickFallback {{{1
+# g:Pick() implementation using builtin fuzzy function. {{{1
 var state: dict<any> = {}
-def PickFallback(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)
+
+def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)
     if has_key(state, 'job_id')
         state->remove('job_id')
     endif
@@ -199,71 +198,6 @@ def Refresh()
     # if current_line is out of range, move it to the last line.
     MoveCursor('')
     state.has_running = false
-enddef
-
-def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)  # {{{1
-    if (exists('g:fuzzy_force_builtin') && g:fuzzy_force_builtin) || !executable('fzf')
-        PickFallback(Title, Cmd, Lines, Callback)
-        return
-    endif
-    const fzf = (
-        is_win32 && windowsversion()->str2float() <= 5.1
-        ? 'fzf --color=16 --sort --cycle --reverse --inline-info'  # old fzf does not support --info.
-        : 'fzf --color=16 --sort --cycle --reverse --info=inline'
-    )
-    var shcmd = ''
-    const file_result = tempname()
-    if empty(Cmd)  # Lines may be empty but provided; so checking Cmd is better.
-        const file_input = tempname()
-        Lines->writefile(file_input)
-        shcmd = printf('%s < %s > %s', fzf, shellescape(file_input), shellescape(file_result))
-    else
-        shcmd = printf('{ %s 2>/dev/null; } | %s > %s', Cmd, fzf, shellescape(file_result))
-    endif
-    # use :Sh instead of :term, since latter does not work in win32:
-    # e.g. `:term ++shell ls -l` will be trimmed as `ls`.
-    var cmd_opt = execute($'Sh -n {shcmd}')->json_decode()
-    cmd_opt.opt->extend({term_finish: 'close', hidden: true})
-    const term_buf = term_start(cmd_opt.cmd, cmd_opt.opt)
-    const height = max([&lines / 2, 10])
-    const winid = popup_create(term_buf, {
-        title: empty(Title) ? Cmd : Title,
-        pos: 'botleft',  # use bot instead of top, since latter hides tab info.
-        minwidth: &columns,
-        minheight: height,
-        maxheight: height,
-        line: &lines,  # use 1 if use top as pos.
-    })
-    if is_win32
-        # in win32, double <Esc> exits fzf; let's make it behave same as other OS.
-        tnoremap <buffer> <Esc> <C-c>
-    endif
-    term_getjob(term_buf)
-        ->job_setoptions({ exit_cb: (_, _) => {
-            popup_close(winid)
-            const res: string = file_result->readfile()->get(0, '')
-            if !empty(res)
-                redraws  # this is required to make Exception shown; {{{
-                # like editing files already opened in another instance. }}}
-                if is_win32
-                    # Why use timer here? {{{
-                    # Reproduce:
-                    # pick a file which is already opened in another vim
-                    # session;
-                    # then vim will show that swap file already exists.
-                    # When not using timer, vim will just hang, since it
-                    # cannot accept any input from user (I guess that it is
-                    # the terminal buffer catching keys we input).
-                    #
-                    # 100ms is used; a lower value (like 50ms) may not be
-                    # enough, like in conemu.
-                    # }}}
-                    timer_start(100, (_) => Callback(res))
-                else
-                    Callback(res)
-                endif
-            endif
-        }})
 enddef
 
 # various pick function {{{1
