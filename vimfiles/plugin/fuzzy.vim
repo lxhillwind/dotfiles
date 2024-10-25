@@ -110,8 +110,8 @@ def PopupFilter(winid: number, key: string): bool
         MoveCursor('up')
     elseif key == "\<C-j>" || key == "\<C-n>"
         MoveCursor('down')
-    elseif key == "\<CursorHold>"
-        # <80><fd>`
+    elseif key->matchstr('^.') == "\x80"
+        # like <MouseUp> / <CursorHold> ...
         return true
     else
         state.input ..= key
