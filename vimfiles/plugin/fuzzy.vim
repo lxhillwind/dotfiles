@@ -8,7 +8,8 @@ nnoremap <Space>fp <ScriptCmd>PickGotoProject()<CR>
 nnoremap <Space>fc <ScriptCmd>PickUserCommand()<CR>
 nnoremap <Space>fm <ScriptCmd>PickUserMapping()<CR>
 nnoremap <Space>fa :Pick<Space>
-nnoremap <Space>fb <ScriptCmd>PickJumpCurrentBuffer()<CR>
+nnoremap <Space>fl <ScriptCmd>PickLines()<CR>
+nnoremap <Space>fb <ScriptCmd>PickBuffer()<CR>
 nnoremap <Space>ft <ScriptCmd>PickGotoTabWin()<CR>
 
 # common var {{{1
@@ -272,9 +273,9 @@ def TabWinLines(): list<string>
     return buf_list
 enddef
 
-def PickJumpCurrentBuffer() # {{{2
+def PickLines() # {{{2
     g:Pick(
-        'CurrentBuffer',
+        'LinesInCurrentBuffer',
         v:none,
         getline(1, '$')->mapnew((idx, i) => $'{idx + 1}: {i}'),
         (chosen) => {
@@ -283,6 +284,19 @@ def PickJumpCurrentBuffer() # {{{2
     )
 enddef
 
+def PickBuffer() # {{{2
+    g:Pick(
+        'Buffer (:ls)',
+        v:none,
+        execute('ls')->split("\n"),
+        (chosen) => {
+            const buf = chosen->split(' ')->get(0, '')
+            if buf->match('^\d\+$') >= 0
+                execute $':{buf}b'
+            endif
+        }
+    )
+enddef
 def PickRecentFiles() # {{{2
     const filesInCurrentTab = tabpagebuflist()
         ->mapnew((_, i) => i->getbufinfo())
