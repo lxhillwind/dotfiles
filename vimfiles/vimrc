@@ -1405,9 +1405,7 @@ augroup vimrc
             silent normal gvy
             text = @"
             @" = t
-            if &buftype == 'terminal'
-                text = substitute(text, "\n", '', 'g')
-            endif
+            text = substitute(text, "\n", '', 'g')
             # recover visual mode to match <ScriptCmd> behavior.
             silent normal gv
         else
