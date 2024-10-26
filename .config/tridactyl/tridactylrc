@@ -453,8 +453,20 @@ bind --mode=visual cd composite js "cd " + document.getSelection().toString() | 
 
 " some others defined below; like cq
 
-" read it later (all thing about <C-b>) {{{2
-bind <C-b> js_magic let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`)
+" read it later (all thing about <C-b> / ;b) {{{2
+
+" save url in local file
+bind ;b js_magic let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`)
+
+" save url to instapaper
+bind <C-b> js    let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } tri.excmds.open('https://www.instapaper.com/text?u=' + encodeURIComponent(url))
+" ... then save it to read list.
+bindurl https://www.instapaper.com/text\?u=.* <C-b> hint -Jc .js_read_later
+" add link from instapaper webpage (main / next-pages / parse_url-error)
+bindurl https://www.instapaper.com/u(|/\d+|\?parse_url=.*)$ <C-b> hint -Jc a.article_add
+
+" open instapaper easily. (t <CR> <C-b>)
+bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.com/u
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
