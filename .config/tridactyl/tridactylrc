@@ -458,15 +458,14 @@ bind --mode=visual cd composite js "cd " + document.getSelection().toString() | 
 " save url in local file
 bind ;b js_magic let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`)
 
-" save url to instapaper
-bind <C-b> js    let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } tri.excmds.open('https://www.instapaper.com/text?u=' + encodeURIComponent(url))
-" ... then save it to read list.
-bindurl https://www.instapaper.com/text\?u=.* <C-b> hint -Jc .js_read_later
-" add link from instapaper webpage (main / next-pages / parse_url-error)
-bindurl https://www.instapaper.com/u(|/\d+|\?parse_url=.*)$ <C-b> hint -Jc a.article_add
+" save url to omnivore
+bind <C-b> js    let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } tri.excmds.open('https://omnivore.app/api/save?url=' + encodeURIComponent(url))
+" avoid duplicating <C-b>
+bindurl ^https://omnivore.app/ <C-b> hint -Jc button[class*="articleActionIcon"]
+bindurl ^https://omnivore.app/ c     hint -Jc button[class*="articleActionIcon"]
 
-" open instapaper easily. (t <CR> <C-b>)
-bindurl moz-extension://.*/static/newtab.html <C-b> open https://www.instapaper.com/u
+" open omnivore easily. (t <CR> <C-b>)
+bindurl moz-extension://.*/static/newtab.html <C-b> open https://omnivore.app/home
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
