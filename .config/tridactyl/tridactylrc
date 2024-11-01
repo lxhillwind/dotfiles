@@ -456,16 +456,7 @@ bind --mode=visual cd composite js "cd " + document.getSelection().toString() | 
 " read it later (all thing about <C-b> / ;b) {{{2
 
 " save url in local file
-bind ;b js_magic let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`)
-
-" save url to omnivore
-bind <C-b> js    let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } tri.excmds.open('https://omnivore.app/api/save?url=' + encodeURIComponent(url))
-" avoid duplicating <C-b>
-bindurl ^https://omnivore.app/ <C-b> hint -Jc button[class*="articleActionIcon"]
-bindurl ^https://omnivore.app/ c     hint -Jc button[class*="articleActionIcon"]
-
-" open omnivore easily. (t <CR> <C-b>)
-bindurl moz-extension://.*/static/newtab.html <C-b> open https://omnivore.app/home
+bind <C-b> js_magic let url = document.URL; if (/^moz-extension:.*reader.html#.*/.test(url)) { url = document.head.querySelector('#tricanonlink').href; } let utoa = data => btoa(unescape(encodeURIComponent(data))); let title = document.title; let text = title ? ('- `' + title + '`' + `\n <${url}>`) : `- <${url}>`; tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)".md +"normal zRG" +"r !printf ${utoa(text)} | base64 -d"`)
 
 " ... rapid mode in various site;
 " show hint in sibling node instead of target node, so we can see full title.
@@ -492,7 +483,7 @@ bind --mode=visual cq qrcode_visual
 bind --mode=visual <C-i> js_magic tri.lx.sh(`gvim -f -`, document.getSelection().toString())
 
 " notepad (add selection and url to a text file) (native) {{{2
-command save_notes js_magic let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString().replace(/^/gm, ' '.repeat(4)); tri.lx.sh(`gvim ~/notes-local/read-it-later/_web-clip-text.md +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`)
+command save_notes js_magic let utoa = data => btoa(unescape(encodeURIComponent(data))); let text = "\n\n---\n\n" + `[${document.title}](${document.location})` + "\n\n" + document.getSelection().toString(); tri.lx.sh(`gvim ~/notes-local/read-it-later/"$(hostname)"-clip.txt +"norm G" +"silent r !printf ${utoa(text)} | base64 -d"`)
 bind --mode=visual cs save_notes
 
 " generate rss file to be used by newsboat directly (native) {{{2
