@@ -44,7 +44,7 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
     const height = max([&lines / 2, 10])
     state.height = height
     const winid = popup_create('', {
-        title: empty(Title) ? Cmd : Title,
+        title: printf(' %s ', empty(Title) ? Cmd : Title),
         pos: 'botleft',  # use bot instead of top, since latter hides tab info.
         minwidth: &columns,
         minheight: height,
