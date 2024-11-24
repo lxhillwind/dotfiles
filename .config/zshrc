@@ -54,7 +54,7 @@ esac
 man() {
     # openSUSE requires MAN_POSIXLY_CORRECT to display without prompt.
     # openSUSE requires GROFF_NO_SGR to display color (but why?).
-    # ref: https://forums.opensuse.org/showthread.php/414983-Color-Man-Pages/page2?s=7bff9fc804859ecde549a354ecaacea0
+    # ref: https://forums.opensuse.org/t/color-man-pages/27729
     env \
     MAN_POSIXLY_CORRECT=1 \
     GROFF_NO_SGR=yes \
@@ -186,6 +186,9 @@ zstyle ':completion:*' matcher-list '' \
 SAVEHIST=1000000
 HISTSIZE=$SAVEHIST
 HISTFILE=~/.zsh_history
+# ignore history entry with leading space;
+# "<space><cr>" to lose them immediately.
+setopt HIST_IGNORE_SPACE
 
 # hh(): history enhancement. put history search result in zle {{{2
 hh() {
