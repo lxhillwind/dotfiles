@@ -140,6 +140,7 @@ set searchurls.cnf https://command-not-found.com/%s
 set searchurls.co https://www.collinsdictionary.com/english/%s
 set searchurls.dg https://duckduckgo.com/?q=%s
 set searchurls.gd https://drive.google.com/drive/search?q=%s
+set searchurls.gh https://github.com/search?utf8=✓&type=repositories&q=%s
 set searchurls.gg https://www.google.com/search?q=%s&hl=en_US
 set searchurls.ip https://www.ip138.com/iplookup.asp?ip=%s&action=2
 set searchurls.man https://man.archlinux.org/search?q=%s&go=Go
@@ -369,7 +370,7 @@ bindurl github.com c hint -bJc li h4:nth-child(1) > span:nth-child(1) > a:nth-ch
 bindurl lobste.rs c hint -bJc span.comments_label > a
 bindurl news.ycombinator.com c hint -bJc span.subline > a:nth-child(6)
 bindurl old.reddit.com c hint -bJc a.bylink.comments.may-blank
-bindurl v2ex.com c hint -bJc a.topic-link
+bindurl v2ex.com c hint -bJc a.topic-link,span.item_hot_topic_title a
 
 " discourse site
 autocmd DocLoad .* js if (document.querySelector('tbody.topic-list-body')) tri.excmds.bindurl(document.location.href, 'c', 'hint -bJc td.main-link > span > a.title')

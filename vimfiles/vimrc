@@ -107,8 +107,8 @@ g:table_im#table_file = () => {
 }()
 g:table_im#table_second = () => {
     for i in [
-            '~/vimfiles/config/tiger.ini',
-            '~/notes-local/鹤形-related/tiger.ini',
+            '~/vimfiles/config/shanren.ini',
+            '~/notes-local/鹤形-related/shanren.ini',
     ]
         const p = expand(i)
         if filereadable(p)
@@ -1098,47 +1098,33 @@ if use_oscyank
 else
     # use pbcopy / pbpaste in $PATH as clipboard; wayland / x11 / tmux ...
     # detection is defined there. (~/bin/{pbcopy,pbpaste})
-    nnoremap <Space>y <ScriptCmd>ClipboardCopy("")<CR>
-    nnoremap <Space>p <ScriptCmd>ClipboardPaste("")<CR>
+    nnoremap <Space>y <ScriptCmd>ClipboardCopy()<CR>
+    nnoremap <Space>p <ScriptCmd>ClipboardPaste()<CR>
 endif
 
-def ClipboardCopy(cmd_: string)
-    var cmd = cmd_
-    if empty(cmd)
-        if has('clipboard') && is_win32
-            # NOTE: unix: X11 clipboard content will disapper when program exits.
-            # but kde (plasma) has clipboard manager, which make it work
-            # consistently.
-            # 20221029_133619 wrap stmt with 'execute', since it complains
-            # that + register is not available. I guess this is introduced in
-            # recent commit.
-            execute '@+ = @"'
-            return
-        elseif executable('pbcopy')
-            cmd = 'pbcopy'
-        else
-            throw 'clipboard not found!'
-        endif
-        system(cmd, @")
+def ClipboardCopy()
+    if has('clipboard') && is_win32
+        # NOTE: unix: X11 clipboard content will disapper when program exits.
+        # but kde (plasma) has clipboard manager, which make it work
+        # consistently.
+        # 20221029_133619 wrap stmt with 'execute', since it complains
+        # that + register is not available. I guess this is introduced in
+        # recent commit.
+        execute '@+ = @"'
+    elseif executable('pbcopy')
+        system('pbcopy', @")
     else
-        system(cmd, @")
+        throw 'clipboard not found!'
     endif
 enddef
 
-def ClipboardPaste(cmd_: string)
-    var cmd = cmd_
-    if empty(cmd)
-        if has('clipboard') && is_win32
-            execute '@" = @+'
-            return
-        elseif executable('pbpaste')
-            cmd = 'pbpaste'
-        else
-            throw 'clipboard not found!'
-        endif
-        @" = system(cmd)
+def ClipboardPaste()
+    if has('clipboard') && is_win32
+        execute '@" = @+'
+    elseif executable('pbpaste')
+        @" = system('pbpaste')
     else
-        @" = system(cmd)
+        throw 'clipboard not found!'
     endif
 enddef
 
