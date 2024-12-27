@@ -76,8 +76,8 @@ bindApp(",", "Firefox", hyper_shift)
 -- macos: "Right click on the application icon in the dock -> options -> All Desktops"
 -- ref: https://superuser.com/a/1146999
 bindApp(".", "MacVim")
--- selection in tmux: it's visually better with kitty than iterm2.
-bindApp("/", "kitty")
+-- selection in tmux: it's visually better with (ghostty / kitty) than iterm2.
+bindApp("/", "ghostty")
 -- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
 -- revert to Finder.
 bindApp("e", "Finder", meta)

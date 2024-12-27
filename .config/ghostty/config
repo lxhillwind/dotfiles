@@ -1,0 +1,40 @@
+# ui
+theme = light:Builtin Light,dark:OneHalfDark
+window-height = 30
+window-width = 120
+font-family = JetBrains Mono NL
+# if set to true, then builtin light theme is not viewable for bold green / bold yellow.
+bold-is-bright = false
+# make cursor viewable in revert theme (e.g. dark theme vim in light terminal or reverse)
+cursor-invert-fg-bg = true
+
+# behavior
+copy-on-select = true
+quit-after-last-window-closed = true
+
+# keybinding
+
+# some key is missing... (if in bare shell (bash or zsh))
+keybind = ctrl+[=text:\x1b
+keybind = ctrl+m=text:\r
+
+# macos: cmd+h is mapped to alt+h globally with karabiner;
+keybind = alt+h=esc:h
+
+# vim
+keybind = cmd+h=esc:h
+keybind = cmd+j=esc:j
+keybind = cmd+k=esc:k
+keybind = cmd+l=esc:l
+
+# tmux
+keybind = cmd+d=esc:d
+keybind = cmd+e=esc:e
+keybind = cmd+o=esc:o
+keybind = cmd+n=esc:n
+keybind = cmd+p=esc:p
+
+# use cmd+n in shell (tmux), so define another key for new_window.
+keybind = ctrl+shift+n=new_window
+
+# vim:ft=conf

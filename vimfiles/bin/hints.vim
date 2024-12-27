@@ -53,7 +53,8 @@ def Label(param: dict<any>)
     endif
 
     setlocal concealcursor=ncv conceallevel=3
-    hi Conceal guibg=blue guifg=white ctermbg=blue ctermfg=white
+    # bold: make it more viewable
+    hi Conceal guibg=blue guifg=white gui=bold ctermbg=blue ctermfg=white cterm=bold
 
     var item_idx = 0
     const items_size = param.items->len()
