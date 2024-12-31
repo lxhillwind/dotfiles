@@ -3,6 +3,9 @@
 # for macos:
 #   font-size = 16
 #   command = /opt/homebrew/bin/zsh
+#   # macos: cmd+h is mapped to alt+h globally with karabiner;
+#   # this will not work for vim on linux, so not in common config.
+#   keybind = alt+h=esc:h
 config-file = ?./config-local
 
 # ui
@@ -21,7 +24,8 @@ bold-is-bright = false
 cursor-invert-fg-bg = true
 
 # behavior
-copy-on-select = true
+# copy-on-select: `true` will not sync selection to system clipboard on linux.
+copy-on-select = clipboard
 quit-after-last-window-closed = true
 
 # keybinding
@@ -31,21 +35,24 @@ keybind = ctrl+[=text:\x1b
 keybind = ctrl+i=text:\t
 keybind = ctrl+m=text:\r
 
-# macos: cmd+h is mapped to alt+h globally with karabiner;
-keybind = alt+h=esc:h
-
-# vim
+# macos: vim
 keybind = cmd+h=esc:h
 keybind = cmd+j=esc:j
 keybind = cmd+k=esc:k
 keybind = cmd+l=esc:l
 
-# tmux
+# macos: tmux
 keybind = cmd+d=esc:d
 keybind = cmd+e=esc:e
 keybind = cmd+o=esc:o
 keybind = cmd+n=esc:n
 keybind = cmd+p=esc:p
+
+# linux: macos like
+keybind = alt+c=copy_to_clipboard
+keybind = alt+t=new_tab
+keybind = alt+w=close_window
+keybind = alt+v=paste_from_clipboard
 
 # split
 keybind = ctrl+physical:seven=new_split:right
