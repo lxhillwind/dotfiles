@@ -1488,10 +1488,12 @@ augroup vimrc
 
     # day/light theme switching {{{2
     def DayLightTheme()
-        if executable('darkman') && system('darkman get') =~ 'light'
-            set bg=light
-        else
-            set bg=dark
+        if executable('darkman')
+            if system('darkman get') =~ 'light'
+                set bg=light
+            else
+                set bg=dark
+            endif
         endif
     enddef
     if has_gui && is_linux
