@@ -793,6 +793,9 @@ set noundofile
 
 # alt key in terminal {{{2
 if !has('gui_running') && !is_win32
+    # disable "kitty" protocol since it makes option-hjkl not work.
+    set kpc=xterm:mok2
+
     # see ":set-termcap"
     for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
         exec $"set <M-{i}>=\<Esc>{i}"

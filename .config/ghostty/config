@@ -1,8 +1,20 @@
+# "Configuration files are loaded after the configuration they're defined within in the order they're defined. "
+#
+# for macos:
+#   font-size = 16
+#   command = /opt/homebrew/bin/zsh
+config-file = ?./config-local
+
 # ui
 theme = light:Builtin Light,dark:OneHalfDark
 window-height = 30
 window-width = 120
-font-family = JetBrains Mono NL
+# will it use embedded font?
+font-family = JetBrains Mono
+# do not render ">=" as whole.
+font-feature = -calt
+# if we do not specify this, then CJK characters will not support bold font.
+font-family = 苹方-简
 # if set to true, then builtin light theme is not viewable for bold green / bold yellow.
 bold-is-bright = false
 # make cursor viewable in revert theme (e.g. dark theme vim in light terminal or reverse)
@@ -16,6 +28,7 @@ quit-after-last-window-closed = true
 
 # some key is missing... (if in bare shell (bash or zsh))
 keybind = ctrl+[=text:\x1b
+keybind = ctrl+i=text:\t
 keybind = ctrl+m=text:\r
 
 # macos: cmd+h is mapped to alt+h globally with karabiner;
@@ -33,6 +46,13 @@ keybind = cmd+e=esc:e
 keybind = cmd+o=esc:o
 keybind = cmd+n=esc:n
 keybind = cmd+p=esc:p
+
+# split
+keybind = ctrl+physical:seven=new_split:right
+keybind = ctrl+shift+physical:seven=new_split:down
+keybind = ctrl+physical:eight=goto_split:previous
+keybind = ctrl+physical:nine=goto_split:next
+# TODO when move_split is implemented, bind c-s-8 / c-s-9.
 
 # use cmd+n in shell (tmux), so define another key for new_window.
 keybind = ctrl+shift+n=new_window
