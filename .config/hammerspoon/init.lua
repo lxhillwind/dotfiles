@@ -32,8 +32,8 @@ sky = SkyRocket:new({
   -- Which mouse button to hold to resize a window?
   resizeMouseButton = 'right',
 
-  -- Ghostty: option key to cursor-click-to-move
-  disabledApps = {'UTM', 'Ghostty'},
+  -- Ghostty / Kitty: option key to cursor-click-to-move
+  disabledApps = {'UTM', 'Ghostty', 'Kitty'},
 })
 -- }}}
 
