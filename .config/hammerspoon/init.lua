@@ -130,3 +130,8 @@ end
 -- }}}
 hs.hotkey.bind(hyper_shift, "[", function() MoveWindowToSpace(-1) end)
 hs.hotkey.bind(hyper_shift, "]", function() MoveWindowToSpace(1) end)
+
+-- like rofi on my linux desktop
+hs.hotkey.bind(hyper, "d", function()
+    hs.execute("~/bin/launcher.zsh")
+end)

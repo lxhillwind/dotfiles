@@ -1,0 +1,10 @@
+// usage:
+// bind the following command to shortcut:
+//   rofi -show drun -modi drun,window
+
+@theme "/usr/share/rofi/themes/Monokai.rasi"
+
+configuration {
+    // add C-c
+    kb-cancel: "Control+c,Escape,Control+g,Control+bracketleft";
+}

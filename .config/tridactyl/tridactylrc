@@ -444,7 +444,9 @@ command exclaim_quiet js_magic_d tri.lx.sh(JS_ARGS.join(' '))●
 bind ;m composite hint -Jpipe img src | js -p if (JS_ARG) tri.excmds.open(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
 bind ;M composite hint -Jpipe img src | js -p if (JS_ARG) tri.excmds.tabopen(`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(JS_ARG)}`)
 
-bind gi hint input:read-write,textarea:read-write
+# this is broken in 1.24.2; so use default behavior.
+# bind gi hint input:read-write,textarea:read-write
+bind gi focusinput -l
 
 " Misc {{{1
 

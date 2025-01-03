@@ -42,7 +42,6 @@ keybind = cmd+k=esc:k
 keybind = cmd+l=esc:l
 
 # macos: tmux
-keybind = cmd+d=esc:d
 keybind = cmd+e=esc:e
 keybind = cmd+o=esc:o
 keybind = cmd+n=esc:n
