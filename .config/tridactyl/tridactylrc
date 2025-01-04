@@ -355,14 +355,7 @@ seturl ^https://www.qidian.com hintfiltermode vimperator
 " }}}
 
 " bilibili.com {{{
-bindurl ^https://(search|www).bilibili.com c hint -Jc li.be-tab-item,div.toggle-btn\
-,div.list-box > div > div.item.sortable\
-,#app > div > aside.left > section.sticky > div > div.bili-dyn-live-users__body > div > div.bili-dyn-live-users__item__right\
-,#app > div > aside.right > section.sticky > div > div:nth-child(n)\
-,#app > div > main > section:nth-child(2) > div > div.bili-dyn-up-list__window > div > div:nth-child(n)\
-,div.view-more > div.view-more-default > span.view-more-btn\
-,a.btn-more\
-,#app > div > div > div.topic-detail__content > div > div.topic-list > div.list-view.topic-list__flow-list > div:nth-child(1) > div:nth-child(n) > div > div > div.bili-dyn-item__footer > div:nth-child(2) > div
+bindurl ^https://(search|www).bilibili.com c hint -f 点击查看
 " }}}
 
 " bind c for sub pages {{{

@@ -1,0 +1,14 @@
+URxvt.geometry: 90x26
+URxvt.scrollBar: false
+
+URxvt.font: xft:Jetbrains Mono NL:pixelsize=16, \
+    xft:Noto Sans CJK SC, \
+    xft:WenQuanYi Zen Hei Mono, \
+    xft:Jigmo:pixelsize=15, \
+    xft:Jigmo2:pixelsize=15, \
+    xft:Jigmo3:pixelsize=15
+
+! some bold color are hard to view
+URxvt.color10: Green2
+URxvt.color11: Gold1
+URxvt.color14: Cyan2
