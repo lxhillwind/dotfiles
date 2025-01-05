@@ -821,10 +821,6 @@ tmap <F19> <S-Space>
 if !has('gui_running')
     # disable mouse support by default. make terminal happier.
     set mouse=
-    if !empty($TMUX)
-        # fix mouse support in tmux; this option may not be set properly.
-        set ttymouse=xterm2
-    endif
 endif
 
 # fix scroll behavior (H, L, zz, zt, zb ...) {{{2
