@@ -384,6 +384,7 @@ bindurl ^https://www.protopage.com c hint -Jc td > div.scheme-header-text
 bindurl ^https://(search|www).bilibili.com f hint -Jc \
 div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
 ,a.bili-video-card__image--link\
+,div.bili-video-card__wrap > a\
 ,a.rank-ogv-card,a.rank-video-card,a.rank-article-card\
 ,li.history-record a.title\
 ,a.video-awesome-img,div.framepreview-box > a.box-a\
@@ -393,6 +394,7 @@ div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
 bindurl ^https://(search|www).bilibili.com F hint -bJc \
 div.__scale-wrap > a,div.bili-bangumi-card > a,div.bili-article-card__wrap > a\
 ,a.bili-video-card__image--link\
+,div.bili-video-card__wrap > a\
 ,a.rank-ogv-card,a.rank-video-card,a.rank-article-card\
 ,li.history-record a.title\
 ,a.video-awesome-img,div.framepreview-box > a.box-a\
