@@ -15,7 +15,40 @@ main()
     offset=$(( (target_y - current_y) * pane_width + (target_x - current_x) ))
     if test "$offset" -eq 0; then exit; fi
 
-    tmux send -N "${offset#-}" $(
+    # if all characters are single width, then we can exit here...
+    # tmux send -N "${offset#-}" $(
+    # if test "$offset" -gt 0; then echo Right; else echo Left; fi
+    # )
+
+    # About capturep -N / -T option:
+    # It only breaks if end of line are double width characters
+    #   and a following non-exist whitespace as placeholder;
+    # In other situations, everything works as expected.
+
+    s=$(mktemp)
+    # tmux popup -EE "  `# comment if not debug`
+    tmux capturep -p -N -T | env \
+        TMP_FILE="$s" \
+        CURRENT_X="$current_x" \
+        CURRENT_Y="$current_y" \
+        TARGET_X="$target_x" \
+        TARGET_Y="$target_y" \
+        PANE_WIDTH="$pane_width" \
+        vim -Nu NONE -S ~/vimfiles/bin/calculate-strlen.vim - \
+        `# comment if debug` --not-a-term \
+        `# comment if debug` >/dev/null 2>&1
+    # "  # comment if not debug
+
+    offset_char=$(cat -- "$s")
+    rm -- "$s"
+
+    # sanity check
+    if ! printf %s "$offset_char" | grep -Eq '^[0-9]+$'; then
+        offset_char=$offset
+    fi
+    if test "$offset_char" -eq 0; then exit; fi
+
+    tmux send -N "${offset_char#-}" $(
     if test "$offset" -gt 0; then echo Right; else echo Left; fi
     )
 }
