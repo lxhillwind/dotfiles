@@ -4,13 +4,12 @@ set -e
 # also see:
 # ~/vimfiles/bin/hints.vim
 
-popup_width=$(tmux display -p '#{pane_width}')
+popup_width=$1
 # vim requires 1 line at bottom.
-popup_height=$(( $(tmux display -p '#{pane_height}') + 1 ))
+popup_height=$(( $2 + 1 ))
 
-pane_bottom=$(tmux display -p '#{pane_bottom}')
 # make vim bottom align with pane (2: popup_height (+1); as 0-based index (+1))
-pane_bottom=$(( pane_bottom + 2 ))
+pane_bottom=$(( $3 + 2 ))
 
 # NOTE tmux capture: -e option may add a final newline (e.g. when running vim / less),
 # so do not use -e option.

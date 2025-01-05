@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+main()
+{
+    # We have entered copy-mode before executing this script; so cancel here.
+    tmux send-keys -X cancel
+
+    current_x=$1
+    current_y=$2
+    target_x=$3
+    target_y=$4
+    pane_width=$5
+
+    offset=$(( (target_y - current_y) * pane_width + (target_x - current_x) ))
+    if test "$offset" -eq 0; then exit; fi
+
+    tmux send -N "${offset#-}" $(
+    if test "$offset" -gt 0; then echo Right; else echo Left; fi
+    )
+}
+
+main $(
+tmux display -p '#{cursor_x} #{cursor_y} #{copy_cursor_x} #{copy_cursor_y} #{pane_width}'
+)
