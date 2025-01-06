@@ -33,7 +33,7 @@ sky = SkyRocket:new({
   resizeMouseButton = 'right',
 
   -- Ghostty / Kitty: option key to cursor-click-to-move
-  disabledApps = {'UTM', 'Ghostty', 'Kitty'},
+  disabledApps = {'UTM', 'Ghostty', 'kitty'},
 })
 -- }}}
 
