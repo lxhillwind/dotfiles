@@ -25,22 +25,16 @@ main()
     #   and a following non-exist whitespace as placeholder;
     # In other situations, everything works as expected.
 
-    s=$(mktemp)
-    # tmux popup -EE "  `# comment if not debug`
+    offset_char=$(
     tmux capturep -p -N -T | env \
-        TMP_FILE="$s" \
         CURRENT_X="$current_x" \
         CURRENT_Y="$current_y" \
         TARGET_X="$target_x" \
         TARGET_Y="$target_y" \
         PANE_WIDTH="$pane_width" \
-        vim -Nu NONE -S ~/vimfiles/bin/calculate-strlen.vim - \
-        `# comment if debug` --not-a-term \
-        `# comment if debug` >/dev/null 2>&1
-    # "  # comment if not debug
-
-    offset_char=$(cat -- "$s")
-    rm -- "$s"
+        vim - -S ~/vimfiles/bin/calculate-strlen.vim -es --not-a-term \
+        --clean -Nu NONE 2>/dev/null
+    )
 
     # sanity check
     if ! printf %s "$offset_char" | grep -Eq '^[0-9]+$'; then

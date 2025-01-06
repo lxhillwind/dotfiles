@@ -1,17 +1,18 @@
 vim9script
 
-# do not save anything during this session.
-set viminfo=
+# Usage: xxx | vim - -S this-file -es --not-a-term
 
 def Main()
+    # quit easily
     setl buftype=nofile
+    # make "print" do not print linenr.
+    setl nonu nornu
 
     var current_x = $CURRENT_X->str2nr()
     var current_y = $CURRENT_Y->str2nr()
     var target_x = $TARGET_X->str2nr()
     var target_y = $TARGET_Y->str2nr()
     const pane_width = $PANE_WIDTH->str2nr()
-    const tmp_file = $TMP_FILE
 
     # Here is a quite strange behavior:
     # If &columns is in the middle of a double width char,
@@ -56,8 +57,9 @@ def Main()
     if !cursor_over_string
         result -= 1
     endif
-    [string(result)]
-        ->writefile(tmp_file)
+
+    append('$', string(result))
+    :$print
 enddef
 
 Main()
