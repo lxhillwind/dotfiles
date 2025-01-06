@@ -21,16 +21,19 @@ def Main()
     # Then using %123v (where 123 > &columns) will match the column with
     # offset 1.
     # So we need to ensure that there are enough columns.
-    &columns = pane_width
+    if pane_width > 0
+        &columns = pane_width
+    endif
 
     var cursor_over_string = false
+    const max_y = line('$')
 
     # start search
     {
         # Why "gg0"? See "v0" below.
         normal! gg0
-        var y = current_y + 1
-        var x = min([strdisplaywidth(getline(y)), current_x + 1])
+        const y = min([current_y + 1, max_y])
+        const x = min([strdisplaywidth(getline(y)), current_x + 1])
         if current_x + 1 > x
             cursor_over_string = true
         endif
@@ -41,8 +44,8 @@ def Main()
     # extend selection to next position,
     # and copy
     {
-        var y = target_y + 1
-        var x = min([strdisplaywidth(getline(y)), target_x + 1])
+        const y = min([target_y + 1, max_y])
+        const x = min([strdisplaywidth(getline(y)), target_x + 1])
         if target_x + 1 > x
             cursor_over_string = true
         endif
