@@ -57,6 +57,7 @@ def main():
     if content_old.startswith(content_new):
         content_diff = content_old[len(content_new):]
         content_diff = content_diff.lstrip()
+        content_diff = content_diff.replace('\n', '')
 
     with open(edit_buffer, 'w') as f:
         f.write(content_diff)
@@ -66,7 +67,7 @@ def main():
     os.remove(edit_buffer)
 
     if line:
-        subprocess.run(['tmux', 'send', '-l', line])
+        subprocess.run(['tmux', 'send', '-l', '--', line])
 
 
 main()
