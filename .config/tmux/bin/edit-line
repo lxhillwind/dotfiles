@@ -25,7 +25,7 @@ tmux send C-e C-u
 content_new=$(current_pane)
 
 # if tty is slow (e.g. ssh into remote server), then wait until content is refreshed.
-retry_left=20  # 20 * 0.1 = 2s.
+retry_left=10  # 20 * 0.1 = 2s; but sleep command is not very accurate.
 if [ "$(tmux display -p "#{pane_current_command}")" != ssh ]; then
     # ...only wait that long for ssh.
     retry_left=1
