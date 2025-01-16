@@ -96,6 +96,11 @@ def PopupFilter(winid: number, key: string): bool
             Fn(line)
         endif
         return true
+    elseif key == "\<C-d>"
+        if state.input == ''
+            winid->popup_close()
+        endif
+        return true
     elseif key == "\<Backspace>" || key == "\<C-h>"
         state.input = state.input[ : -2]
     elseif key == "\<C-u>"
