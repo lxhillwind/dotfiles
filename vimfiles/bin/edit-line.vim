@@ -2,9 +2,33 @@ vim9script
 
 # see ~/.config/tmux/bin/edit-line
 
+def CurrentPane(): string
+    # -J: join wrapping line
+    # -N: keep trailing whitespace
+    return system('tmux capture -p -N -J')->trim()
+enddef
+
 def Main()
-    var content_old = $CONTENT_OLD->trim()
-    var content_new = $CONTENT_NEW->trim()
+    var content_old = CurrentPane()
+    system('tmux send C-e C-u')
+    var content_new = CurrentPane()
+
+    # if tty is slow (e.g. ssh into remote server), then wait until content is refreshed.
+    var retry_left = 20
+    if system('tmux display -p "#{pane_current_command}"')->trim() != 'ssh'
+        # ...only wait that long for ssh.
+        retry_left = 1
+    endif
+
+    while retry_left > 0
+        retry_left -= 1
+        const i = CurrentPane()
+        if i != content_old
+            content_new = i
+            break
+        endif
+        sleep 100m
+    endwhile
 
     if content_old->matchstr('\v[^\n]+$') == content_new->matchstr('\v[^\n]+$')
         # if it's tmux, strip statusline (last line).

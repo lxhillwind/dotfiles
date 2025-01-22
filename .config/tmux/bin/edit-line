@@ -13,37 +13,8 @@
 
 set -e
 
-current_pane()
-{
-    # -J: join wrapping line
-    # -N: keep trailing whitespace
-    tmux capture -p -N -J
-}
-
-content_old=$(current_pane)
-tmux send C-e C-u
-content_new=$(current_pane)
-
-# if tty is slow (e.g. ssh into remote server), then wait until content is refreshed.
-retry_left=10  # 20 * 0.1 = 2s; but sleep command is not very accurate.
-if [ "$(tmux display -p "#{pane_current_command}")" != ssh ]; then
-    # ...only wait that long for ssh.
-    retry_left=1
-fi
-
-while [ "$retry_left" -gt 0 ]; do
-    retry_left=$(( retry_left - 1 ))
-    i=$(current_pane)
-    if [ "$i" != "$content_old" ]; then
-        content_new=$i
-        break
-    fi
-    sleep 0.1
-done
-
 s=$(mktemp)
 tmux popup -E \
-    env CONTENT_OLD="$content_old" CONTENT_NEW="$content_new" \
     vim -S ~/vimfiles/bin/edit-line.vim -- "$s"
 
 line=$(cat -- "$s")
