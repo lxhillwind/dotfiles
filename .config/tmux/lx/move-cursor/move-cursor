@@ -32,7 +32,7 @@ main()
         TARGET_X="$target_x" \
         TARGET_Y="$target_y" \
         PANE_WIDTH="$pane_width" \
-        vim - -S ~/vimfiles/bin/calculate-strlen.vim -es --not-a-term \
+        vim - -S "$(dirname "$0")"/calculate-strlen.vim -es --not-a-term \
         --clean -Nu NONE 2>/dev/null
     )
 

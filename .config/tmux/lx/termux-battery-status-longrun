@@ -2,7 +2,7 @@
 
 # usage:
 # add to tmux.conf:
-#   run -b '~/.config/tmux/bin/termux-battery-status-longrun'
+#   run -b path-to-this-file
 
 if ! command -v termux-battery-status >/dev/null; then
     exit 0

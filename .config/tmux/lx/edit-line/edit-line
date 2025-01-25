@@ -1,7 +1,5 @@
 #!/bin/sh
 
-# This is a sh+vim rewrite of ./edit-line.py, in case python is not available.
-
 # intro:
 #
 #   global `<C-x><C-e>` (readline editor / zsh zle)
@@ -9,13 +7,13 @@
 # usage:
 #
 #   # add to tmux.conf (modify key / path accordingly):
-#   bind -n M-e run ~/.config/tmux/bin/edit-line
+#   bind -n M-e run path-of-this-file
 
 set -e
 
 s=$(mktemp)
 tmux popup -E \
-    vim -S ~/vimfiles/bin/edit-line.vim -- "$s"
+    vim -S "$(dirname "$0")"/edit-line.vim -- "$s"
 
 line=$(cat -- "$s")
 rm -- "$s"

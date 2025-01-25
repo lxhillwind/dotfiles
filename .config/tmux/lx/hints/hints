@@ -1,9 +1,6 @@
 #!/bin/sh
 set -e
 
-# also see:
-# ~/vimfiles/bin/hints.vim
-
 popup_width=$1
 # vim requires 1 line at bottom.
 popup_height=$(( $2 + 1 ))
@@ -14,4 +11,4 @@ pane_bottom=$(( $3 + 2 ))
 # NOTE tmux capture: -e option may add a final newline (e.g. when running vim / less),
 # so do not use -e option.
 tmux popup -E -w "$popup_width" -h "$popup_height" -x P -y "$pane_bottom" -B \
-    sh -c "tmux capture -p | vim - -S ~/vimfiles/bin/hints.vim"
+    sh -c "tmux capture -p | vim - -S "$(dirname "$0")"/hints.vim"
