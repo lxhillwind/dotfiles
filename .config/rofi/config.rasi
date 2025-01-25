@@ -7,4 +7,6 @@
 configuration {
     // add C-c
     kb-cancel: "Control+c,Escape,Control+g,Control+bracketleft";
+    // it occupies C-c, so set it to empty.
+    kb-secondary-copy: "";
 }
