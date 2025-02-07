@@ -91,11 +91,11 @@ sed -E -i '/^(foreground|background)/d' "$config_path"
     if [ "$theme" = dark ]; then
         printf '%s\n%s\n' \
             'background #383a42' \
-            'foreground #fafafa'
+            'foreground #ffffff'
     else
         printf '%s\n%s\n' \
             'foreground #383a42' \
-            'background #fafafa'
+            'background #ffffff'
     fi
 } >> "$config_path"
 
