@@ -398,6 +398,53 @@ def LspSetup()
 enddef
 # }}}2
 
+# How to use coc.nvim without modifing this vimrc? {{{2
+# - install from https://github.com/neoclide/coc.nvim;
+#
+# - recommend plugin:
+#     CocInstall coc-json coc-pairs
+#
+# - useful setting (":CocConfig"):
+#    "suggest.noselect": true
+#    "diagnostic.enableSign": false
+#    "suggest.minTriggerInputLength": 2
+
+const coc_vimrc_template =<< trim END
+# Disable certain bundled lsp config by setting relevant key's filetype to [];
+# since they may be conflict with coc.nvim.
+# Note that the key may not be &filetype.
+g:vimrc_lsp_config = {
+    python: { filetype: [] },
+}
+
+# Order matters!
+source ~/vimfiles/vimrc
+
+pa! coc.nvim
+
+augroup vimrc
+    # Only enable certain filetype completion for vimcomplete.
+    # I don't know how to do the reverse, which should be easier to maintain...
+    au VimEnter * VimCompleteEnable vim
+
+    # Highlight the symbol and its references when holding the cursor
+    autocmd CursorHold * silent call g:CocActionAsync('highlight')
+augroup END
+
+set formatexpr=CocAction('formatSelected')
+&keywordprg = ":call g:CocActionAsync('doHover') | \""
+set tagfunc=CocTagFunc
+
+nmap <silent> [g <Plug>(coc-diagnostic-prev)
+nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+END
+# }}}2
+
 # NOTE: plugin loading should be put **before** this. (see :help packadd)
 # NOTE: filetype related autocmd should be put **after** this.
 filetype plugin indent on
