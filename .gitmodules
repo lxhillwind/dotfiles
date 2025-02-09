@@ -36,7 +36,7 @@
 	url = https://github.com/godlygeek/tabular
 [submodule ".config/firefoxCSS/Firefox-Onebar"]
 	path = .config/firefoxCSS/Firefox-Onebar
-	url = https://codeberg.org/Freeplay/Firefox-Onebar
+	url = https://git.gay/freeplay/Firefox-Onebar
 [submodule "vimfiles/pack/rc/opt/miniSnip"]
 	path = vimfiles/pack/rc/opt/miniSnip
 	url = https://github.com/Jorengarenar/miniSnip
