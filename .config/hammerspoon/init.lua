@@ -73,10 +73,10 @@ end -- }}}
 -- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
 -- 然后此处设置带 shift 的.
 bindApp(",", "Firefox", hyper_shift)
--- 将 gVim 设置为所有桌面可见, 充当记事本 (scratchpad);
+-- 将文本编辑器设置为所有桌面可见, 充当记事本 (scratchpad);
 -- macos: "Right click on the application icon in the dock -> options -> All Desktops"
 -- ref: https://superuser.com/a/1146999
-bindApp(".", "MacVim")
+bindApp(".", "visual studio code")
 -- selection in tmux: it's visually better with (ghostty / kitty) than iterm2.
 bindApp("/", "ghostty")
 -- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
