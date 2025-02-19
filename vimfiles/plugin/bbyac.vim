@@ -22,9 +22,16 @@ def BBYacMain(): string
         is_first = false
         pattern ..= printf('[%s]', escape(i, '\'))
     endfor
-    pattern = '\v\c<' .. pattern .. '>'
-    var result = matchbufline('', pattern, 1, '$')
-        ->mapnew((_, i) => i.text)
+    pattern = '\v\c<' .. pattern
+
+    var result = []
+
+    for win in getwininfo()->filter((_, i) => i.tabnr == tabpagenr())
+        result->extend(
+            matchbufline(win.bufnr, pattern, win.topline, win.botline)
+            ->mapnew((_, i) => i.text)
+        )
+    endfor
 
     const tmux_cmd =<< trim END
     for i in $(tmux list-panes | grep -Ev active | grep -Eo '^[0-9]+'); do
@@ -32,12 +39,12 @@ def BBYacMain(): string
     done
     END
 
-    const result_tmux = !empty($TMUX) ? (
+    result->extend(!empty($TMUX) ? (
         matchstrlist(systemlist(tmux_cmd->join("\n")), pattern)
         ->mapnew((_, i) => i.text)
-    ) : []
+    ) : [])
 
-    result = result->extend(result_tmux)
+    result = result
         ->sort()->uniq()
         ->filter((_, i) => i != word)
     complete(pos, result)
