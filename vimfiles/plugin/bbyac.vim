@@ -4,6 +4,8 @@ vim9script
 #
 # NOTE: although key binding is <C-n>, we usually should press <C-e> first:
 #   otherwise it will not get triggered. (why?)
+#
+# Credit: https://github.com/baohaojun/bbyac (for inspiration and plugin name)
 
 inoremap <expr> <C-n> pumvisible() ? "\<C-n>" : "\<C-r>=<SID>BBYacMain()\<CR>"
 
@@ -22,7 +24,7 @@ def BBYacMain(): string
         is_first = false
         pattern ..= printf('[%s]', escape(i, '\'))
     endfor
-    pattern = '\v\c<' .. pattern
+    pattern = '\v\c' .. pattern
 
     var result = []
 
