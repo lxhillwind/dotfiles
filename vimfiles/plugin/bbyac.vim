@@ -16,15 +16,27 @@ def BBYacMain(): string
     endif
     const word = getline('.')->strpart(pos - 1, col('.') - pos + 1)
     var pattern = ''
+    var pattern_non_greedy = ''
     var is_first = true
     for i in word->split('\zs')
         if !is_first
             pattern ..= '.*'
+            pattern_non_greedy ..= '.{-}'
         endif
         is_first = false
         pattern ..= printf('[%s]', escape(i, '\'))
+        pattern_non_greedy ..= printf('[%s]', escape(i, '\'))
     endfor
+    if word[0] =~ '\w'
+        pattern = '\w*' .. pattern
+        pattern_non_greedy = '\w*' .. pattern_non_greedy
+    endif
+    if word[-1] =~ '\w'
+        pattern = pattern .. '\w*'
+        pattern_non_greedy = pattern_non_greedy .. '\w*'
+    endif
     pattern = '\v\c' .. pattern
+    pattern_non_greedy = '\v\c' .. pattern_non_greedy
 
     var result = []
 
@@ -49,6 +61,16 @@ def BBYacMain(): string
     result = result
         ->sort()->uniq()
         ->filter((_, i) => i != word)
+
+    result->extend(
+        matchstrlist(result, pattern_non_greedy)
+        ->mapnew((_, i) => i.text)
+    )
+
+    result = result
+        ->sort()->uniq()
+        ->filter((_, i) => i != word)
+
     complete(pos, result)
     return ''
 enddef
