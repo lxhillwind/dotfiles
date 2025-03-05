@@ -38,7 +38,6 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
     state.callback = Callback
     state.lines_all = []  # list<string>
     state.lines_matched = []  # list<string>
-    state.need_refresh = false
     state.input = ''
     state.line_offset = 0
     state.current_line = 1
@@ -62,24 +61,25 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
         },
     })
     const buf = winbufnr(state.winid)
+    state.timer = timer_start(0, (_) => SourceRefresh())
     if empty(Cmd)
         state.lines_all = Lines
-        state.need_refresh = true
     else
         var cmd_opt = execute($'Sh -n {Cmd}')->json_decode()
         cmd_opt.opt.out_mode = 'nl'
         cmd_opt.opt.out_cb = (_, msg) => {
-            if !empty(state)
+            if !empty(state)  # in case of StateCleanup() is called.
                 state.lines_all->add(msg)
-                state.need_refresh = true
-                SourceRefresh()
+                # when timer callback is called, timer_info() will return [].
+                if empty(timer_info(state.timer))
+                    SourceRefresh()
+                endif
             endif
         }
         state.job_id = job_start(cmd_opt.cmd, cmd_opt.opt)
     endif
     # match id: use it + 1000 as line number.
     matchadd('Function', '\%1l', 10, 1000 + 1, {window: state.winid})
-    state.timer = timer_start(0, (_) => SourceRefresh())
 enddef
 
 def PopupFilter(winid: number, key: string): bool
@@ -129,7 +129,6 @@ def PopupFilter(winid: number, key: string): bool
     timer_stop(state.timer)
     state.line_offset = 0
     state.lines_matched = []
-    state.need_refresh = true
     SourceRefresh()
 
     return true
@@ -192,19 +191,14 @@ def UIRefresh()
 enddef
 
 def SourceRefresh()
-    if !has_key(state, 'timer')  # in case of state.timer assignment is not ready.
-        return
-    endif
-    if !state.need_refresh
-        return
-    endif
-    state.need_refresh = false
     if state.input->empty()
         state.lines_matched = state.lines_all[ : state.height]
     else
         const matched = matchfuzzy(state.lines_all[state.line_offset : state.line_offset + CHUNK_SIZE], state.input)
         # TODO limit lines to test.
         state.lines_matched = matchfuzzy(matched + state.lines_matched, state.input)
+        # omit contents with too low score.
+        state.lines_matched = state.lines_matched[ : CHUNK_SIZE]
         state.line_offset += CHUNK_SIZE
     endif
     UIRefresh()
