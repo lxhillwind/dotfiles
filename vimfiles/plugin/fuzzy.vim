@@ -29,21 +29,23 @@ enddef
 # g:Pick() implementation using builtin fuzzy function. {{{1
 var state: dict<any> = {}
 
+const CHUNK_SIZE = 5'000
+
 def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callback: func(any) = v:none)
     if has_key(state, 'job_id')
         state->remove('job_id')
     endif
     state.callback = Callback
-    state.lines = []  # list<string>
+    state.lines_all = []  # list<string>
+    state.lines_matched = []  # list<string>
     state.need_refresh = false
-    state.has_running = false
     state.input = ''
+    state.line_offset = 0
     state.current_line = 1
     state.move_cursor = ''
-    state.reltime = reltime()
     const height = max([&lines / 2, 10])
     state.height = height
-    const winid = popup_create('', {
+    state.winid = popup_create('', {
         title: printf(' %s ', empty(Title) ? Cmd : Title),
         pos: 'botleft',  # use bot instead of top, since latter hides tab info.
         minwidth: &columns,
@@ -59,25 +61,25 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
             StateCleanup()
         },
     })
-    state.winid = winid
-    state.timer = timer_start(1000, (_) => Refresh(), {repeat: -1})
-    const buf = winbufnr(winid)
+    const buf = winbufnr(state.winid)
     if empty(Cmd)
-        state.lines = Lines
+        state.lines_all = Lines
         state.need_refresh = true
     else
         var cmd_opt = execute($'Sh -n {Cmd}')->json_decode()
         cmd_opt.opt.out_mode = 'nl'
         cmd_opt.opt.out_cb = (_, msg) => {
-            state.lines->add(msg)
-            state.need_refresh = true
+            if !empty(state)
+                state.lines_all->add(msg)
+                state.need_refresh = true
+                SourceRefresh()
+            endif
         }
         state.job_id = job_start(cmd_opt.cmd, cmd_opt.opt)
     endif
-    # enough time to display initial data.
-    timer_start(empty(Cmd) ? 50 : 200, (_) => Refresh())
     # match id: use it + 1000 as line number.
     matchadd('Function', '\%1l', 10, 1000 + 1, {window: state.winid})
+    state.timer = timer_start(0, (_) => SourceRefresh())
 enddef
 
 def PopupFilter(winid: number, key: string): bool
@@ -113,17 +115,23 @@ def PopupFilter(winid: number, key: string): bool
         endif
     elseif key == "\<C-k>" || key == "\<C-p>"
         MoveCursor('up')
+        return true
     elseif key == "\<C-j>" || key == "\<C-n>"
         MoveCursor('down')
+        return true
     elseif key->matchstr('^.') == "\x80"
         # like <MouseUp> / <CursorHold> ...
         return true
     else
         state.input ..= key
     endif
-    GenHeader()->setbufline(winbufnr(winid), 1)
+
+    timer_stop(state.timer)
+    state.line_offset = 0
+    state.lines_matched = []
     state.need_refresh = true
-    timer_start(0, (_) => Refresh())
+    SourceRefresh()
+
     return true
 enddef
 
@@ -170,40 +178,39 @@ def StateCleanup()
     state = {}
 enddef
 
-const LINES_MANY = 5'000
+def UIRefresh()
+    var lines: list<string> = []
+    lines->add(GenHeader())
+    lines->extend(state.lines_matched)
+    lines = lines[ : state.height - 1]
+    state.lines_shown = lines
+    # TODO omit middle if line too long.
+    const text = lines->mapnew((_, i) => strdisplaywidth(i) <= &columns ? i : i->strpart(0, &columns))
+    state.winid->popup_settext(text)
+    # if current_line is out of range, move it to the last line.
+    MoveCursor('')
+enddef
 
-def Refresh()
-    if !has_key(state, 'winid')
-        # when anonymous timer is scheduled after popup closing.
-        return
-    endif
-    if state.has_running
+def SourceRefresh()
+    if !has_key(state, 'timer')  # in case of state.timer assignment is not ready.
         return
     endif
     if !state.need_refresh
         return
     endif
-    if state.lines->len() > LINES_MANY
-        if state.reltime->reltime()->reltimefloat() < 0.1  # second
-            return
-        endif
-    endif
-    state.reltime = reltime()
     state.need_refresh = false
-    state.has_running = true
-    var lines: list<string> = []
-    lines->add(GenHeader())
     if state.input->empty()
-        lines->extend(state.lines[ : state.height])
+        state.lines_matched = state.lines_all[ : state.height]
     else
-        lines->extend(matchfuzzy(state.lines, state.input))
+        const matched = matchfuzzy(state.lines_all[state.line_offset : state.line_offset + CHUNK_SIZE], state.input)
+        # TODO limit lines to test.
+        state.lines_matched = matchfuzzy(matched + state.lines_matched, state.input)
+        state.line_offset += CHUNK_SIZE
     endif
-    lines = lines[ : state.height - 1]
-    state.winid->popup_settext(lines)
-    state.lines_shown = lines
-    # if current_line is out of range, move it to the last line.
-    MoveCursor('')
-    state.has_running = false
+    UIRefresh()
+    if state.line_offset <= state.lines_all->len()
+        state.timer = timer_start(100, (_) => SourceRefresh())
+    endif
 enddef
 
 # various pick function {{{1
