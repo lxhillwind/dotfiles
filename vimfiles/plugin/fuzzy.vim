@@ -44,8 +44,9 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
     state.move_cursor = ''
     const height = max([&lines / 2, 10])
     state.height = height
+    state.title_base = printf(' %s ', empty(Title) ? Cmd : Title)
     state.winid = popup_create('', {
-        title: printf(' %s ', empty(Title) ? Cmd : Title),
+        title: state.title_base,
         pos: 'botleft',  # use bot instead of top, since latter hides tab info.
         minwidth: &columns,
         minheight: height,
@@ -180,19 +181,24 @@ enddef
 def UIRefresh()
     var lines: list<string> = []
     lines->add(GenHeader())
-    lines->extend(state.lines_matched)
-    lines = lines[ : state.height - 1]
+    # 2: height - line[0] - offset
+    lines->extend(state.lines_matched[ : state.height - 2])
     state.lines_shown = lines
     # TODO omit middle if line too long.
     const text = lines->mapnew((_, i) => strdisplaywidth(i) <= &columns ? i : i->strpart(0, &columns))
     state.winid->popup_settext(text)
+    state.winid->popup_setoptions({
+        # when state.lines_matched (fuzzy) length is more than CHUNK_SIZE, the
+        # number is not accurate (since it is cut off).
+        title: state.title_base .. $'({state.lines_matched->len()}/{state.lines_all->len()}) '
+    })
     # if current_line is out of range, move it to the last line.
     MoveCursor('')
 enddef
 
 def SourceRefresh()
     if state.input->empty()
-        state.lines_matched = state.lines_all[ : state.height]
+        state.lines_matched = state.lines_all
     else
         const matched = matchfuzzy(state.lines_all[state.line_offset : state.line_offset + CHUNK_SIZE], state.input)
         # TODO limit lines to test.
