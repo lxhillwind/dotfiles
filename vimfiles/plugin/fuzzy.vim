@@ -225,9 +225,12 @@ def SourceRefresh()
         # omit contents with too low score.
         state.lines_matched = state.lines_matched[ : CHUNK_SIZE]
         state.line_offset += CHUNK_SIZE
+        if state.line_offset > state.lines_all->len()
+            state.line_offset = state.lines_all->len()
+        endif
     endif
     UIRefresh()
-    if !input_empty && state.line_offset <= state.lines_all->len()
+    if !input_empty && state.line_offset < state.lines_all->len()
         state.timer = timer_start(100, (_) => SourceRefresh())
     endif
 enddef
