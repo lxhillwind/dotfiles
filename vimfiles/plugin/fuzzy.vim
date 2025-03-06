@@ -85,6 +85,7 @@ enddef
 
 def PopupFilter(winid: number, key: string): bool
     state.move_cursor = ''
+    var reuse_filter = false
     if key == "\<Esc>" || key == "\<C-c>"
         winid->popup_close()
         return true
@@ -124,13 +125,24 @@ def PopupFilter(winid: number, key: string): bool
         # like <MouseUp> / <CursorHold> ...
         return true
     else
+        const input_empty = empty(state.input) || state.input =~ '^\s*$'
+        if !input_empty
+            reuse_filter = true
+        endif
         state.input ..= key
     endif
 
-    timer_stop(state.timer)
-    state.line_offset = 0
-    state.lines_matched = []
-    SourceRefresh()
+    if reuse_filter
+        # do not restart match: already filtered out contents will not match.
+        if empty(timer_info(state.timer))
+            SourceRefresh()
+        endif
+    else
+        timer_stop(state.timer)
+        state.line_offset = 0
+        state.lines_matched = []
+        SourceRefresh()
+    endif
 
     return true
 enddef
@@ -197,7 +209,11 @@ def UIRefresh()
 enddef
 
 def SourceRefresh()
-    if state.input->empty()
+    if empty(state)
+        return
+    endif
+    const input_empty = empty(state.input) || state.input =~ '^\s*$'
+    if input_empty
         state.lines_matched = state.lines_all
     else
         const matched = matchfuzzy(state.lines_all[state.line_offset : state.line_offset + CHUNK_SIZE], state.input)
@@ -208,7 +224,7 @@ def SourceRefresh()
         state.line_offset += CHUNK_SIZE
     endif
     UIRefresh()
-    if state.line_offset <= state.lines_all->len()
+    if !input_empty && state.line_offset <= state.lines_all->len()
         state.timer = timer_start(100, (_) => SourceRefresh())
     endif
 enddef
