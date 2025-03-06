@@ -199,10 +199,13 @@ def UIRefresh()
     # TODO omit middle if line too long.
     const text = lines->mapnew((_, i) => strdisplaywidth(i) <= &columns ? i : i->strpart(0, &columns))
     state.winid->popup_settext(text)
+    const matched_len = state.lines_matched->len()
+    const s = matched_len >= CHUNK_SIZE ? $'{CHUNK_SIZE}+' : $'{matched_len}'
+    const title_suffix = $'({s}/{state.lines_all->len()}) '
     state.winid->popup_setoptions({
         # when state.lines_matched (fuzzy) length is more than CHUNK_SIZE, the
         # number is not accurate (since it is cut off).
-        title: state.title_base .. $'({state.lines_matched->len()}/{state.lines_all->len()}) '
+        title: state.title_base .. title_suffix
     })
     # if current_line is out of range, move it to the last line.
     MoveCursor('')
