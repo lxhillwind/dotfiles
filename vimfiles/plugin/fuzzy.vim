@@ -62,6 +62,9 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
         },
     })
     const buf = winbufnr(state.winid)
+    # set state.timer to a valid value;
+    # callback will be executed after back in main loop, so it is safe to fill
+    # state.lines_all after timer creation.
     state.timer = timer_start(0, (_) => SourceRefresh())
     if empty(Cmd)
         state.lines_all = Lines
@@ -132,16 +135,13 @@ def PopupFilter(winid: number, key: string): bool
         state.input ..= key
     endif
 
+    timer_stop(state.timer)
+    defer SourceRefresh()
     if reuse_filter
         # do not restart match: already filtered out contents will not match.
-        if empty(timer_info(state.timer))
-            SourceRefresh()
-        endif
     else
-        timer_stop(state.timer)
         state.line_offset = 0
         state.lines_matched = []
-        SourceRefresh()
     endif
 
     return true
