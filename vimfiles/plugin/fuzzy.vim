@@ -38,6 +38,7 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
     state.callback = Callback
     state.lines_all = []  # list<string>
     state.lines_matched = []  # list<string>
+    state.lines_shown = []  # list<string>
     state.input = ''
     state.line_offset = 0
     state.current_line = 1
@@ -84,6 +85,7 @@ def g:Pick(Title: string = '', Cmd: string = '', Lines: list<string> = [], Callb
     endif
     # match id: use it + 1000 as line number.
     matchadd('Function', '\%1l', 10, 1000 + 1, {window: state.winid})
+    prop_type_add('FuzzyMatched', {bufnr: buf, highlight: 'String'})
 enddef
 
 def PopupFilter(winid: number, key: string): bool
@@ -191,14 +193,6 @@ def StateCleanup()
 enddef
 
 def UIRefresh()
-    var lines: list<string> = []
-    lines->add(GenHeader())
-    # 2: height - line[0] - offset
-    lines->extend(state.lines_matched[ : state.height - 2])
-    state.lines_shown = lines
-    # TODO omit middle if line too long.
-    const text = lines->mapnew((_, i) => strdisplaywidth(i) <= &columns ? i : i->strpart(0, &columns))
-    state.winid->popup_settext(text)
     const matched_len = state.lines_matched->len()
     const s = matched_len >= CHUNK_SIZE ? $'{CHUNK_SIZE}+' : $'{matched_len}'
     const title_suffix = $'({s}/{state.lines_all->len()}) '
@@ -207,8 +201,56 @@ def UIRefresh()
         # number is not accurate (since it is cut off).
         title: state.title_base .. title_suffix
     })
+
+    var lines: list<string> = []
+    lines->add(GenHeader())
+    # 2: height - line[0] - offset
+    lines->extend(state.lines_matched[ : state.height - 2])
+    if state.lines_shown == lines
+        # avoid popup_settext() if possible, to improve a little performance.
+        return
+    endif
+    state.lines_shown = lines
+
+    const input_empty = empty(state.input) || state.input =~ '^\s*$'
+    if input_empty
+        const text = lines->mapnew((_, i) => strdisplaywidth(i) <= &columns ? i : i->strpart(0, &columns))
+        state.winid->popup_settext(text)
+    else
+        RenderFuzzyMatched(lines)
+    endif
+
     # if current_line is out of range, move it to the last line.
     MoveCursor('')
+enddef
+
+def RenderFuzzyMatched(lines: list<string>)
+    const [text, position, _] = matchfuzzypos(lines[1 : ], state.input)
+    var text_props = []
+    text_props->add({text: lines[0], props: []})
+    for i in range(0, len(text) - 1)
+        var props = []
+        var text_display = text[i]
+        if strdisplaywidth(text_display) > &columns
+            text_display = text_display->strpart(0, &columns)
+        endif
+        for j in position[i]
+            const col = byteidx(text[i], j)
+            if col >= strlen(text_display)
+                continue
+            endif
+            props->add({
+                col: col + 1,
+                length: 1,
+                type: 'FuzzyMatched',
+            })
+        endfor
+        text_props->add({
+            text: text_display,
+            props: props,
+        })
+    endfor
+    state.winid->popup_settext(text_props)
 enddef
 
 def SourceRefresh()
