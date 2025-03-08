@@ -91,6 +91,7 @@ packadd! vim-jump
 packadd! vim-sh
 packadd! base16-dynamic.vim
 packadd! lf.vim
+packadd! vim-fuzzy
 packadd! table-im
 g:table_im#auto_commit = true
 g:table_im#table_file = () => {
