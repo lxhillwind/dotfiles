@@ -94,29 +94,29 @@ esac
 # TODO openSUSE busybox-static sh handle PS1 buggy?
 PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date +%Y-%m-%d\ %H:%M:%S)] \[\e[33m\]\w'$'\n''\[\e[32m\]\$\[\e[0m\] '
 
-# sv(): capture term output, pipe to vim (easy jump) {{{2
-# optional $1: start line from visible top; default: 1000
-# TODO: After we decide newer sv() is useful, delete tmux sv().
-if [ -n "$TMUX" ]; then
-    sv()
-    {
-        vim -c 'set buftype=nofile | %Sh -t=enew cat' <(tmux capture -e -p -S -${1:-0} -E $(tmux display -p "#{cursor_y}"))
-    }
-fi
-
-sv()
-{
-    local cmd="$(fc -n -l -1 -1)"
-    case "$cmd" in
-        rg\ *)
-            ;;
-        *)
-            echo 'INFO: last cmd is not starting with `rg`.' >&2
-            return ;;
-    esac
-    cmd="Rg ${cmd##rg }"
-    env RG_CMD="$cmd" vim -c 'call feedkeys(":" .. $RG_CMD, "n")'
-}
+# sv(): run the last command in vim (for easy goto) {{{2
+case "$0" in
+    # only bash / zsh support `fc`; busybox does not.
+    *bash*|*zsh*)
+        sv()
+        {
+            local cmd="$(fc -n -l -1 -1)"
+            # remove '\t ' prefix for bash.
+            cmd="${cmd#$'\t' }"
+            case "$cmd" in
+                rg\ *)
+                    cmd="Rg ${cmd##rg }"
+                    ;;
+                *)
+                    cmd="Sh -t= ${cmd}"
+                    ;;
+            esac
+            env VIM_CMD="$cmd" vim -c 'call feedkeys(":" .. $VIM_CMD, "n")'
+        }
+        ;;
+    *)
+        ;;
+esac
 
 # l: emulate lf's auto cd on finish {{{2
 l()
