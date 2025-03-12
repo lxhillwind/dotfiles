@@ -96,6 +96,7 @@ PS1='\[\e[1m\]\[\e[31m\]$(x=$?; test $x -eq 0 || echo "[$x] ")\[\e[32m\][$(date 
 
 # sv(): capture term output, pipe to vim (easy jump) {{{2
 # optional $1: start line from visible top; default: 1000
+# TODO: After we decide newer sv() is useful, delete tmux sv().
 if [ -n "$TMUX" ]; then
     sv()
     {
@@ -103,12 +104,19 @@ if [ -n "$TMUX" ]; then
     }
 fi
 
-if [ -n "$DTACH_SESSION_FILE" ]; then
-    sv()
-    {
-        vim -c 'set buftype=nofile | %Sh -t=enew cat' <(dtach-session $1)
-    }
-fi
+sv()
+{
+    local cmd="$(fc -n -l -1 -1)"
+    case "$cmd" in
+        rg\ *)
+            ;;
+        *)
+            echo 'INFO: last cmd is not starting with `rg`.' >&2
+            return ;;
+    esac
+    cmd="Rg ${cmd##rg }"
+    env RG_CMD="$cmd" vim -c 'call feedkeys(":" .. $RG_CMD, "n")'
+}
 
 # l: emulate lf's auto cd on finish {{{2
 l()

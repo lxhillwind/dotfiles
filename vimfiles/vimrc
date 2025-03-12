@@ -1778,6 +1778,50 @@ command! OpenWithVSCode {
     execute 'Cdproject' 'Sh' param
 }
 
+# :Rg {{{2
+command! -nargs=+ Rg Rg(<q-args>)
+
+def Rg(args: string)
+    # TODO show rg process status.
+    if !executable('rg')
+        throw '`rg` expected, but not found in $PATH.'
+    endif
+    const cmd = 'rg --vimgrep ' .. args
+    setqflist([], 'r', {'title': cmd, 'lines': []})
+    const job_cmd = execute('Sh -n ' .. cmd)->json_decode().cmd
+    const job_id = job_start(job_cmd, {
+        # TODO pty option is only available on Unix-like systems.
+        # pty is required to make rg not detecting stdin.
+        pty: 1,
+        out_mode: 'nl',
+        out_cb: (_, msg) => {
+            setqflist([], 'a', {lines: [msg]})
+        },
+    })
+    copen
+    b:rg_job_id = job_id
+    nnoremap <silent> <expr> <buffer> <C-c> RgCallback()
+enddef
+
+def RgCallback(): string
+    const job = b:rg_job_id
+    if job->job_status() == 'run'
+        job->job_stop()
+        sleep 50m
+        if job->job_status() == 'run'
+            job->job_stop('kill')
+            echo 'rg: job killed.'
+        else
+            echo 'rg: job stopped.'
+        endif
+    else
+        echo 'rg: job already stopped.'
+    endif
+    unlet b:rg_job_id
+    nunmap <buffer> <C-c>
+    return ''
+enddef
+
 # :Scratch [filetype]; make current buffer as scratch pad {{{2
 command -nargs=? -complete=filetype Scratch Scratch(<q-args>)
 
