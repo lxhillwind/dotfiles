@@ -64,3 +64,9 @@
 [submodule "vimfiles/pack/lx/opt/vim-fuzzy"]
 	path = vimfiles/pack/lx/opt/vim-fuzzy
 	url = https://github.com/lxhillwind/vim-fuzzy
+[submodule "vimfiles/pack/rc/opt/vader.vim"]
+	path = vimfiles/pack/rc/opt/vader.vim
+	url = https://github.com/junegunn/vader.vim
+[submodule "vimfiles/pack/rc/opt/vim-plug/autoload"]
+	path = vimfiles/pack/rc/opt/vim-plug/autoload
+	url = https://github.com/junegunn/vim-plug

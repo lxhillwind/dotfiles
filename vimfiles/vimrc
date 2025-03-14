@@ -1,5 +1,10 @@
 if !has('vim9script') | throw 'vim9script feature not detected!' | endif
 vim9script noclear
+
+# not loaded plugins in dotfiles repo (may be used on demand):
+# vim-plug
+# vader.vim
+
 # helper function / const {{{1
 
 # expand() should NOT be used to expand arbitrary file (like containing
