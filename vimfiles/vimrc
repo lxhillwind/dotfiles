@@ -1340,8 +1340,22 @@ augroup vimrc
     # otherwise "au FileType YYY .*" stmt won't work.
     #
     # complex filetype setting should be put in ftplugin/.
+
     au FileType yaml setl indentkeys-=0#
-    au FileType zig setl fp=zig\ fmt\ --stdin
+    au FileType zig setl formatprg=zig\ fmt\ --stdin
+    au FileType json {
+        &l:formatprg = executable('jq') ? 'jq' : (
+            executable('python3') ? 'python3 -m json.tool' : ''
+        )
+    }
+
+    # format html; command `tidy` does not work sometimes.
+    au FileType html setl formatexpr=<SID>FormatHtml()
+    def FormatHtml(): number
+        execute $':{v:lnum},{v:lnum + v:count - 1}s/>\ze</&\r/g'
+        return 0
+    enddef
+
     # ":h ft-sh-syntax"
     g:is_posix = 1
     au FileType snip {
@@ -1699,9 +1713,6 @@ enddef
 # see help :DiffOrig
 command! DiffOrig vert new | set bt=nofile | legacy r ++edit # | legacy 0d_
     | diffthis | wincmd p | diffthis
-
-# :HtmlBeautify; command `tidy` does not work sometimes. {{{2
-command! -range=% HtmlBeautify :<line1>,<line2>s/>\ze</&\r/g
 
 # <range>:J sep... (`J` with custom seperator) {{{2
 command! -nargs=1 -range J JoinLines(<q-args>, <range>, <line1>, <line2>)
