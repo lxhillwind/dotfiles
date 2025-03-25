@@ -78,7 +78,7 @@ bindApp(",", "Firefox", hyper_shift)
 -- ref: https://superuser.com/a/1146999
 bindApp(".", "visual studio code")
 -- selection in tmux: it's visually better with (ghostty / kitty) than iterm2.
-bindApp("/", "ghostty")
+bindApp("/", "kitty")
 -- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
 -- revert to Finder.
 bindApp("e", "Finder", meta)

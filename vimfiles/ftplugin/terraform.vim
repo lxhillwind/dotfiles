@@ -1,6 +1,8 @@
 vim9script
 
 &l:keywordprg = ':TerraformDoc'
+&l:formatprg = 'terraform fmt -'
+&l:formatexpr = ''  # avoid lsp plugin overriding it.
 command! -buffer -nargs=* TerraformDoc TerraformDoc(<q-args>)
 
 def TerraformDoc(...arg: list<string>)

@@ -521,11 +521,11 @@ tri.lx.sh(`mkdir -p /tmp/rss-from-tridactyl; base64 -d > /tmp/rss-from-tridactyl
 };
 
 " a real world example:
-"autocmd DocLoad ^https://emacs-china.org/$ js_rss ( () => { let args = ['emacs-china.xml', {title: document.title, link: document.URL}]; document.querySelectorAll('table tbody.topic-list-body tr').forEach((i) => { if (i.querySelector('a.title')) args.push({title: i.querySelector('a.title').innerText + ' (' + i.querySelector('button span.number').innerText + ')', link: i.querySelector('a.title').href}); }); tri.lx.to_rss(args); } )()
+"autocmd DocLoad ^https://emacs-china.org/$ js_rss ( () => { let args = ['emacs-china.xml', {title: document.title, link: document.URL}]; document.querySelectorAll('table tbody.topic-list-body tr').forEach((i) => { if (i.querySelector('a.title')) args.push({title: i.querySelector('a.title').innerText + ' (' + i.querySelector('span.number').innerText + ')', link: i.querySelector('a.title').href}); }); tri.lx.to_rss(args); } )()
 
 " discourse sites have similar css structure, so add a function for them:
 " usage: add "(", pass file_basename as arg, and add ")".
-command js_rss_discourse js_rss ( (file_basename) => { let args = [file_basename, {title: document.title, link: document.URL}]; document.querySelectorAll('table tbody.topic-list-body tr').forEach((i) => { if (i.querySelector('a.title')) args.push({title: i.querySelector('a.title').innerText + ' (' + i.querySelector('button span.number').innerText + ')', link: i.querySelector('a.title').href}); }); tri.lx.to_rss(args); } )
+command js_rss_discourse js_rss ( (file_basename) => { let args = [file_basename, {title: document.title, link: document.URL}]; document.querySelectorAll('table tbody.topic-list-body tr').forEach((i) => { if (i.querySelector('a.title')) args.push({title: i.querySelector('a.title').innerText + ' (' + i.querySelector('span.number').innerText + ')', link: i.querySelector('a.title').href}); }); tri.lx.to_rss(args); } )
 
 autocmd DocLoad ^https://emacs-china.org/$ js_rss_discourse ('emacs-china.xml')
 autocmd DocLoad ^https://forum.suse.org.cn/$ js_rss_discourse ('suse-forum-cn.xml')
