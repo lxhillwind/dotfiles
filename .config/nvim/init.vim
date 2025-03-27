@@ -3,6 +3,11 @@
 " mainly used in vscode-neovim extension;
 " config (except VSCodeMap) is from my ~/vimfiles/vimrc
 
+" additional config in vscode:
+"
+" Settings (UI):
+" - search "ctrlKeysForNormalMode", remove k (so ctrl+k is handled by vscode);
+
 set pp^=~/vimfiles
 
 packadd! vim-sneak
@@ -14,6 +19,9 @@ omap S <Plug>Sneak_S
 nnoremap <Space>l <Cmd>nohl<CR>
 nnoremap <Space>y <Cmd>let @+ = @"<CR>
 nnoremap <Space>p <Cmd>let @" = @+<CR>
+
+noremap <expr> n 'Nn'[v:searchforward]
+noremap <expr> N 'nN'[v:searchforward]
 
 " custom text object {{{
 " <silent> to avoid "Press Enter..." msg in too narrow screen.
@@ -51,14 +59,20 @@ set cmdheight=10
 
 command! -nargs=+ VSCodeMap call s:vscodeMapHelper('call', <args>)
 command! -nargs=+ VSCodeMapAsync call s:vscodeMapHelper('action', <args>)
-function! s:vscodeMapHelper(fn, key, ...) abort
-	execute $'nnoremap {a:key} <Cmd>call luaeval("require(\"vscode\").{a:fn}(unpack(_A))", {a:000})<CR>'
+function! s:vscodeMapHelper(fn, key, cmd, ...) abort
+	execute $'nnoremap {a:key} <Cmd>call luaeval("require(\"vscode\").{a:fn}(unpack(_A))", {[a:cmd, #{args: a:000}]})<CR>'
 endfunction
 
 " fix folding: {{{
+" move based on mode: omap => logical line; nmap => viewport line.
+let s:map_j = "<Cmd>call v:lua.require'vscode'.call('cursorMove', #{args: #{to: 'down', by: v:count == 0 ? 'wrappedLine' : 'line', value: v:count1}})<CR>"
+let s:map_k = "<Cmd>call v:lua.require'vscode'.call('cursorMove', #{args: #{to: 'up', by: v:count == 0 ? 'wrappedLine' : 'line', value: v:count1}})<CR>"
+execute $'nnoremap j {s:map_j}'
+execute $'onoremap j {s:map_j}'
+execute $'nnoremap k {s:map_k}'
+execute $'onoremap k {s:map_k}'
+
 " https://github.com/vscode-neovim/vscode-neovim/issues/58#issuecomment-2663266989
-nmap j gj
-nmap k gk
 VSCodeMap 'zM', 'editor.foldAll'
 VSCodeMap 'zR', 'editor.unfoldAll'
 VSCodeMap 'zc', 'editor.fold'
@@ -74,8 +88,7 @@ VSCodeMap '[g', 'editor.action.marker.prev'
 VSCodeMap ']g', 'editor.action.marker.next'
 VSCodeMap '<Space><Space>', 'workbench.action.quickOpen'
 
-VSCodeMapAsync '<Space>o', 'workbench.action.tasks.runTask', #{args: ['project in current window']}
-VSCodeMapAsync '<Space>O', 'workbench.action.tasks.runTask', #{args: ['project in new window']}
+VSCodeMapAsync '<Space>o', 'workbench.action.tasks.runTask', 'project in current window'
+VSCodeMapAsync '<Space>O', 'workbench.action.tasks.runTask', 'project in new window'
 VSCodeMapAsync '<Space>r', 'workbench.action.tasks.runTask'
-VSCodeMapAsync '<Space>v', 'workbench.action.tasks.runTask', #{args: ['vim']}
-endif
+VSCodeMapAsync '<Space>v', 'workbench.action.tasks.runTask', 'vim'
