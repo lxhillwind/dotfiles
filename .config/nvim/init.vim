@@ -9,6 +9,7 @@
 " - search "ctrlKeysForNormalMode", remove k (so ctrl+k is handled by vscode);
 
 set pp^=~/vimfiles
+set timeoutlen=5000
 
 packadd! vim-sneak
 let g:sneak#label = 1
@@ -42,6 +43,19 @@ onoremap <silent> az :<C-u>normal! V]zo[zo<CR>
 " exists.)
 xnoremap <silent> iz V]zo[zjo
 onoremap <silent> iz :<C-u>normal! V]zo[zjo<CR>
+" fFtT
+xnoremap <silent> <expr> af <SID>TextObjectIfAf('a')
+onoremap <silent> <expr> af <SID>TextObjectIfAf('a')
+xnoremap <silent> <expr> if <SID>TextObjectIfAf('i')
+onoremap <silent> <expr> if <SID>TextObjectIfAf('i')
+function! s:TextObjectIfAf(type) abort
+    let l:ch = getcharstr()
+    if empty(l:ch)
+        return ''
+    endif
+    let l:op = a:type == 'a' ? 'fF' : 'tT'
+    return ":\<C-u>normal! " .. l:op[0] .. l:ch .. "v" .. l:op[1] .. l:ch .. "\<CR>"
+endfunction
 " }}}
 
 " non-vscode config; finish. {{{

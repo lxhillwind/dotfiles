@@ -154,7 +154,7 @@ set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&sea
 set searchurls.yh https://search.yahoo.com/search?q=%s
 
 " Default Binding can be viewed here: {{{1
-" moz-extension://26bcd09d-5ca9-41d3-bceb-069caf61445b/static/docs/classes/_src_lib_config_.default_config.html
+" moz-extension://<replace-with-extension-id>/static/docs/classes/_src_lib_config_.default_config.html
 " (**open it with firefox**; get this by `:help` then read the second paragraph.)
 "
 " tridactyl takes 100ms for every excmd, so we do re-bind default binding

@@ -972,6 +972,19 @@ onoremap <silent> az :<C-u>normal! V]zo[zo<CR>
 # exists.)
 xnoremap <silent> iz V]zo[zjo
 onoremap <silent> iz :<C-u>normal! V]zo[zjo<CR>
+# fFtT
+xnoremap <silent> <expr> af TextObjectIfAf('a')
+onoremap <silent> <expr> af TextObjectIfAf('a')
+xnoremap <silent> <expr> if TextObjectIfAf('i')
+onoremap <silent> <expr> if TextObjectIfAf('i')
+def TextObjectIfAf(type: string): string
+    const ch = getcharstr()
+    if empty(ch)
+        return ''
+    endif
+    const op = type == 'a' ? 'fF' : 'tT'
+    return ":\<C-u>normal! " .. op[0] .. ch .. "v" .. op[1] .. ch .. "\<CR>"
+enddef
 
 # mswin: disable v_CTRL-X (which is not compatible with unix) {{{2
 # use vim_starting check to avoid unexpected behavior (map and then re-source).
