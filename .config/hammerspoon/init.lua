@@ -133,5 +133,7 @@ hs.hotkey.bind(hyper_shift, "]", function() MoveWindowToSpace(1) end)
 
 -- like rofi on my linux desktop
 hs.hotkey.bind(hyper, "d", function()
-    hs.execute("~/bin/launcher.zsh")
+    -- 创建一个 "应用程序" (choose), 指向 ~/bin/launcher.zsh;
+    -- 这样做是为了让 fcitx5 可以配置为在这个窗口默认使用英文键盘.
+    hs.application.launchOrFocus("choose")
 end)

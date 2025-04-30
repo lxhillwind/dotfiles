@@ -1,0 +1,65 @@
+# vim:sw=2
+setvar PROMPT_COMMAND = 'prompt-proc'
+proc prompt-proc() {
+  :
+}
+
+func renderPrompt(io) {
+  var ret = $?
+  func w(a) {
+    # \x01 / \x02 are like \[ / \] in bash.
+    return (b'\y01\y1b[' ++ a ++ b'm\y02')
+  }
+  var parts = []
+  call parts->append(w('1;34'))
+  call parts->append('<ysh>')
+  if (not ret ~== 0) {
+    call parts->append(' ' ++ w('1;31'))
+    call parts->append('[' ++ ret ++ ']')
+  }
+  call parts->append(' ' ++ w('1;32'))
+  # TODO do not call external command
+  call parts->append('[' ++ $(date +%F\ %T) ++ ']')
+  call parts->append(' ' ++ w('1;33'))
+  var home = ENV.HOME
+  call parts->append(io.promptVal('w') => replace(/ %start @home /, '~'))  # pass 'w' for \w
+  call parts->append(b'\n' ++ w('1;32'))
+  call parts->append(io.promptVal('$'))  # pass '$' for \$
+  call parts->append(w('0') ++ ' ')
+  return (join(parts))
+}
+
+proc ls(...a) { command ls -F --color @a }
+
+proc man(...a) {
+    # openSUSE requires MAN_POSIXLY_CORRECT to display without prompt.
+    # openSUSE requires GROFF_NO_SGR to display color (but why?).
+    # ref: https://forums.opensuse.org/t/color-man-pages/27729
+    ... env
+    MAN_POSIXLY_CORRECT=1
+    GROFF_NO_SGR=yes
+    LANG=en_US.UTF-8
+    PAGER="sh -c 'sed -E \"s/[—−‐]/-/g; s/ˆ/^/g; s/˜/~/g; s/[‘’]/'\\''/g; \" | less'"
+    LESS_TERMCAP_md=$'\e[01;31m'
+    LESS_TERMCAP_me=$'\e[0m'
+    LESS_TERMCAP_se=$'\e[0m'
+    LESS_TERMCAP_so=$'\e[01;44;33m'
+    LESS_TERMCAP_ue=$'\e[0m'
+    LESS_TERMCAP_us=$'\e[01;32m'
+    command man @a;
+}
+
+proc l(a='') {
+  var LF_TARGET = $(mktemp)
+  env LF_SELECT=$a LF_TARGET=$LF_TARGET vim +LfMain
+  var res = ''
+  try { setvar res = $(cat -- $LF_TARGET) }
+  try { rm -- $LF_TARGET }
+  if (res ~== '') { return }
+  var pwd = getVar('PWD')
+  # PWD is not set at ysh start;
+  # ENV.PWD is not updated in ysh.
+  if (not pwd) { setvar pwd = ENV.PWD }
+  if (res === pwd or res === pwd ++ '/') { return }
+  cd $res
+}

@@ -170,7 +170,10 @@ bind u scrollpage -0.5
 bind j scrollline 5
 bind k scrollline -5
 bind gs viewsource
-bind gf hint -t
+" -J to hide javascript hints; they usually make hint names not unique.
+bind f hint -J
+bind F hint -Jb
+bind gf hint -Jt
 bind gp pin
 bind gm mute toggle
 bind m gobble 1 markadd
@@ -216,8 +219,8 @@ unbind a
 unbind A
 
 " create duplicated binding for muscle memory.
-bind yf hint -y
-bind af hint -qb
+bind yf hint -Jy
+bind af hint -Jqb
 
 " yank (ip)
 bind y1 composite js document.location.hostname | clipboard yank
@@ -359,7 +362,7 @@ bindurl ^https://(search|www).bilibili.com c hint -f 点击查看
 " }}}
 
 " bind c for sub pages {{{
-bindurl github.com c hint -bJc li h4:nth-child(1) > span:nth-child(1) > a:nth-child(1),a.issue-link,a[id^="issue"][id$="link"],h3.markdown-title a,a.markdown-title
+bindurl github.com c hint -bJc li h4:nth-child(1) > span:nth-child(1) > a:nth-child(1),a.issue-link,a[id^="issue"][id$="link"],h3.markdown-title a,a.markdown-title,a[class^="IssuePullRequestTitle"]
 bindurl lobste.rs c hint -bJc span.comments_label > a
 bindurl news.ycombinator.com c hint -bJc span.subline > a:nth-child(6)
 bindurl old.reddit.com c hint -bJc a.bylink.comments.may-blank
