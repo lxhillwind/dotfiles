@@ -1,0 +1,45 @@
+#!/usr/bin/env ysh
+
+proc main(input_file) {
+    var output_file = input_file => replace(/ '.' !['.']+ %end /, '.opus')
+    if test -f $output_file {
+        echo 'expected output file already exists: ' $output_file >&2
+        exit 1
+    }
+
+    ffprobe -show_format -of json $input_file 2>/dev/null | json read (&metadata)
+    var output_bitrate = 64
+    case (metadata.format.format_name) {
+        mp3 {
+            # above 192kbps
+            if (metadata.format.bit_rate / 1000 > 190) {
+                setvar output_bitrate = 128
+            }
+        }
+        aac | m4a {
+            # above 160kbps
+            if (metadata.format.bit_rate / 1000 > 150) {
+                setvar output_bitrate = 128
+            }
+        }
+        flac | ape {
+            # loseless
+            setvar output_bitrate = 192
+        }
+        * {
+            echo 'unknown format: ' $[metadata.format.format_name] '(' $input_file ')' >&2
+            exit 1
+        }
+    }
+    rm -f cover.jpg temp.flac
+    var opt = []
+    if ffmpeg -i "$1" -an -vcodec copy cover.jpg {
+        setvar opt = ['--picture', 'cover.jpg']
+    }
+    ffmpeg -i "$1" -vn temp.flac
+    opusenc @opt --bitrate $output_bitrate temp.flac $output_file
+    rm -f cover.jpg temp.flac
+    rsgain custom -s i $output_file
+}
+
+main @ARGV
