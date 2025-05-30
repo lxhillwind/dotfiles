@@ -163,7 +163,7 @@ alias Cdp=Cdproject
 # finish if not zsh {{{2
 # Following code may cause syntax error in strict POSIX shell
 # (like array construction), so return early.
-if ! command -v zstyle >/dev/null; then
+if ! command -v zstyle >/dev/null 2>&1; then
     return
 fi
 

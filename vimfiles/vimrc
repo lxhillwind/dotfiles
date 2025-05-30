@@ -91,6 +91,9 @@ packadd! matchit
 # use ":silent!" since the plugin is introduced in quite recent commit.
 silent! packadd! comment
 
+# use ":silent!" since the plugin is introduced in quite recent commit.
+silent! packadd! helptoc
+
 # my {{{2
 packadd! vim-jump
 packadd! vim-sh
@@ -1101,28 +1104,43 @@ tnoremap <C-t> <C-\><C-n>
 nnoremap <expr> <Space>g SpaceGSetup()
 def SpaceGSetup(): string
     if !exists('b:space_g')
-        const cmd = {
-            go: 'go run %',
-            javascript: (() => {
-                if executable('qjs')
-                    return 'qjs %'
-                elseif executable('bun')
-                    return 'bun run %'
-                elseif executable('deno')
-                    return 'deno run %'
-                elseif executable('deno')
-                    return 'node %'
-                else
-                    return ''
-                endif
-            })(),
-            python: 'python3 %',
-            scheme: 'scheme-run %',
-            sh: (getline(1)->match('\v^\#\!.*<bash>') >= 0 ? 'bash' : 'sh') .. ' %:p',
-            zig: 'zig run %',
-            zsh: 'zsh %:p',
-        }->get(&ft, '')
-        b:space_g = $'up | Sh! -bt {cmd}'
+        if empty(&buftype)
+            const cmd = {
+                awk: 'awk -f %',
+                bc: 'bc %',
+                go: 'go run %',
+                javascript: (() => {
+                    if executable('qjs')
+                        return 'qjs %'
+                    elseif executable('bun')
+                        return 'bun run %'
+                    elseif executable('deno')
+                        return 'deno run %'
+                    elseif executable('node')
+                        return 'node %'
+                    elseif executable('nodejs')
+                        return 'nodejs %'
+                    else
+                        return ''
+                    endif
+                })(),
+                pascal: 'fpc % && %:p:r',
+                python: 'python3 %',
+                scheme: 'scheme-run %',
+                sh: (getline(1)->match('\v^\#\!.*<bash>') >= 0 ? 'bash' : 'sh') .. ' %:p',
+                zig: 'zig run %',
+                zsh: 'zsh %:p',
+            }->get(&ft, '')
+            # fallback to terminal shell if cmd is not set.
+            b:space_g = $'up | Sh! -bt {cmd}'
+        else
+            if &ft == 'awk'
+                b:space_g = ':%Sh! -bt awk -f /dev/stdin'
+            elseif &ft == 'bc'
+                b:space_g = ':%Sh! -bt bc'
+            endif
+        endif
+        # special filetype
         if &ft == 'gitcommit'
             b:space_g = 'Sh -t=vs,c ' .. (
                 $GIT_DIR =~ $'{$HOME}/dotfiles/.git' ? 'git g dc' : 'git dc')
