@@ -77,8 +77,15 @@ bindApp(",", "Firefox", hyper_shift)
 -- macos: "Right click on the application icon in the dock -> options -> All Desktops"
 -- ref: https://superuser.com/a/1146999
 bindApp(".", "visual studio code")
+
 -- selection in tmux: it's visually better with (ghostty / kitty) than iterm2.
-bindApp("/", "kitty")
+local terminal = hs.execute("grep -Ev '^(#|$)' ~/bin/my-terminal-choice")
+terminal = terminal:gsub("\n$", "")
+if terminal == "" then
+    terminal = "terminal" -- safe default
+end
+bindApp("/", terminal)
+
 -- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
 -- revert to Finder.
 bindApp("e", "Finder", meta)

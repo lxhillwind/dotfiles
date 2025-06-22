@@ -333,6 +333,7 @@ bind <ContextMenu> novel_mode
 " more sites (instances): grafana, ant design; (no fixed url, so set in ~/.tridactylrc)
 seturl ^https://.*console.aws.amazon.com allowautofocus true
 seturl ^https://.*console.aliyun.com allowautofocus true
+seturl ^https://.*console.alibabacloud.com allowautofocus true
 
 " Some sites steal input heavily. auto enter ignore mode on them.
 blacklistadd ^https://docs.google.com/.*/edit

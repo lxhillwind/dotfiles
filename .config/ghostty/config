@@ -10,8 +10,8 @@ config-file = ?./config-local
 
 # ui
 theme = light:Builtin Light,dark:OneHalfDark
-window-height = 30
-window-width = 120
+window-height = 25
+window-width = 90
 # will it use embedded font?
 font-family = JetBrains Mono
 # do not render ">=" as whole.
