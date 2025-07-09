@@ -1,0 +1,5 @@
+#!/bin/sh
+
+grep -hwE '# menu' -A 1 \
+    ~/.config/kitty/kitty.conf ~/.config/kitty/local.conf 2>/dev/null \
+    | less

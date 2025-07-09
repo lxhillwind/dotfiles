@@ -1792,7 +1792,7 @@ command! -nargs=1 MacroDump MacroDump(<q-args>)
 command! -nargs=1 MacroSet MacroSet(<q-args>)
 
 def MacroDump(reg: string)
-    if reg !~ '^[a-z]$' | throw 'except single char (register)' | endif
+    if reg !~ '^[a-z]$' | throw 'expect a single character (register)' | endif
     # in terminal vim, if set "ttimeoutlen" to a positive value,
     # "<Esc>" will be recorded as "\x1b\x80\xfd5",
     # which in file will cause trouble in encoding detection.
@@ -1802,7 +1802,7 @@ def MacroDump(reg: string)
 enddef
 
 def MacroSet(reg: string)
-    if reg !~ '^[a-z]$' | throw 'except single char (register)' | endif
+    if reg !~ '^[a-z]$' | throw 'expect a single character (register)' | endif
     # "<Esc>" alone will not work if "ttimeoutlen" is a positive value in
     # terminal vim;
     # longer version of it works in other vim instance (gui or no ttimeoutlen);
