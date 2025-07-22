@@ -946,6 +946,10 @@ else # unix-like system, in terminal emulator
     if is_mac && $TERM_PROGRAM == 'Apple_Terminal'
         set notgc
     endif
+
+    if &term =~ 'rxvt'
+        set notgc
+    endif
 endif
 
 if (is_conemu || is_mac) && &term =~ 'xterm'
