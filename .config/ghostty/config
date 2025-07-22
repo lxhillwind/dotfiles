@@ -1,3 +1,6 @@
+# TODO: search bar.
+# TODO: -e command.
+
 # "Configuration files are loaded after the configuration they're defined within in the order they're defined. "
 #
 # for macos:

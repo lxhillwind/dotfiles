@@ -1,0 +1,73 @@
+# TODO: tab is only available on macOS.
+
+[window]
+dimensions = { columns = 90, lines = 25 }
+option_as_alt = "Both"
+
+[font]
+# make it look similar to kitty
+normal = { family = "Jetbrains Mono NL", style = "ExtraLight" }
+bold = { style = "Medium" }
+size = 16.0
+offset = { x = 1 }
+
+[selection]
+save_to_clipboard = true
+
+[keyboard]
+bindings = [
+{key = "N", mods = "Control | Shift", action = "SpawnNewInstance"},
+
+{key = "Tab", mods = "Control", action = "SelectNextTab"},
+{key = "Tab", mods = "Control | Shift", action = "SelectPreviousTab"},
+
+{key = "T", mods = "Alt", action = "CreateNewTab"},
+{key = "W", mods = "Alt", action = "Quit"},
+{key = "C", mods = "Alt", action = "Copy"},
+{key = "V", mods = "Alt", action = "Paste"},
+{key = "F", mods = "Alt", action = "SearchForward"},
+
+# why is this not builtin?
+{key = "6", mods = "Control", chars = "\u001e"},
+
+# vim
+{key = "H", mods = "Super", chars = "\u001bh"},
+{key = "J", mods = "Super", chars = "\u001bj"},
+{key = "K", mods = "Super", chars = "\u001bk"},
+{key = "L", mods = "Super", chars = "\u001bl"},
+# tmux
+{key = "E", mods = "Super", chars = "\u001be"},
+{key = "O", mods = "Super", chars = "\u001bo"},
+{key = "N", mods = "Super", chars = "\u001bn"},
+{key = "P", mods = "Super", chars = "\u001bp"},
+]
+
+# colorscheme {{{1
+# from ~/.local/share/dark-mode.d/to-dark.sh (light theme; xfce terminal builtin)
+
+# Default colors
+[colors.primary]
+background = '#ffffff'
+foreground = '#000000'
+
+# Normal colors
+[colors.normal]
+black = '#000000'
+red = '#cd0000'
+green = '#00cd00'
+yellow = '#cdcd00'
+blue = '#0000cd'
+magenta = '#cd00cd'
+cyan = '#00cdcd'
+white = '#e5e5e5'
+
+# Bright colors
+[colors.bright]
+black = '#7f7f7f'
+red = '#ff0000'
+green = '#24b324'
+yellow = '#bfbf1f'
+blue = '#5c5cff'
+magenta = '#ff00ff'
+cyan = '#00ffff'
+white = '#ffffff'
