@@ -1,15 +1,30 @@
 # TODO: tab is only available on macOS.
 
+# local.toml macos {{{
+# [font]
+# size = 16.0
+# make it look similar to kitty
+# normal = { style = "ExtraLight" }
+# bold = { style = "Medium" }
+# offset = { x = 1 }
+# }}}
+
+# local.toml linux {{{
+# [font]
+# size = 12.0
+# }}}
+
+[general]
+import = [
+"local.toml",
+]
+
 [window]
 dimensions = { columns = 90, lines = 25 }
 option_as_alt = "Both"
 
 [font]
-# make it look similar to kitty
-normal = { family = "Jetbrains Mono NL", style = "ExtraLight" }
-bold = { style = "Medium" }
-size = 16.0
-offset = { x = 1 }
+normal = { family = "Jetbrains Mono NL" }
 
 [selection]
 save_to_clipboard = true
