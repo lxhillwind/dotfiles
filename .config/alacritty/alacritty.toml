@@ -3,7 +3,7 @@
 # local.toml macos {{{
 # [font]
 # size = 16.0
-# make it look similar to kitty
+# # make it look similar to kitty
 # normal = { style = "ExtraLight" }
 # bold = { style = "Medium" }
 # offset = { x = 1 }

@@ -1711,10 +1711,11 @@ def ColorSchemeTweak()
     # terminal 16color
     if (has('gui_running') || &tgc)
         # https://github.com/lxhillwind/base16-dynamic.vim
+        # slightly modified: some colors are from xfce4 terminal.
         if &bg == 'dark'
-            g:terminal_ansi_colors = ["#263238", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#EEFFFF", "#546E7A", "#F07178", "#C3E88D", "#FFCB6B", "#82AAFF", "#C792EA", "#89DDFF", "#FFFFFF"]
+            g:terminal_ansi_colors = ["#263238", "#F07178", "#4e9a06", "#FFCB6B", "#739fcf", "#C792EA", "#34e2e2", "#EEFFFF", "#546E7A", "#F07178", "#4e9a06", "#FFCB6B", "#739fcf", "#C792EA", "#34e2e2", "#FFFFFF"]
         else
-            g:terminal_ansi_colors = ["#fafafa", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#383a42", "#a0a1a7", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#0184bc", "#090a0b"]
+            g:terminal_ansi_colors = ["#000000", "#ca1243", "#50a14f", "#cdcd00", "#0000cd", "#a626a4", "#00cdcd", "#e5e5e5", "#000000", "#ca1243", "#50a14f", "#c18401", "#4078f2", "#a626a4", "#00cdcd", "#e5e5e5"]
         endif
     endif
 

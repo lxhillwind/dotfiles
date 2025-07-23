@@ -41,13 +41,6 @@ if command -v kvantummanager >/dev/null; then
     fi
 fi
 
-# git-delta {{{1
-if [ "$theme" = dark ]; then
-    git config --global delta.light false
-else
-    git config --global delta.light true
-fi
-
 # xfce4-terminal (>=1.1.0), using xfconf {{{1
 #
 # How to get color config for light / dark theme?

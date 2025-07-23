@@ -44,7 +44,8 @@
 	# if git-delta is available, then we can set these in ~/.gitconfig:
 	#   core.pager = delta
 	#   delta.pager = less -+X
-	#   delta.light = true
+	#   delta.side-by-side = false
+	#   delta.line-numbers = true
 	# why -+X here? init termcap so git output does not occupy screen.
 	pager = less -+X
 [tag]
