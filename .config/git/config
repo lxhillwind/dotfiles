@@ -51,7 +51,7 @@
 [tag]
 	sort = -creatordate
 [log]
-	date = local
+	date = format:%Y-%m-%d %H:%M:%S %z
 
 # useful if have write access from some host, without changing git url.
 #[url "ssh://git@github.com/lxhillwind"]

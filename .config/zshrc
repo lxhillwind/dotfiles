@@ -297,10 +297,11 @@ bindkey \^U backward-kill-line
 # '#' at begin-of-line as comment {{{2
 setopt interactivecomments
 
-# <C-x><C-e>: edit command line {{{2
+# <C-x><C-e> / <A-e>: edit command line {{{2
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey \^x\^e edit-command-line
+bindkey \\ee edit-command-line
 
 # simple PS1 {{{2
 PS1='%B%(?..%F{red}[%?] )%F{green}[%D{%Y-%m-%d %H:%M:%S}] %F{yellow}%~'$'\n''%F{green}%#%f%b '
@@ -312,6 +313,32 @@ if [[ $OSTYPE =~ linux ]]; then
     elif command -v bwrap >/dev/null && [ -e ~/.config/misc/bubblewrap.conf ]; then
         PS1="(host) $PS1"
     fi
+fi
+
+# ssh wrapper {{{2
+# - set terminal title to ssh argument;
+# - use tmux to wrap ssh session, so fancy tmux features can be used.
+if command -v ssh >/dev/null 2>&1; then
+    # use alias to wrap it, so we can use original ssh easily.
+    alias ssh=_ssh_inside_tmux
+    _ssh_inside_tmux()
+    {
+        local tmux_opt=()
+
+        # check stdout to avoid breaking non-interactive session (like git).
+        if [ -t 1 ] && [ -n "$*" ]; then
+            printf "\x1b]0;$*\x07"
+            if [ -z "$TMUX" ] && command -v tmux >/dev/null 2>&1; then
+                tmux_opt=(tmux new-session -d)
+            fi
+        fi
+
+        "${tmux_opt[@]}" env TERM="xterm-256color" ssh "$@"
+
+        if [ -n "$tmux_opt" ]; then
+            tmux a
+        fi
+    }
 fi
 
 # s() or x(): x11 / wayland {{{2

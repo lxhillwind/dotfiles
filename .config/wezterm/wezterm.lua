@@ -1,4 +1,3 @@
--- TODO: alt+hjkl outside tmux in vim.
 -- TODO: move tab to new window (native tab).
 
 local wezterm = require 'wezterm'
@@ -33,6 +32,8 @@ end
 config.color_scheme = scheme_for_appearance(get_appearance())
 config.bold_brightens_ansi_colors = 'No'
 config.hide_tab_bar_if_only_one_tab = true
+-- fancy tab bar causes window height not aligned.
+config.use_fancy_tab_bar = false
 config.cursor_blink_rate = 0
 
 --- font {{{1

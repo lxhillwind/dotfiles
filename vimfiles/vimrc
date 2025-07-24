@@ -852,6 +852,11 @@ if !has('gui_running') && !is_win32
     # disable "kitty" protocol since it makes option-hjkl not work.
     set kpc=xterm:mok2
 
+    # disable "modifyOtherKeys" since it makes option-hjkl in wezterm
+    # (and maybe more terminal emulators) not work.
+    &t_TI = ''
+    &t_TE = ''
+
     # see ":set-termcap"
     for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
         exec $"set <M-{i}>=\<Esc>{i}"
