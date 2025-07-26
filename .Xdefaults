@@ -16,3 +16,20 @@ URxvt.font: xft:Jetbrains Mono:pixelsize=16, \
 URxvt.color10: Green2
 URxvt.color11: Gold1
 URxvt.color14: Cyan2
+
+! make ctrl-shift bindable.
+URxvt.iso14755: false
+
+! extentions
+URxvt.perl-ext-common: eval,font-size,searchable-scrollback,selection-to-clipboard
+
+URxvt.keysym.M-c: eval:selection_to_clipboard
+URxvt.keysym.M-v: eval:paste_clipboard
+
+!URxvt.keysym.M-f: searchable-scrollback:start
+! avoid default binding M-s
+URxvt.searchable-scrollback: M-f
+
+URxvt.keysym.A-minus: font-size:decrease
+URxvt.keysym.A-equal: font-size:increase
+URxvt.keysym.A-0: font-size:reset
