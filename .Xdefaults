@@ -1,8 +1,11 @@
 URxvt.geometry: 90x26
 URxvt.scrollBar: false
 
-! Jigmo font should be set smaller than others
-URxvt.font: xft:Jetbrains Mono NL:pixelsize=16, \
+! Jigmo font should be set smaller than others;
+!
+! Jetbrains Mono NL may not be available on some distros, like linuxmint.
+! So use "Jetbrains Mono", remove "NL" from it.
+URxvt.font: xft:Jetbrains Mono:pixelsize=16, \
     xft:Noto Sans CJK SC:style=regular, \
     xft:WenQuanYi Zen Hei Mono, \
     xft:Jigmo:pixelsize=15, \

@@ -22,7 +22,7 @@ function get_appearance()
 end
 
 function scheme_for_appearance(appearance)
-    -- }}}
+  -- }}}
   if appearance:find 'Dark' then
     return 'MaterialDarker'
   else
@@ -37,13 +37,15 @@ config.use_fancy_tab_bar = false
 config.cursor_blink_rate = 0
 
 --- font {{{1
+-- disable ligatures
+config.harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' }
 config.font = wezterm.font_with_fallback {
-    { family = 'JetBrains Mono NL', weight = is_mac and 'Medium' or nil },
-    { family = 'Microsoft YaHei', scale = 1.0 },  -- TODO test this on Windows.
-    { family = '苹方-简' },
-    { family = 'Jigmo' },
-    { family = 'Jigmo2' },
-    { family = 'Jigmo3' },
+  { family = 'JetBrains Mono', weight = is_mac and 'Medium' or nil },  -- builtin
+  { family = 'Microsoft YaHei', scale = 1.0 },  -- TODO test this on Windows.
+  { family = '苹方-简' },
+  { family = 'Jigmo' },
+  { family = 'Jigmo2' },
+  { family = 'Jigmo3' },
 }
 config.font_size = is_mac and 16.0 or 14.0
 
@@ -66,49 +68,58 @@ table.insert(config.keys, {
 })
 
 if is_mac then
-    local keys_to_remap = {
-        'e', 'n', 'o', 'p',  -- tmux
-        'h', 'j', 'k', 'l',  -- vim
-    }
+  local keys_to_remap = {
+    'e', 'n', 'o', 'p',  -- tmux
+    'h', 'j', 'k', 'l',  -- vim
+  }
 
-    -- SUPER to ALT
-    for _, key in ipairs(keys_to_remap) do
-        table.insert(config.keys, {
-            key = key,
-            mods = 'SUPER',
-            action = act.SendKey { key = key, mods = 'ALT' }
-        })
-    end
+  -- SUPER to ALT
+  for _, key in ipairs(keys_to_remap) do
+    table.insert(config.keys, {
+      key = key,
+      mods = 'SUPER',
+      action = act.SendKey { key = key, mods = 'ALT' }
+    })
+  end
 else  -- not macos
-    local items = {
-        { key = 'c', mods = 'ALT', action = act.CopyTo 'ClipboardAndPrimarySelection' },
-        { key = 'v', mods = 'ALT', action = act.PasteFrom 'Clipboard' },
-        { key = 't', mods = 'ALT', action = act.SpawnTab 'CurrentPaneDomain' },
-        { key = 'w', mods = 'ALT', action = act.CloseCurrentPane { confirm = true } },
-    }
-    for _, item in ipairs(items) do
-        table.insert(config.keys, item)
-    end
+  local items = {
+    { key = 'c', mods = 'ALT', action = act.CopyTo 'ClipboardAndPrimarySelection' },
+    { key = 'v', mods = 'ALT', action = act.PasteFrom 'Clipboard' },
+    { key = 't', mods = 'ALT', action = act.SpawnTab 'CurrentPaneDomain' },
+    { key = 'w', mods = 'ALT', action = act.CloseCurrentPane { confirm = true } },
+  }
+  for _, item in ipairs(items) do
+    table.insert(config.keys, item)
+  end
+
+  for i = 1, 8 do
+    table.insert(config.keys, {
+      key = tostring(i), mods = 'ALT', action = act.ActivateTab(i - 1)
+    })
+  end
+  table.insert(config.keys, {
+    key = '9', mods = 'ALT', action = act.ActivateTab(-1)
+  })
 end
 
 --- pane {{{1
 table.insert(config.keys, {
-    key = '7', mods = 'CTRL', action = act.SplitPane { direction = 'Right' }
+  key = '7', mods = 'CTRL', action = act.SplitPane { direction = 'Right' }
 })
 table.insert(config.keys, {
-    key = 'phys:7', mods = 'CTRL|SHIFT', action = act.SplitPane { direction = 'Down' }
+  key = 'phys:7', mods = 'CTRL|SHIFT', action = act.SplitPane { direction = 'Down' }
 })
 table.insert(config.keys, {
-    key = '8', mods = 'CTRL', action = act.ActivatePaneDirection 'Prev'
+  key = '8', mods = 'CTRL', action = act.ActivatePaneDirection 'Prev'
 })
 table.insert(config.keys, {
-    key = '9', mods = 'CTRL', action = act.ActivatePaneDirection 'Next'
+  key = '9', mods = 'CTRL', action = act.ActivatePaneDirection 'Next'
 })
 table.insert(config.keys, {
-    key = 'phys:8', mods = 'CTRL|SHIFT', action = act.RotatePanes 'CounterClockwise'
+  key = 'phys:8', mods = 'CTRL|SHIFT', action = act.RotatePanes 'CounterClockwise'
 })
 table.insert(config.keys, {
-    key = 'phys:9', mods = 'CTRL|SHIFT', action = act.RotatePanes 'Clockwise'
+  key = 'phys:9', mods = 'CTRL|SHIFT', action = act.RotatePanes 'Clockwise'
 })
 
 --- "fix" search key {{{1
