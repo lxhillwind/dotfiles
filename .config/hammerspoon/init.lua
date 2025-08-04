@@ -10,6 +10,7 @@ hs.alert.show("Hammerspoon config loaded")
 
 hyper_shift = {"cmd", "shift"}
 hyper = {"cmd"}
+meta_shift = {"alt", "shift"}
 meta = {"alt"}
 
 hs.hotkey.bind(hyper_shift, ";", hs.reload)
@@ -21,19 +22,20 @@ sky = SkyRocket:new({
   opacity = 0.3,
 
   -- Which modifiers to hold to move a window?
-  moveModifiers = meta,
+  moveModifiers = meta_shift,
+  --   actually pressed with meta+left-click; event is changed in karabiner.
 
   -- Which mouse button to hold to move a window?
   moveMouseButton = 'left',
 
   -- Which modifiers to hold to resize a window?
-  resizeModifiers = meta,
+  resizeModifiers = meta_shift,
+  --   actually pressed with meta+right-click; event is changed in karabiner.
 
   -- Which mouse button to hold to resize a window?
   resizeMouseButton = 'right',
 
-  -- terminal emulator: option key to cursor-click-to-move
-  disabledApps = {'UTM', 'Ghostty', 'kitty', 'WezTerm', 'Alacritty', 'alacritty'},
+  disabledApps = {},
 })
 -- }}}
 

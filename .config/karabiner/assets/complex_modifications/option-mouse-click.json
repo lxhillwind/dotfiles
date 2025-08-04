@@ -1,0 +1,46 @@
+{
+    "title": "Change option+click to shift+option+click (for use in hammerspoon)",
+    "description": "need to enable 'Modify events' in Karabiner-Elements => Configurations => Devices => (your mouse)",
+    "rules": [
+        {
+            "description": "Change option+click to shift+option+click (left)",
+            "manipulators": [
+                {
+                    "from": {
+                        "pointing_button": "button1",
+                        "modifiers": {
+                            "mandatory": ["option"]
+                        }
+                    },
+                    "to": [
+                        {
+                            "pointing_button": "button1",
+                            "modifiers": ["shift", "option"]
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        },
+        {
+            "description": "Change option+click to shift+option+click (right)",
+            "manipulators": [
+                {
+                    "from": {
+                        "pointing_button": "button2",
+                        "modifiers": {
+                            "mandatory": ["option"]
+                        }
+                    },
+                    "to": [
+                        {
+                            "pointing_button": "button2",
+                            "modifiers": ["shift", "option"]
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        }
+    ]
+}

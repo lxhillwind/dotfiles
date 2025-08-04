@@ -16,9 +16,24 @@ main()
     if test "$offset" -eq 0; then exit; fi
 
     # if all characters are single width, then we can exit here...
-    # tmux send -N "${offset#-}" $(
-    # if test "$offset" -gt 0; then echo Right; else echo Left; fi
-    # )
+    if test "$current_y" -gt "$target_y"; then
+        y_max="$current_y"
+        y_min="$target_y"
+    else
+        y_max="$target_y"
+        y_min="$current_y"
+    fi
+    # 0-indexed to 1-indexed
+    y_max=$(( y_max + 1 ))
+    y_min=$(( y_min + 1 ))
+    if [ -z "$(tmux capturep -p -N -T \
+        | awk "(NR >= "$y_min" && NR <= "$y_max") { print }" \
+        | tr -d '\040-\176\r\n')" ]; then
+        tmux send -N "${offset#-}" $(
+        if test "$offset" -gt 0; then echo Right; else echo Left; fi
+        )
+        exit
+    fi
 
     # About capturep -N / -T option:
     # It only breaks if end of line are double width characters

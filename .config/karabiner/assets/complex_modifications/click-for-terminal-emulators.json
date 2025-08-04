@@ -1,0 +1,70 @@
+{
+    "title": "Change left command+click and left control+click (in terminal emulators)",
+    "description": "need to enable 'Modify events' in Karabiner-Elements => Configurations => Devices => (your mouse)",
+    "rules": [
+        {
+            "description": "Change left command+click to option+click (in terminal emulators)",
+            "manipulators": [
+                {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^org.alacritty$",
+                                "^com.mitchellh.ghostty$",
+                                "^net.kovidgoyal.kitty$",
+                                "^com.github.wez.wezterm$",
+                                "^com.apple.Terminal$"
+                            ],
+                            "type": "frontmost_application_if"
+                        }
+                    ],
+                    "from": {
+                        "pointing_button": "button1",
+                        "modifiers": {
+                            "mandatory": ["left_command"]
+                        }
+                    },
+                    "to": [
+                        {
+                            "pointing_button": "button1",
+                            "modifiers": ["option"]
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        },
+        {
+            "description": "Change left control+click to command+click (in terminal emulators)",
+            "manipulators": [
+                {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^org.alacritty$",
+                                "^com.mitchellh.ghostty$",
+                                "^net.kovidgoyal.kitty$",
+                                "^com.github.wez.wezterm$",
+                                "^com.apple.Terminal$"
+                            ],
+                            "type": "frontmost_application_if"
+                        }
+                    ],
+                    "from": {
+                        "pointing_button": "button1",
+                        "modifiers": {
+                            "mandatory": ["left_control"]
+                        }
+                    },
+                    "to": [
+                        {
+                            "pointing_button": "button1",
+                            "modifiers": ["command"]
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        }
+    ]
+}
