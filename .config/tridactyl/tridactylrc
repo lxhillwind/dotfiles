@@ -152,6 +152,7 @@ set searchurls.sh http://symbolhound.com/?q=%s
 set searchurls.tr http://webtrans.yodao.com/webTransPc/index.html?from=en&to=zh-CHS&type=2&url=%s
 set searchurls.wk https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s
 set searchurls.yh https://search.yahoo.com/search?q=%s
+set searchurls.ytb https://www.youtube.com/results?search_query=%s
 
 " Default Binding can be viewed here: {{{1
 " moz-extension://<replace-with-extension-id>/static/docs/classes/_src_lib_config_.default_config.html
