@@ -1,11 +1,11 @@
 # TODO: search bar.
-# TODO: -e command.
 
 # "Configuration files are loaded after the configuration they're defined within in the order they're defined. "
 #
 # for macos:
 #   font-size = 16
 #   command = /opt/homebrew/bin/zsh
+#   command = sh -c 'if tmux ls >/dev/null 2>&1; then tmux; else zsh -ic tmux; fi'
 #   # macos: cmd+h is mapped to alt+h globally with karabiner;
 #   # this will not work for vim on linux, so not in common config.
 #   keybind = alt+h=esc:h
@@ -49,6 +49,9 @@ keybind = cmd+e=esc:e
 keybind = cmd+o=esc:o
 keybind = cmd+n=esc:n
 keybind = cmd+p=esc:p
+
+# until native search is implemented.
+keybind = cmd+f=esc:f
 
 # linux: macos like
 keybind = alt+c=copy_to_clipboard

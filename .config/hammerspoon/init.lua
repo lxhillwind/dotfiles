@@ -92,6 +92,8 @@ bindApp("/", terminal)
 -- revert to Finder.
 bindApp("e", "Finder", meta)
 
+bindApp("d", "Dingtalk", meta)
+
 bindApp("s", "KeePassXC", meta)
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
