@@ -189,111 +189,26 @@ g:miniSnip_complkey = '<C-x>s'
 
 # completion {{{2
 # non-lsp {{{
+# the most important setting:
+set autocomplete
 # avoid i / t in 'cpt', since it may mess status bar when completion starts.
-# - lsp or mucomplete?
 set cpt=.,w,b,u
+# script function in 'complete' (F<s-func>) will not work when changing setting
+# outside script; so use autoload function instead.
+import autoload './autoload/completor.vim'
+set complete+=Fcompletor.FminiSnip
+set complete+=Fcompletor.Fpath
+# omnifunc may be slow, so use it as last.
+set complete+=k^10,o
 # don't select the first item: noselect;
 # make completion show additional data: popup;
 # ("preview" shows data in a vim window, so it is not used.)
 set completeopt=menu,menuone,noselect,popup,fuzzy
-# path completion when not using vimcomplete plugin.
-if has('patch-9.1.1178')
-    set completefuzzycollect=keyword,files,whole_line
-endif
 # suppress annoy messages.
 set shortmess+=c
 
 # make <CR> always add newline.
 inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
-
-const use_vimcomplete = !has('patch-9.1.1590')
-if use_vimcomplete
-packadd! vimcomplete
-endif
-
-var vimcomplete_options = { # {{{
-    # priority (except path, which is 12) default 10
-    lsp: { priority: 12 },
-    vimscript: { enable: true, priority: 12 },
-    buffer: { priority: 11 },
-    dictionary: { enable: true, filetypes: ['*'] },
-} # }}}
-augroup vimrc
-    if use_vimcomplete
-    au VimEnter * g:VimCompleteOptionsSet(vimcomplete_options)
-    endif
-augroup END
-
-def Completor4miniSnip(findstart: number, base: string): any # {{{
-    if findstart == 2
-        return 1
-    elseif findstart == 1
-        const line = getline('.')->strpart(0, col('.') - 1)
-        const prefix = line->matchstr('\w\+$')
-        const startcol = col('.') - prefix->strlen()
-        if prefix->len() < 1
-            # {{{ when used in builtin completion (not vimcomplete plugin):
-            # if use 2 (trigger completion when length >= 2),
-            # second call to this function does not update a:base.
-            # So use 1 here (DO NOT use 0, since it would trigger completion
-            # even on dot / space, which is quite annoying).
-            # }}}
-            return -2
-        else
-            return startcol
-        endif
-    else
-        return miniSnip#completeFunc(findstart, base)
-    endif
-enddef # }}}
-def Completor4Vimscript(findstart: number, base: string): any # {{{
-    # In vimcomplete's codebase, cmdline completion is disabled
-    # because of performance issue.
-    # We may also encounter the problem; be careful.
-    if findstart == 2
-        return 1
-    else
-        const line = getline('.')->strpart(0, col('.') - 1)
-        # use \k to match words defined by &iskeyword
-        const prefix = line->matchstr('\k\+$')
-        const startcol = col('.') - prefix->strlen()
-        const prefix4completion = line->matchstr('\v^.*\S+\s+\S+$')
-        if findstart == 1
-            if prefix4completion->len() == 0
-                return -2
-            else
-                return startcol
-            endif
-        else
-            var result: list<string>
-            try
-                result = prefix4completion->getcompletion('cmdline')
-            catch
-            endtry
-            return result->mapnew((_, i) => ({word: i, menu: '', kind: 'c'}))
-        endif
-    endif
-enddef # }}}
-if has('vim_starting')
-    if use_vimcomplete
-    import autoload 'vimcomplete/completor.vim'
-    endif
-endif
-augroup vimrc
-    if use_vimcomplete
-    au VimEnter * completor.Register('snip', Completor4miniSnip, ['*'], 12)
-    # make cmd completion's priority higher than vimcomplete plugin's builtin.
-    au VimEnter * completor.Register('cmd', Completor4Vimscript, ['vim'], 14)
-    else
-    set autocomplete
-    # script function in 'complete' (F<s-func>) will not work when changing setting
-    # outside script; so use autoload function instead.
-    import autoload './autoload/completor.vim'
-    set complete+=Fcompletor.FminiSnip
-    set complete+=Fcompletor.Fpath
-    set complete+=o,k^10
-    endif
-augroup END
 
 packadd! vim-dict
 # always enable dict completion. (i_<Ctrl-x><Ctrl-k>)
@@ -461,10 +376,6 @@ source ~/vimfiles/vimrc
 pa! coc.nvim
 
 augroup vimrc
-    # Only enable certain filetype completion for vimcomplete.
-    # I don't know how to do the reverse, which should be easier to maintain...
-    au VimEnter * VimCompleteEnable vim
-
     # Highlight the symbol and its references when holding the cursor
     autocmd CursorHold * silent call g:CocActionAsync('highlight')
 augroup END
@@ -1416,6 +1327,8 @@ augroup vimrc
             executable('python3') ? 'python3 -m json.tool' : ''
         )
     }
+    # builtin omnifunc for sql blocks for several seconds.
+    au FileType sql set omnifunc=
 
     # format html; command `tidy` does not work sometimes.
     au FileType html setl formatexpr=<SID>FormatHtml()
