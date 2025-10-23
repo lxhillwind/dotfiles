@@ -16,9 +16,6 @@
 "   so we cannot set them via `setpref`);
 "   "打开弹出窗口": <A-g>; "移动选中标签页到自定义群组": <A-e> }}}
 "
-" firefox theme setup {{{
-" https://codeberg.org/Freeplay/Firefox-Onebar }}}
-"
 " - \ at end of line is used for line-continuation, see: {{{
 " https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/background/config_rc.ts#L61 }}}
 "
@@ -105,9 +102,6 @@ setpref accessibility.typeaheadfind.manual false
 
 " make sites' autofocus harder
 setpref browser.autofocus false
-
-" required for userChrome.css (Firefox-Onebar)
-setpref toolkit.legacyUserProfileCustomizations.stylesheets true
 
 " thin tabbar
 setpref browser.uidensity 1

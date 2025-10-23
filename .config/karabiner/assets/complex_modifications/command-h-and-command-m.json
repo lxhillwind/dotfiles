@@ -2,7 +2,7 @@
     "title": "Set Command+h to Option+h, Command+m to Option+m (unless utm)",
     "rules": [
         {
-            "description": "Set Command+h to Option+h (unless utm)",
+            "description": "Set Command+h to Option+h, Command+m to Option+m (unless utm)",
             "manipulators": [
                 {
                     "conditions": [
@@ -30,12 +30,7 @@
                         }
                     ],
                     "type": "basic"
-                }
-            ]
-        },
-        {
-            "description": "Set Command+m to Option+m (unless utm)",
-            "manipulators": [
+                },
                 {
                     "conditions": [
                         {

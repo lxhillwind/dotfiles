@@ -1,0 +1,29 @@
+{
+    "title": "Change ctrl+; to input emoji (like linux)",
+    "rules": [
+        {
+            "description": "Change ctrl+; to input emoji (like linux)",
+            "manipulators": [
+                {
+                    "from": {
+                        "key_code": "semicolon",
+                        "modifiers": {
+                            "mandatory": [
+                                "control"
+                            ]
+                        }
+                    },
+                    "to": [
+                        {
+                            "key_code": "e",
+                            "modifiers": [
+                                "fn"
+                            ]
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        }
+    ]
+}

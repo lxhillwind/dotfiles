@@ -192,15 +192,24 @@ g:miniSnip_complkey = '<C-x>s'
 # avoid i / t in 'cpt', since it may mess status bar when completion starts.
 # - lsp or mucomplete?
 set cpt=.,w,b,u
-# don't select the first item.
-set completeopt=menu,menuone,noselect
+# don't select the first item: noselect;
+# make completion show additional data: popup;
+# ("preview" shows data in a vim window, so it is not used.)
+set completeopt=menu,menuone,noselect,popup,fuzzy
+# path completion when not using vimcomplete plugin.
+if has('patch-9.1.1178')
+    set completefuzzycollect=keyword,files,whole_line
+endif
 # suppress annoy messages.
 set shortmess+=c
 
 # make <CR> always add newline.
 inoremap <expr> <cr> pumvisible() ? "<c-y><cr>" : "<cr>"
 
+const use_vimcomplete = !has('patch-9.1.1590')
+if use_vimcomplete
 packadd! vimcomplete
+endif
 
 var vimcomplete_options = { # {{{
     # priority (except path, which is 12) default 10
@@ -210,7 +219,9 @@ var vimcomplete_options = { # {{{
     dictionary: { enable: true, filetypes: ['*'] },
 } # }}}
 augroup vimrc
+    if use_vimcomplete
     au VimEnter * g:VimCompleteOptionsSet(vimcomplete_options)
+    endif
 augroup END
 
 def Completor4miniSnip(findstart: number, base: string): any # {{{
@@ -220,7 +231,13 @@ def Completor4miniSnip(findstart: number, base: string): any # {{{
         const line = getline('.')->strpart(0, col('.') - 1)
         const prefix = line->matchstr('\w\+$')
         const startcol = col('.') - prefix->strlen()
-        if prefix->len() < 2
+        if prefix->len() < 1
+            # {{{ when used in builtin completion (not vimcomplete plugin):
+            # if use 2 (trigger completion when length >= 2),
+            # second call to this function does not update a:base.
+            # So use 1 here (DO NOT use 0, since it would trigger completion
+            # even on dot / space, which is quite annoying).
+            # }}}
             return -2
         else
             return startcol
@@ -258,12 +275,24 @@ def Completor4Vimscript(findstart: number, base: string): any # {{{
     endif
 enddef # }}}
 if has('vim_starting')
+    if use_vimcomplete
     import autoload 'vimcomplete/completor.vim'
+    endif
 endif
 augroup vimrc
+    if use_vimcomplete
     au VimEnter * completor.Register('snip', Completor4miniSnip, ['*'], 12)
     # make cmd completion's priority higher than vimcomplete plugin's builtin.
     au VimEnter * completor.Register('cmd', Completor4Vimscript, ['vim'], 14)
+    else
+    set autocomplete
+    # script function in 'complete' (F<s-func>) will not work when changing setting
+    # outside script; so use autoload function instead.
+    import autoload './autoload/completor.vim'
+    set complete+=Fcompletor.FminiSnip
+    set complete+=Fcompletor.Fpath
+    set complete+=o,k^10
+    endif
 augroup END
 
 packadd! vim-dict
@@ -521,7 +550,6 @@ set cursorline
 set laststatus=1
 set showcmd
 set wildmenu
-set completeopt-=preview
 set shortmess-=S
 set encoding=utf-8
 set fileformats=unix,dos
@@ -1406,15 +1434,6 @@ augroup vimrc
     }
     # completion from vim's help page into vim
     au FileType help setl iskeyword+=^'
-
-    # set completeopt when entering insert mode; {{{2
-    # because vimcomplete set &completeopt unconditionally without honoring
-    # user's setting;
-    au InsertEnter * {
-        if has('patch-9.1.0463') && &completeopt->match('\<fuzzy\>') < 0
-            noautocmd set completeopt+=fuzzy
-        endif
-    }
 
     # quickfix window {{{2
     au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>

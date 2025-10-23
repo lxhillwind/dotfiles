@@ -3,7 +3,7 @@
     "description": "need to enable 'Modify events' in Karabiner-Elements => Configurations => Devices => (your mouse)",
     "rules": [
         {
-            "description": "Change left command+click to option+click (in terminal emulators)",
+            "description": "Change left command+click and left control+click (in terminal emulators)",
             "manipulators": [
                 {
                     "conditions": [
@@ -32,12 +32,7 @@
                         }
                     ],
                     "type": "basic"
-                }
-            ]
-        },
-        {
-            "description": "Change left control+click to command+click (in terminal emulators)",
-            "manipulators": [
+                },
                 {
                     "conditions": [
                         {
