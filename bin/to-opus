@@ -16,7 +16,7 @@ proc main(input_file) {
                 setvar output_bitrate = 128
             }
         }
-        aac | m4a {
+        aac | m4a | *m4a* {
             # above 160kbps
             if (metadata.format.bit_rate / 1000 > 150) {
                 setvar output_bitrate = 128

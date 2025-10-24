@@ -184,8 +184,8 @@ packadd! vim-yaml
 packadd! miniSnip
 # security: do not load snippets from cwd.
 g:miniSnip_local = ''
-# Spelling suggestions is usually not available, so let's override it.
-g:miniSnip_complkey = '<C-x>s'
+# avoid creating key mapping.
+g:miniSnip_complkey = ''
 
 # completion {{{2
 # non-lsp {{{
@@ -302,6 +302,9 @@ endfor
 
 var lsp_is_started: dict<bool> = {}
 def LspSetup()
+    if exists('g:coc_enabled') && g:coc_enabled
+        return
+    endif
     if !lsp_is_started->get(&ft, false)
         var config = {}
         for [k, v] in lspConfigDict->items()
@@ -362,23 +365,31 @@ enddef
 #    "suggest.noselect": true
 #    "diagnostic.enableSign": false
 #    "suggest.minTriggerInputLength": 2
+#    "languageserver": {
+#        "zig": {
+#            "command": "zls",
+#            "filetypes": ["zig"]
+#        }
+#    }
 
 const coc_vimrc_template =<< trim END
-# Disable certain bundled lsp config by setting relevant key's filetype to [];
-# since they may be conflict with coc.nvim.
-# Note that the key may not be &filetype.
-g:vimrc_lsp_config = {
-    python: { filetype: [] },
-}
-
-# Order matters!
-source ~/vimfiles/vimrc
-
 pa! coc.nvim
 
-augroup vimrc
+augroup vimrc_local_coc
+    au!
     # Highlight the symbol and its references when holding the cursor
     autocmd CursorHold * silent call g:CocActionAsync('highlight')
+    autocmd InsertEnter * {
+        if !exists('b:vimrc_noautocomplete')
+            try
+                b:vimrc_noautocomplete = g:CocHasProvider('codeAction')
+                if b:vimrc_noautocomplete
+                    setl noautocomplete
+                endif
+            catch
+            endtry
+        endif
+    }
 augroup END
 
 set formatexpr=CocAction('formatSelected')

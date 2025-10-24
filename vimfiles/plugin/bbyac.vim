@@ -2,12 +2,9 @@ vim9script
 
 # TODO start / end pattern tweak. I don't know if current impl is desired.
 #
-# NOTE: although key binding is <C-n>, we usually should press <C-e> first:
-#   otherwise it will not get triggered. (why?)
-#
 # Credit: https://github.com/baohaojun/bbyac (for inspiration and plugin name)
 
-inoremap <expr> <C-n> pumvisible() ? "\<C-n>" : "\<C-r>=<SID>BBYacMain()\<CR>"
+inoremap <C-x><C-y> <C-r>=<SID>BBYacMain()<CR>
 
 def BBYacMain(): string
     const [_, pos] = searchpos('\v%.l\S*%.c', 'bn')
