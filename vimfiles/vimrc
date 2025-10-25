@@ -1367,6 +1367,15 @@ augroup vimrc
     # completion from vim's help page into vim
     au FileType help setl iskeyword+=^'
 
+    # set completeopt when entering insert mode; {{{2
+    # because plugin lsp set &completeopt unconditionally without honoring
+    # user's setting;
+    au InsertEnter * {
+        if &completeopt->match('\<fuzzy\>') < 0
+            noautocmd setl completeopt+=fuzzy
+        endif
+    }
+
     # quickfix window {{{2
     au FileType qf nnoremap <buffer> <C-n> <Cmd>cnewer<CR>
     au FileType qf nnoremap <buffer> <C-p> <Cmd>colder<CR>
