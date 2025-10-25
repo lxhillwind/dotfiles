@@ -353,57 +353,64 @@ def LspSetup()
     nnoremap <buffer> <silent> gi :LspGotoImpl<CR>
     nnoremap <buffer> <silent> gr :LspShowReferences<CR>
 enddef
-# }}}2
+# }}}
 
-# How to use coc.nvim without modifing this vimrc? {{{2
+# coc.nvim setup {{{
 # - install from https://github.com/neoclide/coc.nvim;
 #
 # - recommend plugin:
 #     CocInstall coc-json coc-pairs
-#
-# - useful setting (":CocConfig"):
-#    "suggest.noselect": true
-#    "diagnostic.enableSign": false
-#    "suggest.minTriggerInputLength": 2
-#    "languageserver": {
-#        "zig": {
-#            "command": "zls",
-#            "filetypes": ["zig"]
-#        }
-#    }
 
-const coc_vimrc_template =<< trim END
-pa! coc.nvim
-
-augroup vimrc_local_coc
-    au!
-    # Highlight the symbol and its references when holding the cursor
-    autocmd CursorHold * silent call g:CocActionAsync('highlight')
-    autocmd InsertEnter * {
-        if !exists('b:vimrc_noautocomplete')
-            try
-                b:vimrc_noautocomplete = g:CocHasProvider('codeAction')
-                if b:vimrc_noautocomplete
-                    setl noautocomplete
-                endif
-            catch
-            endtry
-        endif
-    }
+augroup vimrc
+    au User CocNvimInit CocSetup()
 augroup END
 
-set formatexpr=CocAction('formatSelected')
-&keywordprg = ":call g:CocActionAsync('doHover') | \""
-set tagfunc=CocTagFunc
+def CocSetup()
+    augroup vimrc
+        # Highlight the symbol and its references when holding the cursor
+        autocmd CursorHold * silent call g:CocActionAsync('highlight')
+        autocmd InsertEnter * {
+            if !exists('b:vimrc_noautocomplete')
+                try
+                    b:vimrc_noautocomplete = g:CocHasProvider('codeAction')
+                    if b:vimrc_noautocomplete
+                        setl noautocomplete
+                    endif
+                catch
+                endtry
+            endif
+        }
+    augroup END
 
-nmap <silent> [g <Plug>(coc-diagnostic-prev)
-nmap <silent> ]g <Plug>(coc-diagnostic-next)
+    set formatexpr=CocAction('formatSelected')
+    &keywordprg = ":call g:CocActionAsync('doHover') | \""
+    set tagfunc=CocTagFunc
 
-nmap <silent> gd <Plug>(coc-definition)
-nmap <silent> gy <Plug>(coc-type-definition)
-nmap <silent> gi <Plug>(coc-implementation)
-nmap <silent> gr <Plug>(coc-references)
-END
+    nmap <silent> [g <Plug>(coc-diagnostic-prev)
+    nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+    nmap <silent> gd <Plug>(coc-definition)
+    nmap <silent> gy <Plug>(coc-type-definition)
+    nmap <silent> gi <Plug>(coc-implementation)
+    nmap <silent> gr <Plug>(coc-references)
+
+    var cocLspConfig = {}
+    for [k, v] in lspConfigDict->items()
+        cocLspConfig[k] = {
+            command: v.path,
+            args: v.args,
+            filetypes: v.filetype,
+        }
+    endfor
+
+    # these settings take higher priority than :CocConfig, but can be
+    # overwritten by another coc#config().
+    coc#config('suggest.noselect', true)
+    coc#config('diagnostic.enableSign', false)
+    coc#config('suggest.minTriggerInputLength', 2)
+    coc#config('languageserver', cocLspConfig)
+enddef
+# }}}
 # }}}2
 
 # NOTE: plugin loading should be put **before** this. (see :help packadd)
