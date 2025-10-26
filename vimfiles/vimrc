@@ -396,11 +396,13 @@ def CocSetup()
 
     var cocLspConfig = {}
     for [k, v] in lspConfigDict->items()
-        cocLspConfig[k] = {
-            command: v.path,
-            args: v.args,
-            filetypes: v.filetype,
-        }
+        if executable(v.path)
+            cocLspConfig[k] = {
+                command: v.path,
+                args: v.args,
+                filetypes: v.filetype,
+            }
+        endif
     endfor
 
     # these settings take higher priority than :CocConfig, but can be
