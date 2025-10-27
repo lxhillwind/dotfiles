@@ -43,25 +43,6 @@ RunOrRaise(class, run, where)
 #.::Send {Media_Next}
 #/::Send {Media_Play_Pause}
 
-; firefox {{{1
-#IfWinActive ahk_exe firefox.exe
-; let ctrl-6 send alt-6, differ from alt-6 (sending ctrl-6).
-; so we can differ them in tridactyl:
-; atl-6 to switch tab 6 (native function for ctrl-6: requires unbind in local tridactylrc);
-; ctrl-6 to switch between # tab (alt-6 recognized).
-^6::Send !6
-; alt-1 to alt-9
-!1::Send ^1
-!2::Send ^2
-!3::Send ^3
-!4::Send ^4
-!5::Send ^5
-!6::Send ^6
-!7::Send ^7
-!8::Send ^8
-!9::Send ^9
-#IfWinActive  ; endif
-
 ; screenshot (ctrl+alt+a) {{{1
 ^!a::Send #+s
 ; switch desktop (alt+[, alt+]) {{{1

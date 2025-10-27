@@ -4,10 +4,12 @@
 " - ~/.tridactylrc will be sourced at last; it can be used for local config. {{{
 "   (see `:help source` in tridactyl about configuration file priority) }}}
 "
-" - search "A-6" in this file, if OS is windows: we need additional setting.
 " - search "ContextMenu" in this file, if OS is mac: we need additional setting.
 "
-" NOTE: js tri.excmds.unbind in tridactylrc may not work!
+" - If OS is win32: we may need to assign <A-1> to <A-9> in:
+"    - (firefox setting => "扩展和主题") about:addons => "管理扩展快捷键" => Tridactyl;
+"    - It says "do not change here", but it may lack some keys; just add missing keys
+"    and restart firefox.
 "
 " firefox plugin setup {{{
 " - Tridactyl: :nativeinstall;
@@ -77,7 +79,16 @@ if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic
 if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
 ;
 
-jsb tri.excmds.composite('js_magic')
+" copied from js_magic
+command jsb_magic jsb \
+tri.lx = {}; \
+tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
+tri.lx.is_mac = /^Mac/.test(navigator.platform); \
+tri.lx.is_linux = /^Linux/.test(navigator.platform); \
+tri.lx.sh = (...arg) => tri.native.run(...arg); \
+if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${arg[0]}`, ...arg.slice(1)); \
+if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
+;
 
 " about:config {{{1
 
@@ -187,21 +198,9 @@ unbind --mode=normal <Escape>
 " I don't know if it is default... just record it here.
 bind --mode=browser <C-6> tab #
 
-" in windows, <A-1> - <A-9> can not be used to navigate tab (it's ok in linux); {{{
-" so we map <A-1> - <A-9> to <C-1> - <C-9> with ahk to make them work.
-"
-" after using tridactyl, <C-6> should be used as <C-^> (like in vim);
-" so we bind <C-6> to <A-6> in ahk, then <C-6> and <A-6> produce different keys:
-"
-" When we pressing <A-6>, <C-6> is recognized by firefox, so <C-6> should be unbind.
-"
-" But tridactylrc is used in different OS,
-" so we need to put these in ~/.tridactylrc only if using Windows:
-"
-"    bind --mode=browser <A-6> tab #
-"    unbind <C-6>
-"    unbind --mode=browser <C-6>
-" }}}
+" Add these to local tridactylrc if vertical tab is enabled.
+"bind J tabnext
+"bind K tabprev
 
 " search with...
 bind s composite js " " + document.location.href.toString() | fillcmdline open ; text.beginning_of_line ; text.forward_word ; text.forward_char
@@ -237,6 +236,9 @@ unbind <C-u>
 " <C-i> in input / insert mode should be kept (edit-with-vim)
 unbind --mode=normal <C-i>
 
+" windows A-num to swith tab {{{2
+jsb_magic if (tri.lx.is_win32) '123456789'.split('').forEach(i => tri.excmds.composite(`bind --mode=browser <A-${i}> tab ${i === '9' ? 0 : i}`))
+
 " readline {{{2
 " <C-/> as select_all works natively on GTK (linux) (without bind).
 " - TODO: test if select_all (<C-/>) work for windows.
@@ -244,8 +246,9 @@ unbind --mode=normal <C-i>
 " custom select_all in ex mode won't work: {{{
 "bind --mode=ex <C-/> js document.activeElement.select()
 " }}}
-bind --mode=input <C-/> js document.activeElement.select()
-bind --mode=insert <C-/> js document.activeElement.select()
+jsb_magic if (!tri.lx.is_linux) tri.excmds.bind('--mode=input', '<C-/>', 'js document.activeElement.select()')
+jsb_magic if (!tri.lx.is_linux) tri.excmds.bind('--mode=insert', '<C-/>', 'js document.activeElement.select()')
+
 bind --mode=ex <C-a> text.beginning_of_line
 bind --mode=input <C-a> text.beginning_of_line
 bind --mode=insert <C-a> text.beginning_of_line
