@@ -21,12 +21,12 @@ export def FminiSnip(findstart: number, base: string): any # {{{
     endif
 enddef # }}}
 
-export def Fpath(findstart: number, base: string): any # {{{
+export def Fpath(findstart: number, base_: string): any # {{{
     if findstart == 1
         const line = getline('.')->strpart(0, col('.') - 1)
         const prefix = line->matchstr(
             '\v(^|\W)\zs'
-            .. (has('win32') ? '(\w\:|\.)[\/]' : '\.?/')
+            .. (has('win32') ? '(\w\:|[.~])[\/]' : '[.~]?/')
             .. '\S*$'
         )
         const startcol = col('.') - prefix->strlen() - 1
@@ -36,6 +36,8 @@ export def Fpath(findstart: number, base: string): any # {{{
             return startcol
         endif
     else
+        const base = base_->substitute(
+            '^[~]\ze' .. (has('win32') ? '[\/]' : '/'), expand('~'), '')
         if base->slice(-1)->match(has('win32') ? '\v[\/]' : '/') >= 0 && isdirectory(base)
             var items = []
             try
@@ -44,7 +46,7 @@ export def Fpath(findstart: number, base: string): any # {{{
             endtry
             path_cache.items = items->mapnew((_, i) => ({
                 # remove '/\zs.' from base, e.g. ./. + .config => ./.config
-                word: base->substitute('/\zs.$', '', '') .. i, abbr: i,
+                word: base_->substitute('/\zs.$', '', '') .. i, abbr: i,
                 kind: 'f', menu: '[path]',
             }))
         endif
