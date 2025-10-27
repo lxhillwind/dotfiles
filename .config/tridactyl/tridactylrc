@@ -46,6 +46,8 @@ sanitise tridactyllocal
 " learned this trick from:
 "   https://github.com/tridactyl/tridactyl/wiki/Commentary-of-Gholk's-Tridactylrc#reuse-js-code
 " search `js_magic` for usage.
+"
+" DO NOT change prefix "js "! since several commands (like jsb_magic) use it.
 
 command js_magic js \
 tri.lx = {}; \
@@ -57,38 +59,9 @@ if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic
 if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
 ;
 
-" copied from js_magic
-command js_magic_p js -p \
-tri.lx = {}; \
-tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
-tri.lx.is_mac = /^Mac/.test(navigator.platform); \
-tri.lx.is_linux = /^Linux/.test(navigator.platform); \
-tri.lx.sh = (...arg) => tri.native.run(...arg); \
-if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${arg[0]}`, ...arg.slice(1)); \
-if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
-;
-
-" copied from js_magic
-command js_magic_d js -d● \
-tri.lx = {}; \
-tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
-tri.lx.is_mac = /^Mac/.test(navigator.platform); \
-tri.lx.is_linux = /^Linux/.test(navigator.platform); \
-tri.lx.sh = (...arg) => tri.native.run(...arg); \
-if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${arg[0]}`, ...arg.slice(1)); \
-if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
-;
-
-" copied from js_magic
-command jsb_magic jsb \
-tri.lx = {}; \
-tri.lx.is_win32 = /^Win32/.test(navigator.platform); \
-tri.lx.is_mac = /^Mac/.test(navigator.platform); \
-tri.lx.is_linux = /^Linux/.test(navigator.platform); \
-tri.lx.sh = (...arg) => tri.native.run(...arg); \
-if (tri.lx.is_mac) tri.lx.sh = (...arg) => tri.native.run(`export PATH=$(zsh -ic 'echo $PATH'); ${arg[0]}`, ...arg.slice(1)); \
-if (tri.lx.is_win32) tri.lx.sh = (...arg) => { let cmd = arg[0]; cmd = cmd.replace(/\\(?=("))/g, '\\\\').replace(/\\$/, '\\\\').replace(/"/g, '\\"'); cmd = '"' + cmd + '"'; cmd = cmd.replace(/([<>^|&()"])/g, '^$1'); return tri.native.run(`busybox sh -c ${cmd}`, ...arg.slice(1)); }; \
-;
+jsb let cmd = tri.config.get('exaliases').js_magic.replace(/^js /, ''); tri.excmds.command('js_magic_p', `js -p ${cmd}`)
+jsb let cmd = tri.config.get('exaliases').js_magic.replace(/^js /, ''); tri.excmds.command('js_magic_d', `js -d● ${cmd}`)
+jsb let cmd = tri.config.get('exaliases').js_magic.replace(/^js /, ''); tri.excmds.command('jsb_magic', `jsb ${cmd}`)
 
 " about:config {{{1
 
