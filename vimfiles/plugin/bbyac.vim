@@ -1,7 +1,5 @@
 vim9script
 
-# TODO start / end pattern tweak. I don't know if current impl is desired.
-#
 # Credit: https://github.com/baohaojun/bbyac (for inspiration and plugin name)
 
 inoremap <C-x><C-y> <C-r>=<SID>BBYacMain()<CR>
@@ -25,12 +23,12 @@ def BBYacMain(): string
         pattern_non_greedy ..= printf('[%s]', escape(i, '\'))
     endfor
     if word[0] =~ '\w'
-        pattern = '\w*' .. pattern
-        pattern_non_greedy = '\w*' .. pattern_non_greedy
+        pattern = '(^|<)\w*' .. pattern
+        pattern_non_greedy = '.*\zs(^|<)\w{-}' .. pattern_non_greedy
     endif
     if word[-1] =~ '\w'
-        pattern = pattern .. '\w*'
-        pattern_non_greedy = pattern_non_greedy .. '\w*'
+        pattern = pattern .. '\w*(>|$)'
+        pattern_non_greedy = pattern_non_greedy .. '\w{-}(>|$)'
     endif
     pattern = '\v\c' .. pattern
     pattern_non_greedy = '\v\c' .. pattern_non_greedy
@@ -67,6 +65,26 @@ def BBYacMain(): string
     result = result
         ->sort()->uniq()
         ->filter((_, i) => i != word)
+
+    result->sort((a, b) => {
+        var score = [0, 0]
+        var i = -1
+        for item in [a, b]
+            i += 1
+            if word[0] == item[0]
+                score[i] += 10
+            elseif word[0]->tolower() == item[0]->tolower()
+                score[i] += 5
+            endif
+            if word[-1] == item[-1]
+                score[i] += 10
+            elseif word[1]->tolower() == item[1]->tolower()
+                score[i] += 5
+            endif
+        endfor
+        const diff = score[0] - score[1]
+        return diff > 0 ? -1 : (diff < 0 ? 1 : 0)
+    })
 
     complete(pos, result)
     return ''
