@@ -18,6 +18,10 @@ export def FminiSnip(findstart: number, base: string): any # {{{
         endif
     else
         return miniSnip#completeFunc(findstart, base)
+            ->map((_, i) => {
+                i.menu = 'snip'
+                return i
+            })
     endif
 enddef # }}}
 
@@ -26,7 +30,7 @@ export def Fpath(findstart: number, base_: string): any # {{{
         const line = getline('.')->strpart(0, col('.') - 1)
         const prefix = line->matchstr(
             '\v(^|\W)\zs'
-            .. (has('win32') ? '(\w\:|[.~])[\/]' : '[.~]?/')
+            .. (has('win32') ? '(\w\:|\.\.|[.~])[\/]' : '(\.\.|[.~])?/')
             .. '\S*$'
         )
         const startcol = col('.') - prefix->strlen() - 1

@@ -198,8 +198,9 @@ set cpt=.,w,b,u
 import autoload './autoload/completor.vim'
 set complete+=Fcompletor.FminiSnip
 set complete+=Fcompletor.Fpath
-# omnifunc may be slow, so use it as last.
-set complete+=k^10,o
+set complete+=k^10
+# should omnifunc (semantic completion) be used as first or last?
+set complete^=o
 # don't select the first item: noselect;
 # make completion show additional data: popup;
 # ("preview" shows data in a vim window, so it is not used.)
@@ -331,8 +332,8 @@ def LspSetup()
                 showDiagWithSign: false,
                 # avoid mapping <cr>
                 noNewlineInCompletion: true,
-                # this sometimes breaks vim (by setting omnifunc), so do not set it.
-                # autoComplete: false,
+                # use omnifunc: performance largely improved after this patch.
+                autoComplete: !has('patch-9.1.1825'),
             })
         endif
         g:LspAddServer([config])
