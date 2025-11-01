@@ -688,6 +688,11 @@ endif
 # cmdline completion {{{2
 # defined here instead of legacy, since it is available only after version 8.x
 set wildoptions=pum,fuzzy
+if has('win32unix')
+    # restore 'wildmode' since git bash sets it in /etc/vimrc,
+    # which makes menu selection disabled.
+    set wildmode&vim
+endif
 
 # builtin terminal enhancement {{{2
 def TerminalPaste()
