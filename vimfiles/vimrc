@@ -37,7 +37,7 @@ const is_win32 = has('win32')
 const is_linux = has('linux')
 const is_mac = has('mac')
 const is_wsl = executable('/mnt/c/Windows/notepad.exe')
-const has_gui = has('gui_running') || is_mac || is_win32
+const has_gui = has('gui_running') || is_mac || is_win32 || has('win32unix')
     || (is_linux && (
         # desktop
         !empty($DISPLAY) || !empty($WAYLAND_DISPLAY)
@@ -641,6 +641,14 @@ if is_win32 && has('vim_starting')
     endif
 endif
 
+# win32unix (git bash) {{{2
+# restore settings set by /etc/vimrc
+if has('win32unix')
+    set wildmode&vim
+    set statusline&vim
+    set clipboard&vim
+endif
+
 # macvim {{{2
 if has('gui_macvim') && has('vim_starting')
     set gfn=Monaco:h14
@@ -688,11 +696,6 @@ endif
 # cmdline completion {{{2
 # defined here instead of legacy, since it is available only after version 8.x
 set wildoptions=pum,fuzzy
-if has('win32unix')
-    # restore 'wildmode' since git bash sets it in /etc/vimrc,
-    # which makes menu selection disabled.
-    set wildmode&vim
-endif
 
 # builtin terminal enhancement {{{2
 def TerminalPaste()
@@ -1161,7 +1164,7 @@ else
 endif
 
 def ClipboardCopy()
-    if has('clipboard') && is_win32
+    if has('clipboard') && (is_win32 || has('win32unix'))
         # NOTE: unix: X11 clipboard content will disapper when program exits.
         # but kde (plasma) has clipboard manager, which make it work
         # consistently.
@@ -1177,7 +1180,7 @@ def ClipboardCopy()
 enddef
 
 def ClipboardPaste()
-    if has('clipboard') && is_win32
+    if has('clipboard') && (is_win32 || has('win32unix'))
         execute '@" = @+'
     elseif executable('pbpaste')
         @" = system('pbpaste')
@@ -1456,35 +1459,6 @@ augroup vimrc
         normal gg"_dd
         setl nomodifiable
     }
-
-    # gx related (NOTE: key `gx` overwritten) {{{2
-    nnoremap gx <ScriptCmd>Gx('n')<CR>
-    # we cannot get visual selection if using <ScriptCmd>
-    xnoremap <silent> gx :<C-u>call <SID>Gx('v')<CR>
-    #xnoremap gx <ScriptCmd>Gx('v')<CR>
-
-    def Gx(mode: string)
-        var text: string
-        if mode == 'v'
-            var t = @"
-            silent normal gvy
-            text = @"
-            @" = t
-            text = substitute(text, "\n", '', 'g')
-            # recover visual mode to match <ScriptCmd> behavior.
-            silent normal gv
-        else
-            text = expand(get(g:, 'netrw_gx', '<cfile>'))
-        endif
-        if text->match('\v^[~$]') >= 0
-            # expand ~ and $ (env).
-            text = g:ExpandHead(text)
-        endif
-        echom text
-        if has_gui
-            execute 'Sh -g' text->shellescape()
-        endif
-    enddef
 
     # Remember the positions in files with some git-specific exceptions {{{2
     au BufReadPost * {
