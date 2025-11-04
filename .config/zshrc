@@ -22,14 +22,25 @@
 # environment variable {{{1
 export EDITOR=vim
 
-case "$PATH" in
-    /usr/bin:*|*:/usr/bin:*) ;;
-    *) export PATH=/usr/bin:$PATH ;;
-esac
+_add-shrc-path()
+{
+    case "$PATH" in
+        "$1":* | *:"$1" | *:"$1":*) ;;
+        *) export PATH=$1:$PATH ;;
+    esac
+}
 
-case "$PATH" in
-    ~/bin:*|*:~/bin:*) ;;
-    *) export PATH=~/bin:$PATH ;;
+_add-shrc-path /usr/bin
+_add-shrc-path ~/bin
+
+# OSTYPE is defined by bash / zsh; OS is defined by win32 OS.
+case "${OSTYPE:-$OS}" in
+    Windows_NT)
+        _add-shrc-path ~/bin/platform/win ;;
+    *darwin*)
+        _add-shrc-path ~/bin/platform/macos ;;
+    linux*)
+        _add-shrc-path ~/bin/platform/linux ;;
 esac
 
 # bat

@@ -97,7 +97,6 @@ silent! packadd! helptoc
 # my {{{2
 packadd! vim-jump
 packadd! vim-sh
-packadd! base16-dynamic.vim
 packadd! lf.vim
 packadd! vim-fuzzy
 packadd! table-im
@@ -1635,19 +1634,18 @@ augroup END  # {{{2
 # only set colorscheme if not set yet. {{{2
 # using `trim(execute('color')) == 'default'` is not valid.
 if !exists('g:colors_name')
+    # - retrobox looks too yellow in light bg;
+    # - wildcharm looks too black in dark bg;
+    # Both support dual bg, and are good choice as default option.
+    #
+    # Do not detect &bg from `VimEnter` event: color will not be set when
+    # filename is given in argument (e.g. `vim xxx`).
+    #
+    # "trick" to improve readability: use larger font!
     if has('gui_running') || &t_Co->str2nr() >= 256
-        color base16-dynamic
+        color wildcharm
     else
-        if is_win32
-            if is_conemu
-                color retrobox
-            else
-                # cmd.exe window
-                color default
-            endif
-        else
-            color default
-        endif
+        color default
     endif
 endif
 
