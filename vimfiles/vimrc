@@ -1653,6 +1653,22 @@ endif
 def ColorSchemeTweak()
     hi! link StatusLineTermNC StatusLineNC
 
+    # not all colorschemes look good with this patch, so test them manually,
+    # and maybe add some of them to local vimrc.
+    if exists('g:colors_name') && exists('g:vimrc_pmenu_tweak')
+        && g:vimrc_pmenu_tweak->index(g:colors_name) >= 0
+        # make my fuzzy plugin selected line shows matched chars with highlight;
+        hi PmenuSel ctermfg=NONE guifg=NONE
+
+        # make completion popup window shows matched chars with highlight.
+        if hlget('PmenuMatch')->get(0, {})->get('linksto', '') == 'Pmenu'
+            hi link PmenuMatch String
+        endif
+        if hlget('PmenuMatchSel')->get(0, {})->get('linksto', '') == 'PmenuSel'
+            hi link PmenuMatchSel String
+        endif
+    endif
+
     # terminal 16color
     if (has('gui_running') || &tgc)
         # https://github.com/lxhillwind/base16-dynamic.vim
