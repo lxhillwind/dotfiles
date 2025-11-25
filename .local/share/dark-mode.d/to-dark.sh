@@ -26,11 +26,10 @@ esac
 export DISPLAY=:0.0
 
 if [ "$theme" = dark ]; then
-    xfce-theme-manager --theme=Arc-Dark-solid --wmborder=Arc-Dark-solid --controls=Arc-Dark-solid --panel=0
+    xfce-theme-manager --theme=Arc-Dark-solid --wmborder=Default --controls=Arc-Dark-solid --panel=0 --icons=Papirus-Dark
 else
-    xfce-theme-manager --theme=Arc-Lighter-solid --wmborder=Arc-Lighter-solid --controls=Arc-Lighter-solid --panel=0
+    xfce-theme-manager --theme=Arc-Lighter-solid --wmborder=Default --controls=Arc-Lighter-solid --panel=0 --icons=Papirus-Light
 fi
-xfce-theme-manager --icons=Papirus
 
 # qt theme on gtk desktop; application restart required! {{{1
 if command -v kvantummanager >/dev/null; then
