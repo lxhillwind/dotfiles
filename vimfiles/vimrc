@@ -817,17 +817,21 @@ set noundofile
 
 # alt key in terminal {{{2
 if !has('gui_running') && !is_win32
-    # disable "kitty" protocol since it makes option-hjkl not work.
-    set kpc=xterm:mok2
-
-    # disable "modifyOtherKeys" since it makes option-hjkl in wezterm
-    # (and maybe more terminal emulators) not work.
-    &t_TI = ''
-    &t_TE = ''
-
     # background detection and alt+hjkl does not work in some &term;
-    if ['foot']->index(&term) >= 0
+    # for these &term, try to set to xterm-256color.
+    #
+    # alt+hjkl usually works inside tmux.
+    #
+    # also see 'kpc'
+
+    if ['alacritty', 'foot', 'xterm-kitty']->index(&term) >= 0
         &term = 'xterm-256color'
+    endif
+
+    if $TERM_PROGRAM == 'WezTerm'
+        # prefix term with xterm-, to make background detection work;
+        # set term to -wezterm, to make alt+hjkl work.
+        &term = 'xterm-wezterm'
     endif
 
     # see ":set-termcap"
@@ -903,20 +907,9 @@ else # unix-like system, in terminal emulator
     &t_Ts = "\<Esc>[9m"
     &t_Te = "\<Esc>[0m"
 
-    # 256color or tgc
-    if &term !~ 'xterm'
-        # make tgc work; :help xterm-true-color
-        &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
-        &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
-    endif
     silent! set tgc
 
-    if &term == 'xterm-kitty'
-        # in kitty faq.
-        &t_ut = ''
-    endif
-
-    if is_wsl && &term =~ 'xterm'
+    if is_wsl
         # fix vim start in replace mode; https://superuser.com/a/1525060
         &t_u7 = ''
     endif
