@@ -825,6 +825,11 @@ if !has('gui_running') && !is_win32
     &t_TI = ''
     &t_TE = ''
 
+    # background detection and alt+hjkl does not work in some &term;
+    if ['foot']->index(&term) >= 0
+        &term = 'xterm-256color'
+    endif
+
     # see ":set-termcap"
     for i in 'abcdefghijklmnopqrstuvwxyz1234567890'
         exec $"set <M-{i}>=\<Esc>{i}"

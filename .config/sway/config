@@ -8,14 +8,18 @@ font pango:DejaVu Sans Mono bold 11
 ### Variables
 #
 # Logo key. Use Mod1 for Alt.
-set $mod Mod1
+set $mod Mod4
+set $alt Mod1
+set $win Mod4
 # Home row direction keys, like vim
 set $left h
 set $down j
 set $up k
 set $right l
+# Your preferred terminal emulator
+set $term foot
 # Your preferred application launcher
-set $menu bemenu-run -i
+set $menu wmenu-run
 
 ### Output configuration
 #
@@ -26,6 +30,9 @@ set $menu bemenu-run -i
 #
 # Basics:
 #
+    # Start a terminal
+    bindsym $mod+Return exec $term
+
     # kill focused window
     bindsym $mod+Shift+q kill
     bindsym --border $mod+Shift+button1 kill
@@ -38,7 +45,10 @@ set $menu bemenu-run -i
     bindsym $mod+Ctrl+m exec sh -c 'sleep 1; pkill -USR1 swayidle'
 
     # start your launcher
-    bindsym $mod+d exec $menu
+    bindsym $alt+d exec $menu
+
+    # copyq's own toggle key does not work
+    bindsym $win+i exec copyq toggle
 
     # Drag floating windows by holding down $mod and left mouse button.
     # Resize them with right mouse button + $mod.
@@ -93,7 +103,12 @@ set $menu bemenu-run -i
 
     bindsym $mod+bracketleft workspace prev
     bindsym $mod+bracketright workspace next
+
+    bindsym $alt+bracketleft workspace prev
+    bindsym $alt+bracketright workspace next
     # move focused container to workspace
+    bindsym $alt+Shift+bracketleft move container to workspace prev, workspace prev
+    bindsym $alt+Shift+bracketright move container to workspace next, workspace next
     bindsym $mod+Shift+1 move container to workspace 1
     bindsym $mod+Shift+2 move container to workspace 2
     bindsym $mod+Shift+3 move container to workspace 3
@@ -122,9 +137,6 @@ set $menu bemenu-run -i
     bindsym $mod+w layout stacking
     bindsym $mod+t layout tabbed
     bindsym $mod+e layout toggle split
-
-    # Make the current focus fullscreen
-    bindsym $mod+Return fullscreen
 
     # Toggle the current focus between tiling and floating mode
     bindsym $mod+Shift+space floating toggle
@@ -158,9 +170,9 @@ set $menu bemenu-run -i
 
     bindsym XF86PowerOff nop
 
-    bindsym $mod+comma exec mpc prev
-    bindsym $mod+period exec mpc next
-    bindsym $mod+slash exec mpc toggle
+    bindsym $mod+comma exec playerctl-wrapper previous
+    bindsym $mod+period exec playerctl-wrapper next
+    bindsym $mod+slash exec playerctl-wrapper play-pause
 
 #
 # Resizing containers:
@@ -190,15 +202,8 @@ mode "resize" {
 bindsym $mod+r mode "resize"
 
 for_window [title=".*"] floating enable
-for_window [app_id="kitty"] move workspace 1, floating disable, border pixel
+for_window [app_id="foot"] floating disable, border pixel
 # firefox floating enable, since popup window cannot be detected.
-for_window [app_id="firefox"] move workspace 2
-for_window [instance="sun-awt-X11-XFramePeer" app_id="jetbrains-pycharm-ce"] move workspace 3, floating disable
-assign [app_id="qpdfview"] 4
-for_window [title="QEMU \(arch.*"] move workspace 5, floating disable, border none
-for_window [title="QEMU \(xp.*"] move workspace 6, fullscreen enable
-for_window [title="QEMU \(win7.*"] move workspace 7, fullscreen enable
-for_window [title="QEMU \(win10.*"] move workspace 8, fullscreen enable
 
 #
 # Status Bar:
