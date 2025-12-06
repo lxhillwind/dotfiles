@@ -825,6 +825,7 @@ if !has('gui_running') && !is_win32
     # also see 'kpc'
 
     if ['alacritty', 'foot', 'xterm-kitty']->index(&term) >= 0
+            || (is_mac && ['xterm-ghostty']->index(&term) >= 0)
         &term = 'xterm-256color'
     endif
 
@@ -1653,8 +1654,8 @@ def ColorSchemeTweak()
 
     # not all colorschemes look good with this patch, so test them manually,
     # and maybe add some of them to local vimrc.
-    if exists('g:colors_name') && exists('g:vimrc_pmenu_tweak')
-        && g:vimrc_pmenu_tweak->index(g:colors_name) >= 0
+    if exists('g:colors_name') && exists('g:vimrc_colorscheme_pmenu_tweak')
+        && g:vimrc_colorscheme_pmenu_tweak->index(g:colors_name) >= 0
         # make my fuzzy plugin selected line shows matched chars with highlight;
         hi PmenuSel ctermfg=NONE guifg=NONE
 
