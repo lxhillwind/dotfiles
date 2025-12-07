@@ -363,10 +363,8 @@ if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; the
     export XMODIFIERS=@im=fcitx
 
     _start-wayland() {
-        #XDG_SESSION_TYPE=wayland dbus-run-session startplasma-wayland
+        XDG_SESSION_TYPE=wayland dbus-run-session startplasma-wayland
         #XDG_SESSION_TYPE=wayland dbus-run-session gnome-session
-        # only use labwc when no dotfiles are available.
-        sway
     }
     _s() {
         export LANG=zh_CN.UTF-8
@@ -387,9 +385,11 @@ if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; the
 fi
 
 # startx automatically in linux console {{{2
-if [[ $OSTYPE =~ linux ]] && [ "$TTY" = /dev/tty1 ] && [ "$TERM" = linux ]; then
-    x  # defined above
-fi
+# TEMPLATE: copy to ~/.zshrc if necessary.
+# if [[ $OSTYPE =~ linux ]] && [ "$TTY" = /dev/tty1 ] && [ "$TERM" = linux ]; then
+#     x
+#     # or s
+# fi
 # finish {{{2
 compinit
 
