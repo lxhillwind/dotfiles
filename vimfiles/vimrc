@@ -1674,6 +1674,20 @@ def ColorSchemeTweak()
         endif
     endif
 
+    # in wildcharm color, some highlight text is not easy to recognize.
+    if g:colors_name == 'wildcharm'
+        if &bg == 'dark'
+            hi DiffText guibg=#0044aa
+            hi IncSearch guibg=#00aa00 guifg=#ffffff
+            # do not use purple (#ff00ff) since vim-sneak uses it.
+            hi Search guibg=#cc8800 guifg=#ffffff
+        else
+            hi DiffText guibg=#00eeff
+            hi IncSearch guibg=#00dd00 guifg=#000000
+            hi Search guibg=#ffff00 guifg=#000000
+        endif
+    endif
+
     # terminal 16color
     if (has('gui_running') || &tgc)
         # https://github.com/lxhillwind/base16-dynamic.vim

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+printf '\a'
+notify-send -u critical -i terminal "$@"
