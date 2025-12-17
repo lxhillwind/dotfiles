@@ -208,6 +208,8 @@ HISTFILE=~/.zsh_history
 # ignore history entry with leading space;
 # "<space><cr>" to lose them immediately.
 setopt HIST_IGNORE_SPACE
+# make it easier to navigate history.
+setopt HIST_IGNORE_DUPS
 
 # hh(): history enhancement. put history search result in zle {{{2
 hh() {
