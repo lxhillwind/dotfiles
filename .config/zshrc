@@ -200,6 +200,9 @@ zstyle ':completion:*' matcher-list '' \
   'm:{a-z\-}={A-Z\_}' \
   'r:|?=** m:{a-z\-}={A-Z\_}'
 
+# expansion {{{2
+setopt EXTENDED_GLOB
+
 # history setting {{{2
 # let's see if the performance is accessible.
 SAVEHIST=1000000

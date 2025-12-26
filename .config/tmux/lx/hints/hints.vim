@@ -274,7 +274,7 @@ def LabelUrl() # {{{1
         .. 'https?\://'  # protocol
         .. '[a-zA-Z0-9._-]+[a-zA-Z0-9]'  # domain; no . at end.
         .. '(\:[0-9]+|)'  # port
-        .. '((/[a-zA-Z0-9_/%?#.=&:-]+[a-zA-Z0-9_/-])|)'  # path; some char not at end.
+        .. '((/[a-zA-Z0-9_/%?#.=&:~-]+[a-zA-Z0-9_/=~-])|)'  # path; some char not at end.
         .. ')|(' # == <> quoted url
         .. '\<\zshttps?\://[^>]+\ze\>'
         .. ')|(' # == () quoted url in markdown

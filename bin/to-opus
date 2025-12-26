@@ -1,45 +1,55 @@
-#!/usr/bin/env ysh
+#!/usr/bin/env zsh
 
-proc main(input_file) {
-    var output_file = input_file => replace(/ '.' !['.']+ %end /, '.opus')
-    if test -f $output_file {
+set -e
+setopt -k
+
+main()
+{
+    input_file=${1:?expect a music file}
+    if ! [[ -f $input_file ]]; then
+        echo 'file not exist: ' $input_file >&2
+        exit 1
+    fi
+    output_file=${input_file:r}.opus
+    if [[ -f $output_file ]]; then
         echo 'expected output file already exists: ' $output_file >&2
         exit 1
-    }
+    fi
 
-    ffprobe -show_format -of json $input_file 2>/dev/null | json read (&metadata)
-    var output_bitrate = 64
-    case (metadata.format.format_name) {
-        mp3 {
+    metadata=$(ffprobe -show_format -of json $input_file -loglevel error)
+    output_bitrate=64
+    origin_bitrate=$(jq -r .format.bit_rate <<< $metadata)
+    case $(jq -r .format.format_name <<< $metadata) in
+        mp3)
             # above 192kbps
-            if (metadata.format.bit_rate / 1000 > 190) {
-                setvar output_bitrate = 128
-            }
-        }
-        aac | m4a | *m4a* {
+            if ((origin_bitrate / 1000 > 190)); then
+                output_bitrate=128
+            fi
+            ;;
+        aac | m4a | *m4a*)
             # above 160kbps
-            if (metadata.format.bit_rate / 1000 > 150) {
-                setvar output_bitrate = 128
-            }
-        }
-        flac | ape {
+            if ((origin_bitrate / 1000 > 150)); then
+                output_bitrate=128
+            fi
+            ;;
+        flac | ape)
             # loseless
-            setvar output_bitrate = 192
-        }
-        * {
-            echo 'unknown format: ' $[metadata.format.format_name] '(' $input_file ')' >&2
+            output_bitrate=192
+            ;;
+        *)
+            echo 'unknown format: ' $(jq -r .format.format_name <<< $metadata) "( $input_file )" >&2
             exit 1
-        }
-    }
+            ;;
+    esac
     rm -f cover.jpg temp.flac
-    var opt = []
-    if ffmpeg -i "$1" -an -vcodec copy cover.jpg {
-        setvar opt = ['--picture', 'cover.jpg']
-    }
-    ffmpeg -i "$1" -vn temp.flac
-    opusenc @opt --bitrate $output_bitrate temp.flac $output_file
+    opt=()
+    if ffmpeg -i $input_file -an -vcodec copy cover.jpg; then
+        opt=(--picture cover.jpg)
+    fi
+    ffmpeg -i $input_file -vn temp.flac
+    opusenc $opt[@] --bitrate $output_bitrate temp.flac $output_file
     rm -f cover.jpg temp.flac
     rsgain custom -s i $output_file
 }
 
-main @ARGV
+main "$@"

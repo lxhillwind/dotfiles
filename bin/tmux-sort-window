@@ -6,19 +6,8 @@ if [ -z "$TMUX" ]; then
     exit 1
 fi
 
-windows=( $(tmux list-windows | cut -d: -f1) )
-current=$(tmux display -p '#I')
+tmux movew -r
 
-index=1
-while [ "$index" -le "${#windows[@]}" ]; do
-    src="${windows[index-1]}"
-    dest="$index"
-    if [ "$src" != "$dest" ]; then
-        if [ "$src" = "$current" ]; then
-            tmux move-window -s "$src" -t "$dest"
-        else
-            tmux move-window -d -s "$src" -t "$dest"
-        fi
-    fi
-    index=$(( index + 1 ))
-done
+# move current window to index 3 (which should exist):
+#   movew -b -t 3
+#   (-b means before)
