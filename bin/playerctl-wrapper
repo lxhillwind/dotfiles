@@ -1,5 +1,7 @@
 #!/usr/bin/env zsh
 
+set -e
+
 # wrapper for playerctl, to make it smarter on choosing player to control.
 #
 # rules:
@@ -9,7 +11,7 @@
 # - else, try with the same order (but without requiring playing state).
 
 
-state_file="${XDG_RUNTIME_DIR:-/tmp}"/playerctl-wrapper.state
+state_file=${XDG_RUNTIME_DIR:-/tmp}/playerctl-wrapper.state
 
 prefer_players=(
     rhythmbox
@@ -27,44 +29,43 @@ esac
 
 typeset -A players_playing
 typeset -A players_paused
-playerctl -a --format '{{status}}:{{playerName}}' status | \
-    while read line; do
-        case "$line" in
-            Playing:*)
-                players_playing+=(["${line#Playing:}"]=1)
-                ;;
-            Paused:*)
-                players_paused+=(["${line#Paused:}"]=1)
-                ;;
-            *)
-                ;;
-        esac
-    done
+for line in ${(f)"$(playerctl -a --format '{{status}}:{{playerName}}' status)"}; do
+    case $line in
+        Playing:*)
+            players_playing+=(${line#Playing:} 1)
+            ;;
+        Paused:* | Stopped:*)
+            players_paused+=(${line#(Paused:|Stopped:)} 1)
+            ;;
+        *)
+            ;;
+    esac
+done
 
-if [ "${#players_playing[@]}" = 1 ]; then
-    player_to_use="${(k)players_playing}"
+if [[ $#players_playing = 1 ]]; then
+    player_to_use=${(k)players_playing}
 else
-    if [ "${#players_playing[@]}" -gt 1 ]; then
+    if (( $#players_playing > 1 )); then
         arr=players_playing
     else
         arr=players_paused
     fi
-    for i in "$(cat "$state_file" 2>&1)" ${(k)prefer_players}; do
-        if [ -n "${${(P)arr}[$i]}" ]; then
-            player_to_use="$i"
+    for i in "$(cat $state_file 2>&1)" ${(k)prefer_players}; do
+        if [[ -n ${${(P)arr}[$i]} ]]; then
+            player_to_use=$i
             break
         fi
     done
 fi
 
-if [ -z "$player_to_use" ]; then
+if [[ -z $player_to_use ]]; then
     msg='cannot decide player to control.'
-    printf '%s\n' "$msg" >&2
-    notify-send -t 3000 'playerctl-wrapper' "$msg"
+    printf '%s\n' $msg >&2
+    notify-send -t 3000 'playerctl-wrapper' $msg
     exit 1
 fi
 
 set -x
-playerctl -p "$player_to_use" "$@"
+playerctl -p $player_to_use $@
 set +x
-printf "%s\n" "$player_to_use" > "$state_file"
+printf "%s\n" $player_to_use > $state_file

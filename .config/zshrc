@@ -357,6 +357,17 @@ if command -v ssh >/dev/null 2>&1; then
     }
 fi
 
+# disable some command completion {{{2
+
+local zshrc_t=()
+
+if ! command -v playerctl &>/dev/null; then
+    zshrc_t+=(playerctl-wrapper)
+fi
+
+zstyle ':completion:*:commands' ignored-patterns $zshrc_t
+unset zshrc_t
+
 # s() or x(): x11 / wayland {{{2
 if [[ $OSTYPE =~ linux ]] && [ -z "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
     # let qt use kvantum theme in gtk;

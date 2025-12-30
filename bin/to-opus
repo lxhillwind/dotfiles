@@ -1,7 +1,6 @@
 #!/usr/bin/env zsh
 
 set -e
-setopt -k
 
 main()
 {
@@ -52,4 +51,4 @@ main()
     rsgain custom -s i $output_file
 }
 
-main "$@"
+main $@
