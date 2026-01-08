@@ -738,6 +738,8 @@ augroup END
 set title
 
 # statusline {{{2
+# always show status line
+set laststatus=2
 set ruler
 &rulerformat = '%20('
     .. '%M'
