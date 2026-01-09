@@ -331,32 +331,6 @@ if [[ $OSTYPE =~ linux ]]; then
     fi
 fi
 
-# ssh wrapper {{{2
-# - set terminal title to ssh argument;
-# - use tmux to wrap ssh session, so fancy tmux features can be used.
-if command -v ssh >/dev/null 2>&1; then
-    # use alias to wrap it, so we can use original ssh easily.
-    alias ssh=_ssh_inside_tmux
-    _ssh_inside_tmux()
-    {
-        local tmux_opt=()
-
-        # check stdout to avoid breaking non-interactive session (like git).
-        if [ -t 1 ] && [ -n "$*" ]; then
-            printf "\x1b]0;$*\x07"
-            if [ -z "$TMUX" ] && command -v tmux >/dev/null 2>&1; then
-                tmux_opt=(tmux new-session -d)
-            fi
-        fi
-
-        "${tmux_opt[@]}" env TERM="xterm-256color" ssh "$@"
-
-        if [ -n "$tmux_opt" ]; then
-            tmux a
-        fi
-    }
-fi
-
 # disable some command completion {{{2
 
 local zshrc_t=()

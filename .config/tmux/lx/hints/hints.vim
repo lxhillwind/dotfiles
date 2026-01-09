@@ -2,13 +2,17 @@ vim9script
 
 # emulate kitty's hint mode.
 # usage:
-#   cat {content-to-hint-on} | vim - -S {path-to-this-file}
+#   cat {content-to-hint-on} | vim - --clean -S {path-to-this-file}
+
+# enable :Open command.
+runtime plugin/openPlugin.vim
 
 def Main()
     setlocal buftype=nofile filetype=
-    setlocal nonumber norelativenumber nofoldenable nocursorcolumn nocursorline
+    setlocal nofoldenable
     setlocal nowrap # if some line is full, vim display incorrectly; avoid it.
-    setlocal nohlsearch # avoid last search causing visual distraction
+
+    hi hints_grey cterm=bold ctermbg=lightgrey ctermfg=black gui=bold guibg=lightgrey guifg=black
 
     # getcharstr() cannot catch <C-c>; so map it to quit.
     nnoremap <buffer> <C-c> <Cmd>quit<CR>
@@ -220,7 +224,7 @@ def LabelLine() # {{{1
     }
 
     var linenr = 0
-    prop_type_add('reverse', {highlight: 'Visual'})
+    prop_type_add('reverse', {highlight: 'hints_grey'})
     for line in getline(1, '$')
         linenr += 1
 
@@ -252,8 +256,7 @@ def LabelWord(regex: string = '') # {{{1
     matched_items = []
     execute $'keeppatterns :%s/\v{word_pattern}/\=AddToList(line("."), col("."), submatch(0))/gne'
 
-    hi word cterm=bold ctermbg=lightgrey ctermfg=black gui=bold guibg=lightgrey guifg=black
-    prop_type_add('word', {highlight: 'word'})
+    prop_type_add('word', {highlight: 'hints_grey'})
     for item in matched_items
         prop_add(item.line, item.col, {type: 'word', length: item.text->len()})
         param.items->add({pos: [item.line, item.col], text: item.text})
@@ -266,7 +269,7 @@ def LabelUrl() # {{{1
     var param = {
         items: [],
         Callback: (text) => {
-            execute ':Sh -g' shellescape(text)
+            execute ':Open' text
         }
     }
     const url_pattern = (
@@ -287,8 +290,7 @@ def LabelUrl() # {{{1
     matched_items = []
     execute $'keeppatterns :%s/\v{url_pattern}/\=AddToList(line("."), col("."), submatch(0))/gne'
 
-    hi url cterm=bold ctermbg=lightgrey ctermfg=black gui=bold guibg=lightgrey guifg=black
-    prop_type_add('url', {highlight: 'url'})
+    prop_type_add('url', {highlight: 'hints_grey'})
     for item in matched_items
         prop_add(item.line, item.col, {type: 'url', length: item.text->len()})
         param.items->add({pos: [item.line, item.col], text: item.text})

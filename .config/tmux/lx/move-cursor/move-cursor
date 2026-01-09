@@ -47,8 +47,8 @@ main()
         TARGET_X="$target_x" \
         TARGET_Y="$target_y" \
         PANE_WIDTH="$pane_width" \
-        vim - -S "$(dirname "$0")"/calculate-strlen.vim -es --not-a-term \
-        --clean -Nu NONE 2>/dev/null
+        vim - -S "$(dirname "$0")"/calculate-strlen.vim -es --not-a-term --clean \
+        2>/dev/null
     )
 
     # sanity check

@@ -1,6 +1,6 @@
 vim9script
 
-# Usage: xxx | vim - -S this-file -es --not-a-term
+# Usage: xxx | vim - -S this-file -es --not-a-term --clean
 
 def Main()
     # quit easily

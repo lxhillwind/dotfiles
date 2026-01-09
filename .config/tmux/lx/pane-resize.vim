@@ -1,9 +1,6 @@
 vim9script
 
 def Main()
-    # make <Esc> response faster.
-    set ttimeoutlen=50
-
     nnoremap <C-c> :q<CR>
     const keys_quit = ["\<C-c>", "\<C-d>", "\<Esc>", "\<C-[>", 'q']
     const keys_move = {h: 'L', j: 'D', k: 'U', l: 'R'}
