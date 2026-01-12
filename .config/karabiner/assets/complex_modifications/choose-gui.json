@@ -1,0 +1,98 @@
+{
+    "title": "choose-gui readline style key (requires wrapping `choose` to an app)",
+    "rules": [
+        {
+            "description": "choose-gui readline style key (requires wrapping `choose` to an app)",
+            "manipulators": [
+                {
+                    "description": "escape key clears input if not empty; quit if empty",
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^io.lx.choose$"
+                            ],
+                            "type": "frontmost_application_if"
+                        }
+                    ],
+                    "from": {
+                        "key_code": "open_bracket",
+                        "modifiers": {
+                            "mandatory": [
+                                "control"
+                            ]
+                        }
+                    },
+                    "to": [
+                        {
+                            "key_code": "c",
+                            "modifiers": [
+                                "control"
+                            ]
+                        }
+                    ],
+                    "type": "basic"
+                },
+                {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^io.lx.choose$"
+                            ],
+                            "type": "frontmost_application_if"
+                        }
+                    ],
+                    "from": {
+                        "key_code": "u",
+                        "modifiers": {
+                            "mandatory": [
+                                "control"
+                            ]
+                        }
+                    },
+                    "to": [
+                        {
+                            "key_code": "home",
+                            "modifiers": [
+                                "shift"
+                            ]
+                        },
+                        {
+                            "key_code": "delete_or_backspace"
+                        }
+                    ],
+                    "type": "basic"
+                },
+                {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^io.lx.choose$"
+                            ],
+                            "type": "frontmost_application_if"
+                        }
+                    ],
+                    "from": {
+                        "key_code": "w",
+                        "modifiers": {
+                            "mandatory": [
+                                "control"
+                            ]
+                        }
+                    },
+                    "to": [
+                        {
+                            "key_code": "left_arrow",
+                            "modifiers": [
+                                "shift", "option"
+                            ]
+                        },
+                        {
+                            "key_code": "delete_or_backspace"
+                        }
+                    ],
+                    "type": "basic"
+                }
+            ]
+        }
+    ]
+}

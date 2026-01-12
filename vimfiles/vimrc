@@ -918,7 +918,10 @@ else # unix-like system, in terminal emulator
     endif
 
     if is_mac && $TERM_PROGRAM == 'Apple_Terminal'
-        set notgc
+        # since macos 26 (Tahoe), terminal.app supports tgc.
+        if system('sw_vers -productVersion')->str2float() < 26
+            set notgc
+        endif
     endif
 
     if &term =~ 'rxvt'
