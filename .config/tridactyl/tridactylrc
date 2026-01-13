@@ -513,10 +513,11 @@ jsb tri.lx.menus = tri.lx.menus ?? {}
 " object key is id;
 " and if `excmd` is not in value, id is also excmd.
 " To unset an entry, just assign value to null / undefined, then `refresh_menu`.
+jsb tri.lx.menus.refresh_menu = { title: "刷新上下文菜单", contexts: ["page"], }
 jsb tri.lx.menus.qrcode = { title: "生成二维码: 当前网址", contexts: ["page"], }
 jsb tri.lx.menus.qrcode_visual = { title: "生成二维码: '%s'", contexts: ["selection"], }
 jsb tri.lx.menus.save_notes = { title: "保存笔记...: '%s'", contexts: ["selection"], }
-jsb tri.lx.menus.refresh_menu = { title: "刷新上下文菜单", contexts: ["page"], }
+jsb tri.lx.menus.dump_urls_to_clipboard = { title: "复制到剪切板: 当前群组的所有标签页 url", contexts: ["page"], }
 
 command refresh_menu jsb \
     if (tri.lx.menus_listener) \
@@ -530,9 +531,11 @@ command refresh_menu jsb \
         if (val) { tri.excmds.composite(val.excmd ?? info.menuItemId); } \
     }; browser.contextMenus.onClicked.addListener(tri.lx.menus_listener)
 
+command dump_urls_to_clipboard jsb browser.tabs.query({hidden: false}).then(i => navigator.clipboard.writeText(i.map(j => '- `' + j.title + '`' + '\n ' + ` <${j.url}>`).join('\n\n')))
+
 " Private {{{1
 
-quickmark p https://www.protopage.com/lxhillwind
+quickmark p https://www.protectedtext.com/lxhillwind
 quickmark s http://127.0.0.1:8384/
 
 " Load local config, setup ContextMenu, and alert for finish {{{1

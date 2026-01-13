@@ -269,7 +269,7 @@ def LabelUrl() # {{{1
     var param = {
         items: [],
         Callback: (text) => {
-            execute ':Open' text
+            execute ':Open' fnameescape(text)
         }
     }
     const url_pattern = (
