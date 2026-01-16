@@ -1370,6 +1370,8 @@ augroup vimrc
         return 0
     enddef
 
+    # ":h pascal.vim"
+    g:pascal_fpc = 1
     # ":h ft-sh-syntax"
     g:is_posix = 1
     au FileType snip {

@@ -531,7 +531,7 @@ command refresh_menu jsb \
         if (val) { tri.excmds.composite(val.excmd ?? info.menuItemId); } \
     }; browser.contextMenus.onClicked.addListener(tri.lx.menus_listener)
 
-command dump_urls_to_clipboard jsb browser.tabs.query({hidden: false}).then(i => navigator.clipboard.writeText(i.map(j => '- `' + j.title + '`' + '\n ' + ` <${j.url}>`).join('\n\n')))
+command dump_urls_to_clipboard jsb browser.tabs.query({hidden: false}).then(i => navigator.clipboard.writeText(i.map(j => '- `' + j.title + '`' + '\n' + `<${j.url}>`).join('\n\n')))
 
 " Private {{{1
 
