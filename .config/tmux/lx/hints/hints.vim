@@ -270,14 +270,18 @@ def LabelUrl() # {{{1
         items: [],
         Callback: (text) => {
             execute ':Open' fnameescape(text)
+            # since Vim commit 4b83d5ca76573373c0b57238b221a6a504bdb50b,
+            # url is opened in background;
+            # Sleep to avoid quiting vim before opening url (hopefully).
+            sleep 200m
         }
     }
     const url_pattern = (
         '(' # == normal url
         .. 'https?\://'  # protocol
-        .. '[a-zA-Z0-9._-]+[a-zA-Z0-9]'  # domain; no . at end.
+        .. '(\[::[0-9]+\]|[a-zA-Z0-9._-]+[a-zA-Z0-9])'  # domain; no . at end.
         .. '(\:[0-9]+|)'  # port
-        .. '((/[a-zA-Z0-9_/%?#.=&:~-]+[a-zA-Z0-9_/=~-])|)'  # path; some char not at end.
+        .. '(/[a-zA-Z0-9_/%?#.=&:~-]+[a-zA-Z0-9_/=~-]|/|)'  # path; some char not at end.
         .. ')|(' # == <> quoted url
         .. '\<\zshttps?\://[^>]+\ze\>'
         .. ')|(' # == () quoted url in markdown
