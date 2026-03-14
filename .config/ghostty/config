@@ -59,9 +59,6 @@ keybind = cmd+o=esc:o
 keybind = cmd+n=esc:n
 keybind = cmd+p=esc:p
 
-# until native search is implemented.
-keybind = cmd+f=esc:f
-
 # linux: macos like
 keybind = alt+c=copy_to_clipboard
 keybind = alt+t=new_tab
