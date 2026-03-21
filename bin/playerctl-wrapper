@@ -5,10 +5,12 @@ set -e
 # wrapper for playerctl, to make it smarter on choosing player to control.
 #
 # rules:
-# - if only one player is playing, use that (and save the choice);
-# - else if more players are playing, try last choice, "$prefer_players"
+# - if playerctl returns results:
+#   - if only one player is playing, use that (and save the choice);
+#   - else if more players are playing, try last choice, "$prefer_players"
 #   (only when they are playing);
-# - else, try with the same order (but without requiring playing state).
+#   - else, try with the same order (but without requiring playing state);
+# - else, launch "rhythmbox", and use it!
 
 
 state_file=${XDG_RUNTIME_DIR:-/tmp}/playerctl-wrapper.state
@@ -59,10 +61,9 @@ else
 fi
 
 if [[ -z $player_to_use ]]; then
-    msg='cannot decide player to control.'
-    printf '%s\n' $msg >&2
-    notify-send -t 3000 'playerctl-wrapper' $msg
-    exit 1
+    rhythmbox &!
+    sleep 1
+    player_to_use=rhythmbox
 fi
 
 set -x

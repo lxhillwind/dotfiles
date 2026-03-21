@@ -11,3 +11,7 @@ if !empty(maparg('gd', 'n'))
         &l:keywordprg = ''
     endif
 endif
+
+if !executable('pylsp')
+    &l:omnifunc = ''
+endif
