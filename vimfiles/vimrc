@@ -292,6 +292,16 @@ const lspConfigDict = {
         args: [],
     },
 } # }}}
+->extend((() => {
+    var result = {}
+    if executable('ty')
+        result['python'] = {
+            filetype: ['python'],
+            path: 'ty',
+            args: ['server'], }
+    endif
+    return result
+})())
 # allow extending / overriding from $MYVIMRC with var g:vimrc_lsp_config
 ->extend(exists('g:vimrc_lsp_config') ? g:vimrc_lsp_config : {})
 
