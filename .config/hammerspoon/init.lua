@@ -11,7 +11,10 @@ hs.alert.show("Hammerspoon config loaded")
 hyper_shift = {"cmd", "shift"}
 hyper = {"cmd"}
 meta_shift = {"alt", "shift"}
-meta = {"alt"}
+-- meta = {"alt"}
+-- sometimes option+letter key does not work accidentally (it produces special character);
+-- so use complex modifiers with karabiner does the remap.
+meta = {"shift", "alt", "command"}
 
 hs.hotkey.bind(hyper_shift, ";", hs.reload)
 
@@ -95,6 +98,8 @@ bindApp("e", "Finder", meta)
 bindApp("d", "Dingtalk", meta)
 
 bindApp("s", "KeePassXC", meta)
+
+bindApp("c", "Cursor", meta)
 
 -- don't set key for <M-q>, since it may shutdown PC (luckily with prompt)
 -- if hammerspoon is not started yet.
