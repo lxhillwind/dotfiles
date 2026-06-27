@@ -1821,7 +1821,7 @@ command! OpenWithVSCode {
     const file = expand('%:p')
     const line = line('.')
     const column = charcol('.')
-    const param = empty(file) ? 'code -n ./' : (
+    const param = !filereadable(file) ? 'code -n ./' : (
         printf('code -n ./ && code -r -g %s:%s:%s', shellescape(file), line, column)
     )
     execute 'Cdproject' 'Sh' param

@@ -193,6 +193,8 @@ bind af hint -Jqb
 bind y1 composite js document.location.hostname | clipboard yank
 " yank (ip:port)
 bind y2 composite js document.location.host | clipboard yank
+" yank (protocol:ip:port); like gU
+bind yU composite js document.location.origin | clipboard yank
 " yank (url decoded)
 bind yY composite js decodeURI(document.location) | clipboard yank
 " yank image url

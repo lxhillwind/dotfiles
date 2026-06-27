@@ -9,4 +9,10 @@ configuration {
     kb-cancel: "Control+c,Escape,Control+g,Control+bracketleft";
     // it occupies C-c, so set it to empty.
     kb-secondary-copy: "";
+
+    kb-mode-next: "Tab";
+    kb-element-next: "";
+
+    kb-mode-previous: "ISO_Left_Tab";
+    kb-element-prev: "";
 }
