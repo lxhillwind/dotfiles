@@ -251,6 +251,11 @@ const lspConfigDict = {
         path: 'ansible-language-server',
         args: ['--stdio'],
     },
+    cpp: {
+        filetype: ['cpp', 'c'],
+        path: 'clangd',
+        args: [],
+    },
     golang: {
         filetype: ['go', 'gomod'],
         path: 'gopls',
