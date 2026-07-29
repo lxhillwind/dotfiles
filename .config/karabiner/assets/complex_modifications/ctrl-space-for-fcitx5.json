@@ -1,8 +1,8 @@
 {
-    "title": "ctrl-space to ctrl-shift (unless utm; for fcitx5)",
+    "title": "ctrl-space to ctrl-shift-h (unless utm; for fcitx5)",
     "rules": [
         {
-            "description": "ctrl-space to ctrl-shift (unless utm; for fcitx5)",
+            "description": "ctrl-space to ctrl-shift-h (unless utm; for fcitx5)",
             "manipulators": [
                 {
                     "conditions": [
@@ -23,9 +23,10 @@
                     },
                     "to": [
                         {
-                            "key_code": "left_control",
+                            "key_code": "h",
                             "modifiers": [
-                                "left_shift"
+                                "left_shift",
+                                "left_control"
                             ]
                         }
                     ],
