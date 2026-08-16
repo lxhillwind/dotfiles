@@ -1,16 +1,16 @@
 {
-    "title": "ctrl-space to ctrl-shift-h (unless utm; for fcitx5)",
+    "title": "ctrl-space to ctrl-shift-h (ctrl-space to switch fcitx5 im state does not work in Terminal.app; c-s-h does not work in fltk, so do not change globally)",
     "rules": [
         {
-            "description": "ctrl-space to ctrl-shift-h (unless utm; for fcitx5)",
+            "description": "ctrl-space to ctrl-shift-h (Terminal.app; for fcitx5)",
             "manipulators": [
                 {
                     "conditions": [
                         {
                             "bundle_identifiers": [
-                                "^com.utmapp.UTM$"
+                                "^com.apple.Terminal$"
                             ],
-                            "type": "frontmost_application_unless"
+                            "type": "frontmost_application_if"
                         }
                     ],
                     "from": {
