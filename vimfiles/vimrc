@@ -176,8 +176,6 @@ packadd! vim-tridactyl
 packadd! vim-markdown-folding
 g:markdown_fold_style = 'nested'
 g:markdown_fold_override_foldtext = 0
-# default yaml syntax is quite slow.
-packadd! vim-yaml
 
 # snippet (it uses <C-j> in normal / insert select mode)
 packadd! miniSnip
