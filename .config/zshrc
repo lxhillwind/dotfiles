@@ -380,6 +380,16 @@ fi
 #     x
 #     # or s
 # fi
+
+# bind ~/music to ~/Music and make it readonly {{{2
+# TEMPLATE: copy to ~/.zshrc if necessary.
+# if print -- ~/Music(/^F) &>/dev/null; then
+#     timeout 3 bindfs -o ro -p a-w --no-allow-other ~/music ~/Music
+#     if [ $? -ne 0 ]; then
+#         echo 'zshrc: failed to execute bindfs.' >&2
+#     fi
+# fi
+
 # finish {{{2
 compinit
 
