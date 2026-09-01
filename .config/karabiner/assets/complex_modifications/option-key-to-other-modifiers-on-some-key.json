@@ -1,11 +1,19 @@
 {
-    "title": "Change left-option to shift+option+command when a-z key is pressed",
-    "description": "Change left-option to shift+option+command when a-z key is pressed",
+    "title": "Change left-option to shift+option+command when a-z key is pressed (unless utm)",
+    "description": "Change left-option to shift+option+command when a-z key is pressed (unless utm)",
     "rules": [
         {
-            "description": "Change left-option to shift+option+command when a-z key is pressed",
+            "description": "Change left-option to shift+option+command when a-z key is pressed (unless utm)",
             "manipulators": [
                 {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^com.utmapp.UTM$"
+                            ],
+                            "type": "frontmost_application_unless"
+                        }
+                    ],
                     "from": {
                         "key_code": "left_option"
                     },

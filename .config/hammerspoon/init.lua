@@ -59,8 +59,7 @@ function toggleWindowMaximized()
     end
  end
 -- }}}
-hs.hotkey.bind(hyper, "return", toggleWindowMaximized)
--- avoid command+enter (to fullscreen causing new workspace)
+hs.hotkey.bind({"alt"}, "return", toggleWindowMaximized)
 -- why maximize not fullscreen?
 -- since macOS fullscreen will move window to new workspace,
 -- then app show all window won't work as expected
@@ -78,18 +77,8 @@ end -- }}}
 -- "command+," 通常为系统设置, 所以在 karabiner 将其与 "shift+command+," 对调,
 -- 然后此处设置带 shift 的.
 bindApp(",", "Firefox", hyper_shift)
--- 将文本编辑器设置为所有桌面可见, 充当记事本 (scratchpad);
--- macos: "Right click on the application icon in the dock -> options -> All Desktops"
--- ref: https://superuser.com/a/1146999
-bindApp(".", "visual studio code")
-
--- selection in tmux: it's visually better with (ghostty / kitty) than iterm2.
-local terminal = hs.execute("grep -Ev '^(#|$)' ~/bin/my-terminal-choice")
-terminal = terminal:gsub("\n$", "")
-if terminal == "" then
-    terminal = "terminal" -- safe default
-end
-bindApp("/", terminal)
+bindApp(".", "Cursor")
+bindApp("/", "Terminal")
 
 -- 2024-08-06 update: Double Commander has trouble opening ~/Downloads;
 -- revert to Finder.

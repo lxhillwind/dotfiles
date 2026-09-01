@@ -3,9 +3,17 @@
     "description": "need to enable 'Modify events' in Karabiner-Elements => Configurations => Devices => (your mouse)",
     "rules": [
         {
-            "description": "Change option+click to shift+option+click (for use in hammerspoon)",
+            "description": "Change option+click to shift+option+click (unless utm) (for use in hammerspoon)",
             "manipulators": [
                 {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^com.utmapp.UTM$"
+                            ],
+                            "type": "frontmost_application_unless"
+                        }
+                    ],
                     "from": {
                         "pointing_button": "button1",
                         "modifiers": {
@@ -21,6 +29,14 @@
                     "type": "basic"
                 },
                 {
+                    "conditions": [
+                        {
+                            "bundle_identifiers": [
+                                "^com.utmapp.UTM$"
+                            ],
+                            "type": "frontmost_application_unless"
+                        }
+                    ],
                     "from": {
                         "pointing_button": "button2",
                         "modifiers": {
