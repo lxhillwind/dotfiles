@@ -27,6 +27,7 @@
                             "other_keys": [
                                 { "key_code": "e", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "h", "modifiers": {"optional": ["command"]} },
+                                { "key_code": "i", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "j", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "k", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "l", "modifiers": {"optional": ["command"]} },
@@ -66,6 +67,7 @@
                             "other_keys": [
                                 { "key_code": "e", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "h", "modifiers": {"optional": ["command"]} },
+                                { "key_code": "i", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "j", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "k", "modifiers": {"optional": ["command"]} },
                                 { "key_code": "l", "modifiers": {"optional": ["command"]} },

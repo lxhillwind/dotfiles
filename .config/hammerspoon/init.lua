@@ -142,3 +142,17 @@ hs.hotkey.bind(hyper, "d", function()
     -- 这样做是为了让 fcitx5 可以配置为在这个窗口默认使用英文键盘.
     hs.application.launchOrFocus("choose")
 end)
+
+-- include other config
+local hammerLocalConfig = os.getenv("HOME") .. "/" .. ".config/hammerspoon/local.lua"
+if hs.fs.attributes(hammerLocalConfig, "mode") == "file" then
+    local fn, err = loadfile(hammerLocalConfig)
+    if not fn then
+        hs.alert.show("local.lua load error: " .. tostring(err))
+    else
+        local ok, runErr = pcall(fn)
+        if not ok then
+            hs.alert.show("local.lua: " .. tostring(runErr))
+        end
+    end
+end
