@@ -40,14 +40,15 @@ main()
             exit 1
             ;;
     esac
-    rm -f cover.jpg temp.flac
+    rm -f cover.jpg cover.orig.jpg temp.flac
     opt=()
-    if ffmpeg -i $input_file -an -vcodec copy cover.jpg; then
+    if ffmpeg -i $input_file -an -vcodec copy cover.orig.jpg; then
+        magick cover.orig.jpg -quality 0.75 cover.jpg
         opt=(--picture cover.jpg)
     fi
     ffmpeg -i $input_file -vn temp.flac
     opusenc $opt[@] --bitrate $output_bitrate temp.flac $output_file
-    rm -f cover.jpg temp.flac
+    rm -f cover.jpg cover.orig.jpg temp.flac
     rsgain custom -s i $output_file
 }
 
